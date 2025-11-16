@@ -1,18 +1,10 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
+import WithdrawForm from '@/components/profile/WithdrawForm';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
-
-const QUOTATION_FIELDS = [
-  'quotation_Q1',
-  'quotation_Q2',
-  'quotation_Q3',
-  'quotation_Q4',
-  'quotation_Q5',
-  'quotation_Q6',
-  'quotation_Q7',
-] as const;
 
 const GAME_TAG_FIELDS = [
   'LOL',
@@ -34,7 +26,78 @@ const GAME_TAG_FIELDS = [
   'COD',
 ] as const;
 
-export default async function Profile() {
+const TRANSACTIONS_PER_PAGE = 10;
+
+const parseNumeric = (value: any): number | null => {
+  if (value === null || value === undefined) return null;
+  const asString = value?.toString?.() ?? String(value);
+  const numeric = Number(asString);
+  if (Number.isNaN(numeric)) {
+    return null;
+  }
+  return numeric;
+};
+
+const formatNumber = (value: any) => {
+  if (value === null || value === undefined) return '—';
+  const numeric = parseNumeric(value);
+  if (Number.isNaN(numeric)) {
+    return value?.toString?.() ?? String(value);
+  }
+  return numeric?.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+};
+
+const formatDate = (value?: Date | string | null) => {
+  if (!value) return '—';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('zh-CN');
+};
+
+const resolveAmountChange = (amountChange: any, balanceBefore: any, balanceAfter: any): number | null => {
+  const amount = parseNumeric(amountChange);
+  const before = parseNumeric(balanceBefore);
+  const after = parseNumeric(balanceAfter);
+
+  if (before !== null && after !== null) {
+    const derived = after - before;
+    if (amount === null) {
+      return derived;
+    }
+    if (Math.sign(derived) !== Math.sign(amount) || Math.abs(derived - amount) > 0.0001) {
+      return derived;
+    }
+    return amount;
+  }
+
+  return amount;
+};
+
+const getAmountChangeMeta = (value: number | null) => {
+  if (value === null || value === undefined) {
+    return { label: '—', className: 'text-gray-400' };
+  }
+  if (value === 0) {
+    return { label: '0', className: 'text-gray-500' };
+  }
+  const prefix = value > 0 ? '+' : '-';
+  return {
+    label: `${prefix}${formatNumber(Math.abs(value))}`,
+    className: value > 0 ? 'text-emerald-500' : 'text-rose-500',
+  };
+};
+
+export type ProfilePageProps = {
+  searchParams?: Record<string, string | string[] | undefined> | Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function Profile(props: ProfilePageProps = {}) {
+  const rawSearchParams = props.searchParams;
+  const resolvedSearchParams: Record<string, string | string[] | undefined> =
+    rawSearchParams && typeof (rawSearchParams as any)?.then === 'function'
+      ? await rawSearchParams
+      : rawSearchParams ?? {};
+
   const session = await getServerSession(authOptions);
   const discordId = (session?.user as any)?.id as string | undefined;
 
@@ -66,139 +129,267 @@ export default async function Profile() {
   }
 
   const peiwan = member.peiwan;
+  const isPeiwanMember = member.status === 'PEIWAN';
+  const level = peiwan?.level;
+  const displayName = (session?.user as any)?.name ?? member.discordUserId;
+  const avatarUrl = (session?.user as any)?.image as string | undefined;
+  const avatarLetter = displayName?.[0]?.toUpperCase?.() ?? 'M';
+  const pageParam = resolvedSearchParams?.page;
+  const parsedPage =
+    typeof pageParam === 'string' ? Number.parseInt(pageParam, 10) : Number.parseInt(pageParam?.[0] ?? '1', 10);
+  const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+  const skip = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
+
+  const couponsPromise = prisma.coupon.findMany({
+    where: { discordId },
+    orderBy: { issuedAt: 'desc' },
+  });
+  const totalTransactionsPromise = prisma.individualTransaction.count({
+    where: { discordId },
+  });
+  const transactionsPromise = prisma.individualTransaction.findMany({
+    where: { discordId },
+    orderBy: { timeCreatedAt: 'desc' },
+    skip,
+    take: TRANSACTIONS_PER_PAGE,
+  });
+
+  const [coupons, totalTransactions, transactions] = await Promise.all([
+    couponsPromise,
+    totalTransactionsPromise,
+    transactionsPromise,
+  ]);
+  const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
+  const hasPrevPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
+  const prevPage = Math.max(1, currentPage - 1);
+  const nextPage = Math.min(totalPages, currentPage + 1);
+
+  const balanceValue = peiwan?.balance ?? member.totalBalance;
+  const withdrawMaxString = (balanceValue as any)?.toString?.() ?? '0';
+  const stats = [
+    { label: '账户余额', value: member.totalBalance },
+    { label: '可提现余额', value: balanceValue },
+    { label: '累计消费', value: member.totalSpent },
+    { label: '累计收入', value: peiwan?.totalEarn ?? null },
+  ];
+
+  const couponStatusLabel: Record<string, string> = {
+    ACTIVE: '可用',
+    USED: '已使用',
+    EXPIRED: '已过期',
+  };
+  const couponTypeLabel: Record<string, string> = {
+    DISCOUNT_90: '9折券',
+  };
 
   return (
-    <main className="min-h-screen bg-black text-white px-6 py-16">
-      <section className="max-w-4xl mx-auto space-y-10">
-        <header className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-wide text-[#2800ff]">My Profile</h1>
-          <p className="text-white/70 leading-relaxed">
-            展示当前账户在 Member 与 PEIWAN 表中的所有信息，方便快速查看资产、等级、报价以及陪玩标签。
-          </p>
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center rounded-full border border-white/30 px-6 py-2 text-sm uppercase tracking-[0.2em] hover:bg-white/10"
-          >
-            返回主页
-          </Link>
-        </header>
-
-        <div className="grid gap-8 md:grid-cols-2">
-          <div className="bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
-            <h2 className="text-2xl font-semibold text-[#a88bff]">Member</h2>
-            <dl className="space-y-3 text-sm text-white/80">
-              <div>
-                <dt className="text-white/50">Discord ID</dt>
-                <dd className="text-lg font-semibold">{member.discordUserId}</dd>
-              </div>
-              <div>
-                <dt className="text-white/50">Status</dt>
-                <dd className="text-lg font-semibold">{member.status}</dd>
-              </div>
-              <div>
-                <dt className="text-white/50">Total Balance</dt>
-                <dd className="text-lg font-semibold">¥ {member.totalBalance.toString()}</dd>
-              </div>
-              <div>
-                <dt className="text-white/50">Income</dt>
-                <dd className="text-lg font-semibold">¥ {member.income.toString()}</dd>
-              </div>
-              <div>
-                <dt className="text-white/50">Recharge</dt>
-                <dd className="text-lg font-semibold">¥ {member.recharge.toString()}</dd>
-              </div>
-              <div>
-                <dt className="text-white/50">Total Spent</dt>
-                <dd className="text-lg font-semibold">¥ {member.totalSpent.toString()}</dd>
-              </div>
-              <div>
-                <dt className="text-white/50">Commission Rate</dt>
-                <dd className="text-lg font-semibold">{member.commissionRate.toString()}</dd>
-              </div>
-              <div>
-                <dt className="text-white/50">VIP Role Opt-out</dt>
-                <dd className="text-lg font-semibold">{member.VIPRoleOptOut ? 'Yes' : 'No'}</dd>
-              </div>
-            </dl>
+    <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
+      <section className="max-w-5xl mx-auto space-y-10">
+        <div className="bg-white border border-black/5 rounded-[32px] shadow-sm overflow-hidden">
+          <div className="relative flex flex-col items-center gap-3 py-12 text-center">
+            <p className="text-xs uppercase tracking-[0.6em] text-gray-400">My Profile</p>
+            <div className="relative w-28 h-28 rounded-2xl border border-black/10 bg-gradient-to-br from-[#f6f1ff] to-[#e1d5ff] flex items-center justify-center text-4xl font-semibold text-[#5c43a3] overflow-hidden">
+              {avatarUrl ? (
+                <Image
+                  src={avatarUrl}
+                  alt={`${displayName} avatar`}
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                avatarLetter
+              )}
+            </div>
+            
+            <p className="text-3xl font-semibold tracking-wide">{displayName}</p>
+            
+            <Link
+              href="/"
+              className="absolute left-8 top-8 text-xs uppercase tracking-[0.4em] text-gray-500 hover:text-black transition"
+            >
+              返回主页
+            </Link>
+            <span className="absolute right-8 top-8 text-xs uppercase tracking-[0.4em] text-gray-400">
+              ID:{member.discordUserId}
+            </span>
           </div>
+          <div className="border-t border-dashed border-black/10">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-dashed divide-black/10">
+              {stats.map((item) => (
+                <div key={item.label} className="p-6 text-center space-y-2">
+                  <p className="text-xs tracking-[0.4em] text-gray-500">{item.label}</p>
+                  <p className="text-2xl font-mono">{formatNumber(item.value)}</p>
+                  {item.label === '可提现余额' && (
+                    <div className="pt-2">
+                      <WithdrawForm maxAmount={withdrawMaxString} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-          <div className="bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
-            <h2 className="text-2xl font-semibold text-[#a88bff]">PEIWAN</h2>
-            {peiwan ? (
-              <dl className="space-y-3 text-sm text-white/80">
-                <div>
-                  <dt className="text-white/50">PEIWAN ID</dt>
-                  <dd className="text-lg font-semibold">{peiwan.PEIWANID}</dd>
+        <div className="grid gap-8 lg:grid-cols-2">
+          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold tracking-wide">个人信息</h2>
+            </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
+            
+              <div>
+                <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">陪玩等级</dt>
+                <dd className="text-lg font-medium">{level}</dd>
+              </div>
+        
+              <div>
+                <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">抽成比例</dt>
+                <dd className="text-lg font-medium">{member.commissionRate.toString()}</dd>
+              </div>
+              
+            </dl>
+            {isPeiwanMember && peiwan && (
+              <div className="border-t border-dashed border-black/10 pt-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm uppercase tracking-[0.4em] text-gray-400">Game Tags</h3>
+                  <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PEIWAN</span>
                 </div>
-                <div>
-                  <dt className="text-white/50">Default Quotation Code</dt>
-                  <dd className="text-lg font-semibold">{peiwan.defaultQuotationCode}</dd>
-                </div>
-                {QUOTATION_FIELDS.map((field, index) => (
-                  <div key={field}>
-                    <dt className="text-white/50">{`Quotation Q${index + 1}`}</dt>
-                    <dd className="text-lg font-semibold">
-                      {(peiwan[field] as any)?.toString?.() ?? '—'}
-                    </dd>
-                  </div>
-                ))}
-                <div>
-                  <dt className="text-white/50">Commission Rate</dt>
-                  <dd className="text-lg font-semibold">{peiwan.commissionRate.toString()}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Total Earn</dt>
-                  <dd className="text-lg font-semibold">¥ {peiwan.totalEarn.toString()}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Balance</dt>
-                  <dd className="text-lg font-semibold">¥ {peiwan.balance.toString()}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">MP URL</dt>
-                  <dd className="text-lg font-semibold break-all">{peiwan.MP_url ?? '—'}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Status</dt>
-                  <dd className="text-lg font-semibold">{peiwan.status}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Tech Tag</dt>
-                  <dd className="text-lg font-semibold">{peiwan.techTag ? 'Yes' : 'No'}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Type</dt>
-                  <dd className="text-lg font-semibold">{peiwan.type}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Level</dt>
-                  <dd className="text-lg font-semibold">{peiwan.level}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Exclusive</dt>
-                  <dd className="text-lg font-semibold">{peiwan.exclusive ? 'Yes' : 'No'}</dd>
-                </div>
-                <div className="space-y-2">
-                  <dt className="text-white/50">Game Tags</dt>
-                  <dd className="text-lg font-semibold flex flex-wrap gap-2">
-                    {GAME_TAG_FIELDS.map((tag) => (
+                <div className="flex flex-wrap gap-3">
+                  {GAME_TAG_FIELDS.map((tag) => {
+                    const active = peiwan[tag];
+                    return (
                       <span
                         key={tag}
-                        className={`px-3 py-1 rounded-full text-sm border ${
-                          (peiwan[tag] as boolean) ? 'border-[#fcba03]/100' : 'border-white/10 text-white/10'
+                        className={`px-4 py-1 rounded-full border text-sm tracking-wide ${
+                          active ? 'border-[#5c43a3] text-[#5c43a3]' : 'border-black/5 text-gray-300'
                         }`}
                       >
                         {tag}
                       </span>
-                    ))}
-                  </dd>
+                    );
+                  })}
                 </div>
-              </dl>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold tracking-wide">我的优惠券</h2>
+              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {coupons.length} 张</span>
+            </div>
+            {coupons.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {coupons.map((coupon) => {
+                  const statusLabel = couponStatusLabel[coupon.status] ?? coupon.status;
+                  const typeLabel = couponTypeLabel[coupon.type] ?? coupon.type;
+                  const isUsed = coupon.status === 'USED';
+                  return (
+                    <div
+                      key={coupon.id}
+                      className={`rounded-2xl border border-dashed p-5 space-y-3 ${
+                        isUsed
+                          ? 'bg-gray-200 border-gray-200 text-gray-500'
+                          : 'bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] border-black/10'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em]">
+                        
+                        <span className={isUsed ? 'text-gray-500' : 'text-[#5c43a3]'}>{statusLabel}</span> 
+                        
+                      </div>
+                      <p className="text-3xl font-semibold text-[#171717]">{typeLabel}</p>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <p>有效期至 {formatDate(coupon.expiresAt)}</p>
+
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              <p className="text-white/60">该成员尚未注册为陪玩。</p>
+              <p className="text-gray-400 text-sm">暂无优惠券。</p>
             )}
           </div>
         </div>
+
+        {isPeiwanMember && (
+          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold tracking-wide text-[#5c43a3]">流水记录</h2>
+                <p className="text-sm text-gray-500">与陪玩账户关联的收支流水</p>
+              </div>
+              
+            </div>
+            {transactions.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-400 uppercase tracking-[0.4em] border-b border-black/5">
+                      <th className="py-3 pr-4">时间</th>
+                      <th className="py-3 pr-4">类型</th>
+                      <th className="py-3 pr-4">变动前余额</th>
+                      <th className="py-3 pr-4">金额变动</th>
+                      <th className="py-3 pr-4">变动后余额</th>
+                      <th className="py-3 pr-4">备注</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((tx) => {
+                      const resolvedChange = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
+                      const changeMeta = getAmountChangeMeta(resolvedChange);
+                      return (
+                        <tr key={tx.transactionId} className="border-b border-black/5 last:border-0">
+                          <td className="py-4 pr-4 font-mono">{formatDate(tx.timeCreatedAt)}</td>
+                          <td className="py-4 pr-4">{tx.typeOfTransaction}</td>
+                          <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceBefore)}</td>
+                          <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
+                          <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceAfter)}</td>
+                          <td className="py-4 pr-4 text-gray-500">{tx.thirdPartydiscordId ?? '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 text-sm text-gray-500">
+                  <p>
+                    第 {Math.min(currentPage, totalPages)} / {totalPages} 页 · 共 {totalTransactions} 条
+                  </p>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/profile?page=${prevPage}`}
+                      scroll={false}
+                      prefetch={false}
+                      className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
+                        hasPrevPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
+                      }`}
+                      aria-disabled={!hasPrevPage}
+                    >
+                      上一页
+                    </Link>
+                    <Link
+                      href={`/profile?page=${nextPage}`}
+                      scroll={false}
+                      prefetch={false}
+                      className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
+                        hasNextPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
+                      }`}
+                      aria-disabled={!hasNextPage}
+                    >
+                      下一页
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500">暂时没有流水记录。</p>
+            )}
+          </div>
+        )}
       </section>
     </main>
   );
