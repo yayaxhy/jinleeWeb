@@ -185,7 +185,7 @@ export default async function Profile() {
                       <span
                         key={tag}
                         className={`px-3 py-1 rounded-full text-sm border ${
-                          (peiwan[tag] as boolean) ? 'border-[#a88bff]/60' : 'border-white/10 text-white/40'
+                          (peiwan[tag] as boolean) ? 'border-[#a88bff]/60' : 'border-orange/20 text-white/40'
                         }`}
                       >
                         {tag}
