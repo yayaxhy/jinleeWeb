@@ -93,10 +93,8 @@ export type ProfilePageProps = {
 
 export default async function Profile(props: ProfilePageProps = {}) {
   const rawSearchParams = props.searchParams;
-  const resolvedSearchParams: Record<string, string | string[] | undefined> =
-    rawSearchParams && typeof (rawSearchParams as any)?.then === 'function'
-      ? await rawSearchParams
-      : rawSearchParams ?? {};
+  const resolvedSearchParams =
+    ((await Promise.resolve(rawSearchParams)) ?? {}) as Record<string, string | string[] | undefined>;
 
   const session = await getServerSession(authOptions);
   const discordId = (session?.user as any)?.id as string | undefined;
