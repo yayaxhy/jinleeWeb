@@ -66,6 +66,8 @@ export default async function Profile() {
   }
 
   const peiwan = member.peiwan;
+  const isPeiwanMember = member.status === 'PEIWAN';
+  const memberStatusLabel = member.status.toLowerCase();
 
   return (
     <main className="min-h-screen bg-black text-white px-6 py-16">
@@ -93,7 +95,7 @@ export default async function Profile() {
               </div>
               <div>
                 <dt className="text-white/50">Status</dt>
-                <dd className="text-lg font-semibold">{member.status}</dd>
+                <dd className="text-lg font-semibold">{memberStatusLabel}</dd>
               </div>
               <div>
                 <dt className="text-white/50">Total Balance</dt>
@@ -122,82 +124,84 @@ export default async function Profile() {
             </dl>
           </div>
 
-          <div className="bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
-            <h2 className="text-2xl font-semibold text-[#a88bff]">PEIWAN</h2>
-            {peiwan ? (
-              <dl className="space-y-3 text-sm text-white/80">
-                <div>
-                  <dt className="text-white/50">PEIWAN ID</dt>
-                  <dd className="text-lg font-semibold">{peiwan.PEIWANID}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Default Quotation Code</dt>
-                  <dd className="text-lg font-semibold">{peiwan.defaultQuotationCode}</dd>
-                </div>
-                {QUOTATION_FIELDS.map((field, index) => (
-                  <div key={field}>
-                    <dt className="text-white/50">{`Quotation Q${index + 1}`}</dt>
-                    <dd className="text-lg font-semibold">
-                      {(peiwan[field] as any)?.toString?.() ?? '—'}
+          {isPeiwanMember && (
+            <div className="bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
+              <h2 className="text-2xl font-semibold text-[#a88bff]">PEIWAN</h2>
+              {peiwan ? (
+                <dl className="space-y-3 text-sm text-white/80">
+                  <div>
+                    <dt className="text-white/50">PEIWAN ID</dt>
+                    <dd className="text-lg font-semibold">{peiwan.PEIWANID}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">Default Quotation Code</dt>
+                    <dd className="text-lg font-semibold">{peiwan.defaultQuotationCode}</dd>
+                  </div>
+                  {QUOTATION_FIELDS.map((field, index) => (
+                    <div key={field}>
+                      <dt className="text-white/50">{`Quotation Q${index + 1}`}</dt>
+                      <dd className="text-lg font-semibold">
+                        {(peiwan[field] as any)?.toString?.() ?? '—'}
+                      </dd>
+                    </div>
+                  ))}
+                  <div>
+                    <dt className="text-white/50">Commission Rate</dt>
+                    <dd className="text-lg font-semibold">{peiwan.commissionRate.toString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">Total Earn</dt>
+                    <dd className="text-lg font-semibold">¥ {peiwan.totalEarn.toString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">Balance</dt>
+                    <dd className="text-lg font-semibold">¥ {peiwan.balance.toString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">MP URL</dt>
+                    <dd className="text-lg font-semibold break-all">{peiwan.MP_url ?? '—'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">Status</dt>
+                    <dd className="text-lg font-semibold">{peiwan.status}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">Tech Tag</dt>
+                    <dd className="text-lg font-semibold">{peiwan.techTag ? 'Yes' : 'No'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">Type</dt>
+                    <dd className="text-lg font-semibold">{peiwan.type}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">Level</dt>
+                    <dd className="text-lg font-semibold">{peiwan.level}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/50">Exclusive</dt>
+                    <dd className="text-lg font-semibold">{peiwan.exclusive ? 'Yes' : 'No'}</dd>
+                  </div>
+                  <div className="space-y-2">
+                    <dt className="text-white/50">Game Tags</dt>
+                    <dd className="text-lg font-semibold flex flex-wrap gap-2">
+                      {GAME_TAG_FIELDS.map((tag) => (
+                        <span
+                          key={tag}
+                          className={`px-3 py-1 rounded-full text-sm border ${
+                            (peiwan[tag] as boolean) ? 'border-[#fcba03]/100' : 'border-white/10 text-white/10'
+                          }`}
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </dd>
                   </div>
-                ))}
-                <div>
-                  <dt className="text-white/50">Commission Rate</dt>
-                  <dd className="text-lg font-semibold">{peiwan.commissionRate.toString()}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Total Earn</dt>
-                  <dd className="text-lg font-semibold">¥ {peiwan.totalEarn.toString()}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Balance</dt>
-                  <dd className="text-lg font-semibold">¥ {peiwan.balance.toString()}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">MP URL</dt>
-                  <dd className="text-lg font-semibold break-all">{peiwan.MP_url ?? '—'}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Status</dt>
-                  <dd className="text-lg font-semibold">{peiwan.status}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Tech Tag</dt>
-                  <dd className="text-lg font-semibold">{peiwan.techTag ? 'Yes' : 'No'}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Type</dt>
-                  <dd className="text-lg font-semibold">{peiwan.type}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Level</dt>
-                  <dd className="text-lg font-semibold">{peiwan.level}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/50">Exclusive</dt>
-                  <dd className="text-lg font-semibold">{peiwan.exclusive ? 'Yes' : 'No'}</dd>
-                </div>
-                <div className="space-y-2">
-                  <dt className="text-white/50">Game Tags</dt>
-                  <dd className="text-lg font-semibold flex flex-wrap gap-2">
-                    {GAME_TAG_FIELDS.map((tag) => (
-                      <span
-                        key={tag}
-                        className={`px-3 py-1 rounded-full text-sm border ${
-                          (peiwan[tag] as boolean) ? 'border-[#fcba03]/100' : 'border-white/10 text-white/10'
-                        }`}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="text-white/60">该成员尚未注册为陪玩。</p>
-            )}
-          </div>
+                </dl>
+              ) : (
+                <p className="text-white/60">未找到该陪玩的信息。</p>
+              )}
+            </div>
+          )}
         </div>
       </section>
     </main>
