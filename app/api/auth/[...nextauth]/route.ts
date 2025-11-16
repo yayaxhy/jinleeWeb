@@ -1,4 +1,6 @@
 import NextAuth from 'next-auth';
+import type { Session } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 import DiscordProvider from 'next-auth/providers/discord';
 
 export const authOptions = {
@@ -9,7 +11,7 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user && token.sub) {
         (session.user as any).id = token.sub;
       }
