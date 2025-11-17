@@ -165,6 +165,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
     where: { discordId },
     orderBy: { issuedAt: 'desc' },
   });
+  type CouponRecord = Awaited<typeof couponsPromise>[number];
   const totalTransactionsPromise = prisma.individualTransaction.count({
     where: { discordId },
   });
@@ -314,7 +315,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
             </div>
             {coupons.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {coupons.map((coupon) => {
+                {coupons.map((coupon: CouponRecord) => {
                   const statusLabel = couponStatusLabel[coupon.status] ?? coupon.status;
                   const typeLabel = couponTypeLabel[coupon.type] ?? coupon.type;
                   const isUsed = coupon.status === 'USED';
