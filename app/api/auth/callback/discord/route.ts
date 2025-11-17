@@ -67,10 +67,8 @@ export async function GET(request: Request) {
 
     const cookieTarget = await getLoginRedirectCookie();
     const redirectTarget = normalizeRedirectTarget(cookieTarget ?? state.next ?? undefined, '/profile');
-    const response = NextResponse.redirect(
-      redirectTarget,
-      { status: 302 },
-    );
+    const absoluteRedirect = new URL(redirectTarget, origin);
+    const response = NextResponse.redirect(absoluteRedirect, { status: 302 });
 
     attachSessionToResponse(response, {
       discordId: discordUser.id,
