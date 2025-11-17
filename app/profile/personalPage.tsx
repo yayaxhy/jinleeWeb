@@ -186,7 +186,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const prevPage = Math.max(1, currentPage - 1);
   const nextPage = Math.min(totalPages, currentPage + 1);
 
-  const balanceValue = peiwan?.balance ?? member.totalBalance;
+  const balanceValue = member.income;
   const withdrawMaxString = stringifyUnknown(balanceValue) || '0';
   const stats = [
     { label: '账户余额', value: member.totalBalance },
@@ -246,6 +246,16 @@ export default async function Profile(props: ProfilePageProps = {}) {
                   {item.label === '可提现余额' && (
                     <div className="pt-2">
                       <WithdrawForm maxAmount={withdrawMaxString} />
+                    </div>
+                  )}
+                  {item.label === '账户余额' && (
+                    <div className="pt-2">
+                      <Link
+                        href="/recharge"
+                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition"
+                      >
+                        充值
+                      </Link>
                     </div>
                   )}
                 </div>

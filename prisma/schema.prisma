@@ -69,6 +69,12 @@ enum PeiwanLevel {
   殿堂陪玩
 }
 
+enum RechargeOrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
 /**
  * ---------------- Models ----------------
  */
@@ -108,6 +114,8 @@ model Member {
 
   // Back-relation for WorkerLock (one active lock at most)
   workerLock WorkerLock? @relation("MemberWorkerLock")
+
+  rechargeOrders ZPayRechargeOrder[]
 }
 
 model Transaction {
@@ -210,6 +218,23 @@ model Recharge {
   toWhom     String
   fromWhom   String  @default("1421651539247894549")
   createdAt  DateTime @default(now())
+}
+
+model ZPayRechargeOrder {
+  id            String               @id @default(dbgenerated("concat('ZPAY', replace(gen_random_uuid()::text, '-', ''))"))
+  outTradeNo    String               @unique
+  discordUserId String
+  amount        Decimal              @db.Decimal(19, 4)
+  channel       String
+  status        RechargeOrderStatus  @default(PENDING)
+  gatewayTradeNo String?
+  notifyPayload Json?
+  createdAt     DateTime             @default(now())
+  paidAt        DateTime?
+
+  member Member @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade)
+
+  @@index([status, createdAt])
 }
 
 model PEIWAN {
