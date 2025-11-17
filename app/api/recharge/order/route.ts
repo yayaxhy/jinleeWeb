@@ -14,7 +14,8 @@ import {
 } from '@/lib/zpay';
 
 const MIN_AMOUNT = Number(process.env.RECHARGE_MIN_AMOUNT ?? 0.01);
-const PRODUCTION_ORIGIN = process.env.ZPAY_PRODUCTION_ORIGIN ?? 'https://3yweb-sample-u6de.vercel.app';
+const PRODUCTION_ORIGIN =
+  process.env.ZPAY_PRODUCTION_ORIGIN ?? 'https://jinlee-200529-6-1387148708.sh.run.tcloudbase.com';
 
 const resolveAbsoluteUrl = (raw: string | undefined, fallbackPath: string) => {
   const candidate = raw ?? `${PRODUCTION_ORIGIN}${fallbackPath}`;
