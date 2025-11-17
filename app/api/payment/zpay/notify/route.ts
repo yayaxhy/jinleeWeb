@@ -37,7 +37,10 @@ const parseBody = async (request: Request) => {
 };
 
 const successResponse = () => new Response('success');
-const failResponse = (reason?: string) => new Response(reason ?? 'fail', { status: 400 });
+const failResponse = (reason?: string, details?: Record<string, unknown>) => {
+  console.error('[zpay.notify] fail', reason ?? 'unknown', details);
+  return new Response(reason ?? 'fail', { status: 400 });
+};
 
 const TRADE_SUCCESS_VALUES = new Set(['TRADE_SUCCESS', 'SUCCESS', 'PAID']);
 
@@ -52,19 +55,19 @@ async function handleNotify(params: PlainObject) {
   const providedSign = payloadForSign.sign?.toLowerCase();
   const signValid = verifyZPaySignature(payloadForSign, secret, providedSign);
   if (!signValid) {
-    return failResponse('sign_error');
+    return failResponse('sign_error', { outTradeNo: params.out_trade_no, raw: params });
   }
 
   const tradeStatus = (params.trade_status || params.status || '').toUpperCase();
   if (!TRADE_SUCCESS_VALUES.has(tradeStatus)) {
-    return failResponse('invalid_status');
+    return failResponse('invalid_status', { outTradeNo: params.out_trade_no, tradeStatus });
   }
 
   const order = await prisma.zPayRechargeOrder.findUnique({
     where: { outTradeNo: params.out_trade_no },
   });
   if (!order) {
-    return failResponse('order_not_found');
+    return failResponse('order_not_found', { outTradeNo: params.out_trade_no });
   }
 
   if (order.status === 'PAID') {
@@ -73,7 +76,11 @@ async function handleNotify(params: PlainObject) {
 
   const amountDecimal = new Prisma.Decimal(params.money).toDecimalPlaces(2);
   if (!order.amount.equals(amountDecimal)) {
-    return failResponse('amount_mismatch');
+    return failResponse('amount_mismatch', {
+      outTradeNo: params.out_trade_no,
+      expected: order.amount.toString(),
+      received: params.money,
+    });
   }
 
   await prisma.$transaction(async (tx) => {
