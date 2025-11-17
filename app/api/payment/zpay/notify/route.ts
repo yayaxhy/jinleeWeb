@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
 import { buildSignaturePayload, buildZPaySignature, requiredZPayConfig, verifyZPaySignature } from '@/lib/zpay';
 
@@ -95,7 +95,7 @@ async function handleNotify(params: PlainObject) {
     return successResponse();
   }
 
-  const amountDecimal = new Prisma.Decimal(params.money).toDecimalPlaces(2);
+  const amountDecimal = new Decimal(params.money).toDecimalPlaces(2);
   if (!order.amount.equals(amountDecimal)) {
     return failResponse('amount_mismatch', {
       outTradeNo: params.out_trade_no,
@@ -140,7 +140,7 @@ async function handleNotify(params: PlainObject) {
       });
     }
 
-    const balanceAfter = new Prisma.Decimal(memberSnapshot.totalBalance ?? 0);
+    const balanceAfter = new Decimal(memberSnapshot.totalBalance ?? 0);
     const balanceBefore = balanceAfter.sub(amountDecimal);
 
     await tx.recharge.create({
