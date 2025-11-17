@@ -2,56 +2,41 @@ import type { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
 import { buildSignaturePayload, buildZPaySignature, requiredZPayConfig, verifyZPaySignature } from '@/lib/zpay';
+import { NextResponse } from 'next/server';
 
 type PlainObject = Record<string, string>;
 
-const toPlainObject = (input: Record<string, unknown>) => {
-  const result: PlainObject = {};
-  Object.entries(input).forEach(([key, value]) => {
-    if (value === undefined || value === null) return;
-    if (typeof value === 'string') {
-      result[key] = value;
-    } else if (Array.isArray(value)) {
-      const first = value.find((item) => typeof item === 'string');
-      if (first) result[key] = first;
-    } else {
-      result[key] = String(value);
-    }
-  });
-  return result;
-};
-
-const parseBody = async (request: Request) => {
-  const contentType = request.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    const json = await request.json();
-    return toPlainObject(json);
+// 简单的认证中间件
+function authenticateRequest(request: Request) {
+  const authHeader = request.headers.get('Authorization');
+  const expectedToken = `Bearer ${process.env.INTERNAL_API_KEY}`;
+  
+  if (!authHeader || authHeader !== expectedToken) {
+    console.error('[internal] 认证失败:', {
+      received: authHeader,
+      expected: expectedToken
+    });
+    return false;
   }
-  const formData = await request.formData();
-  const map: Record<string, unknown> = {};
-  for (const [key, value] of formData) {
-    if (typeof value === 'string') {
-      map[key] = value;
-    }
-  }
-  return toPlainObject(map);
-};
+  return true;
+}
 
 const successResponse = () => new Response('success');
 const failResponse = (reason?: string, details?: Record<string, unknown>) => {
-  console.error('[zpay.notify] fail', reason ?? 'unknown', details);
+  console.error('[internal.zpay.notify] fail', reason ?? 'unknown', details);
   return new Response(reason ?? 'fail', { status: 400 });
 };
 
 const TRADE_SUCCESS_VALUES = new Set(['TRADE_SUCCESS', 'SUCCESS', 'PAID']);
 
-async function handleNotify(params: PlainObject) {
+async function handleInternalNotify(params: PlainObject) {
   if (!params.out_trade_no || !params.money) {
     return failResponse('missing_fields');
   }
 
+  console.log('[internal.zpay.notify] 处理通知:', params);
+
   const { secret } = requiredZPayConfig();
-  console.log('[zpay.notify] raw params', params);
 
   const payloadForSign = { ...params };
   const providedSign = payloadForSign.sign;
@@ -60,21 +45,19 @@ async function handleNotify(params: PlainObject) {
 
   const signaturePayload = buildSignaturePayload(payloadForSign);
   const expectedSign = buildZPaySignature(payloadForSign, secret);
-  console.log('[zpay.notify] signature debug', {
-    payloadForSign,
+  
+  console.log('[internal.zpay.notify] 签名调试:', {
     signaturePayload,
     expectedSign,
     providedSign,
-    secretLength: secret.length,
   });
 
   const signValid = verifyZPaySignature(payloadForSign, secret, providedSign);
   if (!signValid) {
-    console.error('[zpay.notify] signature mismatch', {
+    console.error('[internal.zpay.notify] 签名不匹配', {
       outTradeNo: params.out_trade_no,
       expected: expectedSign,
       received: providedSign,
-      payload: signaturePayload,
     });
     return failResponse('sign_error', { outTradeNo: params.out_trade_no });
   }
@@ -87,12 +70,13 @@ async function handleNotify(params: PlainObject) {
   const order = await prisma.zPayRechargeOrder.findUnique({
     where: { outTradeNo: params.out_trade_no },
   });
+  
   if (!order) {
     return failResponse('order_not_found', { outTradeNo: params.out_trade_no });
   }
 
   if (order.status === 'PAID') {
-    console.log('[zpay.notify] already_paid', { outTradeNo: order.outTradeNo });
+    console.log('[internal.zpay.notify] 订单已支付:', order.outTradeNo);
     return successResponse();
   }
 
@@ -134,6 +118,7 @@ async function handleNotify(params: PlainObject) {
       where: { discordUserId: order.discordUserId },
       select: { PEIWANID: true },
     });
+    
     if (hasPeiwan) {
       await tx.pEIWAN.update({
         where: { discordUserId: order.discordUserId },
@@ -164,26 +149,21 @@ async function handleNotify(params: PlainObject) {
     });
   });
 
-  console.log('[zpay.notify] success', { outTradeNo: order.outTradeNo });
+  console.log('[internal.zpay.notify] 处理成功:', { outTradeNo: order.outTradeNo });
   return successResponse();
 }
 
 export async function POST(request: Request) {
-  try {
-    const params = await parseBody(request);
-    return await handleNotify(params);
-  } catch (error) {
-    console.error('[zpay.notify] POST error', error);
-    return failResponse('internal_error');
+  // 验证内部调用
+  if (!authenticateRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-}
 
-export async function GET(request: Request) {
   try {
-    const params = Object.fromEntries(new URL(request.url).searchParams.entries());
-    return await handleNotify(params);
+    const params = await request.json();
+    return await handleInternalNotify(params);
   } catch (error) {
-    console.error('[zpay.notify] GET error', error);
+    console.error('[internal.zpay.notify] POST error', error);
     return failResponse('internal_error');
   }
 }
