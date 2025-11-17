@@ -115,7 +115,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const resolvedSearchParams =
     ((await Promise.resolve(rawSearchParams)) ?? {}) as Record<string, string | string[] | undefined>;
 
-  const session = getServerSession();
+  const session = await getServerSession();
   const discordId = session?.discordId;
 
   if (!discordId) {

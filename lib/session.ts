@@ -59,8 +59,9 @@ const decodeSessionToken = (token?: string | null): SessionPayload | null => {
   }
 };
 
-export const getServerSession = (): AppSession | null => {
-  const token = cookies().get(SESSION_COOKIE_NAME)?.value;
+export const getServerSession = async (): Promise<AppSession | null> => {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   const payload = decodeSessionToken(token);
   if (!payload) return null;
   return {
@@ -113,7 +114,8 @@ export const setLoginRedirectCookie = (response: NextResponse, target: string) =
   });
 };
 
-export const getLoginRedirectCookie = () => cookies().get(LOGIN_REDIRECT_COOKIE)?.value ?? null;
+export const getLoginRedirectCookie = async () =>
+  (await cookies()).get(LOGIN_REDIRECT_COOKIE)?.value ?? null;
 
 export const clearLoginRedirectCookie = (response: NextResponse) => {
   response.cookies.set({
@@ -139,7 +141,8 @@ export const setLoginStateCookie = (response: NextResponse, value: string) => {
   });
 };
 
-export const getLoginStateCookie = () => cookies().get(LOGIN_STATE_COOKIE)?.value ?? null;
+export const getLoginStateCookie = async () =>
+  (await cookies()).get(LOGIN_STATE_COOKIE)?.value ?? null;
 
 export const clearLoginStateCookie = (response: NextResponse) => {
   response.cookies.set({

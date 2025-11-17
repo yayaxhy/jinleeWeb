@@ -53,7 +53,7 @@ export async function GET(request: Request) {
   }
 
   const state = parseStateParam(url.searchParams.get('state'));
-  const expectedState = getLoginStateCookie();
+  const expectedState = await getLoginStateCookie();
   if (expectedState) {
     if (!state.csrf || state.csrf !== expectedState) {
       return buildErrorRedirect(origin, 'invalid_state');
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
     const tokens = await exchangeCodeForTokens(code, redirectUri);
     const discordUser = await fetchDiscordUser(tokens.access_token, tokens.token_type);
 
-    const cookieTarget = getLoginRedirectCookie();
+    const cookieTarget = await getLoginRedirectCookie();
     const redirectTarget = normalizeRedirectTarget(cookieTarget ?? state.next ?? undefined, '/profile');
     const response = NextResponse.redirect(
       redirectTarget,
