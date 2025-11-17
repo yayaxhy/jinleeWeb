@@ -46,7 +46,7 @@ const formatCurrency = (value?: string) => {
 
 export default function RechargeClient({ username }: RechargeClientProps) {
   const [channel, setChannel] = useState<(typeof PAYMENT_CHANNELS)[number]['id']>('alipay');
-  const [amount, setAmount] = useState('100');
+  const [amount, setAmount] = useState('1');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
@@ -188,7 +188,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
           <label className="text-xs uppercase tracking-[0.4em] text-gray-500">充值金额 *</label>
           <input
             type="number"
-            min="1"
+            min="0.01"
             step="0.01"
             value={amount}
             onChange={(event) => setAmount(event.target.value)}

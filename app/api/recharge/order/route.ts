@@ -11,7 +11,7 @@ import {
   type ZPayChannel,
 } from '@/lib/zpay';
 
-const MIN_AMOUNT = Number(process.env.RECHARGE_MIN_AMOUNT ?? 1);
+const MIN_AMOUNT = Number(process.env.RECHARGE_MIN_AMOUNT ?? 0.01);
 const SITE_NAME = process.env.ZPAY_SITE_NAME ?? 'Jinlee Club';
 
 const parseAmount = (raw: unknown) => {
