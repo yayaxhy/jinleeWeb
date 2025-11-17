@@ -60,6 +60,15 @@ export async function POST(request: Request) {
   const returnBase = process.env.ZPAY_RETURN_URL ?? `${origin}/recharge/result`;
   const returnUrl = `${returnBase}?order=${encodeURIComponent(outTradeNo)}`;
 
+  console.log('[zpay.order.create]', {
+    pid: merchantId,
+    type: requestedChannel,
+    notify_url: notifyUrl,
+    return_url: returnUrl,
+    out_trade_no: outTradeNo,
+    amount: amountText,
+  });
+
   await prisma.zPayRechargeOrder.create({
     data: {
       outTradeNo,
@@ -81,6 +90,7 @@ export async function POST(request: Request) {
   };
 
   const payUrl = buildZPayUrl(params, secret, getZPayGatewayUrl());
+  console.log('[zpay.order.payUrl]', payUrl);
 
   return NextResponse.json({
     ok: true,

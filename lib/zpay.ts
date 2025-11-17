@@ -10,21 +10,20 @@ const md5 = (value: string) => crypto.createHash('md5').update(value, 'utf8').di
 
 type PlainParams = Record<string, string>;
 
-const filterParams = (params: Record<string, string | undefined | null>) =>
-  Object.entries(params)
-    .filter(([key, value]) => {
+export const buildSignaturePayload = (params: Record<string, string | undefined | null>) => {
+  const keys = Object.keys(params)
+    .filter((key) => {
       if (key === 'sign' || key === 'sign_type') return false;
-      if (value === undefined || value === null) return false;
-      return value !== '';
+      const value = params[key];
+      return value !== undefined && value !== null;
     })
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([key, value]) => `${key}=${value}`);
+    .sort((a, b) => a.localeCompare(b));
 
-export const buildSignaturePayload = (params: Record<string, string | undefined | null>) =>
-  filterParams(params).join('&');
+  return keys.map((key) => `${key}=${params[key]}`).join('&');
+};
 
 export const buildZPaySignature = (params: Record<string, string | undefined | null>, secret: string) =>
-  md5(`${buildSignaturePayload(params)}${secret}`);
+  md5(buildSignaturePayload(params) + secret);
 
 export const verifyZPaySignature = (
   params: Record<string, string | undefined | null>,
