@@ -1,10 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
 import WithdrawForm from '@/components/profile/WithdrawForm';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from '@/lib/session';
 
 const GAME_TAG_FIELDS = [
   'LOL',
@@ -28,23 +27,39 @@ const GAME_TAG_FIELDS = [
 
 const TRANSACTIONS_PER_PAGE = 10;
 
-const parseNumeric = (value: any): number | null => {
-  if (value === null || value === undefined) return null;
-  const asString = value?.toString?.() ?? String(value);
-  const numeric = Number(asString);
-  if (Number.isNaN(numeric)) {
-    return null;
+const stringifyUnknown = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'bigint') return value.toString();
+  if (typeof value === 'object' && value !== null && 'toString' in value) {
+    const toStringFn = (value as { toString?: () => string }).toString;
+    if (typeof toStringFn === 'function') {
+      return toStringFn.call(value);
+    }
   }
-  return numeric;
+  return String(value);
 };
 
-const formatNumber = (value: any) => {
+const parseNumeric = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') {
+    return Number.isNaN(value) ? null : value;
+  }
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+  const numeric = Number(stringifyUnknown(value));
+  return Number.isNaN(numeric) ? null : numeric;
+};
+
+const formatNumber = (value: unknown) => {
   if (value === null || value === undefined) return '—';
   const numeric = parseNumeric(value);
-  if (Number.isNaN(numeric)) {
-    return value?.toString?.() ?? String(value);
+  if (numeric === null) {
+    const fallback = stringifyUnknown(value);
+    return fallback.length > 0 ? fallback : '—';
   }
-  return numeric?.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 };
 
 const formatDate = (value?: Date | string | null) => {
@@ -54,7 +69,11 @@ const formatDate = (value?: Date | string | null) => {
   return date.toLocaleDateString('zh-CN');
 };
 
-const resolveAmountChange = (amountChange: any, balanceBefore: any, balanceAfter: any): number | null => {
+const resolveAmountChange = (
+  amountChange: unknown,
+  balanceBefore: unknown,
+  balanceAfter: unknown,
+): number | null => {
   const amount = parseNumeric(amountChange);
   const before = parseNumeric(balanceBefore);
   const after = parseNumeric(balanceAfter);
@@ -96,8 +115,8 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const resolvedSearchParams =
     ((await Promise.resolve(rawSearchParams)) ?? {}) as Record<string, string | string[] | undefined>;
 
-  const session = await getServerSession(authOptions);
-  const discordId = (session?.user as any)?.id as string | undefined;
+  const session = getServerSession();
+  const discordId = session?.discordId;
 
   if (!discordId) {
     redirect('/');
@@ -129,8 +148,12 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const peiwan = member.peiwan;
   const isPeiwanMember = member.status === 'PEIWAN';
   const level = peiwan?.level;
-  const displayName = (session?.user as any)?.name ?? member.discordUserId;
-  const avatarUrl = (session?.user as any)?.image as string | undefined;
+  const displayName = session?.username ?? member.discordUserId;
+  const avatarUrl = session?.avatar
+    ? `https://cdn.discordapp.com/avatars/${session.discordId}/${session.avatar}.${
+        session.avatar.startsWith('a_') ? 'gif' : 'png'
+      }`
+    : undefined;
   const avatarLetter = displayName?.[0]?.toUpperCase?.() ?? 'M';
   const pageParam = resolvedSearchParams?.page;
   const parsedPage =
@@ -164,7 +187,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const nextPage = Math.min(totalPages, currentPage + 1);
 
   const balanceValue = peiwan?.balance ?? member.totalBalance;
-  const withdrawMaxString = (balanceValue as any)?.toString?.() ?? '0';
+  const withdrawMaxString = stringifyUnknown(balanceValue) || '0';
   const stats = [
     { label: '账户余额', value: member.totalBalance },
     { label: '可提现余额', value: balanceValue },

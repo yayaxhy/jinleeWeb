@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from 'react';
-import { signIn } from 'next-auth/react';
 
 type DiscordLoginClientProps = {
   callbackUrl?: string;
@@ -27,6 +26,15 @@ const resolveCallbackUrl = (raw?: string) => {
   return DEFAULT_CALLBACK;
 };
 
+const buildLoginUrl = (callbackUrl?: string) => {
+  if (typeof window === 'undefined') return '/api/discord/login';
+  const target = new URL('/api/discord/login', window.location.origin);
+  if (callbackUrl) {
+    target.searchParams.set('callbackUrl', callbackUrl);
+  }
+  return target.toString();
+};
+
 export default function DiscordLoginClient({ callbackUrl: raw }: DiscordLoginClientProps) {
   const callbackUrl = useMemo(() => resolveCallbackUrl(raw), [raw]);
   const triggeredRef = useRef(false);
@@ -34,7 +42,7 @@ export default function DiscordLoginClient({ callbackUrl: raw }: DiscordLoginCli
   useEffect(() => {
     if (triggeredRef.current) return;
     triggeredRef.current = true;
-    signIn('discord', { callbackUrl });
+    window.location.href = buildLoginUrl(callbackUrl);
   }, [callbackUrl]);
 
   return (
@@ -44,7 +52,9 @@ export default function DiscordLoginClient({ callbackUrl: raw }: DiscordLoginCli
         <p className="text-white/70">如果浏览器没有自动跳转，请点击下面的按钮手动启动授权流程。</p>
         <button
           className="inline-flex items-center justify-center rounded-full bg-[#5865F2] px-8 py-3 text-sm uppercase tracking-[0.4em] hover:bg-[#4753c7] transition"
-          onClick={() => signIn('discord', { callbackUrl })}
+          onClick={() => {
+            window.location.href = buildLoginUrl(callbackUrl);
+          }}
         >
           Sign in with Discord
         </button>
@@ -52,4 +62,3 @@ export default function DiscordLoginClient({ callbackUrl: raw }: DiscordLoginCli
     </main>
   );
 }
-

@@ -1,27 +1,50 @@
 "use client";
 
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { useState } from 'react';
+import { useSessionContext } from './SessionProvider';
+
+const buildLoginUrl = () => {
+  if (typeof window === 'undefined') return '/api/discord/login';
+  const callback = `${window.location.pathname}${window.location.search}`;
+  const url = new URL('/api/discord/login', window.location.origin);
+  url.searchParams.set('callbackUrl', callback || '/profile');
+  return url.toString();
+};
 
 export function LoginButton() {
-  const { data: session, status } = useSession();
+  const { session, loading } = useSessionContext();
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  if (status === 'loading') {
+  const handleLogin = () => {
+    window.location.href = buildLoginUrl();
+  };
+
+  const handleLogout = async () => {
+    setIsProcessing(true);
+    try {
+      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/';
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (loading || isProcessing) {
     return (
-      <button className="transition-transform duration-200 hover:scale-150 hover:text-white/70 opacity-70">
+      <button className="transition-transform duration-200 hover:scale-150 hover:text-white/70 opacity-70" disabled>
         ...
       </button>
     );
   }
 
-  if (session?.user) {
-    const displayName = session.user.name ?? (session.user as any).id;
+  if (session) {
     return (
       <button
         className="transition-transform duration-200 hover:scale-150 hover:text-white/70"
-        onClick={() => signOut()}
+        onClick={handleLogout}
         title="点击退出登录"
       >
-        {displayName}
+        {session.username}
       </button>
     );
   }
@@ -29,7 +52,7 @@ export function LoginButton() {
   return (
     <button
       className="transition-transform duration-200 hover:scale-150 hover:text-white/70"
-      onClick={() => signIn('discord')}
+      onClick={handleLogin}
     >
       登录
     </button>
