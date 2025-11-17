@@ -175,6 +175,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
     skip,
     take: TRANSACTIONS_PER_PAGE,
   });
+  type TransactionRecord = Awaited<typeof transactionsPromise>[number];
 
   const [coupons, totalTransactions, transactions] = await Promise.all([
     couponsPromise,
@@ -371,7 +372,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.map((tx) => {
+                {transactions.map((tx: TransactionRecord) => {
                       const resolvedChange = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
                       const changeMeta = getAmountChangeMeta(resolvedChange);
                       return (
