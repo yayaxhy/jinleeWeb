@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import {
@@ -35,7 +36,7 @@ const parseAmount = (raw: unknown) => {
   return amountNumber;
 };
 
-const normalizeAmount = (value: number) => new Prisma.Decimal(value).toDecimalPlaces(2);
+const normalizeAmount = (value: number) => new Decimal(value).toDecimalPlaces(2);
 
 export async function POST(request: Request) {
   const session = await getServerSession();
