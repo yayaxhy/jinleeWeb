@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
 import { buildSignaturePayload, buildZPaySignature, requiredZPayConfig, verifyZPaySignature } from '@/lib/zpay';
@@ -104,7 +105,7 @@ async function handleNotify(params: PlainObject) {
     });
   }
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.zPayRechargeOrder.update({
       where: { outTradeNo: order.outTradeNo },
       data: {
