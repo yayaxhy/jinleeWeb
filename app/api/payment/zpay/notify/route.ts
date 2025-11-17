@@ -71,6 +71,7 @@ async function handleNotify(params: PlainObject) {
   }
 
   if (order.status === 'PAID') {
+    console.log('[zpay.notify] already_paid', { outTradeNo: order.outTradeNo });
     return successResponse();
   }
 
@@ -142,6 +143,7 @@ async function handleNotify(params: PlainObject) {
     });
   });
 
+  console.log('[zpay.notify] success', { outTradeNo: order.outTradeNo });
   return successResponse();
 }
 
