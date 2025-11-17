@@ -41,7 +41,7 @@ const buildErrorRedirect = (origin: string, code: string) => {
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const origin = url.origin;
+  const origin = process.env.NEXTAUTH_URL ?? url.origin;
 
   if (url.searchParams.get('error')) {
     return buildErrorRedirect(origin, url.searchParams.get('error_description') ?? 'access_denied');
