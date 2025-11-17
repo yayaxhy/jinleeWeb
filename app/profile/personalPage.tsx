@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import type { Coupon } from '@prisma/client';
 import WithdrawForm from '@/components/profile/WithdrawForm';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
@@ -161,7 +162,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
 
-  const couponsPromise = prisma.coupon.findMany({
+  const couponsPromise: Promise<Coupon[]> = prisma.coupon.findMany({
     where: { discordId },
     orderBy: { issuedAt: 'desc' },
   });
