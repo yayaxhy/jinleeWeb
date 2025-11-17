@@ -15,7 +15,7 @@ export const buildSignaturePayload = (params: Record<string, string | undefined 
     .filter((key) => {
       if (key === 'sign' || key === 'sign_type') return false;
       const value = params[key];
-      return value !== undefined && value !== null;
+      return value !== undefined && value !== null && value !== '';
     })
     .sort((a, b) => a.localeCompare(b));
 

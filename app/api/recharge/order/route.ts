@@ -12,6 +12,16 @@ import {
 } from '@/lib/zpay';
 
 const MIN_AMOUNT = Number(process.env.RECHARGE_MIN_AMOUNT ?? 0.01);
+const PRODUCTION_ORIGIN = process.env.ZPAY_PRODUCTION_ORIGIN ?? 'https://3yweb-sample-u6de.vercel.app';
+
+const resolveAbsoluteUrl = (raw: string | undefined, fallbackPath: string) => {
+  const candidate = raw ?? `${PRODUCTION_ORIGIN}${fallbackPath}`;
+  try {
+    return new URL(candidate);
+  } catch {
+    throw new Error(`Invalid URL configured for ${fallbackPath}: ${candidate}`);
+  }
+};
 const SITE_NAME = process.env.ZPAY_SITE_NAME ?? 'Jinlee Club';
 
 const parseAmount = (raw: unknown) => {
@@ -55,10 +65,10 @@ export async function POST(request: Request) {
   const amountText = amountDecimal.toFixed(2);
 
   const outTradeNo = buildOutTradeNo(session.discordId);
-  const origin = new URL(request.url).origin;
-  const notifyUrl = process.env.ZPAY_NOTIFY_URL ?? `${origin}/api/payment/zpay/notify`;
-  const returnBase = process.env.ZPAY_RETURN_URL ?? `${origin}/recharge/result`;
-  const returnUrl = `${returnBase}?order=${encodeURIComponent(outTradeNo)}`;
+  const notifyUrl = resolveAbsoluteUrl(process.env.ZPAY_NOTIFY_URL, '/api/payment/zpay/notify').toString();
+  const returnUrlObject = resolveAbsoluteUrl(process.env.ZPAY_RETURN_URL, '/recharge/result');
+  returnUrlObject.searchParams.set('order', outTradeNo);
+  const returnUrl = returnUrlObject.toString();
 
   console.log('[zpay.order.create]', {
     pid: merchantId,
