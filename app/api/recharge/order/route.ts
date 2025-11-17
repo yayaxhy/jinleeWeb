@@ -5,6 +5,8 @@ import { getServerSession } from '@/lib/session';
 import {
   SUPPORTED_CHANNELS,
   buildOutTradeNo,
+  buildSignaturePayload,
+  buildZPaySignature,
   buildZPayUrl,
   getZPayGatewayUrl,
   requiredZPayConfig,
@@ -99,8 +101,13 @@ export async function POST(request: Request) {
     sitename: SITE_NAME,
   };
 
+  const signaturePayload = buildSignaturePayload(params);
+  const signature = buildZPaySignature(params, secret);
+  console.log('[zpay.order.create] 签名参数字符串:', signaturePayload);
+  console.log('[zpay.order.create] 生成的签名:', signature);
+
   const payUrl = buildZPayUrl(params, secret, getZPayGatewayUrl());
-  console.log('[zpay.order.payUrl]', payUrl);
+  console.log('[zpay.order.create] 最终支付链接:', payUrl);
 
   return NextResponse.json({
     ok: true,

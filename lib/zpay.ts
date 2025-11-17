@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const DEFAULT_GATEWAY = 'https://z-pay.cn/submit.php';
+const DEFAULT_GATEWAY = 'https://zpayz.cn/submit.php';
 
 export type ZPayChannel = 'alipay' | 'wxpay';
 
