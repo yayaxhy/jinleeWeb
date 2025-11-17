@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   const amountText = amountDecimal.toFixed(2);
 
   const outTradeNo = buildOutTradeNo(session.discordId);
-  const notifyUrl = resolveAbsoluteUrl(process.env.ZPAY_NOTIFY_URL, '/api/payment/zpay/notify').toString();
+  const notifyUrl = 'https://cloud1-8gga2jva6e158427-1387148708.ap-shanghai.app.tcloudbase.com/zpay-notify';
   const returnUrlObject = resolveAbsoluteUrl(process.env.ZPAY_RETURN_URL, '/recharge/result');
   returnUrlObject.searchParams.set('order', outTradeNo);
   const returnUrl = returnUrlObject.toString();
