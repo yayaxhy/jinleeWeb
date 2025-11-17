@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { requiredZPayConfig, verifyZPaySignature } from '@/lib/zpay';
+import { buildSignaturePayload, buildZPaySignature, requiredZPayConfig, verifyZPaySignature } from '@/lib/zpay';
 
 type PlainObject = Record<string, string>;
 
@@ -50,12 +50,32 @@ async function handleNotify(params: PlainObject) {
   }
 
   const { secret } = requiredZPayConfig();
+  console.log('[zpay.notify] raw params', params);
 
   const payloadForSign = { ...params };
-  const providedSign = payloadForSign.sign?.toLowerCase();
+  const providedSign = payloadForSign.sign;
+  delete payloadForSign.sign;
+  delete payloadForSign.sign_type;
+
+  const signaturePayload = buildSignaturePayload(payloadForSign);
+  const expectedSign = buildZPaySignature(payloadForSign, secret);
+  console.log('[zpay.notify] signature debug', {
+    payloadForSign,
+    signaturePayload,
+    expectedSign,
+    providedSign,
+    secretLength: secret.length,
+  });
+
   const signValid = verifyZPaySignature(payloadForSign, secret, providedSign);
   if (!signValid) {
-    return failResponse('sign_error', { outTradeNo: params.out_trade_no, raw: params });
+    console.error('[zpay.notify] signature mismatch', {
+      outTradeNo: params.out_trade_no,
+      expected: expectedSign,
+      received: providedSign,
+      payload: signaturePayload,
+    });
+    return failResponse('sign_error', { outTradeNo: params.out_trade_no });
   }
 
   const tradeStatus = (params.trade_status || params.status || '').toUpperCase();
