@@ -20,8 +20,11 @@ export default async function RechargeResult({ searchParams = {} }: RechargeResu
     redirect('/');
   }
 
-  const rawOrder = searchParams.order;
-  const outTradeNo = Array.isArray(rawOrder) ? rawOrder[0] : rawOrder;
+  const pickValue = (value?: string | string[]) => (Array.isArray(value) ? value[0] : value);
+  const outTradeNo =
+    pickValue(searchParams.order) ??
+    pickValue(searchParams.out_trade_no) ??
+    pickValue(searchParams.trade_no);
 
   type OrderSummary = {
     outTradeNo: string;
