@@ -71,34 +71,43 @@ export default async function RechargeResult({ searchParams = {} }: RechargeResu
 
         <div className="rounded-[32px] border border-black/5 bg-white p-8 space-y-6">
           {order ? (
-            <>
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="flex items-center justify-between">
-                  
-      
-                </div>
-                <div className="flex items-center justify-between">
-                 
-                </div>
-                <div className="flex items-center justify-between">
-                  
-                  <span className="text-lg font-semibold">{formatCurrency(order.amountText)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                 
-                  <span
-                    className={`font-semibold ${
-                      order.status === 'PAID' ? 'text-emerald-600' : 'text-orange-500'
-                    }`}
-                  >
-                    {order.status === 'PAID' ? '充值成功' : '等待支付确认'}
-                  </span>
-                </div>
-               
+            <div className="flex flex-col gap-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">订单号</span>
+                <span className="font-mono text-xs">{order.outTradeNo}</span>
               </div>
-            </>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">支付方式</span>
+                <span>{order.channel === 'wxpay' ? '微信支付' : '支付宝'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">金额</span>
+                <span className="text-lg font-semibold">{formatCurrency(order.amountText)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">状态</span>
+                <span
+                  className={`font-semibold ${
+                    order.status === 'PAID' ? 'text-emerald-600' : 'text-orange-500'
+                  }`}
+                >
+                  {order.status === 'PAID' ? '充值成功' : '等待支付确认'}
+                </span>
+              </div>
+              {order.paidAt ? (
+                <p className="text-xs text-gray-500">
+                  到账时间：{new Date(order.paidAt).toLocaleString()}
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500">
+                  若已支付但仍显示等待状态，请稍等片刻或联系管理员协助核对。
+                </p>
+              )}
+            </div>
           ) : (
-           
+            <div className="space-y-3 text-center text-sm text-gray-500">
+              <p>未能找到匹配的订单，请返回充值页面重新发起支付。</p>
+            </div>
           )}
 
           <div className="flex flex-wrap gap-3 pt-2">
