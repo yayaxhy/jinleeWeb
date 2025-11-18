@@ -85,6 +85,19 @@ export async function POST(request: Request) {
         },
       });
 
+      const balanceAfter = new Prisma.Decimal(updatedMember.totalBalance ?? 0);
+
+      await tx.individualTransaction.create({
+        data: {
+          discordId: session.discordId,
+          thirdPartydiscordId: method,
+          balanceBefore: balanceDecimal,
+          amountChange: amountDecimal.mul(-1),
+          balanceAfter,
+          typeOfTransaction: '提现',
+        },
+      });
+
       return {
         remainingIncome: updatedMember.income?.toString() ?? '0',
         remainingBalance: updatedMember.totalBalance?.toString() ?? '0',
