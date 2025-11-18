@@ -3,6 +3,8 @@
 import { type FormEvent, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
+const MIN_WITHDRAW_AMOUNT = 100;
+
 type WithdrawFormProps = {
   maxAmount?: string;
 };
@@ -21,14 +23,15 @@ export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
   }, [maxAmount]);
 
   const maxWithdrawable = Math.floor(max);
+  const canWithdraw = maxWithdrawable >= MIN_WITHDRAW_AMOUNT;
   const amountValue = Number(amount);
   const amountError =
     amount.length > 0 &&
     (Number.isNaN(amountValue) ||
-      amountValue <= 0 ||
+      amountValue < MIN_WITHDRAW_AMOUNT ||
       amountValue > maxWithdrawable ||
       !Number.isInteger(amountValue));
-  const canSubmit = !amountError && amountValue > 0 && method.trim().length > 0;
+  const canSubmit = !amountError && amountValue >= MIN_WITHDRAW_AMOUNT && method.trim().length > 0;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -66,10 +69,13 @@ export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
         type="button"
         className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition disabled:opacity-50"
         onClick={() => setIsOpen((open) => !open)}
-        disabled={maxWithdrawable <= 0 || isPending}
+        disabled={!canWithdraw || isPending}
       >
         提现
       </button>
+      {!canWithdraw && (
+        <p className="text-xs text-gray-500">提现金额需大于 {MIN_WITHDRAW_AMOUNT}</p>
+      )}
       {statusMessage && (
         <p className="text-xs text-gray-600" role="status">
           {statusMessage}
@@ -89,14 +95,14 @@ export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
                 amountError ? 'border-red-400 text-red-500' : 'border-black/10'
               }`}
               placeholder={
-                maxWithdrawable > 0
+                canWithdraw
                   ? `最多可提 ¥${maxWithdrawable.toLocaleString('zh-CN')}`
                   : '暂无可提现金额'
               }
             />
             {amountError && (
               <p className="text-xs text-red-500">
-                提现金额必须为不超过可提现余额的正整数。
+                提现金额必须大于 {MIN_WITHDRAW_AMOUNT}，且为不超过可提现余额的正整数。
               </p>
             )}
           </div>
@@ -107,9 +113,12 @@ export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
               value={method}
               onChange={(event) => setMethod(event.target.value)}
               className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-              placeholder="用户可以输入任何文本"
+              placeholder=""
               required
             />
+            <p className="text-xs text-gray-500">
+              例子：<br/>支付宝：18888888 真实姓名<br/><br/>微信：微信号 真实姓名<br/><br/>Paypal: xxx@gmail.com +名字<br/><br/>如有错误，请联系客服
+            </p>
           </div>
           <div className="flex gap-3">
             <button

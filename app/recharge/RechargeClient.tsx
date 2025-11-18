@@ -9,15 +9,16 @@ const PAYMENT_CHANNELS = [
     description: '使用支付宝扫一扫完成支付，系统确认成功后自动加款。',
     accent: 'from-[#bfdbfe] to-[#93c5fd]',
   },
-  {
-    id: 'wxpay',
-    label: '微信支付',
-    description: '使用微信扫一扫完成转账，无需上传凭证。',
-    accent: 'from-[#bbf7d0] to-[#86efac]',
-  },
+  // {
+  //   id: 'wxpay',
+  //   label: '微信支付',
+  //   description: '使用微信扫一扫完成转账，无需上传凭证。',
+  //   accent: 'from-[#bbf7d0] to-[#86efac]',
+  // },
 ] as const;
 
 const QR_ENDPOINT = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=';
+const AMOUNT_OPTIONS = [0.01, 199, 299, 399, 499, 999] as const;
 
 type RechargeClientProps = {
   username?: string | null;
@@ -46,7 +47,7 @@ const formatCurrency = (value?: string) => {
 
 export default function RechargeClient({ username }: RechargeClientProps) {
   const [channel, setChannel] = useState<(typeof PAYMENT_CHANNELS)[number]['id']>('alipay');
-  const [amount, setAmount] = useState('1');
+  const [amount, setAmount] = useState<string>(String(AMOUNT_OPTIONS[0]));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
@@ -132,10 +133,10 @@ export default function RechargeClient({ username }: RechargeClientProps) {
                   <button
                     type="button"
                     key={item.id}
-                    className={`flex-1 min-w-[140px] rounded-2xl border px-4 py-3 text-sm transition ${
+                    className={`flex-1 min-w-[140px] rounded-2xl border px-4 py-3 text-l transition ${
                       active
-                        ? 'border-black text-black bg-black/5'
-                        : 'border-black/10 text-gray-500 hover:text-black hover:border-black/30'
+                        ? 'border-black text-black bg-black/10'
+                        : 'border-black/10 text-gray-500 hover:text-black hover:border-orange/50'
                     }`}
                     onClick={() => {
                       setChannel(item.id);
@@ -154,7 +155,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
           <div
             className={`rounded-3xl border border-dashed border-black/15 bg-gradient-to-br ${selectedChannel.accent} p-6 text-center space-y-4`}
           >
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-600">扫码支付</p>
+            <p className="text-xl uppercase tracking-[0.4em] text-gray-600">扫码支付</p>
             {order && qrImage ? (
               <div className="mx-auto w-48 h-48 rounded-[30px] border border-black/10 bg-white/80 flex items-center justify-center p-3">
                 <img src={qrImage} alt="支付二维码" className="h-full w-full object-contain" />
@@ -172,9 +173,9 @@ export default function RechargeClient({ username }: RechargeClientProps) {
           <div className="rounded-[24px] border border-black/5 bg-white p-5 space-y-3 text-left">
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">充值说明</p>
             <ol className="space-y-2 text-sm text-gray-600 list-decimal list-inside">
-              <li>点击右侧创建订单，系统会生成专属支付链接和二维码。</li>
-              <li>使用支付宝或微信完成支付，无需上传凭证。</li>
-              <li>支付成功后，网关会回调本站，余额将自动增加。</li>
+              <li>下方选择充值金额点击生成支付二维码，系统会生成专属支付二维码。</li>
+              <li>使用支付宝完成支付，无需上传凭证。</li>
+              <li>支付成功后，余额将自动增加。</li>
             </ol>
           </div>
         </div>
@@ -184,18 +185,32 @@ export default function RechargeClient({ username }: RechargeClientProps) {
         onSubmit={createOrder}
         className="rounded-[32px] border border-black/5 bg-white p-8 space-y-6"
       >
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="text-xs uppercase tracking-[0.4em] text-gray-500">充值金额 *</label>
-          <input
-            type="number"
-            min="0.01"
-            step="0.01"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            required
-            className="w-full rounded-2xl border border-black/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-            placeholder="请输入金额，例如 100"
-          />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {AMOUNT_OPTIONS.map((value) => {
+              const active = amount === String(value);
+              return (
+                <button
+                  type="button"
+                  key={value}
+                  className={`rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+                    active
+                      ? 'border-black bg-black text-white'
+                      : 'border-black/10 text-gray-600 hover:border-black hover:text-black'
+                  }`}
+                  onClick={() => {
+                    setAmount(String(value));
+                    setHint(null);
+                    setError(null);
+                  }}
+                >
+                  ¥{value}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-gray-500">请选择一项充值金额，暂不支持自定义金额。</p>
         </div>
 
         <button
@@ -252,9 +267,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
           </div>
         )}
 
-        <p className="text-xs text-gray-500">
-          当前已接入 Z-Pay 网关。若需自定义通知或开票，请联系管理员配置额外参数。
-        </p>
+       
       </form>
     </div>
   );
