@@ -42,6 +42,7 @@ const buildErrorRedirect = (origin: string, code: string) => {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = process.env.NEXTAUTH_URL ?? url.origin;
+  console.log('[discord.callback] NEXTAUTH_URL', process.env.NEXTAUTH_URL, 'origin', origin);
 
   if (url.searchParams.get('error')) {
     return buildErrorRedirect(origin, url.searchParams.get('error_description') ?? 'access_denied');

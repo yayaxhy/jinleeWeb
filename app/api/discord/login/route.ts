@@ -20,6 +20,7 @@ const requireClientId = () => {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = process.env.NEXTAUTH_URL ?? url.origin;
+  console.log('[discord.login] NEXTAUTH_URL', process.env.NEXTAUTH_URL, 'origin', origin);
   const redirectUri = `${origin}/api/auth/callback/discord`;
   const callbackUrlParam = url.searchParams.get('callbackUrl');
   const callbackUrl = normalizeRedirectTarget(callbackUrlParam);
