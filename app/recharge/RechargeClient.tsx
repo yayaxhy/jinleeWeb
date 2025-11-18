@@ -18,7 +18,7 @@ const PAYMENT_CHANNELS = [
 ] as const;
 
 const QR_ENDPOINT = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=';
-const AMOUNT_OPTIONS = [0.01, 199, 299, 399, 499, 999] as const;
+const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
 
 type RechargeClientProps = {
   username?: string | null;
