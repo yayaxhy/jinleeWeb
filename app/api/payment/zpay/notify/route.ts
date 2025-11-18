@@ -5,12 +5,7 @@ import { buildSignaturePayload, buildZPaySignature, requiredZPayConfig, verifyZP
 
 type PlainObject = Record<string, string>;
 
-const checkProxySecret = (request: Request) => {
-  const expected = process.env.PROXY_SECRET;
-  if (!expected) return true;
-  const provided = request.headers.get('x-proxy-secret');
-  return provided === expected;
-};
+const checkProxySecret = () => true;
 
 const toPlainObject = (input: Record<string, unknown>) => {
   const result: PlainObject = {};
@@ -177,7 +172,7 @@ async function handleNotify(params: PlainObject) {
 
 export async function POST(request: Request) {
   try {
-    if (!checkProxySecret(request)) {
+    if (!checkProxySecret()) {
       return new Response('forbidden', { status: 403 });
     }
     const params = await parseBody(request);
@@ -190,7 +185,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    if (!checkProxySecret(request)) {
+    if (!checkProxySecret()) {
       return new Response('forbidden', { status: 403 });
     }
     const params = Object.fromEntries(new URL(request.url).searchParams.entries());
