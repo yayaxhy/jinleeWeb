@@ -152,7 +152,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
             <p className="text-sm text-gray-500">{selectedChannel.description}</p>
           </div>
 
-          <div
+          {/* <div
             className={`rounded-3xl border border-dashed border-black/15 bg-gradient-to-br ${selectedChannel.accent} p-6 text-center space-y-4`}
           >
             <p className="text-xl uppercase tracking-[0.4em] text-gray-600">扫码支付</p>
@@ -168,7 +168,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
             <p className="text-xs text-gray-600">
               转账备注建议填写 Discord ID：<span className="font-mono text-sm">{username ?? '未登录'}</span>
             </p>
-          </div>
+          </div> */}
 
           <div className="rounded-[24px] border border-black/5 bg-white p-5 space-y-3 text-left">
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">充值说明</p>
