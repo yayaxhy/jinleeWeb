@@ -8,6 +8,7 @@ import {
   normalizeRedirectTarget,
 } from '@/lib/session';
 import { exchangeCodeForTokens, fetchDiscordUser } from '@/lib/discord';
+import { prisma } from '@/lib/prisma';
 
 type ParsedState = {
   csrf?: string;
@@ -65,6 +66,12 @@ export async function GET(request: Request) {
     const redirectUri = `${origin}/api/auth/callback/discord`;
     const tokens = await exchangeCodeForTokens(code, redirectUri);
     const discordUser = await fetchDiscordUser(tokens.access_token, tokens.token_type);
+
+    await prisma.member.upsert({
+      where: { discordUserId: discordUser.id },
+      update: {},
+      create: { discordUserId: discordUser.id },
+    });
 
     const cookieTarget = await getLoginRedirectCookie();
     const redirectTarget = normalizeRedirectTarget(cookieTarget ?? state.next ?? undefined, '/profile');
