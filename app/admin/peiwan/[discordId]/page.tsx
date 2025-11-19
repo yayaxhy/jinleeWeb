@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import {
   PEIWAN_GAME_TAG_FIELDS,
   PEIWAN_LEVEL_OPTIONS,
@@ -61,11 +61,47 @@ export default async function EditPeiwanPage({ params }: { params: { discordId: 
   const discordId = decodeURIComponent(params.discordId);
   const peiwan = await prisma.pEIWAN.findUnique({ where: { discordUserId: discordId } });
   if (!peiwan) {
-    notFound();
+    return (
+      <div className="space-y-6 text-white">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">未找到陪玩</h2>
+          <p className="text-sm text-white/70">Discord ID：{discordId}</p>
+          <p className="text-sm text-rose-300">没有找到与该 ID 匹配的陪玩资料，先确认是否已创建。</p>
+        </div>
+        <div className="flex flex-wrap gap-4">
+          <Link
+            href="/admin/peiwan/new"
+            className="inline-flex items-center justify-center rounded-full bg-[#5c43a3] px-6 py-2 text-sm tracking-[0.2em] text-white hover:bg-[#4a3388]"
+          >
+            去新增陪玩
+          </Link>
+          <Link
+            href="/admin"
+            className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10"
+          >
+            返回后台首页
+          </Link>
+        </div>
+      </div>
+    );
   }
   const initialValues = buildInitialValues(peiwan);
   if (!initialValues) {
-    notFound();
+    return (
+      <div className="space-y-6 text-white">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">数据解析失败</h2>
+          <p className="text-sm text-white/70">Discord ID：{discordId}</p>
+          <p className="text-sm text-rose-300">陪玩资料存在但无法解析，请检查数据库字段。</p>
+        </div>
+        <Link
+          href="/admin"
+          className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10"
+        >
+          返回后台首页
+        </Link>
+      </div>
+    );
   }
 
   return (
