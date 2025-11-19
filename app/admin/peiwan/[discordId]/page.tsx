@@ -57,8 +57,30 @@ const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.find
   };
 };
 
-export default async function EditPeiwanPage({ params }: { params: { discordId: string } }) {
-  const discordId = decodeURIComponent(params.discordId);
+type EditPageProps = {
+  params: { discordId: string } | Promise<{ discordId: string }>;
+};
+
+export default async function EditPeiwanPage(props: EditPageProps) {
+  const resolvedParams = await Promise.resolve(props.params);
+  const rawId = resolvedParams?.discordId ?? '';
+  const discordId = decodeURIComponent(rawId).trim();
+  if (!discordId) {
+    return (
+      <div className="space-y-6 text-white">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">未提供 Discord ID</h2>
+          <p className="text-sm text-white/70">请返回后台首页重新输入。</p>
+        </div>
+        <Link
+          href="/admin"
+          className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10"
+        >
+          返回后台首页
+        </Link>
+      </div>
+    );
+  }
   const peiwan = await prisma.pEIWAN.findUnique({ where: { discordUserId: discordId } });
   if (!peiwan) {
     return (
