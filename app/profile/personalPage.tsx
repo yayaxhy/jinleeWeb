@@ -222,7 +222,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
     : 1;
   const bossProgressPercent = Math.min(100, Math.max(0, bossProgressRatio * 100));
   const amountToNextBossLevel = nextBossLevel ? Math.max(0, nextBossLevel.threshold - totalSpentValue) : 0;
-  const currentBossLevelName = currentBossLevel?.label ?? '普通老板';
+  const currentBossLevelName = currentBossLevel?.label ?? '锦鲤创始成员';
 
   const couponStatusLabel: Record<string, string> = {
     ACTIVE: '可用',
