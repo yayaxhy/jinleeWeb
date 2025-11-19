@@ -34,3 +34,8 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## 管理后台
+
+- 在 `.env` 中设置 `ADMIN_DISCORD_IDS="123,456"` 指定可访问后台的 Discord ID（逗号分隔）。
+- 授权账号可访问 `/admin`，并通过输入 `/admin/peiwan/new`（新增）或 `/admin/peiwan/<DiscordID>`（编辑）来维护陪玩信息。

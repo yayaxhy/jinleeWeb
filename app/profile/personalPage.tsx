@@ -1,29 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { PEIWAN_GAME_TAG_FIELDS } from '@/constants/peiwan';
 import WithdrawForm from '@/components/profile/WithdrawForm';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-
-const GAME_TAG_FIELDS = [
-  'LOL',
-  'CSGO',
-  'Valorant',
-  'Naraka',
-  'OW2',
-  'APEX',
-  'deltaForce',
-  'marvel',
-  'singer',
-  'PUBG',
-  'TFT',
-  'R6',
-  'tarkov',
-  'chat',
-  'steam',
-  'DOTA',
-  'COD',
-] as const;
 
 const BOSS_LEVELS = [
   { threshold: 500, label: '银锦' },
@@ -367,7 +348,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
                   <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PEIWAN</span>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {GAME_TAG_FIELDS.map((tag) => {
+                  {PEIWAN_GAME_TAG_FIELDS.map((tag) => {
                     const active = peiwan[tag];
                     return (
                       <span

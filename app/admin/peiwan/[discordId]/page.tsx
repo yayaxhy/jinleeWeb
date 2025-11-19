@@ -1,0 +1,80 @@
+import { notFound } from 'next/navigation';
+import {
+  PEIWAN_GAME_TAG_FIELDS,
+  PEIWAN_LEVEL_OPTIONS,
+  PEIWAN_QUOTATION_FIELDS,
+  PEIWAN_SEX_OPTIONS,
+  PEIWAN_STATUS_OPTIONS,
+  PEIWAN_TYPE_OPTIONS,
+  QUOTATION_CODES,
+} from '@/constants/peiwan';
+import { PeiwanForm } from '@/components/admin/PeiwanForm';
+import { prisma } from '@/lib/prisma';
+
+export const metadata = {
+  title: '编辑陪玩 - 锦鲤管理后台',
+};
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.findUnique>>) => {
+  if (!record) return null;
+  const plain = JSON.parse(JSON.stringify(record)) as Record<string, unknown>;
+  const resolveEnum = <T extends readonly string[]>(value: unknown, options: T): T[number] | null => {
+    if (typeof value !== 'string') return null;
+    return (options as readonly string[]).includes(value) ? (value as T[number]) : null;
+  };
+  const defaultQuotationCode = resolveEnum(plain.defaultQuotationCode, QUOTATION_CODES) ?? QUOTATION_CODES[0];
+  const statusValue = resolveEnum(plain.status, PEIWAN_STATUS_OPTIONS) ?? PEIWAN_STATUS_OPTIONS[0];
+  const typeValue = resolveEnum(plain.type, PEIWAN_TYPE_OPTIONS) ?? PEIWAN_TYPE_OPTIONS[0];
+  const levelValue = resolveEnum(plain.level, PEIWAN_LEVEL_OPTIONS) ?? PEIWAN_LEVEL_OPTIONS[0];
+  const sexValue = resolveEnum(plain.sex, PEIWAN_SEX_OPTIONS) ?? PEIWAN_SEX_OPTIONS[0];
+  const quotations = Object.fromEntries(
+    PEIWAN_QUOTATION_FIELDS.map((field) => {
+      const value = plain[field];
+      return [field, value === null || value === undefined ? '' : String(value)];
+    }),
+  ) as Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], string>;
+
+  const gameTags = Object.fromEntries(
+    PEIWAN_GAME_TAG_FIELDS.map((tag) => [tag, Boolean(plain[tag])]),
+  ) as Record<(typeof PEIWAN_GAME_TAG_FIELDS)[number], boolean>;
+
+  return {
+    discordUserId: String(plain.discordUserId),
+    defaultQuotationCode,
+    commissionRate: plain.commissionRate ? String(plain.commissionRate) : '0.75',
+    MP_url: (plain.MP_url as string) ?? '',
+    status: statusValue,
+    type: typeValue,
+    level: levelValue,
+    sex: sexValue,
+    techTag: Boolean(plain.techTag),
+    exclusive: Boolean(plain.exclusive),
+    quotations,
+    gameTags,
+  };
+};
+
+export default async function EditPeiwanPage({ params }: { params: { discordId: string } }) {
+  const discordId = decodeURIComponent(params.discordId);
+  const peiwan = await prisma.pEIWAN.findUnique({ where: { discordUserId: discordId } });
+  if (!peiwan) {
+    notFound();
+  }
+  const initialValues = buildInitialValues(peiwan);
+  if (!initialValues) {
+    notFound();
+  }
+
+  return (
+    <div className="space-y-6 text-white">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold">编辑陪玩</h2>
+        <p className="text-sm text-white/70">当前 Discord ID：{discordId}</p>
+      </div>
+      <PeiwanForm mode="edit" initialValues={initialValues} />
+    </div>
+  );
+}
