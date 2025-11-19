@@ -89,6 +89,12 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
       return;
     }
 
+    const requiredQuotationField = `quotation_${formState.defaultQuotationCode}` as (typeof PEIWAN_QUOTATION_FIELDS)[number];
+    if (formState.quotations[requiredQuotationField] === '') {
+      setStatusMessage({ type: 'error', text: `${formState.defaultQuotationCode} 档位不能为空` });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const quotationsPayload: Record<string, number> = {};
@@ -280,7 +286,7 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
             onChange={(event) => setFormState((prev) => ({ ...prev, exclusive: event.target.checked }))}
             className="h-5 w-5 rounded border-white/20 bg-transparent"
           />
-          <span className="text-sm">专属陪玩</span>
+          <span className="text-sm">独家陪玩</span>
         </label>
       </div>
 
