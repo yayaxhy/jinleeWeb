@@ -25,6 +25,18 @@ const GAME_TAG_FIELDS = [
   'COD',
 ] as const;
 
+const BOSS_LEVELS = [
+  { threshold: 500, label: '银锦' },
+  { threshold: 1500, label: '金锦' },
+  { threshold: 3000, label: '玉锦' },
+  { threshold: 5000, label: '瑞锦' },
+  { threshold: 10000, label: '祥锦' },
+  { threshold: 20000, label: '福锦' },
+  { threshold: 50000, label: '跃锦' },
+  { threshold: 120000, label: '龙门锦' },
+  { threshold: 300000, label: '龙锦' },
+] as const;
+
 const TRANSACTIONS_PER_PAGE = 10;
 
 const stringifyUnknown = (value: unknown): string => {
@@ -147,6 +159,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
 
   const peiwan = member.peiwan;
   const isPeiwanMember = member.status === 'PEIWAN';
+  const isLaobanMember = member.status === 'LAOBAN';
   const level = peiwan?.level;
   const displayName = session?.username ?? member.discordUserId;
   const avatarUrl = session?.avatar
@@ -196,6 +209,20 @@ export default async function Profile(props: ProfilePageProps = {}) {
     { label: '累计消费', value: member.totalSpent },
     { label: '累计收入', value: peiwan?.totalEarn ?? null },
   ];
+
+  const totalSpentValue = parseNumeric(member.totalSpent) ?? 0;
+  const currentBossLevel = BOSS_LEVELS.reduce<
+    (typeof BOSS_LEVELS)[number] | undefined
+  >((acc, role) => (totalSpentValue >= role.threshold ? role : acc), undefined);
+  const nextBossLevel = BOSS_LEVELS.find((role) => totalSpentValue < role.threshold);
+  const previousThreshold = currentBossLevel?.threshold ?? 0;
+  const nextThreshold = nextBossLevel?.threshold ?? previousThreshold;
+  const bossProgressRatio = nextBossLevel
+    ? (totalSpentValue - previousThreshold) / Math.max(1, nextThreshold - previousThreshold)
+    : 1;
+  const bossProgressPercent = Math.min(100, Math.max(0, bossProgressRatio * 100));
+  const amountToNextBossLevel = nextBossLevel ? Math.max(0, nextBossLevel.threshold - totalSpentValue) : 0;
+  const currentBossLevelName = currentBossLevel?.label ?? '普通老板';
 
   const couponStatusLabel: Record<string, string> = {
     ACTIVE: '可用',
@@ -265,6 +292,55 @@ export default async function Profile(props: ProfilePageProps = {}) {
             </div>
           </div>
         </div>
+
+        {isLaobanMember && (
+          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-5">
+            <div>
+              <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">老板升级进度</h2>
+              <p className="text-sm text-gray-500">累计消费越多，等级越高</p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between text-sm text-gray-600 gap-2">
+                <span>当前等级：{currentBossLevelName}</span>
+                {nextBossLevel ? (
+                  <span>
+                    距离 {nextBossLevel.label} 还差 {formatNumber(amountToNextBossLevel)}
+                  </span>
+                ) : (
+                  <span>已达到最高等级</span>
+                )}
+              </div>
+              <div className="h-3 w-full rounded-full bg-gray-200 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#5c43a3] to-[#a585ff]"
+                  style={{ width: `${bossProgressPercent}%` }}
+                  aria-hidden="true"
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 gap-2">
+                <span>累计消费：{formatNumber(totalSpentValue)}</span>
+                <span>
+                  下一门槛：{formatNumber(nextBossLevel?.threshold ?? currentBossLevel?.threshold ?? totalSpentValue)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3 text-xs">
+              {BOSS_LEVELS.map((role) => {
+                const achieved = totalSpentValue >= role.threshold;
+                return (
+                  <span
+                    key={role.threshold}
+                    className={`px-3 py-1 rounded-full border ${
+                      achieved ? 'border-[#5c43a3] text-[#5c43a3]' : 'border-black/10 text-gray-400'
+                    }`}
+                  >
+                    {role.label} · {formatNumber(role.threshold)}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
