@@ -293,7 +293,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
           </div>
         </div>
 
-        {isLaobanMember && (
+        {(isLaobanMember || isPeiwanMember) && (
           <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-5">
             <div>
               <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">老板升级进度</h2>
