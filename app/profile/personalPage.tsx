@@ -329,17 +329,16 @@ export default async function Profile(props: ProfilePageProps = {}) {
               <h2 className="text-xl font-semibold tracking-wide">个人信息</h2>
             </div>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
-            
               <div>
                 <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">陪玩等级</dt>
                 <dd className="text-lg font-medium">{level}</dd>
               </div>
-        
-              <div>
-                <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">抽成比例</dt>
-                <dd className="text-lg font-medium">{member.commissionRate.toString()}</dd>
-              </div>
-              
+              {!isLaobanMember && (
+                <div>
+                  <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">抽成比例</dt>
+                  <dd className="text-lg font-medium">{member.commissionRate.toString()}</dd>
+                </div>
+              )}
             </dl>
             {isPeiwanMember && peiwan && (
               <div className="border-t border-dashed border-black/10 pt-5 space-y-3">
