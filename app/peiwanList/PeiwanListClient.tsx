@@ -37,7 +37,7 @@ const formatPrice = (value: PeiwanItem['price']) => {
   return `${numeric} 币/H`;
 };
 
-const CardImage = ({ item }: { item: PeiwanItem }) => {
+const CardImage = ({ item, onPreview }: { item: PeiwanItem; onPreview?: (src: string) => void }) => {
   const [idx, setIdx] = useState(0);
   const sources = useMemo(() => {
     return LOCAL_IMG_EXTS.map((ext) => `/peiwanList/img/${item.id}.${ext}`);
@@ -57,7 +57,8 @@ const CardImage = ({ item }: { item: PeiwanItem }) => {
     <img
       src={currentSrc}
       alt={`Peiwan ${item.id}`}
-      className="w-full h-40 object-cover"
+      className="w-full h-40 object-cover cursor-zoom-in"
+      onClick={() => onPreview?.(currentSrc)}
       onError={() => {
         if (idx < sources.length - 1) {
           setIdx(idx + 1);
@@ -97,6 +98,7 @@ export function PeiwanListClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ApiResponse | null>(null);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -261,15 +263,15 @@ export function PeiwanListClient() {
         {error && <p className="text-sm text-red-500">{error}</p>}
         {loading && <p className="text-sm text-gray-500">加载中…</p>}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {data.map((item) => (
-              <article key={item.id} className="rounded-3xl border border-black/10 bg-white shadow-sm overflow-hidden flex flex-col">
-                <CardImage item={item} />
-                <div className="p-4 space-y-2 flex-1">
-                  <div className="flex items-center justify-between">
-                    <div className="font-semibold text-lg">{item.serverDisplayName ?? '未设置昵称'}</div>
-                    {item.techTag && (
-                      <span className="text-xs px-2 py-1 rounded-full bg-black text-white">技术陪玩</span>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {data.map((item) => (
+            <article key={item.id} className="rounded-3xl border border-black/10 bg-white shadow-sm overflow-hidden flex flex-col">
+              <CardImage item={item} onPreview={(src) => setPreviewSrc(src)} />
+              <div className="p-4 space-y-2 flex-1">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold text-lg">{item.serverDisplayName ?? '未设置昵称'}</div>
+                  {item.techTag && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-black text-white">技术陪玩</span>
                   )}
                 </div>
                 <div className="text-sm text-gray-600">ID: {item.id}</div>
@@ -299,6 +301,28 @@ export function PeiwanListClient() {
           <p className="text-gray-500 text-sm">暂无数据，换个筛选条件试试。</p>
         )}
       </section>
+
+      {previewSrc && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setPreviewSrc(null)}
+        >
+          <img
+            src={previewSrc}
+            alt="预览"
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            onClick={() => setPreviewSrc(null)}
+            className="absolute top-6 right-6 text-white text-2xl"
+            aria-label="关闭预览"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }
