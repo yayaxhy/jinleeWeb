@@ -274,8 +274,8 @@ export function PeiwanListClient() {
                 </div>
                 <div className="text-sm text-gray-600">ID: {item.id}</div>
                 <div className="flex flex-wrap gap-2 text-xs text-gray-600">
-                  <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">等级: {item.level}</span>
-                  <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">性别: {item.sex}</span>
+                  <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">{item.level}</span>
+                  <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">{item.sex}</span>
                   <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">
                     价格: {formatPrice(item.price)}
                   </span>

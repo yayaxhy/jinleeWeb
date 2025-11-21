@@ -5,7 +5,7 @@ import {
   PEIWAN_SEX_OPTIONS,
 } from '@/constants/peiwan';
 import { prisma } from '@/lib/prisma';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 const MAX_PAGE_SIZE = 50;
 
@@ -90,9 +90,16 @@ export async function GET(request: Request) {
 
   const data = rows.map((row) => {
     const priceField = `quotation_${row.defaultQuotationCode}` as const;
-    const price = (row as Record<string, unknown>)[priceField] as unknown;
-    const normalizedPrice =
-      typeof price === 'string' || typeof price === 'number' || typeof price === 'bigint' ? price : null;
+    const rawPrice = (row as Record<string, unknown>)[priceField] as unknown;
+    let normalizedPrice: string | number | null = null;
+    if (rawPrice instanceof Prisma.Decimal) {
+      normalizedPrice = rawPrice.toNumber();
+    } else if (typeof rawPrice === 'bigint' || typeof rawPrice === 'number') {
+      normalizedPrice = Number(rawPrice);
+    } else if (typeof rawPrice === 'string') {
+      const num = Number(rawPrice);
+      normalizedPrice = Number.isNaN(num) ? rawPrice : num;
+    }
     const gameTags: Record<string, boolean> = {};
     for (const tag of PEIWAN_GAME_TAG_FIELDS) {
       gameTags[tag] = Boolean((row as Record<string, unknown>)[tag]);
