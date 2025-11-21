@@ -12,7 +12,7 @@ export function NavBar() {
       <Link className="transition-transform duration-200 hover:scale-150 hover:text-white/70" href="/join">
         加入我们
       </Link>
-      <Link className="transition-transform duration-200 hover:scale-130 hover:text-white/70" href="/partners">
+      <Link className="transition-transform duration-200 hover:scale-130 hover:text-white/70" href="/peiwanList">
         陪玩列表
       </Link>
       <Link className="transition-transform duration-200 hover:scale-150 hover:text-white/70" href="/profile">

@@ -20,6 +20,9 @@ export const PEIWAN_GAME_TAG_FIELDS = [
 
 export type PeiwanGameTag = (typeof PEIWAN_GAME_TAG_FIELDS)[number];
 
+export const PEIWAN_FILTER_TAG_FIELDS = [...PEIWAN_GAME_TAG_FIELDS, 'techTag'] as const;
+export type PeiwanFilterTag = (typeof PEIWAN_FILTER_TAG_FIELDS)[number];
+
 export const QUOTATION_CODES = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7'] as const;
 export type QuotationCodeValue = (typeof QUOTATION_CODES)[number];
 
