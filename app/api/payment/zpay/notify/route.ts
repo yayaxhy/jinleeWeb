@@ -161,7 +161,7 @@ async function handleNotify(params: PlainObject) {
         balanceBefore,
         amountChange: amountDecimal,
         balanceAfter,
-        typeOfTransaction: '充值',
+        typeOfTransaction: '网站充值',
       },
     });
   });

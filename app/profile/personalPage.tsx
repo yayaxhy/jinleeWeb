@@ -188,7 +188,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
     { label: '账户余额', value: member.totalBalance },
     { label: '可提现余额', value: balanceValue },
     { label: '累计消费', value: member.totalSpent },
-    { label: '累计收入', value: peiwan?.totalEarn ?? null },
+    { label: '累计流水', value: peiwan?.totalEarn ?? null },
   ];
 
   const totalSpentValue = parseNumeric(member.totalSpent) ?? 0;
