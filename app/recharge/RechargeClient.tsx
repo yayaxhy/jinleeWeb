@@ -9,12 +9,12 @@ const PAYMENT_CHANNELS = [
     description: '使用支付宝扫一扫完成支付，系统确认成功后自动加款。',
     accent: 'from-[#bfdbfe] to-[#93c5fd]',
   },
-  // {
-  //   id: 'wxpay',
-  //   label: '微信支付',
-  //   description: '使用微信扫一扫完成转账，无需上传凭证。',
-  //   accent: 'from-[#bbf7d0] to-[#86efac]',
-  // },
+  {
+    id: 'wxpay',
+    label: '微信支付',
+    description: '使用微信扫一扫完成支付，无需上传凭证，系统确认成功后自动加款。',
+    accent: 'from-[#bbf7d0] to-[#86efac]',
+  },
 ] as const;
 
 const QR_ENDPOINT = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=';
@@ -174,7 +174,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">充值说明</p>
             <ol className="space-y-2 text-sm text-gray-600 list-decimal list-inside">
               <li>下方选择充值金额点击生成支付二维码，系统会生成专属支付二维码。</li>
-              <li>使用支付宝完成支付，无需上传凭证。</li>
+              <li>使用支付宝或微信完成支付，无需上传凭证。</li>
               <li>支付成功后，余额将自动增加。</li>
             </ol>
           </div>

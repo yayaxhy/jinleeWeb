@@ -26,7 +26,7 @@ export default async function RechargePage() {
             
             <h1 className="text-3xl font-semibold tracking-wide">余额充值</h1>
             <p className="text-sm text-gray-500">
-              网页目前只能选择支付宝进行自动充值，如需微信或者外币请联系客服
+              网页支持支付宝与微信自动充值，如需外币或其他方式请联系客服
             </p>
           </div>
         </div>
