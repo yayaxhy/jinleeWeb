@@ -10,6 +10,7 @@ import {
 
 type NormalizedPeiwanPayload = {
   discordUserId: string;
+  peiwanId?: number;
   defaultQuotationCode: (typeof QUOTATION_CODES)[number];
   commissionRate: number;
   mpUrl?: string | null;
@@ -57,7 +58,7 @@ const optionalNumber = (value: unknown) => {
 
 export const normalizePeiwanPayload = (
   input: unknown,
-  options: { requireDiscordId?: boolean } = {},
+  options: { requireDiscordId?: boolean; allowPeiwanId?: boolean } = {},
 ): NormalizedPeiwanPayload => {
   const data = ensureObject(input);
   const discordUserIdRaw = typeof data.discordUserId === 'string' ? data.discordUserId.trim() : '';
@@ -82,6 +83,18 @@ export const normalizePeiwanPayload = (
   const techTag = typeof data.techTag === 'boolean' ? data.techTag : false;
   const exclusive = typeof data.exclusive === 'boolean' ? data.exclusive : false;
 
+  let peiwanId: number | undefined;
+  if (options.allowPeiwanId) {
+    const rawId = (data as Record<string, unknown>).peiwanId;
+    if (rawId !== undefined && rawId !== null && rawId !== '') {
+      const numeric = Number(rawId);
+      if (!Number.isInteger(numeric) || numeric <= 0) {
+        throw new Error('陪玩ID 必须为正整数');
+      }
+      peiwanId = numeric;
+    }
+  }
+
   const quotationValues: NormalizedPeiwanPayload['quotationValues'] = {};
   for (const field of PEIWAN_QUOTATION_FIELDS) {
     if (field in data) {
@@ -102,6 +115,7 @@ export const normalizePeiwanPayload = (
 
   return {
     discordUserId: discordUserIdRaw,
+    peiwanId,
     defaultQuotationCode,
     commissionRate,
     mpUrl: mpUrlValue || undefined,

@@ -20,12 +20,18 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const payload = normalizePeiwanPayload(body);
-    const { discordUserId } = payload;
+    const payload = normalizePeiwanPayload(body, { allowPeiwanId: true });
+    const { discordUserId, peiwanId } = payload;
 
     const existing = await prisma.pEIWAN.findUnique({ where: { discordUserId } });
     if (existing) {
       return NextResponse.json({ error: '该 Discord ID 已存在陪玩资料' }, { status: 409 });
+    }
+    if (peiwanId) {
+      const idConflict = await prisma.pEIWAN.findUnique({ where: { PEIWANID: peiwanId } });
+      if (idConflict) {
+        return NextResponse.json({ error: '该陪玩 ID 已被占用' }, { status: 409 });
+      }
     }
 
     await prisma.member.upsert({
@@ -38,7 +44,7 @@ export async function POST(request: Request) {
     });
 
     const aggregate = await prisma.pEIWAN.aggregate({ _max: { PEIWANID: true } });
-    const nextPeiwanId = (aggregate._max.PEIWANID ?? 0) + 1;
+    const nextPeiwanId = peiwanId ?? (aggregate._max.PEIWANID ?? 0) + 1;
     const data = buildPeiwanDataObject(payload);
     const created = await prisma.pEIWAN.create({
       data: {

@@ -42,6 +42,7 @@ const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.find
   ) as Record<(typeof PEIWAN_GAME_TAG_FIELDS)[number], boolean>;
 
   return {
+    peiwanId: String(plain.PEIWANID ?? ''),
     discordUserId: String(plain.discordUserId),
     defaultQuotationCode,
     commissionRate: plain.commissionRate ? String(plain.commissionRate) : '0.75',
@@ -64,8 +65,8 @@ type EditPageProps = {
 export default async function EditPeiwanPage(props: EditPageProps) {
   const resolvedParams = await Promise.resolve(props.params);
   const rawId = resolvedParams?.discordId ?? '';
-  const discordId = decodeURIComponent(rawId).trim();
-  if (!discordId) {
+  const searchToken = decodeURIComponent(rawId).trim();
+  if (!searchToken) {
     return (
       <div className="space-y-6 text-white">
         <div className="space-y-2">
@@ -81,13 +82,21 @@ export default async function EditPeiwanPage(props: EditPageProps) {
       </div>
     );
   }
-  const peiwan = await prisma.pEIWAN.findUnique({ where: { discordUserId: discordId } });
+
+  const numericId = Number(searchToken);
+  const searchByPeiwanId = Number.isInteger(numericId) && numericId > 0;
+  const peiwan =
+    (searchByPeiwanId
+      ? await prisma.pEIWAN.findUnique({ where: { PEIWANID: numericId } })
+      : null) || (await prisma.pEIWAN.findUnique({ where: { discordUserId: searchToken } }));
+  const discordId = peiwan?.discordUserId ?? searchToken;
+
   if (!peiwan) {
     return (
       <div className="space-y-6 text-white">
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold">未找到陪玩</h2>
-          <p className="text-sm text-white/70">Discord ID：{discordId}</p>
+          <p className="text-sm text-white/70">搜索关键词：{searchToken}</p>
           <p className="text-sm text-rose-300">没有找到与该 ID 匹配的陪玩资料，先确认是否已创建。</p>
         </div>
         <div className="flex flex-wrap gap-4">
@@ -131,6 +140,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold">编辑陪玩</h2>
         <p className="text-sm text-white/70">当前 Discord ID：{discordId}</p>
+        <p className="text-sm text-white/60">陪玩 ID：{peiwan.PEIWANID}</p>
       </div>
       <PeiwanForm mode="edit" initialValues={initialValues} />
     </div>

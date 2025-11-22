@@ -12,6 +12,7 @@ import {
 } from '@/constants/peiwan';
 
 type PeiwanFormState = {
+  peiwanId: string;
   discordUserId: string;
   defaultQuotationCode: (typeof QUOTATION_CODES)[number];
   commissionRate: string;
@@ -27,6 +28,7 @@ type PeiwanFormState = {
 };
 
 const createDefaultState = (): PeiwanFormState => ({
+  peiwanId: '',
   discordUserId: '',
   defaultQuotationCode: QUOTATION_CODES[0],
   commissionRate: '0.75',
@@ -78,6 +80,14 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatusMessage(null);
+    const trimmedPeiwanId = formState.peiwanId.trim();
+    if (mode === 'create' && trimmedPeiwanId) {
+      const numeric = Number(trimmedPeiwanId);
+      if (!Number.isInteger(numeric) || numeric <= 0) {
+        setStatusMessage({ type: 'error', text: '陪玩ID 必须为正整数' });
+        return;
+      }
+    }
     if (!formState.discordUserId.trim()) {
       setStatusMessage({ type: 'error', text: 'Discord ID 不能为空' });
       return;
@@ -112,6 +122,7 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
       }
 
       const payload = {
+        peiwanId: mode === 'create' && trimmedPeiwanId ? Number(trimmedPeiwanId) : undefined,
         discordUserId: formState.discordUserId.trim(),
         defaultQuotationCode: formState.defaultQuotationCode,
         commissionRate,
@@ -153,6 +164,20 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <div className="grid gap-6 md:grid-cols-2">
+        <label className="space-y-2">
+          <span className="text-sm text-gray-500">陪玩 ID（可选，留空自动生成）</span>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={formState.peiwanId}
+            onChange={(event) => setFormState((prev) => ({ ...prev, peiwanId: event.target.value }))}
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:opacity-60"
+            placeholder="正整数，例如 1001"
+            disabled={mode === 'edit'}
+          />
+        </label>
+
         <label className="space-y-2">
           <span className="text-sm text-gray-500">Discord ID</span>
           <input
