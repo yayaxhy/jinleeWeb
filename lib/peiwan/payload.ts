@@ -14,7 +14,7 @@ type NormalizedPeiwanPayload = {
   defaultQuotationCode: (typeof QUOTATION_CODES)[number];
   commissionRate: number;
   mpUrl?: string | null;
-  status: (typeof PEIWAN_STATUS_OPTIONS)[number];
+  status?: (typeof PEIWAN_STATUS_OPTIONS)[number];
   type: (typeof PEIWAN_TYPE_OPTIONS)[number];
   level: (typeof PEIWAN_LEVEL_OPTIONS)[number];
   sex: (typeof PEIWAN_SEX_OPTIONS)[number];
@@ -34,6 +34,11 @@ const ensureEnum = <T extends readonly string[]>(value: unknown, allowed: T, fie
     throw new Error(`${field} 无效`);
   }
   return value as T[number];
+};
+
+const optionalEnum = <T extends readonly string[]>(value: unknown, allowed: T): T[number] | undefined => {
+  if (typeof value !== 'string') return undefined;
+  return allowed.includes(value as T[number]) ? (value as T[number]) : undefined;
 };
 
 const ensureNumber = (value: unknown, field: string): number => {
@@ -75,7 +80,7 @@ export const normalizePeiwanPayload = (
 
   const mpUrlValue = typeof data.MP_url === 'string' ? data.MP_url.trim() : undefined;
 
-  const status = ensureEnum(data.status, PEIWAN_STATUS_OPTIONS, '状态');
+  const status = optionalEnum(data.status, PEIWAN_STATUS_OPTIONS);
   const type = ensureEnum(data.type, PEIWAN_TYPE_OPTIONS, '类型');
   const level = ensureEnum(data.level, PEIWAN_LEVEL_OPTIONS, '等级');
   const sex = ensureEnum(data.sex, PEIWAN_SEX_OPTIONS, '性别');
@@ -149,7 +154,7 @@ export const buildPeiwanDataObject = (payload: NormalizedPeiwanPayload) => {
     defaultQuotationCode: payload.defaultQuotationCode,
     commissionRate: payload.commissionRate.toString(),
     MP_url: payload.mpUrl ?? null,
-    status: payload.status,
+    ...(payload.status ? { status: payload.status } : {}),
     type: payload.type,
     level: payload.level,
     sex: payload.sex,

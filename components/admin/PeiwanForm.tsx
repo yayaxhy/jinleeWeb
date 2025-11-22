@@ -6,7 +6,6 @@ import {
   PEIWAN_LEVEL_OPTIONS,
   PEIWAN_QUOTATION_FIELDS,
   PEIWAN_SEX_OPTIONS,
-  PEIWAN_STATUS_OPTIONS,
   PEIWAN_TYPE_OPTIONS,
   QUOTATION_CODES,
 } from '@/constants/peiwan';
@@ -17,7 +16,6 @@ type PeiwanFormState = {
   defaultQuotationCode: (typeof QUOTATION_CODES)[number];
   commissionRate: string;
   MP_url: string;
-  status: (typeof PEIWAN_STATUS_OPTIONS)[number];
   type: (typeof PEIWAN_TYPE_OPTIONS)[number];
   level: (typeof PEIWAN_LEVEL_OPTIONS)[number];
   sex: (typeof PEIWAN_SEX_OPTIONS)[number];
@@ -33,7 +31,6 @@ const createDefaultState = (): PeiwanFormState => ({
   defaultQuotationCode: QUOTATION_CODES[0],
   commissionRate: '0.75',
   MP_url: '',
-  status: PEIWAN_STATUS_OPTIONS[0],
   type: PEIWAN_TYPE_OPTIONS[0],
   level: PEIWAN_LEVEL_OPTIONS[0],
   sex: PEIWAN_SEX_OPTIONS[0],
@@ -127,7 +124,6 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
         defaultQuotationCode: formState.defaultQuotationCode,
         commissionRate,
         MP_url: formState.MP_url.trim() || undefined,
-        status: formState.status,
         type: formState.type,
         level: formState.level,
         sex: formState.sex,
@@ -165,7 +161,7 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
     <form onSubmit={handleSubmit} className="space-y-8">
       <div className="grid gap-6 md:grid-cols-2">
         <label className="space-y-2">
-          <span className="text-sm text-gray-500">陪玩 ID（可选，留空自动生成）</span>
+          <span className="text-sm text-gray-500">陪玩 ID（必填，不可重复）</span>
           <input
             type="number"
             min="1"
@@ -173,7 +169,7 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
             value={formState.peiwanId}
             onChange={(event) => setFormState((prev) => ({ ...prev, peiwanId: event.target.value }))}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:opacity-60"
-            placeholder="正整数，例如 1001"
+            placeholder="正整数，例如 51001"
             disabled={mode === 'edit'}
           />
         </label>
@@ -231,21 +227,6 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
             onChange={(event) => setFormState((prev) => ({ ...prev, commissionRate: event.target.value }))}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
           />
-        </label>
-
-        <label className="space-y-2">
-          <span className="text-sm text-gray-500">状态</span>
-          <select
-            value={formState.status}
-            onChange={(event) => setFormState((prev) => ({ ...prev, status: event.target.value as PeiwanFormState['status'] }))}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-          >
-            {PEIWAN_STATUS_OPTIONS.map((option) => (
-              <option key={option} value={option} className="bg-[#0f0f0f] text-white">
-                {option}
-              </option>
-            ))}
-          </select>
         </label>
 
         <label className="space-y-2">

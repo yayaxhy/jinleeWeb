@@ -4,7 +4,6 @@ import {
   PEIWAN_LEVEL_OPTIONS,
   PEIWAN_QUOTATION_FIELDS,
   PEIWAN_SEX_OPTIONS,
-  PEIWAN_STATUS_OPTIONS,
   PEIWAN_TYPE_OPTIONS,
   QUOTATION_CODES,
 } from '@/constants/peiwan';
@@ -26,7 +25,6 @@ const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.find
     return (options as readonly string[]).includes(value) ? (value as T[number]) : null;
   };
   const defaultQuotationCode = resolveEnum(plain.defaultQuotationCode, QUOTATION_CODES) ?? QUOTATION_CODES[0];
-  const statusValue = resolveEnum(plain.status, PEIWAN_STATUS_OPTIONS) ?? PEIWAN_STATUS_OPTIONS[0];
   const typeValue = resolveEnum(plain.type, PEIWAN_TYPE_OPTIONS) ?? PEIWAN_TYPE_OPTIONS[0];
   const levelValue = resolveEnum(plain.level, PEIWAN_LEVEL_OPTIONS) ?? PEIWAN_LEVEL_OPTIONS[0];
   const sexValue = resolveEnum(plain.sex, PEIWAN_SEX_OPTIONS) ?? PEIWAN_SEX_OPTIONS[0];
@@ -47,7 +45,6 @@ const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.find
     defaultQuotationCode,
     commissionRate: plain.commissionRate ? String(plain.commissionRate) : '0.75',
     MP_url: (plain.MP_url as string) ?? '',
-    status: statusValue,
     type: typeValue,
     level: levelValue,
     sex: sexValue,
