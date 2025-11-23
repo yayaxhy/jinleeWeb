@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "PEIWAN" ADD COLUMN     "totalEarn" DECIMAL(19,4) NOT NULL DEFAULT 0;

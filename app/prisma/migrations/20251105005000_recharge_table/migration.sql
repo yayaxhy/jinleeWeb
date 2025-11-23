@@ -1,6 +1,0 @@
-CREATE TABLE "Recharge" (
-  "RechargeID" TEXT PRIMARY KEY,
-  "amount" DECIMAL(19,4) NOT NULL,
-  "toWhom" TEXT NOT NULL,
-  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-);

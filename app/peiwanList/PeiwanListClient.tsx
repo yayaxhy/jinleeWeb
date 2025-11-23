@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
   PEIWAN_GAME_TAG_FIELDS,
@@ -27,7 +28,7 @@ type ApiResponse = {
   pageSize: number;
 };
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 6;
 const LOCAL_IMG_EXTS = ['png', 'jpg', 'gif'] as const;
 
 const formatPrice = (value: PeiwanItem['price']) => {
@@ -162,10 +163,18 @@ export function PeiwanListClient() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <header className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.6em] text-gray-500">Peiwan List</p>
-        <h1 className="text-3xl font-bold tracking-wide text-[#2800ff]">陪玩列表</h1>
-        <p className="text-sm text-gray-600">即时筛选：游戏、等级、性别、ID、技术陪玩标签。</p>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.6em] text-gray-500">Peiwan List</p>
+          <h1 className="text-3xl font-bold tracking-wide text-[#2800ff]">陪玩列表</h1>
+          <p className="text-sm text-gray-600">即时筛选：游戏、等级、性别、ID、技术陪玩标签。</p>
+        </div>
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center rounded-full border border-black/20 px-4 py-2 text-sm text-gray-700 hover:border-black hover:text-black transition"
+        >
+          返回主页
+        </Link>
       </header>
 
       <section className="rounded-3xl bg-white border border-black/5 shadow-sm p-5 space-y-4">
