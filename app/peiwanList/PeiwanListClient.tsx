@@ -165,16 +165,15 @@ export function PeiwanListClient() {
     <div className="max-w-6xl mx-auto space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.6em] text-gray-500">Peiwan List</p>
-          <h1 className="text-3xl font-bold tracking-wide text-[#2800ff]">陪玩列表</h1>
-          <p className="text-sm text-gray-600">即时筛选：游戏、等级、性别、ID、技术陪玩标签。</p>
-        </div>
-        <Link
+          <Link
           href="/"
           className="inline-flex items-center justify-center rounded-full border border-black/20 px-4 py-2 text-sm text-gray-700 hover:border-black hover:text-black transition"
         >
           返回主页
         </Link>
+          <h1 className="text-3xl font-bold tracking-wide text-[#2800ff]">陪玩列表</h1>
+        </div>
+        
       </header>
 
       <section className="rounded-3xl bg-white border border-black/5 shadow-sm p-5 space-y-4">
@@ -214,13 +213,13 @@ export function PeiwanListClient() {
               active={gender === 'female'}
               onClick={() => { setGender(gender === 'female' ? '' : 'female'); setPage(1); }}
             >
-              女
+              女陪陪
             </FilterChip>
             <FilterChip
               active={gender === 'male'}
               onClick={() => { setGender(gender === 'male' ? '' : 'male'); setPage(1); }}
             >
-              男
+              男陪陪
             </FilterChip>
           </div>
         </div>
@@ -231,7 +230,7 @@ export function PeiwanListClient() {
             type="number"
             value={idFilter}
             onChange={(e) => { setIdFilter(e.target.value); setPage(1); }}
-            placeholder="精确匹配 PEIWANID"
+            placeholder="精确匹配陪玩数字ID"
             className="w-48 rounded-full border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2800ff]"
           />
           <button
