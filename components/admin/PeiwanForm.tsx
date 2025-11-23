@@ -16,6 +16,7 @@ type PeiwanFormState = {
   defaultQuotationCode: (typeof QUOTATION_CODES)[number];
   commissionRate: string;
   MP_url: string;
+  totalEarn: string;
   type: (typeof PEIWAN_TYPE_OPTIONS)[number];
   level: (typeof PEIWAN_LEVEL_OPTIONS)[number];
   sex: (typeof PEIWAN_SEX_OPTIONS)[number];
@@ -31,6 +32,7 @@ const createDefaultState = (): PeiwanFormState => ({
   defaultQuotationCode: QUOTATION_CODES[0],
   commissionRate: '0.75',
   MP_url: '',
+  totalEarn: '0',
   type: PEIWAN_TYPE_OPTIONS[0],
   level: PEIWAN_LEVEL_OPTIONS[0],
   sex: PEIWAN_SEX_OPTIONS[0],
@@ -102,6 +104,13 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
       return;
     }
 
+    const totalEarnInput = formState.totalEarn.trim();
+    const totalEarn = totalEarnInput === '' ? undefined : Number(totalEarnInput);
+    if (totalEarn !== undefined && (Number.isNaN(totalEarn) || totalEarn < 0)) {
+      setStatusMessage({ type: 'error', text: '累计流水必须为非负数字' });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const quotationsPayload: Record<string, number> = {};
@@ -124,6 +133,7 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
         defaultQuotationCode: formState.defaultQuotationCode,
         commissionRate,
         MP_url: formState.MP_url.trim() || undefined,
+        ...(totalEarn !== undefined ? { totalEarn } : {}),
         type: formState.type,
         level: formState.level,
         sex: formState.sex,
@@ -226,6 +236,19 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
             value={formState.commissionRate}
             onChange={(event) => setFormState((prev) => ({ ...prev, commissionRate: event.target.value }))}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm text-gray-500">累计流水 (totalEarn)</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={formState.totalEarn}
+            onChange={(event) => setFormState((prev) => ({ ...prev, totalEarn: event.target.value }))}
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+            placeholder="非负数字，例如 1000"
           />
         </label>
 

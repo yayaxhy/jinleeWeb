@@ -14,6 +14,7 @@ type NormalizedPeiwanPayload = {
   defaultQuotationCode: (typeof QUOTATION_CODES)[number];
   commissionRate: number;
   mpUrl?: string | null;
+  totalEarn?: number;
   status?: (typeof PEIWAN_STATUS_OPTIONS)[number];
   type: (typeof PEIWAN_TYPE_OPTIONS)[number];
   level: (typeof PEIWAN_LEVEL_OPTIONS)[number];
@@ -78,6 +79,11 @@ export const normalizePeiwanPayload = (
     throw new Error('抽成比例需在 0-1 之间');
   }
 
+  const totalEarnRaw = optionalNumber((data as Record<string, unknown>).totalEarn);
+  if (totalEarnRaw !== undefined && totalEarnRaw < 0) {
+    throw new Error('累计流水必须为非负数字');
+  }
+
   const mpUrlValue = typeof data.MP_url === 'string' ? data.MP_url.trim() : undefined;
 
   const status = optionalEnum(data.status, PEIWAN_STATUS_OPTIONS);
@@ -123,6 +129,7 @@ export const normalizePeiwanPayload = (
     peiwanId,
     defaultQuotationCode,
     commissionRate,
+    totalEarn: totalEarnRaw,
     mpUrl: mpUrlValue || undefined,
     status,
     type,
@@ -160,6 +167,7 @@ export const buildPeiwanDataObject = (payload: NormalizedPeiwanPayload) => {
     sex: payload.sex,
     techTag: payload.techTag,
     exclusive: payload.exclusive,
+    ...(payload.totalEarn !== undefined ? { totalEarn: payload.totalEarn.toString() } : {}),
     ...quotationData,
     ...tagData,
   };

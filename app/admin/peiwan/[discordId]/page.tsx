@@ -45,6 +45,7 @@ const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.find
     defaultQuotationCode,
     commissionRate: plain.commissionRate ? String(plain.commissionRate) : '0.75',
     MP_url: (plain.MP_url as string) ?? '',
+    totalEarn: plain.totalEarn ? String(plain.totalEarn) : '0',
     type: typeValue,
     level: levelValue,
     sex: sexValue,
