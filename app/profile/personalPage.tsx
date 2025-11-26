@@ -184,6 +184,17 @@ export default async function Profile(props: ProfilePageProps = {}) {
 
   const balanceValue = member.income;
   const withdrawMaxString = stringifyUnknown(balanceValue) || '0';
+  const withdrawCooldownMs = 3 * 24 * 60 * 60 * 1000;
+  const lastWithdraw = await prisma.withdraw.findFirst({
+    where: { discordId },
+    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true },
+  });
+  const lastWithdrawAt = lastWithdraw?.createdAt ?? null;
+  const nextAvailableAt =
+    lastWithdrawAt !== null ? new Date(lastWithdrawAt.getTime() + withdrawCooldownMs) : null;
+  const nextAvailableAtIso = nextAvailableAt?.toISOString() ?? null;
+  const lastWithdrawAtIso = lastWithdrawAt?.toISOString() ?? null;
   const stats = [
     { label: '账户余额', value: member.totalBalance },
     { label: '可提现余额', value: balanceValue },
@@ -255,7 +266,11 @@ export default async function Profile(props: ProfilePageProps = {}) {
                   <p className="text-2xl font-mono">{formatNumber(item.value)}</p>
                   {item.label === '可提现余额' && (
                     <div className="pt-2">
-                      <WithdrawForm maxAmount={withdrawMaxString} />
+                      <WithdrawForm
+                        maxAmount={withdrawMaxString}
+                        lastWithdrawAt={lastWithdrawAtIso}
+                        nextAvailableAt={nextAvailableAtIso}
+                      />
                     </div>
                   )}
                   {item.label === '账户余额' && (

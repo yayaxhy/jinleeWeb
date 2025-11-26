@@ -96,6 +96,7 @@ export function PeiwanListClient() {
   const [gender, setGender] = useState<string>('');
   const [idFilter, setIdFilter] = useState<string>('');
   const [page, setPage] = useState(1);
+  const [seed] = useState(() => Math.random().toString(36).slice(2, 10));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ApiResponse | null>(null);
@@ -103,6 +104,7 @@ export function PeiwanListClient() {
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
+    params.set('seed', seed);
     if (games.size > 0) params.set('games', Array.from(games).join(','));
     if (techTag) params.set('techTag', 'true');
     if (level) params.set('level', level);
@@ -111,7 +113,7 @@ export function PeiwanListClient() {
     params.set('page', String(page));
     params.set('pageSize', String(PAGE_SIZE));
     return params.toString();
-  }, [games, techTag, level, gender, idFilter, page]);
+  }, [games, techTag, level, gender, idFilter, page, seed]);
 
   useEffect(() => {
     const controller = new AbortController();

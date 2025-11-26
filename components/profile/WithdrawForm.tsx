@@ -7,9 +7,18 @@ const MIN_WITHDRAW_AMOUNT = 100;
 
 type WithdrawFormProps = {
   maxAmount?: string;
+  lastWithdrawAt?: string | null;
+  nextAvailableAt?: string | null;
 };
 
-export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
+const formatDateTime = (value?: string | Date | null) => {
+  if (!value) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleString('zh-CN', { hour12: false });
+};
+
+export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvailableAt }: WithdrawFormProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState('');
@@ -22,16 +31,28 @@ export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
     return Number.isNaN(parsed) ? 0 : parsed;
   }, [maxAmount]);
 
-  const maxWithdrawable = Math.floor(max);
-  const canWithdraw = maxWithdrawable >= MIN_WITHDRAW_AMOUNT;
+  const nextAvailableDate = useMemo(() => {
+    if (!nextAvailableAt) return null;
+    const parsed = new Date(nextAvailableAt);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [nextAvailableAt]);
+
+  const lastWithdrawDate = useMemo(() => {
+    if (!lastWithdrawAt) return null;
+    const parsed = new Date(lastWithdrawAt);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [lastWithdrawAt]);
+
+  const now = Date.now();
+  const maxWithdrawable = Math.max(0, max);
+  const inCooldown = Boolean(nextAvailableDate && nextAvailableDate.getTime() > now);
+  const canWithdraw = maxWithdrawable >= MIN_WITHDRAW_AMOUNT && !inCooldown;
   const amountValue = Number(amount);
   const amountError =
     amount.length > 0 &&
-    (Number.isNaN(amountValue) ||
-      amountValue < MIN_WITHDRAW_AMOUNT ||
-      amountValue > maxWithdrawable ||
-      !Number.isInteger(amountValue));
-  const canSubmit = !amountError && amountValue >= MIN_WITHDRAW_AMOUNT && method.trim().length > 0;
+    (Number.isNaN(amountValue) || amountValue < MIN_WITHDRAW_AMOUNT || amountValue > maxWithdrawable);
+  const canSubmit =
+    !amountError && amountValue >= MIN_WITHDRAW_AMOUNT && method.trim().length > 0 && !inCooldown;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -46,11 +67,21 @@ export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
           body: JSON.stringify({ amount: amountValue, method }),
         });
         const data = await response.json();
+        const nextAvailableFromResponse = data?.nextAvailableAt
+          ? formatDateTime(String(data.nextAvailableAt))
+          : null;
         if (!response.ok || !data?.ok) {
-          throw new Error(data?.error ?? 'unknown_error');
+          const friendlyMessage =
+            data?.error === 'withdraw_cooldown' && nextAvailableFromResponse
+              ? `提现冷却中，下次可在 ${nextAvailableFromResponse} 后再试。`
+              : data?.error ?? 'unknown_error';
+          throw new Error(friendlyMessage);
         }
 
-        setStatusMessage('提现成功，我们将尽快处理！');
+        const successMessage = nextAvailableFromResponse
+          ? `提现成功！下次可提现时间：${nextAvailableFromResponse}`
+          : '提现成功，我们将尽快处理！';
+        setStatusMessage(successMessage);
         setIsOpen(false);
         setAmount('');
         setMethod('');
@@ -74,7 +105,19 @@ export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
         提现
       </button>
       {!canWithdraw && (
-        <p className="text-xs text-gray-500">提现金额需大于 {MIN_WITHDRAW_AMOUNT}</p>
+        <div className="space-y-1">
+          {inCooldown && nextAvailableDate && (
+            <p className="text-xs text-amber-600">
+              提现冷却中，下次可在 {formatDateTime(nextAvailableDate)} 后再试。
+            </p>
+          )}
+          {maxWithdrawable < MIN_WITHDRAW_AMOUNT && (
+            <p className="text-xs text-gray-500">提现金额需大于 {MIN_WITHDRAW_AMOUNT}</p>
+          )}
+        </div>
+      )}
+      {lastWithdrawDate && (
+        <p className="text-xs text-gray-400">上次提现：{formatDateTime(lastWithdrawDate)}</p>
       )}
       {statusMessage && (
         <p className="text-xs text-gray-600" role="status">
@@ -87,8 +130,8 @@ export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
             <label className="text-xs uppercase tracking-[0.4em] text-gray-500">提现金额</label>
             <input
               type="number"
-              min="1"
-              step="1"
+              min={MIN_WITHDRAW_AMOUNT}
+              step="0.01"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
               className={`w-full rounded-2xl border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] ${
@@ -102,7 +145,7 @@ export default function WithdrawForm({ maxAmount = '0' }: WithdrawFormProps) {
             />
             {amountError && (
               <p className="text-xs text-red-500">
-                提现金额必须大于 {MIN_WITHDRAW_AMOUNT}，且为不超过可提现余额的正整数。
+                提现金额必须大于 {MIN_WITHDRAW_AMOUNT} 且不超过可提现余额。
               </p>
             )}
           </div>

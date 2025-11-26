@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
 const MAX_PAGE_SIZE = 50;
+const BLOCKED_DISCORD_IDS = ['734159747367829636', '525770714574225408'];
 
 const normalizePage = (value: string | null, fallback: number) => {
   const parsed = value ? Number.parseInt(value, 10) : fallback;
@@ -33,12 +34,40 @@ const parseGames = (value: string | null) => {
 
 const parseBoolean = (value: string | null) => value === 'true' || value === '1';
 
+const hashSeed = (seed: string) => {
+  let h = 1779033703 ^ seed.length;
+  for (let i = 0; i < seed.length; i += 1) {
+    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return (h ^ (h >>> 16)) >>> 0;
+};
+
+const mulberry32 = (a: number) => {
+  return () => {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const shuffleWithSeed = <T>(arr: T[], seed: string) => {
+  const rng = mulberry32(hashSeed(seed) || 1);
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const searchParams = url.searchParams;
 
   const page = normalizePage(searchParams.get('page'), 1);
   const pageSize = normalizePageSize(searchParams.get('pageSize'), 12);
+  const seed = searchParams.get('seed') ?? Math.random().toString(36).slice(2, 10);
 
   const rawId = searchParams.get('id');
   const peiwanId = rawId ? Number.parseInt(rawId, 10) : null;
@@ -59,6 +88,9 @@ export async function GET(request: Request) {
 
   const where: Prisma.PEIWANWhereInput = {};
 
+  if (BLOCKED_DISCORD_IDS.length > 0) {
+    where.discordUserId = { notIn: BLOCKED_DISCORD_IDS };
+  }
   if (peiwanId !== null && !Number.isNaN(peiwanId)) {
     where.PEIWANID = peiwanId;
   }
@@ -83,12 +115,12 @@ export async function GET(request: Request) {
       where,
       include: { member: { select: { serverDisplayName: true, discordUserId: true } } },
       orderBy: { PEIWANID: 'asc' },
-      skip,
-      take: pageSize,
     }),
   ]);
 
-  const data = rows.map((row) => {
+  const shuffledRows = shuffleWithSeed([...rows], seed).slice(skip, skip + pageSize);
+
+  const data = shuffledRows.map((row) => {
     const priceField = `quotation_${row.defaultQuotationCode}` as const;
     const rawPrice = (row as Record<string, unknown>)[priceField] as unknown;
     let normalizedPrice: string | number | null = null;
@@ -121,5 +153,5 @@ export async function GET(request: Request) {
     };
   });
 
-  return NextResponse.json({ data, total, page, pageSize });
+  return NextResponse.json({ data, total, page, pageSize, seed });
 }

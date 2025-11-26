@@ -6,13 +6,18 @@ import { getServerSession } from '@/lib/session';
 class WithdrawError extends Error {
   code: string;
   status: number;
+  meta?: Record<string, unknown>;
 
-  constructor(code: string, status = 400) {
+  constructor(code: string, status = 400, meta?: Record<string, unknown>) {
     super(code);
     this.code = code;
     this.status = status;
+    this.meta = meta;
   }
 }
+
+const MIN_WITHDRAW_AMOUNT = 100;
+const WITHDRAW_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 const parseAmount = (raw: unknown): number | null => {
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
@@ -42,7 +47,7 @@ export async function POST(request: Request) {
   }
 
   const amountNumber = parseAmount(body?.amount);
-  if (amountNumber === null || amountNumber <= 0 || !Number.isInteger(amountNumber)) {
+  if (amountNumber === null || amountNumber < MIN_WITHDRAW_AMOUNT) {
     return NextResponse.json({ ok: false, error: 'invalid_amount' }, { status: 400 });
   }
   const method = ensureMethod(body?.method);
@@ -52,6 +57,21 @@ export async function POST(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      const lastWithdraw = await tx.withdraw.findFirst({
+        where: { discordId: session.discordId },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      });
+
+      if (lastWithdraw?.createdAt) {
+        const nextAvailableAt = new Date(lastWithdraw.createdAt.getTime() + WITHDRAW_COOLDOWN_MS);
+        if (nextAvailableAt.getTime() > Date.now()) {
+          throw new WithdrawError('withdraw_cooldown', 429, {
+            nextAvailableAt: nextAvailableAt.toISOString(),
+          });
+        }
+      }
+
       const member = await tx.member.findUnique({
         where: { discordUserId: session.discordId },
         select: { income: true, totalBalance: true },
@@ -80,7 +100,7 @@ export async function POST(request: Request) {
       await tx.withdraw.create({
         data: {
           discordId: session.discordId,
-          amount: amountNumber,
+          amount: amountDecimal,
           method,
         },
       });
@@ -101,13 +121,17 @@ export async function POST(request: Request) {
       return {
         remainingIncome: updatedMember.income?.toString() ?? '0',
         remainingBalance: updatedMember.totalBalance?.toString() ?? '0',
+        nextAvailableAt: new Date(Date.now() + WITHDRAW_COOLDOWN_MS).toISOString(),
       };
     });
 
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     if (error instanceof WithdrawError) {
-      return NextResponse.json({ ok: false, error: error.code }, { status: error.status });
+      return NextResponse.json(
+        { ok: false, error: error.code, ...(error.meta ?? {}) },
+        { status: error.status },
+      );
     }
     console.error('[withdraw] failed to process request', error);
     return NextResponse.json({ ok: false, error: 'internal_error' }, { status: 500 });
