@@ -10,6 +10,15 @@ const md5 = (value: string) => crypto.createHash('md5').update(value, 'utf8').di
 
 type PlainParams = Record<string, string>;
 
+const ASTRAL_SYMBOL_REGEX = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g;
+const CONTROL_CHAR_REGEX = /[\u0000-\u001F\u007F-\u009F]/g;
+
+export const sanitizeZPayText = (value: string, fallback: string) => {
+  const base = (value || '').trim() || fallback;
+  const cleaned = base.replace(ASTRAL_SYMBOL_REGEX, '').replace(CONTROL_CHAR_REGEX, '').trim();
+  return cleaned || fallback;
+};
+
 export const buildSignaturePayload = (params: Record<string, string | undefined | null>) => {
   const keys = Object.keys(params)
     .filter((key) => {

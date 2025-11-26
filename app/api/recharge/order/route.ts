@@ -11,6 +11,7 @@ import {
   buildZPayUrl,
   getZPayGatewayUrl,
   requiredZPayConfig,
+  sanitizeZPayText,
   type ZPayChannel,
 } from '@/lib/zpay';
 
@@ -92,15 +93,21 @@ export async function POST(request: Request) {
     },
   });
 
+  const orderTitle = sanitizeZPayText(
+    `账户充值-${session.username ?? session.discordId}`,
+    `账户充值-${session.discordId}`,
+  );
+  const safeSiteName = sanitizeZPayText(SITE_NAME, 'Jinlee Club');
+
   const params = {
     pid: merchantId,
     type: requestedChannel,
     notify_url: notifyUrl,
     return_url: returnUrl,
     out_trade_no: outTradeNo,
-    name: `账户充值-${session.username ?? session.discordId}`,
+    name: orderTitle,
     money: amountText,
-    sitename: SITE_NAME,
+    sitename: safeSiteName,
   };
 
   const signaturePayload = buildSignaturePayload(params);
