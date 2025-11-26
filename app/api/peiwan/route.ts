@@ -8,7 +8,12 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
 const MAX_PAGE_SIZE = 50;
-const BLOCKED_DISCORD_IDS = ['734159747367829636', '525770714574225408'];
+const BLOCKED_DISCORD_IDS = [
+  '734159747367829636',
+  '525770714574225408',
+  '1439777142899474433',
+  '1440688775129862189',
+];
 
 const normalizePage = (value: string | null, fallback: number) => {
   const parsed = value ? Number.parseInt(value, 10) : fallback;
