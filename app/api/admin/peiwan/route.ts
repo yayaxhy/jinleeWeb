@@ -3,6 +3,7 @@ import { isAdminDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { buildPeiwanDataObject, normalizePeiwanPayload } from '@/lib/peiwan/payload';
 import { getServerSession } from '@/lib/session';
+import { registerPeiwanProfile } from '@/lib/peiwan/registerPeiwan';
 
 const ensureAdminSession = async () => {
   const session = await getServerSession();
@@ -53,6 +54,8 @@ export async function POST(request: Request) {
         ...data,
       },
     });
+
+    await registerPeiwanProfile(discordUserId);
 
     return NextResponse.json({ peiwanId: created.PEIWANID }, { status: 201 });
   } catch (error) {
