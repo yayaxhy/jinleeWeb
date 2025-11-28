@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { NavBar } from '@/components/NavBar';
+import { PeiwanRecommendations } from '@/components/home/PeiwanRecommendations';
 
 export default function Home() {
   return (
@@ -20,6 +21,7 @@ export default function Home() {
         </div>
         <NavBar />
       </div>
+      <PeiwanRecommendations />
     </main>
   );
 }
