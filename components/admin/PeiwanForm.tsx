@@ -42,6 +42,16 @@ const createDefaultState = (): PeiwanFormState => ({
   gameTags: Object.fromEntries(PEIWAN_GAME_TAG_FIELDS.map((tag) => [tag, false])) as PeiwanFormState['gameTags'],
 });
 
+const QUOTATION_LABEL_MAP: Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], string> = {
+  quotation_Q1: 'Q1',
+  quotation_Q2: 'LoL单价',
+  quotation_Q3: 'Val单价',
+  quotation_Q4: '三角洲单价',
+  quotation_Q5: 'CSGO单价',
+  quotation_Q6: '永劫单价',
+  quotation_Q7: 'Apex单价',
+};
+
 type PeiwanFormProps = {
   mode: 'create' | 'edit';
   initialValues?: Partial<PeiwanFormState>;
@@ -324,7 +334,9 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
         <div className="grid gap-4 md:grid-cols-2">
           {PEIWAN_QUOTATION_FIELDS.map((field) => (
             <label key={field} className="space-y-2">
-              <span className="text-sm text-gray-500 uppercase tracking-[0.2em]">{field.replace('quotation_', '')}</span>
+              <span className="text-sm text-gray-500 tracking-[0.2em]">
+                {QUOTATION_LABEL_MAP[field] ?? field.replace('quotation_', '')}
+              </span>
               <input
                 type="number"
                 min="0"
