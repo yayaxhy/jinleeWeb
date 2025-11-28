@@ -20,6 +20,7 @@ type ApiResponse = {
 };
 
 const LOCAL_IMG_EXTS = ['png', 'jpg', 'gif'] as const;
+const SLIDE_MS = 3000;
 
 const formatPrice = (value: PeiwanItem['price']) => {
   if (value === null || value === undefined) return '价格待定';
@@ -107,8 +108,8 @@ export function PeiwanRecommendations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seed] = useState(() => Math.random().toString(36).slice(2, 10));
-  const [paused, setPaused] = useState(false);
   const [current, setCurrent] = useState(0);
+  const [animKey, setAnimKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -138,15 +139,14 @@ export function PeiwanRecommendations() {
   }, [seed]);
 
   useEffect(() => {
-    if (items.length < 2 || paused) return undefined;
+    if (items.length === 0) return undefined;
+    setCurrent(0);
+    setAnimKey((k) => k + 1);
     const id = window.setInterval(() => {
       setCurrent((prev) => (prev + 1) % items.length);
-    }, 3200);
+      setAnimKey((k) => k + 1);
+    }, SLIDE_MS);
     return () => window.clearInterval(id);
-  }, [items.length, paused]);
-
-  useEffect(() => {
-    setCurrent(0);
   }, [items.length]);
 
   return (
@@ -174,43 +174,42 @@ export function PeiwanRecommendations() {
               <p className="text-sm text-white/80">暂无推荐，稍后再来看看～</p>
             ) : (
               <div
-                className="relative flex min-h-[560px] items-center justify-center overflow-visible"
-                style={{ perspective: '1200px' }}
-                onMouseEnter={() => setPaused(true)}
-                onMouseLeave={() => setPaused(false)}
+                className="relative flex min-h-[560px] items-center justify-center overflow-hidden"
               >
                 <div
-                  className="relative h-full w-full max-w-[780px]"
-                  style={{ transformStyle: 'preserve-3d' }}
+                  key={animKey}
+                  className="flex w-full justify-center"
+                  style={{ animation: `peiwan-slide ${SLIDE_MS}ms linear forwards` }}
                 >
-                  {items.map((item, idx) => {
-                    const angleStep = items.length > 0 ? 360 / items.length : 0;
-                    const offset = ((idx - current) % items.length + items.length) % items.length;
-                    const angle = offset * angleStep;
-                    const radius = 620;
-                    const isActive = offset === 0;
-                    return (
-                      <div
-                        key={item.id}
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-800 ease-out will-change-transform"
-                        style={{
-                          transform: `rotateY(${angle}deg) translateZ(${radius}px) rotateY(${-angle}deg)`,
-                          opacity: isActive ? 1 : 0.1,
-                          filter: isActive ? 'none' : 'blur(0.3px)',
-                          zIndex: isActive ? 20 : 10,
-                          pointerEvents: isActive ? 'auto' : 'none',
-                        }}
-                      >
-                        <RecommendationCard item={item} />
-                      </div>
-                    );
-                  })}
+                  <RecommendationCard item={items[current]} />
                 </div>
               </div>
             )}
           </>
         )}
       </div>
+      <style jsx>{`
+        @keyframes peiwan-slide {
+          0% {
+            transform: translateX(120%);
+            opacity: 0.1;
+          }
+          35% {
+            opacity: 1;
+          }
+          50% {
+            transform: translateX(0%);
+            opacity: 1;
+          }
+          65% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(-120%);
+            opacity: 0.1;
+          }
+        }
+      `}</style>
     </section>
   );
 }
