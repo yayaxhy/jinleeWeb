@@ -64,6 +64,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
   const resolvedParams = await Promise.resolve(props.params);
   const rawId = resolvedParams?.discordId ?? '';
   const searchToken = decodeURIComponent(rawId).trim();
+  const MAX_PEIWAN_ID = 2_147_483_647; // align with Postgres int4 upper bound
   if (!searchToken) {
     return (
       <div className="space-y-6 text-white">
@@ -82,7 +83,8 @@ export default async function EditPeiwanPage(props: EditPageProps) {
   }
 
   const numericId = Number(searchToken);
-  const searchByPeiwanId = Number.isInteger(numericId) && numericId > 0;
+  const searchByPeiwanId =
+    Number.isSafeInteger(numericId) && numericId > 0 && numericId <= MAX_PEIWAN_ID;
   const peiwan =
     (searchByPeiwanId
       ? await prisma.pEIWAN.findUnique({ where: { PEIWANID: numericId } })
