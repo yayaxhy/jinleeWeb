@@ -39,7 +39,7 @@ const CardImage = ({ item }: { item: PeiwanItem }) => {
         src={currentSrc}
         alt={item.serverDisplayName ?? `陪玩 #${item.id}`}
         fill
-        sizes="(min-width: 1024px) 320px, (min-width: 640px) 50vw, 100vw"
+        sizes="(min-width: 1024px) 420px, (min-width: 640px) 60vw, 100vw"
         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
         onError={() => {
           if (idx < sources.length - 1) {
@@ -60,7 +60,7 @@ const RecommendationCard = ({ item }: { item: PeiwanItem }) => {
   const gameTags = PEIWAN_GAME_TAG_FIELDS.filter((tag) => item.gameTags?.[tag]).slice(0, 3);
 
   return (
-    <article className="group relative flex flex-col gap-4 overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm shadow-xl hover:border-white/25 transition">
+    <article className="group relative flex w-full max-w-[420px] flex-col gap-4 overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm shadow-xl transition hover:border-white/25">
       <CardImage item={item} />
 
       <div className="flex items-start justify-between gap-3">
@@ -107,6 +107,8 @@ export function PeiwanRecommendations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seed] = useState(() => Math.random().toString(36).slice(2, 10));
+  const [paused, setPaused] = useState(false);
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -135,6 +137,18 @@ export function PeiwanRecommendations() {
     return () => controller.abort();
   }, [seed]);
 
+  useEffect(() => {
+    if (items.length < 2 || paused) return undefined;
+    const id = window.setInterval(() => {
+      setCurrent((prev) => (prev + 1) % items.length);
+    }, 3200);
+    return () => window.clearInterval(id);
+  }, [items.length, paused]);
+
+  useEffect(() => {
+    setCurrent(0);
+  }, [items.length]);
+
   return (
     <section className="w-full px-6 pb-16 -mt-8">
       <div className="mx-auto max-w-6xl rounded-3xl border border-white/20 bg-white/10 p-6 sm:p-10 shadow-2xl backdrop-blur-2xl space-y-6">
@@ -147,13 +161,8 @@ export function PeiwanRecommendations() {
         </div>
 
         {loading && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="animate-pulse rounded-3xl border border-white/15 bg-white/5 p-4 aspect-[4/3] sm:aspect-auto"
-              />
-            ))}
+          <div className="relative flex min-h-[480px] items-center justify-center">
+            <div className="h-full w-full max-w-[420px] animate-pulse rounded-3xl border border-white/15 bg-white/5 p-4" />
           </div>
         )}
 
@@ -164,10 +173,28 @@ export function PeiwanRecommendations() {
             {items.length === 0 ? (
               <p className="text-sm text-white/80">暂无推荐，稍后再来看看～</p>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {items.map((item) => (
-                  <RecommendationCard key={item.id} item={item} />
-                ))}
+              <div
+                className="relative flex min-h-[520px] items-center justify-center"
+                onMouseEnter={() => setPaused(true)}
+                onMouseLeave={() => setPaused(false)}
+              >
+                {items.map((item, idx) => {
+                  const isActive = idx === current;
+                  return (
+                    <div
+                      key={item.id}
+                      className="absolute flex w-full justify-center transition-all duration-700 ease-out"
+                      style={{
+                        opacity: isActive ? 1 : 0.1,
+                        transform: isActive ? 'scale(1)' : 'scale(0.96)',
+                        zIndex: isActive ? 20 : 10,
+                        pointerEvents: isActive ? 'auto' : 'none',
+                      }}
+                    >
+                      <RecommendationCard item={item} />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </>
