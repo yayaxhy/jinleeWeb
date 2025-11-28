@@ -142,16 +142,8 @@ export function PeiwanRecommendations() {
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.45em] text-white/70">Spotlight</p>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-[0.2em] text-[#f0eaff]">陪玩推荐</h2>
-            <p className="text-sm text-white/70 max-w-2xl">
-              即刻发现活跃陪玩，涵盖技术、娱乐与明星等级，随时出发。
-            </p>
+            
           </div>
-          <Link
-            href="/peiwanList"
-            className="inline-flex items-center justify-center rounded-full border border-white/40 px-4 py-2 text-sm uppercase tracking-[0.2em] text-white hover:bg-white/10 transition"
-          >
-            查看全部
-          </Link>
         </div>
 
         {loading && (
