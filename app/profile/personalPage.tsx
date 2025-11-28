@@ -160,6 +160,21 @@ export default async function Profile(props: ProfilePageProps = {}) {
     orderBy: { issuedAt: 'desc' },
   });
   type CouponRecord = Awaited<typeof couponsPromise>[number];
+  const heartsReceivedPromise = prisma.heartCounter.aggregate({
+    _sum: { total: true },
+    where: { toMemberId: discordId },
+  });
+  const heartsGivenPromise = prisma.heartCounter.aggregate({
+    _sum: { total: true },
+    where: { fromMemberId: discordId },
+  });
+  const heartTopPromise = prisma.heartCounter.findMany({
+    where: { toMemberId: discordId },
+    orderBy: { total: 'desc' },
+    take: 5,
+    include: { fromMember: { select: { serverDisplayName: true, discordUserId: true } } },
+  });
+  type HeartRecord = Awaited<typeof heartTopPromise>[number];
   const totalTransactionsPromise = prisma.individualTransaction.count({
     where: { discordId },
   });
@@ -171,8 +186,11 @@ export default async function Profile(props: ProfilePageProps = {}) {
   });
   type TransactionRecord = Awaited<typeof transactionsPromise>[number];
 
-  const [coupons, totalTransactions, transactions] = await Promise.all([
+  const [coupons, heartsReceived, heartsGiven, heartTop, totalTransactions, transactions] = await Promise.all([
     couponsPromise,
+    heartsReceivedPromise,
+    heartsGivenPromise,
+    heartTopPromise,
     totalTransactionsPromise,
     transactionsPromise,
   ]);
@@ -215,6 +233,10 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const bossProgressPercent = Math.min(100, Math.max(0, bossProgressRatio * 100));
   const amountToNextBossLevel = nextBossLevel ? Math.max(0, nextBossLevel.threshold - totalSpentValue) : 0;
   const currentBossLevelName = currentBossLevel?.label ?? '锦鲤创始成员';
+  const heartsReceivedTotal = heartsReceived._sum.total ?? 0;
+  const heartsGivenTotal = heartsGiven._sum.total ?? 0;
+  const formatHeartName = (record: HeartRecord) =>
+    record.fromMember?.serverDisplayName ?? record.fromMember?.discordUserId ?? '未知用户';
 
   const couponStatusLabel: Record<string, string> = {
     ACTIVE: '可用',
@@ -254,9 +276,17 @@ export default async function Profile(props: ProfilePageProps = {}) {
             >
               返回主页
             </Link>
-            <span className="absolute right-8 top-8 text-xs uppercase tracking-[0.4em] text-gray-400">
-              ID:{member.discordUserId}
-            </span>
+            <div className="absolute right-8 top-8 flex items-center gap-3">
+              <Link
+                href="/profile/heart"
+                className="text-xs uppercase tracking-[0.4em] text-[#5c43a3] hover:text-black transition"
+              >
+                心动值
+              </Link>
+              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">
+                ID:{member.discordUserId}
+              </span>
+            </div>
           </div>
           <div className="border-t border-dashed border-black/10">
             <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-dashed divide-black/10">
@@ -327,7 +357,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
                   <span
                     key={role.threshold}
                     className={`px-3 py-1 rounded-full border ${
-                      achieved ? 'border-[#5c43a3] text-[#5c43a3]' : 'border-black/10 text-gray-400'
+                      achieved ? 'border-2 border-[#f5c04d] text-[#d69b00]' : 'border-black/10 text-gray-400'
                     }`}
                   >
                     {role.label} · {formatNumber(role.threshold)}
@@ -337,6 +367,23 @@ export default async function Profile(props: ProfilePageProps = {}) {
             </div>
           </div>
         )}
+
+          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">心动值</h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/profile/heart"
+                  className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] text-[#5c43a3] hover:bg-black/5 transition"
+                >
+                  查看心动值
+                </Link>
+                <span className="text-xs uppercase tracking-[0.4em] text-gray-400">点击进行页面</span>
+              </div>
+            </div>
+          </div>
 
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
