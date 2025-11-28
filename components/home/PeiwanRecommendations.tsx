@@ -174,27 +174,38 @@ export function PeiwanRecommendations() {
               <p className="text-sm text-white/80">暂无推荐，稍后再来看看～</p>
             ) : (
               <div
-                className="relative flex min-h-[520px] items-center justify-center"
+                className="relative flex min-h-[560px] items-center justify-center overflow-visible"
+                style={{ perspective: '1200px' }}
                 onMouseEnter={() => setPaused(true)}
                 onMouseLeave={() => setPaused(false)}
               >
-                {items.map((item, idx) => {
-                  const isActive = idx === current;
-                  return (
-                    <div
-                      key={item.id}
-                      className="absolute flex w-full justify-center transition-all duration-700 ease-out"
-                      style={{
-                        opacity: isActive ? 1 : 0.1,
-                        transform: isActive ? 'scale(1)' : 'scale(0.96)',
-                        zIndex: isActive ? 20 : 10,
-                        pointerEvents: isActive ? 'auto' : 'none',
-                      }}
-                    >
-                      <RecommendationCard item={item} />
-                    </div>
-                  );
-                })}
+                <div
+                  className="relative h-full w-full max-w-[780px]"
+                  style={{ transformStyle: 'preserve-3d' }}
+                >
+                  {items.map((item, idx) => {
+                    const angleStep = items.length > 0 ? 360 / items.length : 0;
+                    const offset = ((idx - current) % items.length + items.length) % items.length;
+                    const angle = offset * angleStep;
+                    const radius = 620;
+                    const isActive = offset === 0;
+                    return (
+                      <div
+                        key={item.id}
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-800 ease-out will-change-transform"
+                        style={{
+                          transform: `rotateY(${angle}deg) translateZ(${radius}px) rotateY(${-angle}deg)`,
+                          opacity: isActive ? 1 : 0.1,
+                          filter: isActive ? 'none' : 'blur(0.3px)',
+                          zIndex: isActive ? 20 : 10,
+                          pointerEvents: isActive ? 'auto' : 'none',
+                        }}
+                      >
+                        <RecommendationCard item={item} />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </>
