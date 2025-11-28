@@ -3,6 +3,7 @@ import {
   PEIWAN_GAME_TAG_FIELDS,
   PEIWAN_LEVEL_OPTIONS,
   PEIWAN_SEX_OPTIONS,
+  QUOTATION_CODE_TO_FIELD,
 } from '@/constants/peiwan';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
@@ -126,7 +127,7 @@ export async function GET(request: Request) {
   const shuffledRows = shuffleWithSeed([...rows], seed).slice(skip, skip + pageSize);
 
   const data = shuffledRows.map((row) => {
-    const priceField = `quotation_${row.defaultQuotationCode}` as const;
+    const priceField = QUOTATION_CODE_TO_FIELD[row.defaultQuotationCode] as keyof typeof row;
     const rawPrice = (row as Record<string, unknown>)[priceField] as unknown;
     let normalizedPrice: string | number | null = null;
     if (rawPrice instanceof Prisma.Decimal) {

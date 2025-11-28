@@ -8,6 +8,7 @@ import {
   PEIWAN_SEX_OPTIONS,
   PEIWAN_TYPE_OPTIONS,
   QUOTATION_CODES,
+  QUOTATION_CODE_TO_FIELD,
 } from '@/constants/peiwan';
 
 type PeiwanFormState = {
@@ -44,12 +45,12 @@ const createDefaultState = (): PeiwanFormState => ({
 
 const QUOTATION_LABEL_MAP: Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], string> = {
   quotation_Q1: 'Q1',
-  quotation_Q2: 'LoL单价',
-  quotation_Q3: 'Val单价',
-  quotation_Q4: '三角洲单价',
-  quotation_Q5: 'CSGO单价',
-  quotation_Q6: '永劫单价',
-  quotation_Q7: 'Apex单价',
+  lolPrice: 'LoL单价',
+  valPrice: 'Val单价',
+  deltaPrice: '三角洲单价',
+  csgoPrice: 'CSGO单价',
+  narakaPrice: '永劫单价',
+  apexPrice: 'Apex单价',
 };
 
 type PeiwanFormProps = {
@@ -108,7 +109,8 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
       return;
     }
 
-    const requiredQuotationField = `quotation_${formState.defaultQuotationCode}` as (typeof PEIWAN_QUOTATION_FIELDS)[number];
+    const requiredQuotationField =
+      QUOTATION_CODE_TO_FIELD[formState.defaultQuotationCode] as (typeof PEIWAN_QUOTATION_FIELDS)[number];
     if (formState.quotations[requiredQuotationField] === '') {
       setStatusMessage({ type: 'error', text: `${formState.defaultQuotationCode} 档位不能为空` });
       return;
