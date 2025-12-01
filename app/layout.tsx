@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "锦鲤公会官网",
   description: "锦鲤官网",
+};
+
+export const viewport: Viewport = {
+  // Force desktop viewport width on mobile so the layout follows the desktop format
+  width: "1280",
 };
 
 export default async function RootLayout({
