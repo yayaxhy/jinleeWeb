@@ -380,7 +380,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
                 >
                   查看心动值
                 </Link>
-                <span className="text-xs uppercase tracking-[0.4em] text-gray-400">点击进行页面</span>
+                <span className="text-xs uppercase tracking-[0.4em] text-gray-400">点击进入页面</span>
               </div>
             </div>
           </div>

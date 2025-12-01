@@ -1,8 +1,7 @@
 "use client";
 
 import Image from 'next/image';
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PEIWAN_GAME_TAG_FIELDS } from '@/constants/peiwan';
 
 type PeiwanItem = {
@@ -19,9 +18,18 @@ type ApiResponse = {
   data: PeiwanItem[];
 };
 
-const LOCAL_IMG_EXTS = ['png', 'jpg', 'gif'] as const;
-const SLIDE_MS = 3000;
+const MAX_DISPLAY = 8;
+type ImageEntry = { id: number; src: string };
 
+const buildFallbackItem = (id: number): PeiwanItem => ({
+  id,
+  serverDisplayName: `陪玩 #${id}`,
+  level: '未知' as PeiwanItem['level'],
+  sex: '推荐' as PeiwanItem['sex'],
+  techTag: false,
+  price: null,
+  gameTags: {},
+});
 const formatPrice = (value: PeiwanItem['price']) => {
   if (value === null || value === undefined) return '价格待定';
   const numeric = Number(value);
@@ -29,74 +37,40 @@ const formatPrice = (value: PeiwanItem['price']) => {
   return `${numeric} 币/H`;
 };
 
-const CardImage = ({ item }: { item: PeiwanItem }) => {
-  const [idx, setIdx] = useState(0);
-  const sources = useMemo(() => LOCAL_IMG_EXTS.map((ext) => `/peiwanList/img/${item.id}.${ext}`), [item.id]);
-  const currentSrc = sources[Math.min(idx, sources.length - 1)];
-
+const CardImage = ({ item, src }: { item: PeiwanItem; src: string }) => {
   return (
-    <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+    <div className="group relative w-full aspect-[4/5] overflow-hidden bg-[#f6f6f6]">
       <Image
-        src={currentSrc}
+        src={src}
         alt={item.serverDisplayName ?? `陪玩 #${item.id}`}
         fill
-        sizes="(min-width: 1024px) 420px, (min-width: 640px) 60vw, 100vw"
-        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-        onError={() => {
-          if (idx < sources.length - 1) {
-            setIdx(idx + 1);
-          }
-        }}
+        sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
+        className="h-full w-full object-contain transition duration-700 ease-out group-hover:scale-[1.02]"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-      <div className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs text-white">
-        <span className="font-semibold tracking-wide">ID {item.id}</span>
-        {item.techTag && <span className="rounded-full bg-white/20 px-2 py-0.5">技术</span>}
-      </div>
     </div>
   );
 };
 
-const RecommendationCard = ({ item }: { item: PeiwanItem }) => {
-  const gameTags = PEIWAN_GAME_TAG_FIELDS.filter((tag) => item.gameTags?.[tag]).slice(0, 3);
+const RecommendationCard = ({ item, src }: { item: PeiwanItem; src: string }) => {
+  const tags = PEIWAN_GAME_TAG_FIELDS.filter((tag) => item.gameTags?.[tag]).slice(0, 2);
 
   return (
-    <article className="group relative flex w-full max-w-[420px] flex-col gap-4 overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm shadow-xl transition hover:border-white/25">
-      <CardImage item={item} />
-
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-sm uppercase tracking-[0.35em] text-white/60">陪玩推荐</p>
-          <h3 className="text-xl font-semibold text-white">
-            {item.serverDisplayName ?? `陪玩 #${item.id}`}
-          </h3>
-          <p className="text-xs text-white/70">{item.sex} · {formatPrice(item.price)}</p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <span className="rounded-full bg-gradient-to-r from-[#7c5dff] to-[#b499ff] px-3 py-1 text-xs font-semibold text-white shadow-md">
-            {item.level}
-          </span>
-          <Link
-            href="/peiwanList"
-            className="text-xs text-white/80 underline underline-offset-4 decoration-white/40 hover:text-white"
-          >
-            查看列表
-          </Link>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 text-xs text-white/80">
-        {gameTags.length > 0 ? (
-          gameTags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full border border-white/20 bg-white/10 px-2 py-1"
-            >
-              {tag}
-            </span>
-          ))
-        ) : (
-          <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1">自由接单</span>
+    <article className="flex flex-col items-center gap-4 text-center">
+      <CardImage item={item} src={src} />
+      <div className="space-y-1">
+        <p className="text-[0.7rem] uppercase tracking-[0.28em] text-neutral-500">
+          {item.sex || '推荐'}
+        </p>
+        <p className="text-sm font-semibold text-neutral-900">
+          {item.serverDisplayName ?? `陪玩 #${item.id}`}
+        </p>
+        <p className="text-xs text-neutral-500">{formatPrice(item.price)}</p>
+        {tags.length > 0 && (
+          <div className="flex justify-center gap-2 text-[0.68rem] text-neutral-500">
+            {tags.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+          </div>
         )}
       </div>
     </article>
@@ -104,20 +78,33 @@ const RecommendationCard = ({ item }: { item: PeiwanItem }) => {
 };
 
 export function PeiwanRecommendations() {
-  const [items, setItems] = useState<PeiwanItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [seed] = useState(() => Math.random().toString(36).slice(2, 10));
-  const [current, setCurrent] = useState(0);
-  const [animKey, setAnimKey] = useState(0);
+  const [available, setAvailable] = useState<{ item: PeiwanItem; src: string }[]>([]);
+  const [imageEntries, setImageEntries] = useState<ImageEntry[]>([]);
+  const [start, setStart] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
     const load = async () => {
       setLoading(true);
       setError(null);
+      setAvailable([]);
+
       try {
-        const res = await fetch(`/api/peiwan?page=1&pageSize=6&seed=${seed}`, {
+        // 1) 读取本地名片列表
+        const imgRes = await fetch('/api/peiwanRecommend', { signal: controller.signal, cache: 'no-store' });
+        if (!imgRes.ok) throw new Error('图片列表加载失败');
+        const imgJson = (await imgRes.json()) as { data?: ImageEntry[] };
+        const imgs = (imgJson.data || []).slice(0, MAX_DISPLAY);
+        setImageEntries(imgs);
+        if (imgs.length === 0) {
+          setAvailable([]);
+          return;
+        }
+
+        // 2) 拉取陪玩数据（尽量覆盖更多）
+        const res = await fetch(`/api/peiwan?page=1&pageSize=500&seed=home`, {
           signal: controller.signal,
           cache: 'no-store',
         });
@@ -125,7 +112,45 @@ export function PeiwanRecommendations() {
           throw new Error('加载失败');
         }
         const json = (await res.json()) as ApiResponse;
-        setItems(json.data || []);
+        const nextItems = json.data || [];
+        const itemMap = new Map(nextItems.map((item) => [item.id, item]));
+
+        const found: { item: PeiwanItem; src: string }[] = [];
+        const missing: ImageEntry[] = [];
+
+        imgs.forEach((img) => {
+          const item = itemMap.get(img.id);
+          if (item) {
+            found.push({ item, src: img.src });
+          } else {
+            missing.push(img);
+          }
+        });
+
+        // 3) 对于未命中的 id，单独请求一次
+        for (const miss of missing) {
+          if (found.length >= MAX_DISPLAY) break;
+          try {
+            const r = await fetch(`/api/peiwan?id=${miss.id}&page=1&pageSize=1`, {
+              signal: controller.signal,
+              cache: 'no-store',
+            });
+            if (r.ok) {
+              const j = (await r.json()) as ApiResponse;
+              const item = j.data?.[0];
+              if (item) {
+                found.push({ item, src: miss.src });
+                continue;
+              }
+            }
+          } catch (err) {
+            if (err instanceof DOMException && err.name === 'AbortError') return;
+          }
+          // 如果没查到数据库，也展示本地名片，使用占位信息
+          found.push({ item: buildFallbackItem(miss.id), src: miss.src });
+        }
+
+        setAvailable(found.slice(0, MAX_DISPLAY));
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         setError('推荐数据加载失败，稍后再试。');
@@ -136,80 +161,85 @@ export function PeiwanRecommendations() {
 
     load();
     return () => controller.abort();
-  }, [seed]);
+  }, []);
 
   useEffect(() => {
-    if (items.length === 0) return undefined;
-    setCurrent(0);
-    setAnimKey((k) => k + 1);
-    const id = window.setInterval(() => {
-      setCurrent((prev) => (prev + 1) % items.length);
-      setAnimKey((k) => k + 1);
-    }, SLIDE_MS);
-    return () => window.clearInterval(id);
-  }, [items.length]);
+    setStart(0);
+  }, [available.length]);
+
+  const visible = (() => {
+    if (available.length <= 4) return available;
+    const out: { item: PeiwanItem; src: string }[] = [];
+    for (let i = 0; i < 4; i += 1) {
+      out.push(available[(start + i) % available.length]);
+    }
+    return out;
+  })();
+
+  const handlePrev = () => {
+    setStart((prev) => (available.length === 0 ? 0 : (prev - 4 + available.length) % available.length));
+  };
+
+  const handleNext = () => {
+    setStart((prev) => (available.length === 0 ? 0 : (prev + 4) % available.length));
+  };
 
   return (
-    <section className="w-full px-6 pb-16 -mt-8">
-      <div className="mx-auto max-w-6xl rounded-3xl border border-white/20 bg-white/10 p-6 sm:p-10 shadow-2xl backdrop-blur-2xl space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.45em] text-white/70">Spotlight</p>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-[0.2em] text-[#f0eaff]">陪玩推荐</h2>
-            
-          </div>
+    <section className="w-full h-full text-neutral-900 flex flex-col">
+      <div className="w-full flex-1 flex flex-col justify-center gap-8">
+        <div className="text-center text-2xl sm:text-2xl font-semibold tracking-[0.22em] text-neutral-800">
+          陪玩推荐
         </div>
 
         {loading && (
-          <div className="relative flex min-h-[480px] items-center justify-center">
-            <div className="h-full w-full max-w-[420px] animate-pulse rounded-3xl border border-white/15 bg-white/5 p-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0">
+            {Array.from({ length: MAX_DISPLAY }).map((_, key) => (
+              <div
+                key={key}
+                className="h-[360px] sm:h-[420px] animate-pulse bg-neutral-100"
+              />
+            ))}
           </div>
         )}
 
-        {!loading && error && <p className="text-sm text-rose-200">{error}</p>}
+        {!loading && error && <p className="text-sm text-rose-500 text-center">{error}</p>}
 
         {!loading && !error && (
           <>
-            {items.length === 0 ? (
-              <p className="text-sm text-white/80">暂无推荐，稍后再来看看～</p>
+            {available.length === 0 ? (
+              <p className="text-sm text-neutral-700 text-center">暂无推荐，稍后再来看看～</p>
             ) : (
-              <div
-                className="relative flex min-h-[560px] items-center justify-center overflow-hidden"
-              >
-                <div
-                  key={animKey}
-                  className="flex w-full justify-center"
-                  style={{ animation: `peiwan-slide ${SLIDE_MS}ms linear forwards` }}
-                >
-                  <RecommendationCard item={items[current]} />
+              <div className="relative w-full">
+                {available.length > 4 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900/80 text-white text-2xl shadow-lg hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-white/70"
+                      aria-label="上一组"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900/80 text-white text-2xl shadow-lg hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-white/70"
+                      aria-label="下一组"
+                    >
+                      ›
+                    </button>
+                  </>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 w-full">
+                  {visible.map(({ item, src }) => (
+                    <RecommendationCard key={`${item.id}-${src}`} item={item} src={src} />
+                  ))}
                 </div>
               </div>
             )}
           </>
         )}
       </div>
-      <style jsx>{`
-        @keyframes peiwan-slide {
-          0% {
-            transform: translateX(120%);
-            opacity: 0.1;
-          }
-          35% {
-            opacity: 1;
-          }
-          50% {
-            transform: translateX(0%);
-            opacity: 1;
-          }
-          65% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateX(-120%);
-            opacity: 0.1;
-          }
-        }
-      `}</style>
     </section>
   );
 }

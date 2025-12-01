@@ -11,9 +11,16 @@ const buildLoginUrl = () => {
   return url.toString();
 };
 
-export function LoginButton() {
+type LoginButtonProps = {
+  className?: string;
+};
+
+export function LoginButton({ className }: LoginButtonProps) {
   const { session, loading } = useSessionContext();
   const [isProcessing, setIsProcessing] = useState(false);
+  const baseClass =
+    className ??
+    'whitespace-nowrap font-semibold uppercase tracking-[0.22em] text-black transition-colors duration-150 hover:text-neutral-500';
 
   const handleLogin = () => {
     window.location.href = buildLoginUrl();
@@ -31,7 +38,7 @@ export function LoginButton() {
 
   if (loading || isProcessing) {
     return (
-      <button className="transition-transform duration-200 hover:scale-150 hover:text-white/70 opacity-70" disabled>
+      <button className={`${baseClass} opacity-60`} disabled>
         ...
       </button>
     );
@@ -40,7 +47,7 @@ export function LoginButton() {
   if (session) {
     return (
       <button
-        className="transition-transform duration-200 hover:scale-150 hover:text-white/70"
+        className={baseClass}
         onClick={handleLogout}
         title="点击退出登录"
       >
@@ -51,7 +58,7 @@ export function LoginButton() {
 
   return (
     <button
-      className="transition-transform duration-200 hover:scale-150 hover:text-white/70"
+      className={baseClass}
       onClick={handleLogin}
     >
       登录
