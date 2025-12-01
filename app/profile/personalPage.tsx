@@ -277,12 +277,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
               返回主页
             </Link>
             <div className="absolute right-8 top-8 flex items-center gap-3">
-              <Link
-                href="/profile/heart"
-                className="text-xs uppercase tracking-[0.4em] text-[#5c43a3] hover:text-black transition"
-              >
-                心动值
-              </Link>
+              
               <span className="text-xs uppercase tracking-[0.4em] text-gray-400">
                 ID:{member.discordUserId}
               </span>
