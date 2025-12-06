@@ -67,6 +67,8 @@ export const metadata = {
   title: '查询流水',
 };
 
+const PAGE_SIZE = 20;
+
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
 };
@@ -86,6 +88,11 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
       : Array.isArray(discordIdParam)
         ? discordIdParam[0]?.trim()
         : '';
+  const pageParam = searchParams.page;
+  const rawPage = Array.isArray(pageParam) ? pageParam[0] : pageParam;
+  const parsedPage = rawPage ? Number.parseInt(rawPage, 10) : 1;
+  const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+  const skip = (currentPage - 1) * PAGE_SIZE;
 
   const member = discordId
     ? await prisma.member.findUnique({
@@ -94,12 +101,22 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
       })
     : null;
 
-  const transactions = discordId
-    ? await prisma.individualTransaction.findMany({
-        where: { discordId },
-        orderBy: { timeCreatedAt: 'desc' },
-      })
-    : [];
+  const [totalCount, transactions] = discordId
+    ? await Promise.all([
+        prisma.individualTransaction.count({ where: { discordId } }),
+        prisma.individualTransaction.findMany({
+          where: { discordId },
+          orderBy: { timeCreatedAt: 'desc' },
+          skip,
+          take: PAGE_SIZE,
+        }),
+      ])
+    : [0, []];
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const hasPrev = currentPage > 1;
+  const hasNext = currentPage < totalPages;
+  const prevPage = Math.max(1, currentPage - 1);
+  const nextPage = Math.min(totalPages, currentPage + 1);
 
   return (
     <section className="min-h-screen bg-[#020204] text-white px-6 py-12">
@@ -149,11 +166,13 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                   用户：{member?.serverDisplayName ?? '—'}（{discordId}）
                 </p>
               </div>
-              <span className="text-xs uppercase tracking-[0.4em] text-white/50">共 {transactions.length} 条</span>
+              <span className="text-xs uppercase tracking-[0.4em] text-white/50">
+                共 {totalCount} 条 · 第 {Math.min(currentPage, totalPages)} / {totalPages} 页
+              </span>
             </div>
 
             {transactions.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto space-y-3">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-left text-white/60 uppercase tracking-[0.3em] border-b border-white/10">
@@ -182,6 +201,33 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                     })}
                   </tbody>
                 </table>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm text-white/60">
+                  <p>
+                    第 {Math.min(currentPage, totalPages)} / {totalPages} 页 · 共 {totalCount} 条
+                  </p>
+                  <div className="flex gap-2">
+                    <Link
+                      prefetch={false}
+                      href={`/admin/transactions?discordId=${encodeURIComponent(discordId)}&page=${prevPage}`}
+                      className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.3em] ${
+                        hasPrev ? 'border-white/30 hover:bg-white/10' : 'border-white/10 text-white/40 pointer-events-none'
+                      }`}
+                      aria-disabled={!hasPrev}
+                    >
+                      上一页
+                    </Link>
+                    <Link
+                      prefetch={false}
+                      href={`/admin/transactions?discordId=${encodeURIComponent(discordId)}&page=${nextPage}`}
+                      className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.3em] ${
+                        hasNext ? 'border-white/30 hover:bg-white/10' : 'border-white/10 text-white/40 pointer-events-none'
+                      }`}
+                      aria-disabled={!hasNext}
+                    >
+                      下一页
+                    </Link>
+                  </div>
+                </div>
               </div>
             ) : (
               <p className="text-sm text-white/60">暂无流水记录或未找到该用户。</p>
@@ -189,7 +235,7 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
           </div>
         ) : (
           <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-white/60">
-            输入 Discord ID 后点击查询，将显示该用户的全部 individual transactions（时间倒序）。最多一次性返回所有记录，如数据量过大建议后续加分页。
+            输入 Discord ID 后点击查询，将显示该用户的全部 individual transactions（时间倒序）。
           </div>
         )}
       </div>
