@@ -22,10 +22,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // Force desktop viewport width on mobile so the layout follows the desktop format
   width: "1280",
-  // Lock scale at 10% on mobile so every load starts fully zoomed out
-  initialScale: 0.1,
-  minimumScale: 0.1,
-  maximumScale: 0.1,
+  // Lock scale so each load stays at the default (fully缩小的) zoom level on mobile
+  maximumScale: 1,
   userScalable: false,
 };
 
