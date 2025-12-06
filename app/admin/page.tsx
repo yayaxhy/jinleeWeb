@@ -36,7 +36,7 @@ export default function AdminHomePage() {
           <h3 className="text-xl font-semibold">管理陪玩名片</h3>
           <p className="text-sm text-white/70">上传或更新陪玩名片与推荐位名片，文件会直接写入 public 目录。</p>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
             <div>
               <p className="text-lg font-semibold">陪玩列表名片</p>
@@ -60,19 +60,6 @@ export default function AdminHomePage() {
               className="inline-flex w-full items-center justify-center rounded-full bg-[#5c43a3] px-4 py-2 text-sm text-white hover:bg-[#4a3388]"
             >
               前往上传
-            </Link>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
-            <div>
-              <p className="text-lg font-semibold">查询流水</p>
-              <p className="text-sm text-white/60">输入 Discord ID，查看该用户的全部 individual transactions。</p>
-            </div>
-            <Link
-              href="/admin/transactions"
-              className="inline-flex w-full items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
-            >
-              前往查询
             </Link>
           </div>
         </div>
