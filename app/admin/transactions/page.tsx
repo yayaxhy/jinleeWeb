@@ -88,11 +88,30 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
       : Array.isArray(discordIdParam)
         ? discordIdParam[0]?.trim()
         : '';
+  const startParam = Array.isArray(searchParams.startDate) ? searchParams.startDate[0] : searchParams.startDate;
+  const endParam = Array.isArray(searchParams.endDate) ? searchParams.endDate[0] : searchParams.endDate;
+  const parsedStart = startParam ? new Date(startParam) : null;
+  const parsedEnd = endParam ? new Date(endParam) : null;
+  const startDate = parsedStart && !Number.isNaN(parsedStart.getTime()) ? parsedStart : null;
+  const endDate = parsedEnd && !Number.isNaN(parsedEnd.getTime()) ? parsedEnd : null;
   const pageParam = searchParams.page;
   const rawPage = Array.isArray(pageParam) ? pageParam[0] : pageParam;
   const parsedPage = rawPage ? Number.parseInt(rawPage, 10) : 1;
   const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (currentPage - 1) * PAGE_SIZE;
+  const whereClause = discordId
+    ? {
+        discordId,
+        ...(startDate || endDate
+          ? {
+              timeCreatedAt: {
+                gte: startDate ?? undefined,
+                lte: endDate ?? undefined,
+              },
+            }
+          : {}),
+      }
+    : undefined;
 
   const member = discordId
     ? await prisma.member.findUnique({
@@ -103,9 +122,9 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
 
   const [totalCount, transactions] = discordId
     ? await Promise.all([
-        prisma.individualTransaction.count({ where: { discordId } }),
+        prisma.individualTransaction.count({ where: whereClause }),
         prisma.individualTransaction.findMany({
-          where: { discordId },
+          where: whereClause,
           orderBy: { timeCreatedAt: 'desc' },
           skip,
           take: PAGE_SIZE,
@@ -138,7 +157,7 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
           <form className="space-y-3" action="/admin/transactions" method="get">
             <label className="text-sm text-white/80">Discord ID</label>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3">
               <input
                 type="text"
                 name="discordId"
@@ -146,6 +165,26 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                 placeholder="请输入 Discord ID"
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
               />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-xs text-white/60">开始日期</label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    defaultValue={startParam ?? ''}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-white/60">结束日期</label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    defaultValue={endParam ?? ''}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+                  />
+                </div>
+              </div>
               <button
                 type="submit"
                 className="inline-flex items-center justify-center rounded-full bg-[#5c43a3] px-6 py-3 text-sm tracking-[0.2em] text-white hover:bg-[#4a3388]"
@@ -153,7 +192,7 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                 查询
               </button>
             </div>
-            <p className="text-xs text-white/60">查询结果按时间倒序显示。</p>
+            <p className="text-xs text-white/60">查询结果按时间倒序显示，可按日期区间筛选。</p>
           </form>
         </div>
 
@@ -164,6 +203,14 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                 <h2 className="text-xl font-semibold">查询结果</h2>
                 <p className="text-sm text-white/60">
                   用户：{member?.serverDisplayName ?? '—'}（{discordId}）
+                  {startDate || endDate ? (
+                    <>
+                      {' '}
+                      · 时间范围：
+                      {startDate ? startDate.toLocaleDateString('zh-CN') : '—'} ~{' '}
+                      {endDate ? endDate.toLocaleDateString('zh-CN') : '—'}
+                    </>
+                  ) : null}
                 </p>
               </div>
               <span className="text-xs uppercase tracking-[0.4em] text-white/50">
@@ -205,10 +252,12 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                   <p>
                     第 {Math.min(currentPage, totalPages)} / {totalPages} 页 · 共 {totalCount} 条
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Link
                       prefetch={false}
-                      href={`/admin/transactions?discordId=${encodeURIComponent(discordId)}&page=${prevPage}`}
+                      href={`/admin/transactions?discordId=${encodeURIComponent(discordId)}&page=${prevPage}${
+                        startParam ? `&startDate=${encodeURIComponent(startParam)}` : ''
+                      }${endParam ? `&endDate=${encodeURIComponent(endParam)}` : ''}`}
                       className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.3em] ${
                         hasPrev ? 'border-white/30 hover:bg-white/10' : 'border-white/10 text-white/40 pointer-events-none'
                       }`}
@@ -216,9 +265,35 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                     >
                       上一页
                     </Link>
+                    <form
+                      method="get"
+                      action="/admin/transactions"
+                      className="flex items-center gap-2 text-xs uppercase tracking-[0.3em]"
+                    >
+                      <input type="hidden" name="discordId" value={discordId} />
+                      {startParam ? <input type="hidden" name="startDate" value={startParam} /> : null}
+                      {endParam ? <input type="hidden" name="endDate" value={endParam} /> : null}
+                      <label className="text-white/60">跳转页</label>
+                      <input
+                        type="number"
+                        name="page"
+                        min={1}
+                        max={totalPages}
+                        defaultValue={currentPage}
+                        className="w-20 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-[#5c43a3]"
+                      />
+                      <button
+                        type="submit"
+                        className="rounded-full border border-white/30 px-3 py-2 text-white hover:bg-white/10"
+                      >
+                        跳转
+                      </button>
+                    </form>
                     <Link
                       prefetch={false}
-                      href={`/admin/transactions?discordId=${encodeURIComponent(discordId)}&page=${nextPage}`}
+                      href={`/admin/transactions?discordId=${encodeURIComponent(discordId)}&page=${nextPage}${
+                        startParam ? `&startDate=${encodeURIComponent(startParam)}` : ''
+                      }${endParam ? `&endDate=${encodeURIComponent(endParam)}` : ''}`}
                       className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.3em] ${
                         hasNext ? 'border-white/30 hover:bg-white/10' : 'border-white/10 text-white/40 pointer-events-none'
                       }`}
@@ -235,7 +310,7 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
           </div>
         ) : (
           <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-6 text-sm text-white/60">
-            输入 Discord ID 后点击查询，将显示该用户的全部 individual transactions（时间倒序）。
+            输入 Discord ID 后点击查询，将显示该用户的全部 individual transactions（时间倒序）。可选填日期范围并分页查看。
           </div>
         )}
       </div>
