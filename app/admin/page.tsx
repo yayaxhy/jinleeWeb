@@ -10,6 +10,22 @@ export default function AdminHomePage() {
           请选择操作：可直接新增陪玩，或输入 Discord ID 修改对应信息。
         </p>
       </div>
+
+      <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm text-white/70">查询流水</p>
+            <p className="text-xs text-white/50">输入 Discord ID 查看全部 individual transactions</p>
+          </div>
+          <Link
+            href="/admin/transactions"
+            className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
+          >
+            前往查询
+          </Link>
+        </div>
+      </div>
+
       <AdminPeiwanActions />
       <p className="text-xs text-white/60">
         如需更多菜单，可手动访问 <code className="bg-white/10 px-1">/admin/peiwan/new</code> 或 <code className="bg-white/10 px-1">/admin/peiwan/&lt;DiscordID&gt;</code>。
