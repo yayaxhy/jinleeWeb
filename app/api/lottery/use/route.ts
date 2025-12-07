@@ -46,11 +46,12 @@ const callGiftWebhook = async (params: {
   quantity?: number;
 }) => {
   const port = process.env.INTERNAL_API_PORT;
+  const host = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
   const token = process.env.INTERNAL_API_TOKEN;
   if (!port || !token) {
     throw new Error('内部礼物接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）');
   }
-  const endpoint = `http://127.0.0.1:${port}/internal/gift`;
+  const endpoint = `http://${host}:${port}/internal/gift`;
   const payload = {
     giverId: params.giverId,
     receiverId: params.receiverId,
