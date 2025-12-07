@@ -88,6 +88,13 @@ enum LotteryPool {
   SPECIAL  // 特级（有限）
 }
 
+enum LotteryPrizeType {
+  COUPON
+  GIFT
+  OTHER
+  SELFUSE
+}
+
 /**
  * ---------------- Models ----------------
  */
@@ -422,6 +429,7 @@ model LotteryPrize {
   id           String      @id @default(cuid())
   name         String
   pool         LotteryPool
+  type         LotteryPrizeType @default(COUPON)
   weight       Int
   unlimited    Boolean     @default(false)
   stock        Int?

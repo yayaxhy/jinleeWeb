@@ -180,16 +180,13 @@ export function ReferralManager() {
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-white/50">ADMIN</p>
           <h2 className="text-2xl font-semibold">邀请人管理</h2>
-          <p className="text-sm text-white/70">插入 / 查询 / 删除 Referral 记录，校验唯一被邀请人且禁止自邀。</p>
+          <p className="text-sm text-white/70">插入 / 查询 / 删除 邀请人 记录</p>
         </div>
-        <span className="text-xs text-white/60">当前结果：{total} 条</span>
+        
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <form
-          onSubmit={handleCreate}
-          className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 md:col-span-2 md:min-h-[360px]"
-        >
+     <div className="grid gap-4 md:grid-cols-2">
+        <form onSubmit={handleCreate} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-white">新增邀请关系</h3>
             {isCreating ? <span className="text-xs text-white/60">提交中…</span> : null}
@@ -214,7 +211,7 @@ export function ReferralManager() {
               placeholder="必填"
             />
           </label>
-          <label className="space-y-1 text-sm">
+          <label className=" text-sm">
             <span className="text-white/70">类型（type）</span>
             <select
               value={createForm.type}
@@ -233,7 +230,7 @@ export function ReferralManager() {
           <button
             type="submit"
             disabled={isCreating}
-            className="w-full rounded-full bg-[#5c43a3] px-4 py-2 text-sm font-semibold tracking-[0.2em] text-white hover:bg-[#4a3388] disabled:opacity-60"
+            className="mt-2 w-full rounded-full bg-[#5c43a3] px-4 py-2 text-sm font-semibold tracking-[0.2em] text-white hover:bg-[#4a3388] disabled:opacity-60 md:mt-4"
           >
             保存
           </button>
@@ -263,24 +260,8 @@ export function ReferralManager() {
               />
             </label>
           </div>
-          <label className="space-y-1 text-sm">
-            <span className="text-white/70">类型</span>
-            <select
-              value={filters.type}
-              onChange={(event) => setFilters((prev) => ({ ...prev, type: event.target.value }))}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-            >
-              <option value="" className="bg-[#0f0f0f] text-white">
-                全部
-              </option>
-              {REFERRAL_TYPES.map((type) => (
-                <option key={type} value={type} className="bg-[#0f0f0f] text-white">
-                  {type}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex flex-wrap gap-2">
+          
+          <div className="mt-2 flex flex-wrap gap-2 md:mt-4">
             <button
               type="submit"
               className="rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"

@@ -108,6 +108,14 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const resolvedSearchParams =
     ((await Promise.resolve(rawSearchParams)) ?? {}) as Record<string, string | string[] | undefined>;
 
+  const navLinks = [
+    { href: '/profile', label: '个人主页' },
+    { href: '/profile/bag', label: '我的背包' },
+    { href: '/profile/heart', label: '心动值' },
+    { href: '/recharge', label: '充值中心' },
+    { href: '/join', label: '加入陪玩' },
+  ];
+
   const session = await getServerSession();
   const discordId = session?.discordId;
 
@@ -249,8 +257,24 @@ export default async function Profile(props: ProfilePageProps = {}) {
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
-      <section className="max-w-5xl mx-auto space-y-10">
-        <div className="bg-white border border-black/5 rounded-[32px] shadow-sm overflow-hidden">
+      <section className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[240px_1fr]">
+        <aside className="rounded-[24px] border border-black/5 bg-white p-6 h-max sticky top-8 space-y-4">
+          <p className="text-xs uppercase tracking-[0.4em] text-gray-500">跳转</p>
+          <nav className="space-y-2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="block rounded-xl border border-black/5 px-4 py-3 text-sm font-medium text-[#171717] hover:border-[#5c43a3] hover:text-[#5c43a3] transition bg-white/50"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </aside>
+
+        <div className="space-y-10">
+          <div className="bg-white border border-black/5 rounded-[32px] shadow-sm overflow-hidden">
           <div className="relative flex flex-col items-center gap-3 py-12 text-center">
             <p className="text-xs uppercase tracking-[0.6em] text-gray-400">My Profile</p>
             <div className="relative w-28 h-28 rounded-2xl border border-black/10 bg-gradient-to-br from-[#f6f1ff] to-[#e1d5ff] flex items-center justify-center text-4xl font-semibold text-[#5c43a3] overflow-hidden">
@@ -267,21 +291,16 @@ export default async function Profile(props: ProfilePageProps = {}) {
                 avatarLetter
               )}
             </div>
-            
+
             <p className="text-3xl font-semibold tracking-wide">{displayName}</p>
-            
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">ID: {member.discordUserId}</p>
+
             <Link
               href="/"
               className="absolute left-8 top-8 text-xs uppercase tracking-[0.4em] text-gray-500 hover:text-black transition"
             >
               返回主页
             </Link>
-            <div className="absolute right-8 top-8 flex items-center gap-3">
-              
-              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">
-                ID:{member.discordUserId}
-              </span>
-            </div>
           </div>
           <div className="border-t border-dashed border-black/10">
             <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-dashed divide-black/10">
@@ -467,9 +486,9 @@ export default async function Profile(props: ProfilePageProps = {}) {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-semibold tracking-wide text-[#5c43a3]">流水记录</h2>
-                <p className="text-sm text-gray-500">与陪玩账户关联的收支流水</p>
-              </div>
-              
+              <p className="text-sm text-gray-500">与陪玩账户关联的收支流水</p>
+            </div>
+             
             </div>
             {transactions.length > 0 ? (
               <div className="overflow-x-auto">
@@ -536,6 +555,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
             )}
           </div>
         )}
+        </div>
       </section>
     </main>
   );
