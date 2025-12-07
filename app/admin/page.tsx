@@ -11,18 +11,35 @@ export default function AdminHomePage() {
         </p>
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm text-white/70">查询流水</p>
-            <p className="text-xs text-white/50">输入 Discord ID 查看全部 individual transactions</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-white/70">查询流水</p>
+              <p className="text-xs text-white/50">输入 Discord ID 查看全部 individual transactions</p>
+            </div>
+            <Link
+              href="/admin/transactions"
+              className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
+            >
+              前往查询
+            </Link>
           </div>
-          <Link
-            href="/admin/transactions"
-            className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
-          >
-            前往查询
-          </Link>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-white/70">邀请人管理</p>
+              <p className="text-xs text-white/50">插入 / 查询 / 修改 / 删除 Referral 记录</p>
+            </div>
+            <Link
+              href="/admin/referrals"
+              className="inline-flex items-center justify-center rounded-full bg-[#5c43a3] px-4 py-2 text-sm text-white hover:bg-[#4a3388]"
+            >
+              点击前往
+            </Link>
+          </div>
         </div>
       </div>
 

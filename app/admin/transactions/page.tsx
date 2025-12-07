@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
-import { ReferralManager } from '@/components/admin/ReferralManager';
 
 const stringify = (value: unknown): string => {
   if (value === null || value === undefined) return '';
@@ -315,7 +314,6 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
           </div>
         )}
 
-        <ReferralManager />
       </div>
     </section>
   );
