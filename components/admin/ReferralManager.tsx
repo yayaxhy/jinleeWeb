@@ -185,8 +185,11 @@ export function ReferralManager() {
         <span className="text-xs text-white/60">当前结果：{total} 条</span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <form onSubmit={handleCreate} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+      <div className="grid gap-4 md:grid-cols-3">
+        <form
+          onSubmit={handleCreate}
+          className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3 md:col-span-2"
+        >
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-white">新增邀请关系</h3>
             {isCreating ? <span className="text-xs text-white/60">提交中…</span> : null}
