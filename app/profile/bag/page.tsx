@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { DiscountUsageButton } from '@/components/profile/DiscountUsageButton';
+import { GiftUsageButton, SelfUseButton } from '@/components/profile/GiftAndSelfUseButtons';
 
 const formatDateOnly = (value?: Date | string | null) => {
   if (!value) return '—';
@@ -21,7 +22,7 @@ export default async function BagPage() {
     orderBy: { createdAt: 'desc' },
     include: {
       prize: {
-        select: { name: true, pool: true, imageUrl: true },
+        select: { name: true, pool: true, imageUrl: true, type: true },
       },
     },
     take: 200,
@@ -72,6 +73,7 @@ export default async function BagPage() {
                     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                       {list.map((draw) => {
                         const prizeName = draw.prize?.name ?? '未中奖';
+                        const prizeType = draw.prize?.type ?? 'COUPON';
                         const isUsed = draw.status === 'USED';
                         const status = draw.status === 'UNUSED' ? '未使用' : draw.status === 'USED' ? '已使用' : '已过期';
                         const metaTime =
@@ -89,7 +91,15 @@ export default async function BagPage() {
                                 <span className="px-3 py-1 rounded-full border border-black/10 bg-white/60 text-xs uppercase tracking-[0.3em] text-gray-600">
                                   {status}
                                 </span>
-                                {draw.status === 'UNUSED' ? <DiscountUsageButton kind="lottery" /> : null}
+                                {draw.status === 'UNUSED' ? (
+                                  prizeType === 'COUPON' ? (
+                                    <DiscountUsageButton kind="lottery" triggerLabel="使用" />
+                                  ) : prizeType === 'GIFT' ? (
+                                    <GiftUsageButton lotteryId={draw.id} prizeName={prizeName} />
+                                  ) : prizeType === 'SELFUSE' ? (
+                                    <SelfUseButton lotteryId={draw.id} prizeName={prizeName} />
+                                  ) : null
+                                ) : null}
                               </div>
                               <p className="text-lg font-semibold text-[#171717]">{prizeName}</p>
                               <p className="text-sm text-gray-500">{isUsed ? '使用时间' : '到期时间'}：{metaTime}</p>
