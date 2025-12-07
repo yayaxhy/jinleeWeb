@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
 const BOSS_LEVELS = [
-  { threshold: 500, label: '银锦' },
+  { threshold: 500, label: '锦鲤' },
   { threshold: 1500, label: '金锦' },
   { threshold: 3000, label: '玉锦' },
   { threshold: 5000, label: '瑞锦' },
