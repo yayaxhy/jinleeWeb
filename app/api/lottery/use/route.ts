@@ -119,11 +119,12 @@ export async function POST(request: Request) {
     if (!receiverId) {
       return NextResponse.json({ error: '未找到目标用户' }, { status: 404 });
     }
+    const giftNameForBot = (draw.prize?.name ?? '').includes('小蛋糕') ? '小蛋糕' : draw.prize?.name ?? '礼物';
     try {
       await callGiftWebhook({
         giverId: session.discordId,
         receiverId,
-        giftName: draw.prize?.name ?? '礼物',
+        giftName: giftNameForBot,
         quantity: 1,
       });
     } catch (error) {
