@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
+import { ReferralManager } from '@/components/admin/ReferralManager';
 
 const stringify = (value: unknown): string => {
   if (value === null || value === undefined) return '';
@@ -313,6 +314,8 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
             输入 Discord ID 后点击查询，将显示该用户的全部 individual transactions（时间倒序）。可选填日期范围并分页查看。
           </div>
         )}
+
+        <ReferralManager />
       </div>
     </section>
   );

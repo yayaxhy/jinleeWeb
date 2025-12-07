@@ -81,6 +81,13 @@ enum RedEnvelopeStatus {
   REFUNDED
 }
 
+enum LotteryPool {
+  NORMAL   // 银色
+  MEDIUM   // 金色
+  ADVANCED // 高级（有限）
+  SPECIAL  // 特级（有限）
+}
+
 /**
  * ---------------- Models ----------------
  */
@@ -119,8 +126,20 @@ model Member {
   heartFrom HeartCounter[] @relation("HeartFrom")
   heartTo   HeartCounter[] @relation("HeartTo")
 
+  // Lottery draws
+  lotteryDraws LotteryDraw[]
+  lotteryPity  LotteryPity?
+
   // Back-relation for WorkerLock (one active lock at most)
   workerLock WorkerLock? @relation("MemberWorkerLock")
+
+  // Invite link reward records
+  inviteRewardsGiven    InviteLinkUsage[] @relation("MemberToInviteLinkUsage")
+  inviteRewardsReceived InviteLinkUsage[] @relation("InviteeToInviteLinkUsage")
+
+  // Referral relations
+  referralInviter Referral[] @relation("ReferralInviter")
+  referralInvitee Referral?  @relation("ReferralInvitee")
 
   // Display name inside target Discord guild
   serverDisplayName String?
@@ -169,6 +188,7 @@ model IndividualTransaction {
 
 enum CouponType {
   DISCOUNT_90
+  DISCOUNT_80
 }
 
 enum CouponStatus {
@@ -396,4 +416,112 @@ model RedEnvelope {
   rechargePool    Decimal            @db.Decimal(19, 4)
 
   @@index([status, expiresAt])
+}
+
+model LotteryPrize {
+  id           String      @id @default(cuid())
+  name         String
+  pool         LotteryPool
+  weight       Int
+  unlimited    Boolean     @default(false)
+  stock        Int?
+  imageUrl     String?
+  active       Boolean     @default(true)
+
+  draws LotteryDraw[]
+}
+
+model LotteryDraw {
+  id        String      @id @default(cuid())
+  nonce     String      @unique
+  requestId String?
+  userId    String
+  pool      LotteryPool
+  prizeId   String?
+  cost      Decimal     @db.Decimal(19, 4)
+  random    Float?
+  createdAt DateTime    @default(now())
+  status    LotteryStatus @default(UNUSED)
+  code      String?       @unique
+  expiresAt DateTime?
+  consumeAt DateTime?
+
+  prize  LotteryPrize? @relation(fields: [prizeId], references: [id])
+  member Member        @relation(fields: [userId], references: [discordUserId])
+
+  @@index([userId, createdAt])
+  @@index([pool, createdAt])
+}
+
+model LotteryPity {
+  userId    String   @id
+  missCount Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user Member @relation(fields: [userId], references: [discordUserId], onDelete: Cascade, onUpdate: Cascade)
+}
+
+enum LotteryStatus {
+  UNUSED
+  USED
+  EXPIRED
+}
+
+enum ReferralType {
+  LAOBAN
+  PEIWAN
+}
+
+/// 手工指定唯一邀请人及类型（老板/陪玩）
+model Referral {
+  inviteeId String @id
+  inviterId String
+  type      ReferralType
+  createdAt DateTime @default(now())
+
+  inviter Member @relation("ReferralInviter", fields: [inviterId], references: [discordUserId])
+  invitee Member @relation("ReferralInvitee", fields: [inviteeId], references: [discordUserId])
+  payouts ReferralPayout[]
+
+  @@index([inviterId, type])
+}
+
+/// 记录每单邀请提成的发放（幂等：referralId+orderId 唯一）
+model ReferralPayout {
+  id         String   @id @default(cuid())
+  referralId String
+  orderId    String
+  amount     Decimal  @db.Decimal(19, 4)
+  createdAt  DateTime @default(now())
+
+  referral Referral @relation(fields: [referralId], references: [inviteeId], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([referralId, orderId])
+}
+
+/// 记录用户是否曾经进入过目标 Guild（只插入一次，用于防止重复邀请奖励）
+model GuildJoinRecord {
+  userId       String   @id
+  guildId      String
+  firstJoinedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([guildId])
+}
+
+/// 邀请链接使用并发放 2 元奖励的流水（不依赖 Referral 表）
+model InviteLinkUsage {
+  id         String   @id @default(cuid())
+  guildId    String
+  inviteeId  String   @unique
+  inviterId  String
+  code       String?
+  rewardedAt DateTime @default(now())
+  rewardAmount Decimal @db.Decimal(19, 4)
+  createdAt  DateTime @default(now())
+
+  inviter Member @relation("MemberToInviteLinkUsage", fields: [inviterId], references: [discordUserId], onDelete: Cascade)
+  invitee Member @relation("InviteeToInviteLinkUsage", fields: [inviteeId], references: [discordUserId], onDelete: Cascade)
+
+  @@index([guildId, inviterId])
 }
