@@ -3,6 +3,7 @@ import { isAdminDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { buildPeiwanDataObject, normalizePeiwanPayload } from '@/lib/peiwan/payload';
 import { getServerSession } from '@/lib/session';
+import { Prisma } from '@prisma/client';
 
 const ensureAdminSession = async () => {
   const session = await getServerSession();
@@ -42,5 +43,48 @@ export async function PATCH(
       return NextResponse.json({ error: '未找到该陪玩' }, { status: 404 });
     }
     return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ discordId: string }> },
+) {
+  const session = await ensureAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: '无权访问' }, { status: 403 });
+  }
+
+  const { discordId: rawDiscordId } = await context.params;
+  const token = decodeURIComponent(rawDiscordId).trim();
+  const numericId = Number(token);
+  const searchByPeiwanId = Number.isSafeInteger(numericId) && numericId > 0;
+  if (!token) {
+    return NextResponse.json({ error: '缺少陪玩ID' }, { status: 400 });
+  }
+
+  try {
+    const existing =
+      (searchByPeiwanId
+        ? await prisma.pEIWAN.findUnique({ where: { PEIWANID: numericId } })
+        : null) || (await prisma.pEIWAN.findUnique({ where: { discordUserId: token } }));
+
+    if (!existing) {
+      return NextResponse.json({ error: '未找到陪玩' }, { status: 404 });
+    }
+
+    await prisma.pEIWAN.delete({
+      where: searchByPeiwanId ? { PEIWANID: numericId } : { discordUserId: token },
+    });
+
+    return NextResponse.json(
+      { success: true, peiwanId: existing.PEIWANID, discordUserId: existing.discordUserId },
+      { status: 200 },
+    );
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      return NextResponse.json({ error: '存在关联订单，无法删除' }, { status: 409 });
+    }
+    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminPeiwanActions } from '@/components/admin/AdminPeiwanActions';
+import { DeletePeiwanCard } from '@/components/admin/DeletePeiwanCard';
 
 export default function AdminHomePage() {
   return (
@@ -44,6 +45,7 @@ export default function AdminHomePage() {
       </div>
 
       <AdminPeiwanActions />
+      <DeletePeiwanCard />
       <p className="text-xs text-white/60">
         如需更多菜单，可手动访问 <code className="bg-white/10 px-1">/admin/peiwan/new</code> 或 <code className="bg-white/10 px-1">/admin/peiwan/&lt;DiscordID&gt;</code>。
       </p>
