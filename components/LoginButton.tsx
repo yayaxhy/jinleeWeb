@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useSessionContext } from './SessionProvider';
 
@@ -46,13 +47,29 @@ export function LoginButton({ className }: LoginButtonProps) {
 
   if (session) {
     return (
-      <button
-        className={baseClass}
-        onClick={handleLogout}
-        title="点击退出登录"
-      >
-        {session.username}
-      </button>
+      <div className="relative group">
+        <Link
+          href="/profile"
+          className={`${baseClass} inline-flex items-center`}
+          title="进入个人主页"
+        >
+          {session.username}
+        </Link>
+        <div className="pointer-events-none absolute right-0 mt-2 w-44 rounded-md border border-black/10 bg-white/95 text-sm shadow-lg opacity-0 translate-y-1 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-y-0">
+          <Link
+            href="/profile"
+            className="block w-full px-4 py-2 text-left text-black hover:bg-neutral-100"
+          >
+            个人主页
+          </Link>
+          <button
+            className="block w-full px-4 py-2 text-left text-black hover:bg-neutral-100"
+            onClick={handleLogout}
+          >
+            退出登录
+          </button>
+        </div>
+      </div>
     );
   }
 
