@@ -82,7 +82,6 @@ export function LoginButton({ className }: LoginButtonProps) {
               : 'pointer-events-none opacity-0 translate-y-1'
           }`}
           onMouseEnter={openMenu}
-          onMouseLeave={closeMenu}
         >
           <Link
             href="/profile"
