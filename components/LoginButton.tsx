@@ -65,6 +65,7 @@ export function LoginButton({ className }: LoginButtonProps) {
           href="/profile"
           className={`${baseClass} inline-flex items-center`}
           title="进入个人主页"
+          onMouseEnter={openMenu}
         >
           {session.username}
         </Link>
