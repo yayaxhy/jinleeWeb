@@ -14,6 +14,7 @@ const BLOCKED_DISCORD_IDS = [
   '525770714574225408',
   '1439777142899474433',
   '1440688775129862189',
+  '1437105926078205992',
 ];
 
 const normalizePage = (value: string | null, fallback: number) => {
