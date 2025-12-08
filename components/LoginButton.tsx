@@ -20,6 +20,8 @@ export function LoginButton({ className }: LoginButtonProps) {
   const { session, loading } = useSessionContext();
   const [isProcessing, setIsProcessing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const openMenu = () => setMenuOpen(true);
+  const closeMenu = () => setMenuOpen(false);
   const baseClass =
     className ??
     'whitespace-nowrap font-semibold uppercase tracking-[0.22em] text-black transition-colors duration-150 hover:text-neutral-500';
@@ -50,10 +52,14 @@ export function LoginButton({ className }: LoginButtonProps) {
     return (
       <div
         className="relative"
-        onMouseEnter={() => setMenuOpen(true)}
-        onMouseLeave={() => setMenuOpen(false)}
-        onFocus={() => setMenuOpen(true)}
-        onBlur={() => setMenuOpen(false)}
+        onMouseEnter={openMenu}
+        onMouseLeave={closeMenu}
+        onFocus={openMenu}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            closeMenu();
+          }
+        }}
       >
         <Link
           href="/profile"
@@ -68,6 +74,8 @@ export function LoginButton({ className }: LoginButtonProps) {
               ? 'pointer-events-auto opacity-100 translate-y-0'
               : 'pointer-events-none opacity-0 translate-y-1'
           }`}
+          onMouseEnter={openMenu}
+          onMouseLeave={closeMenu}
         >
           <Link
             href="/profile"
