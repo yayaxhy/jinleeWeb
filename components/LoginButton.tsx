@@ -19,6 +19,7 @@ type LoginButtonProps = {
 export function LoginButton({ className }: LoginButtonProps) {
   const { session, loading } = useSessionContext();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const baseClass =
     className ??
     'whitespace-nowrap font-semibold uppercase tracking-[0.22em] text-black transition-colors duration-150 hover:text-neutral-500';
@@ -47,7 +48,13 @@ export function LoginButton({ className }: LoginButtonProps) {
 
   if (session) {
     return (
-      <div className="relative group">
+      <div
+        className="relative"
+        onMouseEnter={() => setMenuOpen(true)}
+        onMouseLeave={() => setMenuOpen(false)}
+        onFocus={() => setMenuOpen(true)}
+        onBlur={() => setMenuOpen(false)}
+      >
         <Link
           href="/profile"
           className={`${baseClass} inline-flex items-center`}
@@ -55,7 +62,13 @@ export function LoginButton({ className }: LoginButtonProps) {
         >
           {session.username}
         </Link>
-        <div className="pointer-events-none absolute right-0 mt-2 w-44 rounded-md border border-black/10 bg-white/95 text-sm shadow-lg opacity-0 translate-y-1 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-y-0">
+        <div
+          className={`absolute right-0 mt-2 w-44 rounded-md border border-black/10 bg-white/95 text-sm shadow-lg transition duration-150 ease-out ${
+            menuOpen
+              ? 'pointer-events-auto opacity-100 translate-y-0'
+              : 'pointer-events-none opacity-0 translate-y-1'
+          }`}
+        >
           <Link
             href="/profile"
             className="block w-full px-4 py-2 text-left text-black hover:bg-neutral-100"
