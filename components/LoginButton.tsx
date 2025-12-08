@@ -51,7 +51,7 @@ export function LoginButton({ className }: LoginButtonProps) {
   if (session) {
     return (
       <div
-        className="relative"
+        className="relative pb-16"
         onMouseEnter={openMenu}
         onMouseLeave={closeMenu}
         onFocus={openMenu}
