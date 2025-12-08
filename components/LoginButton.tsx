@@ -51,7 +51,7 @@ export function LoginButton({ className }: LoginButtonProps) {
   if (session) {
     return (
       <div
-        className="relative pb-16"
+        className="relative"
         onMouseEnter={openMenu}
         onMouseLeave={closeMenu}
         onFocus={openMenu}
@@ -68,6 +68,12 @@ export function LoginButton({ className }: LoginButtonProps) {
         >
           {session.username}
         </Link>
+        <div
+          className="absolute inset-x-0 top-full h-3"
+          aria-hidden="true"
+          onMouseEnter={openMenu}
+          onMouseLeave={closeMenu}
+        />
         <div
           className={`absolute right-0 mt-2 w-44 rounded-md border border-black/10 bg-white/95 text-sm shadow-lg transition duration-150 ease-out ${
             menuOpen
