@@ -93,12 +93,22 @@ export async function GET(request: Request) {
   const games = parseGames(searchParams.get('games'));
   const techTag = parseBoolean(searchParams.get('techTag'));
 
+  const deletedPeiwanIds = (
+    await prisma.peiwanDeletion.findMany({ select: { peiwanId: true } })
+  )
+    .map((item) => item.peiwanId)
+    .filter((id) => Number.isInteger(id));
+  const deletedSet = new Set(deletedPeiwanIds);
+
   const where: Prisma.PEIWANWhereInput = {};
 
   if (BLOCKED_DISCORD_IDS.length > 0) {
     where.discordUserId = { notIn: BLOCKED_DISCORD_IDS };
   }
   if (peiwanId !== null && !Number.isNaN(peiwanId)) {
+    if (deletedSet.has(peiwanId)) {
+      return NextResponse.json({ data: [], total: 0, page, pageSize, seed });
+    }
     where.PEIWANID = peiwanId;
   }
   if (level) {
@@ -112,6 +122,9 @@ export async function GET(request: Request) {
   }
   if (games.length > 0) {
     where.OR = games.map((game) => ({ [game]: true }));
+  }
+  if (deletedPeiwanIds.length > 0) {
+    where.AND = [...(where.AND ?? []), { PEIWANID: { notIn: deletedPeiwanIds } }];
   }
 
   const skip = (page - 1) * pageSize;

@@ -3,7 +3,7 @@ import { isAdminDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { buildPeiwanDataObject, normalizePeiwanPayload } from '@/lib/peiwan/payload';
 import { getServerSession } from '@/lib/session';
-import { Prisma } from '@prisma/client';
+import { MemberStatus, Prisma } from '@prisma/client';
 
 const ensureAdminSession = async () => {
   const session = await getServerSession();
@@ -73,8 +73,23 @@ export async function DELETE(
       return NextResponse.json({ error: '未找到陪玩' }, { status: 404 });
     }
 
-    await prisma.pEIWAN.delete({
-      where: searchByPeiwanId ? { PEIWANID: numericId } : { discordUserId: token },
+    await prisma.$transaction(async (tx) => {
+      await tx.peiwanDeletion.create({
+        data: {
+          peiwanId: existing.PEIWANID,
+          discordUserId: existing.discordUserId,
+          deletedBy: session.discordId,
+        },
+      });
+
+      await tx.pEIWAN.delete({
+        where: searchByPeiwanId ? { PEIWANID: numericId } : { discordUserId: token },
+      });
+
+      await tx.member.update({
+        where: { discordUserId: existing.discordUserId },
+        data: { status: MemberStatus.LAOBAN },
+      });
     });
 
     return NextResponse.json(

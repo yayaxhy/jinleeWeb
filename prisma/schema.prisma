@@ -379,6 +379,15 @@ model Order {
   @@index([hostId, status])
 }
 
+model PeiwanDeletion {
+  peiwanId      Int      @id
+  discordUserId String
+  deletedBy     String?
+  deletedAt     DateTime @default(now())
+
+  @@index([discordUserId])
+}
+
 model WorkerLock {
   workerId  String   @unique
   orderId   String   @unique
