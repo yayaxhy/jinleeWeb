@@ -82,10 +82,6 @@ export async function DELETE(
         },
       });
 
-      await tx.pEIWAN.delete({
-        where: searchByPeiwanId ? { PEIWANID: numericId } : { discordUserId: token },
-      });
-
       await tx.member.update({
         where: { discordUserId: existing.discordUserId },
         data: { status: MemberStatus.LAOBAN },
@@ -93,13 +89,15 @@ export async function DELETE(
     });
 
     return NextResponse.json(
-      { success: true, peiwanId: existing.PEIWANID, discordUserId: existing.discordUserId },
+      {
+        success: true,
+        peiwanId: existing.PEIWANID,
+        discordUserId: existing.discordUserId,
+        message: '已记录删除并下架陪玩，不再出现在列表',
+      },
       { status: 200 },
     );
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-      return NextResponse.json({ error: '存在关联订单，无法删除' }, { status: 409 });
-    }
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
 }
