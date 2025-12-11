@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
+const ROME_TIMEZONE = 'Europe/Rome';
+
 const PAYMENT_CHANNELS = [
   {
     id: 'alipay',
@@ -241,7 +243,10 @@ export default function RechargeClient({ username }: RechargeClientProps) {
               </span>
             </div>
             {order.paidAt ? (
-              <p className="text-xs text-gray-500">到账时间：{new Date(order.paidAt).toLocaleString()}</p>
+              <p className="text-xs text-gray-500">
+                到账时间：
+                {new Date(order.paidAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
+              </p>
             ) : (
               <p className="text-xs text-gray-500">
                 支付完成后请耐心等待 1-2 分钟，系统会自动确认。

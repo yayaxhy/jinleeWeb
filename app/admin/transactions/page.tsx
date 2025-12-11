@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
 
+const ROME_TIMEZONE = 'Europe/Rome';
+
 const stringify = (value: unknown): string => {
   if (value === null || value === undefined) return '';
   if (typeof value === 'string') return value;
@@ -33,7 +35,7 @@ const formatDate = (value?: Date | string | null) => {
   if (!value) return '—';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleString('zh-CN');
+  return date.toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
 const resolveAmountChange = (amountChange: unknown, balanceBefore: unknown, balanceAfter: unknown): number | null => {
@@ -207,8 +209,8 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                     <>
                       {' '}
                       · 时间范围：
-                      {startDate ? startDate.toLocaleDateString('zh-CN') : '—'} ~{' '}
-                      {endDate ? endDate.toLocaleDateString('zh-CN') : '—'}
+                      {startDate ? startDate.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE }) : '—'} ~{' '}
+                      {endDate ? endDate.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE }) : '—'}
                     </>
                   ) : null}
                 </p>

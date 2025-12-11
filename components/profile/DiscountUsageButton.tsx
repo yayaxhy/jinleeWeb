@@ -19,10 +19,14 @@ type Props = {
   triggerLabel?: string;
 };
 
+const ROME_TIMEZONE = 'Europe/Rome';
+
 const formatDateOnly = (value?: Date | string | null) => {
   if (!value) return '—';
   const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('zh-CN');
+  return Number.isNaN(date.getTime())
+    ? '—'
+    : date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
 export function DiscountUsageButton({ kind, triggerLabel = '使用' }: Props) {

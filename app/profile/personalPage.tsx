@@ -19,6 +19,7 @@ const BOSS_LEVELS = [
 ] as const;
 
 const TRANSACTIONS_PER_PAGE = 10;
+const ROME_TIMEZONE = 'Europe/Rome';
 
 const stringifyUnknown = (value: unknown): string => {
   if (value === null || value === undefined) return '';
@@ -59,7 +60,7 @@ const formatDate = (value?: Date | string | null) => {
   if (!value) return '—';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('zh-CN');
+  return date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
 const resolveAmountChange = (

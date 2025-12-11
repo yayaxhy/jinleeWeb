@@ -17,6 +17,7 @@ type FilterState = {
 };
 
 const REFERRAL_TYPES: ReferralType[] = ['LAOBAN', 'PEIWAN'];
+const ROME_TIMEZONE = 'Europe/Rome';
 
 export function ReferralManager() {
   const [createForm, setCreateForm] = useState<{ inviteeId: string; inviterId: string; type: ReferralType }>({
@@ -338,7 +339,7 @@ export function ReferralManager() {
                     </select>
                   </td>
                   <td className="px-4 py-3 text-white/70">
-                    {new Date(record.createdAt).toLocaleString('zh-CN')}
+                    {new Date(record.createdAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">

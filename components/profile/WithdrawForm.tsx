@@ -4,6 +4,7 @@ import { type FormEvent, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
 const MIN_WITHDRAW_AMOUNT = 100;
+const ROME_TIMEZONE = 'Europe/Rome';
 
 type WithdrawFormProps = {
   maxAmount?: string;
@@ -15,7 +16,7 @@ const formatDateTime = (value?: string | Date | null) => {
   if (!value) return null;
   const parsed = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toLocaleString('zh-CN', { hour12: false });
+  return parsed.toLocaleString('zh-CN', { hour12: false, timeZone: ROME_TIMEZONE });
 };
 
 export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvailableAt }: WithdrawFormProps) {

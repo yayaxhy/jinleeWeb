@@ -5,10 +5,14 @@ import { getServerSession } from '@/lib/session';
 import { DiscountUsageButton } from '@/components/profile/DiscountUsageButton';
 import { GiftUsageButton, SelfUseButton } from '@/components/profile/GiftAndSelfUseButtons';
 
+const ROME_TIMEZONE = 'Europe/Rome';
+
 const formatDateOnly = (value?: Date | string | null) => {
   if (!value) return '—';
   const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('zh-CN');
+  return Number.isNaN(date.getTime())
+    ? '—'
+    : date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
 export default async function BagPage() {
