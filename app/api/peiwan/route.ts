@@ -124,7 +124,13 @@ export async function GET(request: Request) {
     where.OR = games.map((game) => ({ [game]: true }));
   }
   if (deletedPeiwanIds.length > 0) {
-    where.AND = [...(where.AND ?? []), { PEIWANID: { notIn: deletedPeiwanIds } }];
+    const existingAnd = where.AND;
+    const normalizedAnd = Array.isArray(existingAnd)
+      ? existingAnd
+      : existingAnd
+        ? [existingAnd]
+        : [];
+    where.AND = [...normalizedAnd, { PEIWANID: { notIn: deletedPeiwanIds } }];
   }
 
   const skip = (page - 1) * pageSize;
