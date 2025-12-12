@@ -7,8 +7,6 @@ type Props = {
   prizeName: string;
 };
 
-const SIMPLE_PRIZES = new Set(['自定义礼物券', '自定义tag券']);
-
 export function SimpleVoucherUseButton({ prizeName }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -143,15 +141,4 @@ export function FlowVoucherButton({ prizeName }: Props) {
       {msg ? <p className="text-xs text-rose-500">{msg}</p> : null}
     </div>
   );
-}
-
-export function resolveSpecialVoucher(prizeName: string):
-  | { kind: 'simple' }
-  | { kind: 'commission' }
-  | { kind: 'flow' }
-  | null {
-  if (SIMPLE_PRIZES.has(prizeName)) return { kind: 'simple' };
-  if (prizeName === '抽成降1%券') return { kind: 'commission' };
-  if (prizeName === '双倍流水5000券') return { kind: 'flow' };
-  return null;
 }

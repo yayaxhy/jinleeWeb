@@ -8,8 +8,8 @@ import {
   CommissionVoucherButton,
   FlowVoucherButton,
   SimpleVoucherUseButton,
-  resolveSpecialVoucher,
 } from '@/components/profile/VoucherUseButtons';
+import { resolveSpecialVoucher } from '@/lib/voucher';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 
