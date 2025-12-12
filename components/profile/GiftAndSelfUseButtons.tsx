@@ -109,10 +109,9 @@ export function SelfUseButton({ lotteryId, prizeName }: { lotteryId: string; pri
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<Feedback>(null);
+  const [open, setOpen] = useState(false);
 
   const handleUse = async () => {
-    const confirm = window.confirm(`是否确认使用 ${prizeName}？`);
-    if (!confirm) return;
     setSubmitting(true);
     setMessage(null);
     try {
@@ -136,18 +135,56 @@ export function SelfUseButton({ lotteryId, prizeName }: { lotteryId: string; pri
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <button
-        type="button"
-        onClick={() => void handleUse()}
-        disabled={submitting}
-        className={commonButtonClass}
-      >
-        {submitting ? '提交中…' : '使用'}
+      <button type="button" onClick={() => setOpen(true)} className={commonButtonClass}>
+        使用
       </button>
       {message ? (
         <p className={`text-xs ${message.type === 'success' ? 'text-emerald-600' : 'text-rose-500'}`}>
           {message.text}
         </p>
+      ) : null}
+
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">
+          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">自用确认</p>
+                <h3 className="text-lg font-semibold text-[#171717]">{prizeName}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="text-sm font-semibold text-gray-600 hover:text-black"
+              >
+                关闭
+              </button>
+            </div>
+            <p className="text-sm text-gray-600">确定要立即使用这张自用券吗？</p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-black/5"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleUse()}
+                disabled={submitting}
+                className={commonButtonClass}
+              >
+                {submitting ? '提交中…' : '确认使用'}
+              </button>
+            </div>
+            {message ? (
+              <p className={`text-sm ${message.type === 'success' ? 'text-emerald-600' : 'text-rose-500'}`}>
+                {message.text}
+              </p>
+            ) : null}
+          </div>
+        </div>
       ) : null}
     </div>
   );
