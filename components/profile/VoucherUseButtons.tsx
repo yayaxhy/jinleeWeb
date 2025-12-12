@@ -7,6 +7,11 @@ type Props = {
   prizeName: string;
 };
 
+const primaryBtn =
+  'rounded-full bg-[#5c43a3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4a3388] disabled:opacity-50';
+const ghostBtn =
+  'rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-black/5';
+
 export function SimpleVoucherUseButton({ prizeName }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -49,11 +54,16 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
 
 export function CommissionVoucherButton({ prizeName }: Props) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [target, setTarget] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const handleUse = async () => {
+    if (!target.trim()) {
+      setMsg('请输入陪玩ID或Discord ID');
+      return;
+    }
     setLoading(true);
     setMsg(null);
     try {
@@ -74,34 +84,71 @@ export function CommissionVoucherButton({ prizeName }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <input
-        type="text"
-        value={target}
-        onChange={(e) => setTarget(e.target.value)}
-        placeholder="输入陪玩ID或Discord ID"
-        className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-      />
-      <button
-        type="button"
-        onClick={() => void handleUse()}
-        disabled={loading}
-        className="rounded-full border border-[#5c43a3] px-4 py-2 text-xs font-semibold text-[#5c43a3] hover:bg-[#5c43a3]/10 transition disabled:opacity-50"
-      >
-        {loading ? '使用中…' : '使用'}
+    <>
+      <button type="button" onClick={() => setOpen(true)} className={ghostBtn}>
+        使用
       </button>
-      {msg ? <p className="text-xs text-rose-500">{msg}</p> : null}
-    </div>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">
+          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">使用优惠券</p>
+                <h3 className="text-lg font-semibold text-[#171717]">{prizeName}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="text-sm font-semibold text-gray-600 hover:text-black"
+              >
+                关闭
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-sm text-gray-600">陪玩ID 或 Discord ID</label>
+                <input
+                  type="text"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  placeholder="如 51111 或 525770714574225408"
+                  className="w-full rounded-lg border border-black/10 bg-gray-50 px-3 py-2 text-sm text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#5c43a3]"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setOpen(false)} className={ghostBtn}>
+                  取消
+                </button>
+                <button type="button" onClick={() => void handleUse()} disabled={loading} className={primaryBtn}>
+                  {loading ? '使用中…' : '确认使用'}
+                </button>
+              </div>
+              {msg ? (
+                <p className={`text-sm ${msg.startsWith('使用成功') ? 'text-emerald-600' : 'text-rose-500'}`}>
+                  {msg}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
 export function FlowVoucherButton({ prizeName }: Props) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [target, setTarget] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const handleUse = async () => {
+    if (!target.trim()) {
+      setMsg('请输入陪玩ID或Discord ID');
+      return;
+    }
     setLoading(true);
     setMsg(null);
     try {
@@ -122,23 +169,55 @@ export function FlowVoucherButton({ prizeName }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <input
-        type="text"
-        value={target}
-        onChange={(e) => setTarget(e.target.value)}
-        placeholder="输入陪玩ID或Discord ID"
-        className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-      />
-      <button
-        type="button"
-        onClick={() => void handleUse()}
-        disabled={loading}
-        className="rounded-full border border-[#5c43a3] px-4 py-2 text-xs font-semibold text-[#5c43a3] hover:bg-[#5c43a3]/10 transition disabled:opacity-50"
-      >
-        {loading ? '使用中…' : '使用'}
+    <>
+      <button type="button" onClick={() => setOpen(true)} className={ghostBtn}>
+        使用
       </button>
-      {msg ? <p className="text-xs text-rose-500">{msg}</p> : null}
-    </div>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">
+          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">使用优惠券</p>
+                <h3 className="text-lg font-semibold text-[#171717]">{prizeName}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="text-sm font-semibold text-gray-600 hover:text-black"
+              >
+                关闭
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-sm text-gray-600">陪玩ID 或 Discord ID</label>
+                <input
+                  type="text"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  placeholder="如 51111 或 525770714574225408"
+                  className="w-full rounded-lg border border-black/10 bg-gray-50 px-3 py-2 text-sm text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#5c43a3]"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setOpen(false)} className={ghostBtn}>
+                  取消
+                </button>
+                <button type="button" onClick={() => void handleUse()} disabled={loading} className={primaryBtn}>
+                  {loading ? '使用中…' : '确认使用'}
+                </button>
+              </div>
+              {msg ? (
+                <p className={`text-sm ${msg.startsWith('使用成功') ? 'text-emerald-600' : 'text-rose-500'}`}>
+                  {msg}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
