@@ -172,6 +172,7 @@ export async function POST(request: Request) {
       await callInternal('/internal/voucher/commission-minus1', {
         userId: session.discordId,
         targetId: result.targetId,
+        target: result.targetId, // 某些机器人实现可能用 target 字段
       });
     }
 
