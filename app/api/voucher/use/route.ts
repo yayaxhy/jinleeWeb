@@ -170,12 +170,15 @@ export async function POST(request: Request) {
 
     // 佣金券推送到机器人端（与自定义礼物券一致）
     if (special.kind === 'commission' && result.targetId) {
-      await callInternal('/internal/voucher/commission-minus1', {
+      const numericPeiwanId = Number(result.rawTarget);
+      const payload: Record<string, unknown> = {
         userId: session.discordId,
-        targetId: result.targetId,
-        target: result.rawTarget || result.targetId,
         targetDiscordId: result.targetId,
-      });
+      };
+      if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
+        payload.peiwanId = numericPeiwanId;
+      }
+      await callInternal('/internal/voucher/commission-minus1', payload);
     }
 
     return NextResponse.json({ ok: true });
