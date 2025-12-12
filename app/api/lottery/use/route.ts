@@ -108,6 +108,7 @@ export async function POST(request: Request) {
   if (draw.status !== LotteryStatus.UNUSED) {
     return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
   }
+  const now = new Date();
   const prizeType = draw.prize?.type ?? LotteryPrizeType.COUPON;
 
   if (mode === 'gift') {
@@ -120,6 +121,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '未找到目标用户' }, { status: 404 });
     }
     const giftNameForBot = (draw.prize?.name ?? '').includes('小蛋糕') ? '小蛋糕' : draw.prize?.name ?? '礼物';
+    const requestId = `GIFT:${receiverId}`;
+    // 防重：只允许状态为 UNUSED 的券进入后续流程
+    const updateResult = await prisma.lotteryDraw.updateMany({
+      where: { id: lotteryId, status: LotteryStatus.UNUSED },
+      data: { status: LotteryStatus.USED, consumeAt: now, requestId },
+    });
+    if (updateResult.count !== 1) {
+      return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
+    }
     try {
       await callGiftWebhook({
         giverId: session.discordId,
@@ -128,16 +138,15 @@ export async function POST(request: Request) {
         quantity: 1,
       });
     } catch (error) {
+      // Webhook 失败时尝试回滚状态，避免券被“锁死”
+      await prisma.lotteryDraw
+        .updateMany({
+          where: { id: lotteryId, status: LotteryStatus.USED, requestId },
+          data: { status: LotteryStatus.UNUSED, consumeAt: null, requestId: null },
+        })
+        .catch(() => undefined);
       return NextResponse.json({ error: (error as Error).message }, { status: 400 });
     }
-    await prisma.lotteryDraw.update({
-      where: { id: lotteryId },
-      data: {
-        status: LotteryStatus.USED,
-        consumeAt: new Date(),
-        requestId: `GIFT:${receiverId}`,
-      },
-    });
     return NextResponse.json({ ok: true });
   }
 
@@ -145,14 +154,17 @@ export async function POST(request: Request) {
     if (prizeType !== LotteryPrizeType.SELFUSE) {
       return NextResponse.json({ error: '非自用券，无法自用' }, { status: 400 });
     }
-    await prisma.lotteryDraw.update({
-      where: { id: lotteryId },
+    const updateResult = await prisma.lotteryDraw.updateMany({
+      where: { id: lotteryId, status: LotteryStatus.UNUSED },
       data: {
         status: LotteryStatus.USED,
-        consumeAt: new Date(),
+        consumeAt: now,
         requestId: 'SELFUSE',
       },
     });
+    if (updateResult.count !== 1) {
+      return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
+    }
     return NextResponse.json({ ok: true });
   }
 

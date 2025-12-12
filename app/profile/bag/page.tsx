@@ -4,6 +4,12 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { DiscountUsageButton } from '@/components/profile/DiscountUsageButton';
 import { GiftUsageButton, SelfUseButton } from '@/components/profile/GiftAndSelfUseButtons';
+import {
+  CommissionVoucherButton,
+  FlowVoucherButton,
+  SimpleVoucherUseButton,
+  resolveSpecialVoucher,
+} from '@/components/profile/VoucherUseButtons';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 
@@ -96,13 +102,28 @@ export default async function BagPage() {
                                   {status}
                                 </span>
                                 {draw.status === 'UNUSED' ? (
-                                  prizeType === 'COUPON' ? (
-                                    <DiscountUsageButton kind="lottery" triggerLabel="使用" />
-                                  ) : prizeType === 'GIFT' ? (
-                                    <GiftUsageButton lotteryId={draw.id} prizeName={prizeName} />
-                                  ) : prizeType === 'SELFUSE' ? (
-                                    <SelfUseButton lotteryId={draw.id} prizeName={prizeName} />
-                                  ) : null
+                                  (() => {
+                                    const special = resolveSpecialVoucher(prizeName);
+                                    if (special?.kind === 'simple') {
+                                      return <SimpleVoucherUseButton prizeName={prizeName} />;
+                                    }
+                                    if (special?.kind === 'commission') {
+                                      return <CommissionVoucherButton prizeName={prizeName} />;
+                                    }
+                                    if (special?.kind === 'flow') {
+                                      return <FlowVoucherButton prizeName={prizeName} />;
+                                    }
+                                    if (prizeType === 'COUPON') {
+                                      return <DiscountUsageButton kind="lottery" triggerLabel="使用" />;
+                                    }
+                                    if (prizeType === 'GIFT') {
+                                      return <GiftUsageButton lotteryId={draw.id} prizeName={prizeName} />;
+                                    }
+                                    if (prizeType === 'SELFUSE') {
+                                      return <SelfUseButton lotteryId={draw.id} prizeName={prizeName} />;
+                                    }
+                                    return null;
+                                  })()
                                 ) : null}
                               </div>
                               <p className="text-lg font-semibold text-[#171717]">{prizeName}</p>
