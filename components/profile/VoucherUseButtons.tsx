@@ -30,6 +30,7 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');
       setMsg('使用成功');
+      setOpen(false);
       router.refresh();
     } catch (err) {
       setMsg((err as Error).message);
