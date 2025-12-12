@@ -120,7 +120,17 @@ export async function POST(request: Request) {
     if (!receiverId) {
       return NextResponse.json({ error: '未找到目标用户' }, { status: 404 });
     }
-    const giftNameForBot = (draw.prize?.name ?? '').includes('小蛋糕') ? '小蛋糕' : draw.prize?.name ?? '礼物';
+    const prizeName = draw.prize?.name ?? '';
+    const prizeToGift: Record<string, string> = {
+      小蛋糕代金券: '小蛋糕',
+      棒棒糖代金券: '棒棒糖',
+      香水代金券: '香水',
+      旋转木马代金券: '旋转木马',
+      南瓜车代金券: '南瓜车',
+      留声机代金券: '留声机',
+      一日冠75折券: '一日冠',
+    };
+    const giftNameForBot = prizeToGift[prizeName] ?? prizeName.replace(/代金券$/, '') ?? '礼物';
     const requestId = `GIFT:${receiverId}`;
     // 防重：只允许状态为 UNUSED 的券进入后续流程
     const updateResult = await prisma.lotteryDraw.updateMany({
