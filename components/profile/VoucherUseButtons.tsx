@@ -29,7 +29,8 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');
-      setMsg('使用成功');
+      // 成功后直接关闭弹窗并刷新，不保留成功提示
+      setMsg(null);
       setOpen(false);
       router.refresh();
     } catch (err) {
@@ -71,9 +72,7 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
                 {loading ? '使用中…' : '确认使用'}
               </button>
             </div>
-            {msg ? (
-              <p className={`text-sm ${msg === '使用成功' ? 'text-emerald-600' : 'text-rose-500'}`}>{msg}</p>
-            ) : null}
+            {msg ? <p className="text-sm text-rose-500">{msg}</p> : null}
           </div>
         </div>
       ) : null}
