@@ -70,6 +70,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as UseVoucherPayload;
   const prizeName = typeof body.prizeName === 'string' ? body.prizeName.trim() : '';
+  const rawTarget = typeof body.target === 'string' ? body.target.trim() : '';
   if (!prizeName) {
     return NextResponse.json({ error: '缺少 prizeName' }, { status: 400 });
   }
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
         }
       }
 
-      const targetId = await resolveTargetDiscordId(body.target);
+      const targetId = await resolveTargetDiscordId(rawTarget);
       if (!targetId) {
         return { ok: false, code: 404, message: '未找到目标用户' };
       }
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
         if (update.count !== 1) {
           return { ok: false, code: 409, message: '礼物券不可用或已过期' };
         }
-        return { ok: true, targetId };
+        return { ok: true, targetId, rawTarget };
       }
 
       if (special.kind === 'flow') {
@@ -172,7 +173,8 @@ export async function POST(request: Request) {
       await callInternal('/internal/voucher/commission-minus1', {
         userId: session.discordId,
         targetId: result.targetId,
-        target: result.targetId, // 某些机器人实现可能用 target 字段
+        target: result.rawTarget || result.targetId,
+        targetDiscordId: result.targetId,
       });
     }
 
