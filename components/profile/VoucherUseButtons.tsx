@@ -16,11 +16,11 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleUse = async () => {
     setLoading(true);
-    setMsg(null);
+    setError(null);
     try {
       const res = await fetch('/api/voucher/use', {
         method: 'POST',
@@ -29,12 +29,12 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');
-      // 成功后直接关闭弹窗并刷新，不保留成功提示
-      setMsg(null);
+      // 成功后直接关闭弹窗并刷新，不保留提示
+      setError(null);
       setOpen(false);
       router.refresh();
     } catch (err) {
-      setMsg((err as Error).message);
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
       <button type="button" onClick={() => setOpen(true)} className={ghostBtn}>
         使用
       </button>
-      {msg ? <p className="text-xs text-rose-500">{msg}</p> : null}
+      {error ? <p className="text-xs text-rose-500">{error}</p> : null}
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">
@@ -72,7 +72,7 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
                 {loading ? '使用中…' : '确认使用'}
               </button>
             </div>
-            {msg ? <p className="text-sm text-rose-500">{msg}</p> : null}
+            {error ? <p className="text-sm text-rose-500">{error}</p> : null}
           </div>
         </div>
       ) : null}
