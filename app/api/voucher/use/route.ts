@@ -37,6 +37,31 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const FLOW_EXTRA = new Prisma.Decimal(5000);
 const COMMISSION_BOOST = new Prisma.Decimal(0.01);
 
+const INTERNAL_HOST = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
+const INTERNAL_PORT = process.env.INTERNAL_API_PORT;
+const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN;
+
+async function callInternal(path: string, payload: Record<string, unknown>) {
+  if (!INTERNAL_PORT || !INTERNAL_TOKEN) {
+    throw new Error('内部接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）');
+  }
+  const endpoint = `http://${INTERNAL_HOST}:${INTERNAL_PORT}${path}`;
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Internal-Token': INTERNAL_TOKEN,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = typeof data?.error === 'string' ? data.error : `内部接口错误 (${res.status})`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
 export async function POST(request: Request) {
   const session = await getServerSession();
   if (!session?.discordId) {
@@ -73,14 +98,16 @@ export async function POST(request: Request) {
       }
 
       if (special.kind === 'simple') {
-        const update = await tx.lotteryDraw.updateMany({
-          where: { id: draw.id, status: LotteryStatus.UNUSED },
-          data: { status: LotteryStatus.USED, consumeAt: now, requestId: 'VOUCHER:SIMPLE' },
-        });
-        if (update.count !== 1) {
-          return { ok: false, code: 409, message: '礼物券不可用或已过期' };
+        const path =
+          prizeName === '自定义礼物券'
+            ? '/internal/voucher/custom-gift'
+            : '/internal/voucher/custom-tag';
+        try {
+          await callInternal(path, { userId: session.discordId });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, code: 400, message: (err as Error).message };
         }
-        return { ok: true };
       }
 
       const targetId = await resolveTargetDiscordId(body.target);
