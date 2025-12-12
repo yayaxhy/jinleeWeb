@@ -166,6 +166,15 @@ export async function POST(request: Request) {
     if (!result.ok) {
       return NextResponse.json({ error: result.message }, { status: result.code });
     }
+
+    // 佣金券推送到机器人端（与自定义礼物券一致）
+    if (special.kind === 'commission' && result.targetId) {
+      await callInternal('/internal/voucher/commission-minus1', {
+        userId: session.discordId,
+        targetId: result.targetId,
+      });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
