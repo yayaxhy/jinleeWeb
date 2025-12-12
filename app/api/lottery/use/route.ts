@@ -44,6 +44,8 @@ const callGiftWebhook = async (params: {
   receiverId: string;
   giftName: string;
   quantity?: number;
+  lotteryId?: string;
+  requestId?: string;
 }) => {
   const port = process.env.INTERNAL_API_PORT;
   const host = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
@@ -58,6 +60,8 @@ const callGiftWebhook = async (params: {
     giftName: params.giftName,
     quantity: params.quantity ?? 1,
     anonymous: false,
+    lotteryId: params.lotteryId,
+    requestId: params.requestId,
   };
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -132,7 +136,6 @@ export async function POST(request: Request) {
     };
     const giftNameForBot = prizeToGift[prizeName] ?? prizeName.replace(/代金券$/, '') ?? '礼物';
     const requestId = `GIFT:${receiverId}`;
-    // 防重：只允许状态为 UNUSED 的券进入后续流程
     const updateResult = await prisma.lotteryDraw.updateMany({
       where: { id: lotteryId, status: LotteryStatus.UNUSED },
       data: { status: LotteryStatus.USED, consumeAt: now, requestId },
@@ -146,9 +149,11 @@ export async function POST(request: Request) {
         receiverId,
         giftName: giftNameForBot,
         quantity: 1,
+        lotteryId,
+        requestId,
       });
     } catch (error) {
-      // Webhook 失败时尝试回滚状态，避免券被“锁死”
+      // 如果外部接口失败，回滚状态，避免券被锁死
       await prisma.lotteryDraw
         .updateMany({
           where: { id: lotteryId, status: LotteryStatus.USED, requestId },
