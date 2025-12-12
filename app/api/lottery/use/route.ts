@@ -136,13 +136,6 @@ export async function POST(request: Request) {
     };
     const giftNameForBot = prizeToGift[prizeName] ?? prizeName.replace(/代金券$/, '') ?? '礼物';
     const requestId = `GIFT:${receiverId}`;
-    const updateResult = await prisma.lotteryDraw.updateMany({
-      where: { id: lotteryId, status: LotteryStatus.UNUSED },
-      data: { status: LotteryStatus.USED, consumeAt: now, requestId },
-    });
-    if (updateResult.count !== 1) {
-      return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
-    }
     try {
       await callGiftWebhook({
         giverId: session.discordId,
@@ -153,13 +146,6 @@ export async function POST(request: Request) {
         requestId,
       });
     } catch (error) {
-      // 如果外部接口失败，回滚状态，避免券被锁死
-      await prisma.lotteryDraw
-        .updateMany({
-          where: { id: lotteryId, status: LotteryStatus.USED, requestId },
-          data: { status: LotteryStatus.UNUSED, consumeAt: null, requestId: null },
-        })
-        .catch(() => undefined);
       return NextResponse.json({ error: (error as Error).message }, { status: 400 });
     }
     return NextResponse.json({ ok: true });
