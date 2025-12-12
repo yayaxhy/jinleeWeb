@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LotteryStatus, Prisma } from '@prisma/client';
+import { LotteryStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { resolveSpecialVoucher } from '@/lib/voucher';
@@ -32,10 +32,6 @@ const resolveTargetDiscordId = async (raw: string | undefined | null) => {
 
   return null;
 };
-
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-const FLOW_EXTRA = new Prisma.Decimal(5000);
-const COMMISSION_BOOST = new Prisma.Decimal(0.01);
 
 const INTERNAL_HOST = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
 const INTERNAL_PORT = process.env.INTERNAL_API_PORT;
@@ -83,7 +79,7 @@ export async function POST(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // 先找出一张未使用的对应奖品
+      // 仅校验是否存在可用券，不在本地消耗，交由机器人处理
       const draw = await tx.lotteryDraw.findFirst({
         where: {
           userId: session.discordId,
@@ -117,48 +113,37 @@ export async function POST(request: Request) {
       }
 
       if (special.kind === 'commission') {
-        const existing = await tx.commissionBuff.findUnique({
-          where: { userId: targetId },
-          select: { expiresAt: true },
-        });
-        const base = existing?.expiresAt && existing.expiresAt > now ? existing.expiresAt : now;
-        const expiresAt = new Date(base.getTime() + THIRTY_DAYS_MS);
-        await tx.commissionBuff.upsert({
-          where: { userId: targetId },
-          create: { userId: targetId, boost: COMMISSION_BOOST, expiresAt },
-          update: { boost: COMMISSION_BOOST, expiresAt },
-        });
-        const update = await tx.lotteryDraw.updateMany({
-          where: { id: draw.id, status: LotteryStatus.UNUSED },
-          data: { status: LotteryStatus.USED, consumeAt: now, requestId: `COMMISSION:${targetId}` },
-        });
-        if (update.count !== 1) {
-          return { ok: false, code: 409, message: '礼物券不可用或已过期' };
+        const numericPeiwanId = Number(rawTarget);
+        const payload: Record<string, unknown> = {
+          userId: session.discordId,
+          targetDiscordId: targetId,
+        };
+        if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
+          payload.peiwanId = numericPeiwanId;
         }
-        return { ok: true, targetId, rawTarget };
+        try {
+          await callInternal('/internal/voucher/commission-minus1', payload);
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, code: 400, message: (err as Error).message };
+        }
       }
 
       if (special.kind === 'flow') {
-        const existing = await tx.flowBuff.findUnique({
-          where: { userId: targetId },
-          select: { expiresAt: true, remainingExtra: true },
-        });
-        const base = existing?.expiresAt && existing.expiresAt > now ? existing.expiresAt : now;
-        const expiresAt = new Date(base.getTime() + THIRTY_DAYS_MS);
-        const remainingExtra = (existing?.remainingExtra ?? new Prisma.Decimal(0)).add(FLOW_EXTRA);
-        await tx.flowBuff.upsert({
-          where: { userId: targetId },
-          create: { userId: targetId, remainingExtra, expiresAt },
-          update: { remainingExtra, expiresAt },
-        });
-        const update = await tx.lotteryDraw.updateMany({
-          where: { id: draw.id, status: LotteryStatus.UNUSED },
-          data: { status: LotteryStatus.USED, consumeAt: now, requestId: `FLOW:${targetId}` },
-        });
-        if (update.count !== 1) {
-          return { ok: false, code: 409, message: '礼物券不可用或已过期' };
+        const numericPeiwanId = Number(rawTarget);
+        const payload: Record<string, unknown> = {
+          userId: session.discordId,
+          targetDiscordId: targetId,
+        };
+        if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
+          payload.peiwanId = numericPeiwanId;
         }
-        return { ok: true, targetId };
+        try {
+          await callInternal('/internal/voucher/double-flow-5000', payload);
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, code: 400, message: (err as Error).message };
+        }
       }
 
       return { ok: false, code: 400, message: '不支持的奖品' };
@@ -166,19 +151,6 @@ export async function POST(request: Request) {
 
     if (!result.ok) {
       return NextResponse.json({ error: result.message }, { status: result.code });
-    }
-
-    // 佣金券推送到机器人端（与自定义礼物券一致）
-    if (special.kind === 'commission' && result.targetId) {
-      const numericPeiwanId = Number(result.rawTarget);
-      const payload: Record<string, unknown> = {
-        userId: session.discordId,
-        targetDiscordId: result.targetId,
-      };
-      if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
-        payload.peiwanId = numericPeiwanId;
-      }
-      await callInternal('/internal/voucher/commission-minus1', payload);
     }
 
     return NextResponse.json({ ok: true });
