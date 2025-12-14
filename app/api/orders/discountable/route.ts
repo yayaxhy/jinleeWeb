@@ -71,7 +71,8 @@ export async function GET() {
         const minutes = Number(order.totalMinutes ?? 0);
         const unitPrice = Number(order.unitPrice ?? 0); // 按小时计价
         if (!Number.isFinite(minutes) || !Number.isFinite(unitPrice)) return undefined;
-        const amount = (unitPrice * minutes) / 60;
+        const billableMinutes = Math.max(0, minutes - 5); // 前 5 分钟免费
+        const amount = (unitPrice * billableMinutes) / 60;
         return amount.toFixed(2);
       })(),
       endedAt: order.endedAt,
