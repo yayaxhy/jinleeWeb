@@ -159,6 +159,12 @@ export function CommissionVoucherButton({ prizeName, lotteryId }: Props) {
                   type="text"
                   value={target}
                   onChange={(e) => setTarget(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void handleUse();
+                    }
+                  }}
                   placeholder="如 51111 或 525770714574225408"
                   className="w-full rounded-lg border border-black/10 bg-gray-50 px-3 py-2 text-sm text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#5c43a3]"
                 />
@@ -258,6 +264,12 @@ export function FlowVoucherButton({ prizeName, lotteryId }: Props) {
                   type="text"
                   value={target}
                   onChange={(e) => setTarget(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void handleUse();
+                    }
+                  }}
                   placeholder="如 51111 或 525770714574225408"
                   className="w-full rounded-lg border border-black/10 bg-gray-50 px-3 py-2 text-sm text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#5c43a3]"
                 />
