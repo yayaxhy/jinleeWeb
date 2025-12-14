@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 type Props = {
   prizeName: string;
+  lotteryId: string;
 };
 
 const primaryBtn =
@@ -12,7 +13,7 @@ const primaryBtn =
 const ghostBtn =
   'rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-black/5';
 
-export function SimpleVoucherUseButton({ prizeName }: Props) {
+export function SimpleVoucherUseButton({ prizeName, lotteryId }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,7 +26,7 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
       const res = await fetch('/api/voucher/use', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prizeName }),
+        body: JSON.stringify({ prizeName, lotteryId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');
@@ -84,7 +85,7 @@ export function SimpleVoucherUseButton({ prizeName }: Props) {
   );
 }
 
-export function CommissionVoucherButton({ prizeName }: Props) {
+export function CommissionVoucherButton({ prizeName, lotteryId }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState('');
@@ -102,7 +103,7 @@ export function CommissionVoucherButton({ prizeName }: Props) {
       const res = await fetch('/api/voucher/use', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prizeName, target }),
+        body: JSON.stringify({ prizeName, target, lotteryId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');
@@ -183,7 +184,7 @@ export function CommissionVoucherButton({ prizeName }: Props) {
   );
 }
 
-export function FlowVoucherButton({ prizeName }: Props) {
+export function FlowVoucherButton({ prizeName, lotteryId }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState('');
@@ -201,7 +202,7 @@ export function FlowVoucherButton({ prizeName }: Props) {
       const res = await fetch('/api/voucher/use', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prizeName, target }),
+        body: JSON.stringify({ prizeName, target, lotteryId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');

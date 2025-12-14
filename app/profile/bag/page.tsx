@@ -107,13 +107,13 @@ export default async function BagPage() {
                                   (() => {
                                     const special = resolveSpecialVoucher(prizeName);
                                     if (special?.kind === 'simple') {
-                                      return <SimpleVoucherUseButton prizeName={prizeName} />;
+                                      return <SimpleVoucherUseButton prizeName={prizeName} lotteryId={draw.id} />;
                                     }
                                     if (special?.kind === 'commission') {
-                                      return <CommissionVoucherButton prizeName={prizeName} />;
+                                      return <CommissionVoucherButton prizeName={prizeName} lotteryId={draw.id} />;
                                     }
                                     if (special?.kind === 'flow') {
-                                      return <FlowVoucherButton prizeName={prizeName} />;
+                                      return <FlowVoucherButton prizeName={prizeName} lotteryId={draw.id} />;
                                     }
                                     if (isVanityCard) {
                                       return <SelfUseButton lotteryId={draw.id} prizeName={prizeName} />;

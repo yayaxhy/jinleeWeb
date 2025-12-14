@@ -7,6 +7,7 @@ import { resolveSpecialVoucher } from '@/lib/voucher';
 type UseVoucherPayload = {
   prizeName?: string;
   target?: string;
+  lotteryId?: string;
 };
 
 const resolveTargetDiscordId = async (raw: string | undefined | null) => {
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as UseVoucherPayload;
   const prizeName = typeof body.prizeName === 'string' ? body.prizeName.trim() : '';
   const rawTarget = typeof body.target === 'string' ? body.target.trim() : '';
+  const lotteryId = typeof body.lotteryId === 'string' ? body.lotteryId.trim() : '';
   if (!prizeName) {
     return NextResponse.json({ error: '缺少 prizeName' }, { status: 400 });
   }
@@ -80,16 +82,27 @@ export async function POST(request: Request) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 仅校验是否存在可用券，不在本地消耗，交由机器人处理
-      const draw = await tx.lotteryDraw.findFirst({
-        where: {
-          userId: session.discordId,
-          status: LotteryStatus.UNUSED,
-          prize: { name: prizeName },
-          expiresAt: { gt: now },
-        },
-        orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
-        select: { id: true },
-      });
+      const draw = lotteryId
+        ? await tx.lotteryDraw.findFirst({
+            where: {
+              id: lotteryId,
+              userId: session.discordId,
+              status: LotteryStatus.UNUSED,
+              prize: { name: prizeName },
+              expiresAt: { gt: now },
+            },
+            select: { id: true },
+          })
+        : await tx.lotteryDraw.findFirst({
+            where: {
+              userId: session.discordId,
+              status: LotteryStatus.UNUSED,
+              prize: { name: prizeName },
+              expiresAt: { gt: now },
+            },
+            orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
+            select: { id: true },
+          });
       if (!draw) {
         return { ok: false, code: 400, message: '礼物券不可用或已过期' };
       }
