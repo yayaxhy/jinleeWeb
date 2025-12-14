@@ -50,7 +50,16 @@ export async function GET() {
   couponUsage.forEach((item) => item.orderId && usedIds.add(item.orderId));
   lotteryUsage.forEach((item) => item.requestId && usedIds.add(item.requestId));
 
-  const eligible = orders.filter((order) => !usedIds.has(order.id)).slice(0, MAX_RETURN);
+  const eligible = orders
+    .filter((order) => {
+      if (usedIds.has(order.id)) return false;
+      const minutes = Number(order.totalMinutes ?? 0);
+      if (!Number.isFinite(minutes) || minutes <= 5) return false;
+      const unitPrice = Number(order.unitPrice ?? 0);
+      if (!Number.isFinite(unitPrice) || unitPrice <= 0) return false;
+      return true;
+    })
+    .slice(0, MAX_RETURN);
 
   return NextResponse.json({
     orders: eligible.map((order) => ({
