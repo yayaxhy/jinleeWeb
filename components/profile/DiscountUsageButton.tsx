@@ -9,8 +9,8 @@ type DiscountableOrder = {
   id: string;
   displayNo: number;
   workerId: string;
-  unitPrice: string;
   totalMinutes: number | null;
+  totalAmount?: number;
   endedAt: string | Date | null;
 };
 
@@ -147,7 +147,7 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用' }: Props) {
                           订单 #{order.displayNo ?? order.id}
                         </p>
                         <p className="text-xs text-gray-500">
-                          时长：{order.totalMinutes ?? '—'} 分 · 单价：{order.unitPrice}
+                          时长：{order.totalMinutes ?? '—'} 分 · 金额：{order.totalAmount ?? '—'}
                         </p>
                         <p className="text-xs text-gray-500">结单：{formatDateOnly(order.endedAt)}</p>
                       </div>

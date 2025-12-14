@@ -66,8 +66,8 @@ export async function GET() {
       id: order.id,
       displayNo: order.displayNo,
       workerId: order.workerId,
-      unitPrice: order.unitPrice,
       totalMinutes: order.totalMinutes,
+      totalAmount: Number(order.unitPrice ?? 0) * Number(order.totalMinutes ?? 0),
       endedAt: order.endedAt,
     })),
   });
