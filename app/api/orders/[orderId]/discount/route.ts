@@ -35,13 +35,23 @@ export async function POST(
   const { orderId: rawOrderId } = await context.params;
   const orderId = decodeURIComponent(rawOrderId);
 
-  const body = (await request.json().catch(() => ({}))) as { kind?: DiscountKind };
+  const body = (await request.json().catch(() => ({}))) as {
+    kind?: DiscountKind;
+    lotteryId?: string;
+    couponId?: string;
+  };
   const kind = body.kind;
   if (kind !== 'coupon' && kind !== 'lottery') {
     return NextResponse.json({ error: '缺少或非法的 kind' }, { status: 400 });
   }
 
-  const result = await applyDiscountForOrder({ orderId, userId: session.discordId, kind });
+  const result = await applyDiscountForOrder({
+    orderId,
+    userId: session.discordId,
+    kind,
+    lotteryId: typeof body.lotteryId === 'string' ? body.lotteryId : undefined,
+    couponId: typeof body.couponId === 'string' ? body.couponId : undefined,
+  });
 
   if (result.status === 'applied') {
     return NextResponse.json(

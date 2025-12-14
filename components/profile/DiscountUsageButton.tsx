@@ -17,6 +17,8 @@ type DiscountableOrder = {
 type Props = {
   kind: DiscountKind;
   triggerLabel?: string;
+  lotteryId?: string;
+  couponId?: string;
 };
 
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -29,7 +31,7 @@ const formatDateOnly = (value?: Date | string | null) => {
     : date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
-export function DiscountUsageButton({ kind, triggerLabel = '使用' }: Props) {
+export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, couponId }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [orders, setOrders] = useState<DiscountableOrder[]>([]);
@@ -68,7 +70,7 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用' }: Props) {
       const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/discount`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind }),
+        body: JSON.stringify({ kind, lotteryId, couponId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

@@ -119,7 +119,13 @@ export default async function BagPage() {
                                       return <SelfUseButton lotteryId={draw.id} prizeName={prizeName} />;
                                     }
                                     if (prizeType === 'COUPON') {
-                                      return <DiscountUsageButton kind="lottery" triggerLabel="使用" />;
+                                      return (
+                                        <DiscountUsageButton
+                                          kind="lottery"
+                                          triggerLabel="使用"
+                                          lotteryId={draw.id}
+                                        />
+                                      );
                                     }
                                     if (prizeType === 'GIFT') {
                                       return <GiftUsageButton lotteryId={draw.id} prizeName={prizeName} />;

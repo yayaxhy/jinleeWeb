@@ -94,9 +94,11 @@ export async function applyDiscountForOrder(params: {
   orderId: string;
   userId: string; // host id
   kind: DiscountKind;
+  lotteryId?: string;
+  couponId?: string;
   now?: Date;
 }): Promise<ApplyDiscountResult> {
-  const { orderId, userId, kind } = params;
+  const { orderId, userId, kind, lotteryId: targetLotteryId, couponId: targetCouponId } = params;
   const now = params.now ?? new Date();
 
   return prisma.$transaction(async (tx) => {
@@ -154,28 +156,49 @@ export async function applyDiscountForOrder(params: {
     let lotteryId: string | null = null;
 
     if (kind === 'coupon') {
-      const available = await tx.coupon.findFirst({
-        where: {
-          discordId: userId,
-          type: CouponType.DISCOUNT_90,
-          status: 'ACTIVE',
-          expiresAt: { gt: now },
-        },
-        orderBy: { issuedAt: 'asc' },
-      });
+      const available = targetCouponId
+        ? await tx.coupon.findFirst({
+            where: {
+              id: targetCouponId,
+              discordId: userId,
+              type: CouponType.DISCOUNT_90,
+              status: 'ACTIVE',
+              expiresAt: { gt: now },
+            },
+          })
+        : await tx.coupon.findFirst({
+            where: {
+              discordId: userId,
+              type: CouponType.DISCOUNT_90,
+              status: 'ACTIVE',
+              expiresAt: { gt: now },
+            },
+            orderBy: { issuedAt: 'asc' },
+          });
       if (!available) return { status: 'no_coupon' };
       couponId = available.id;
     } else {
-      const voucher = await tx.lotteryDraw.findFirst({
-        where: {
-          userId,
-          status: LotteryStatus.UNUSED,
-          expiresAt: { gt: now },
-          prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
-        },
-        select: { id: true, prize: { select: { name: true } } },
-        orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
-      });
+      const voucher = targetLotteryId
+        ? await tx.lotteryDraw.findFirst({
+            where: {
+              id: targetLotteryId,
+              userId,
+              status: LotteryStatus.UNUSED,
+              expiresAt: { gt: now },
+              prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
+            },
+            select: { id: true, prize: { select: { name: true } } },
+          })
+        : await tx.lotteryDraw.findFirst({
+            where: {
+              userId,
+              status: LotteryStatus.UNUSED,
+              expiresAt: { gt: now },
+              prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
+            },
+            select: { id: true, prize: { select: { name: true } } },
+            orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
+          });
       if (!voucher) return { status: 'no_lottery' };
       lotteryId = voucher.id;
       prizeRateCap = voucher.prize?.name ? DISCOUNT_PRIZE_CONFIG[voucher.prize.name] : undefined;
