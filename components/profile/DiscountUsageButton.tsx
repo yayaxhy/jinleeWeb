@@ -76,6 +76,7 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用' }: Props) {
       }
       const amountText = typeof data?.amount === 'string' ? data.amount : '';
       setMessage({ type: 'success', text: `已优惠 ${amountText} 元，返还至余额` });
+      setOpen(false);
       router.refresh();
     } catch (error) {
       setMessage({ type: 'error', text: (error as Error).message });
@@ -88,11 +89,19 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用' }: Props) {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          setMessage(null);
+        }}
         className="rounded-full border border-[#5c43a3] px-4 py-2 text-xs font-semibold text-[#5c43a3] hover:bg-[#5c43a3]/10 transition"
       >
         {triggerLabel}
       </button>
+      {message && !open ? (
+        <p className={`mt-1 text-xs ${message.type === 'success' ? 'text-emerald-600' : 'text-rose-500'}`}>
+          {message.text}
+        </p>
+      ) : null}
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">

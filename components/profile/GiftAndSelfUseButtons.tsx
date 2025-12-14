@@ -34,6 +34,8 @@ export function GiftUsageButton({ lotteryId, prizeName }: { lotteryId: string; p
         throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');
       }
       setMessage({ type: 'success', text: `已将 ${prizeName} 送给目标用户` });
+      setOpen(false);
+      setTarget('');
       router.refresh();
     } catch (error) {
       setMessage({ type: 'error', text: (error as Error).message });
@@ -46,11 +48,19 @@ export function GiftUsageButton({ lotteryId, prizeName }: { lotteryId: string; p
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          setMessage(null);
+        }}
         className={commonButtonClass}
       >
         使用
       </button>
+      {message && !open ? (
+        <p className={`text-xs ${message.type === 'success' ? 'text-emerald-600' : 'text-rose-500'}`}>
+          {message.text}
+        </p>
+      ) : null}
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">
           <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg space-y-3">
@@ -125,6 +135,7 @@ export function SelfUseButton({ lotteryId, prizeName }: { lotteryId: string; pri
         throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');
       }
       setMessage({ type: 'success', text: '已使用' });
+      setOpen(false);
       router.refresh();
     } catch (error) {
       setMessage({ type: 'error', text: (error as Error).message });
