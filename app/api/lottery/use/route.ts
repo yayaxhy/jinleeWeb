@@ -163,6 +163,32 @@ export async function POST(request: Request) {
     if (prizeType !== LotteryPrizeType.SELFUSE && !isVanityCard) {
       return NextResponse.json({ error: '非自用券，无法自用' }, { status: 400 });
     }
+
+    // Vanity cards: let bot consume & notify via internal API
+    if (isVanityCard) {
+      const port = process.env.INTERNAL_API_PORT;
+      const host = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
+      const token = process.env.INTERNAL_API_TOKEN;
+      if (!port || !token) {
+        return NextResponse.json({ error: '内部接口未配置' }, { status: 500 });
+      }
+      const endpoint = `http://${host}:${port}/internal/rename-card`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Token': token,
+        },
+        body: JSON.stringify({ userId: session.discordId, voucherId: lotteryId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = typeof data?.error === 'string' ? data.error : '内部接口错误';
+        return NextResponse.json({ error: msg }, { status: res.status });
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     const updateResult = await prisma.lotteryDraw.updateMany({
       where: { id: lotteryId, status: LotteryStatus.UNUSED },
       data: {
