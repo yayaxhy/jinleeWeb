@@ -12,6 +12,7 @@ import {
 import { resolveSpecialVoucher } from '@/lib/voucher';
 
 const ROME_TIMEZONE = 'Europe/Rome';
+const VANITY_CARD_NAMES = new Set(['3位数靓号卡', '4位数靓号卡', '5位数靓号卡']);
 
 const formatDateOnly = (value?: Date | string | null) => {
   if (!value) return '—';
@@ -85,6 +86,7 @@ export default async function BagPage() {
                         const prizeName = draw.prize?.name ?? '未中奖';
                         const prizeType = draw.prize?.type ?? 'COUPON';
                         const isUsed = draw.status === 'USED';
+                        const isVanityCard = VANITY_CARD_NAMES.has(prizeName);
                         const status = draw.status === 'UNUSED' ? '未使用' : draw.status === 'USED' ? '已使用' : '已过期';
                         const metaTime =
                           draw.status === 'UNUSED'
@@ -112,6 +114,9 @@ export default async function BagPage() {
                                     }
                                     if (special?.kind === 'flow') {
                                       return <FlowVoucherButton prizeName={prizeName} />;
+                                    }
+                                    if (isVanityCard) {
+                                      return <SelfUseButton lotteryId={draw.id} prizeName={prizeName} />;
                                     }
                                     if (prizeType === 'COUPON') {
                                       return <DiscountUsageButton kind="lottery" triggerLabel="使用" />;

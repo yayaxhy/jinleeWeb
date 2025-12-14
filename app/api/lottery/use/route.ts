@@ -7,6 +7,13 @@ type UsePayload =
   | { lotteryId: string; mode: 'gift'; target: string }
   | { lotteryId: string; mode: 'selfuse' };
 
+const VANITY_CARD_NAMES = new Set(['3位数靓号卡', '4位数靓号卡', '5位数靓号卡']);
+
+const isVanityCardPrize = (name: string | undefined | null) => {
+  if (!name) return false;
+  return VANITY_CARD_NAMES.has(name.trim());
+};
+
 const toDecimalString = (value: unknown) => {
   if (value === null || value === undefined) return '';
   try {
@@ -152,7 +159,8 @@ export async function POST(request: Request) {
   }
 
   if (mode === 'selfuse') {
-    if (prizeType !== LotteryPrizeType.SELFUSE) {
+    const isVanityCard = isVanityCardPrize(draw.prize?.name);
+    if (prizeType !== LotteryPrizeType.SELFUSE && !isVanityCard) {
       return NextResponse.json({ error: '非自用券，无法自用' }, { status: 400 });
     }
     const updateResult = await prisma.lotteryDraw.updateMany({
