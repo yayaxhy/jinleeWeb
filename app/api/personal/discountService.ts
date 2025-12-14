@@ -26,7 +26,7 @@ const round2 = (value: Prisma.Decimal) => new Prisma.Decimal(value.toFixed(2));
 const PRIZE_NAMES = {
   DISCOUNT_80: '8折券',
   DISCOUNT_70: '7折券',
-  DISCOUNT_90_LOTTERY: '抽奖9折券',
+  DISCOUNT_90_LOTTERY: '特殊九折券',
 } as const;
 const DISCOUNT_PRIZE_CONFIG: Record<string, { rate: Prisma.Decimal; cap: Prisma.Decimal }> = {
   [PRIZE_NAMES.DISCOUNT_70]: { rate: new Prisma.Decimal(0.3), cap: new Prisma.Decimal(150) },
