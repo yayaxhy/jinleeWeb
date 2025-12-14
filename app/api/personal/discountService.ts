@@ -23,7 +23,16 @@ export type ApplyDiscountResult =
 
 // Helpers (localized to avoid missing cross-repo deps)
 const round2 = (value: Prisma.Decimal) => new Prisma.Decimal(value.toFixed(2));
-const PRIZE_NAMES = { DISCOUNT_80: '8折券' } as const;
+const PRIZE_NAMES = {
+  DISCOUNT_80: '8折券',
+  DISCOUNT_70: '7折券',
+  DISCOUNT_90_LOTTERY: '抽奖9折券',
+} as const;
+const DISCOUNT_PRIZE_CONFIG: Record<string, { rate: Prisma.Decimal; cap: Prisma.Decimal }> = {
+  [PRIZE_NAMES.DISCOUNT_70]: { rate: new Prisma.Decimal(0.3), cap: new Prisma.Decimal(150) },
+  [PRIZE_NAMES.DISCOUNT_80]: { rate: new Prisma.Decimal(0.2), cap: new Prisma.Decimal(100) },
+  [PRIZE_NAMES.DISCOUNT_90_LOTTERY]: { rate: new Prisma.Decimal(0.1), cap: new Prisma.Decimal(50) },
+};
 
 const suppressRechargeNotifications = async (_tx: PrismaNamespace.TransactionClient) => {
   // No-op placeholder; keep signature for compatibility.
@@ -56,28 +65,22 @@ const recordIndividualTransaction = async (
 
 const COUPON_RATE = new Prisma.Decimal(0.1);
 const COUPON_CAP = new Prisma.Decimal(20);
-const LOTTERY_RATE = new Prisma.Decimal(0.2);
-const LOTTERY_CAP = new Prisma.Decimal(200);
-const MAX_BILLABLE_MINUTES = 120;
 const FREE_MINUTES = 5;
 
 function computeDiscountAmount(params: {
   unitPrice: Prisma.Decimal;
   totalMinutes: number;
-  kind: DiscountKind;
+  rate: Prisma.Decimal;
+  cap: Prisma.Decimal;
 }) {
-  const { unitPrice, totalMinutes, kind } = params;
+  const { unitPrice, totalMinutes, rate, cap } = params;
   if (totalMinutes <= FREE_MINUTES) return new Prisma.Decimal(0);
 
-  const cappedMinutes = Math.min(totalMinutes, MAX_BILLABLE_MINUTES);
-  const billableMinutes = cappedMinutes <= FREE_MINUTES ? 0 : cappedMinutes - FREE_MINUTES;
+  const billableMinutes = Math.max(0, totalMinutes - FREE_MINUTES);
   if (billableMinutes <= 0) return new Prisma.Decimal(0);
 
   const perMinute = unitPrice.div(60);
   if (perMinute.lte(0)) return new Prisma.Decimal(0);
-
-  const rate = kind === 'coupon' ? COUPON_RATE : LOTTERY_RATE;
-  const cap = kind === 'coupon' ? COUPON_CAP : LOTTERY_CAP;
 
   let discount = round2(perMinute.mul(billableMinutes).mul(rate));
   if (discount.gt(cap)) discount = cap;
@@ -97,6 +100,8 @@ export async function applyDiscountForOrder(params: {
   const now = params.now ?? new Date();
 
   return prisma.$transaction(async (tx) => {
+    let prizeRateCap: { rate: Prisma.Decimal; cap: Prisma.Decimal } | undefined;
+
     const order = await tx.order.findUnique({
       where: { id: orderId },
       select: {
@@ -122,7 +127,7 @@ export async function applyDiscountForOrder(params: {
         userId,
         status: LotteryStatus.USED,
         requestId: orderId,
-        prize: { name: PRIZE_NAMES.DISCOUNT_80 },
+        prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
       },
       select: { id: true },
     });
@@ -140,7 +145,7 @@ export async function applyDiscountForOrder(params: {
         userId,
         status: LotteryStatus.UNUSED,
         expiresAt: { lte: now },
-        prize: { name: PRIZE_NAMES.DISCOUNT_80 },
+        prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
       },
       data: { status: LotteryStatus.EXPIRED },
     });
@@ -166,13 +171,14 @@ export async function applyDiscountForOrder(params: {
           userId,
           status: LotteryStatus.UNUSED,
           expiresAt: { gt: now },
-          prize: { name: PRIZE_NAMES.DISCOUNT_80 },
+          prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
         },
-        select: { id: true },
+        select: { id: true, prize: { select: { name: true } } },
         orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
       });
       if (!voucher) return { status: 'no_lottery' };
       lotteryId = voucher.id;
+      prizeRateCap = voucher.prize?.name ? DISCOUNT_PRIZE_CONFIG[voucher.prize.name] : undefined;
     }
 
     if (!order.unitPrice || order.totalMinutes == null) {
@@ -180,10 +186,15 @@ export async function applyDiscountForOrder(params: {
     }
 
     const unitPrice = new Prisma.Decimal(order.unitPrice);
+    const rateCap =
+      kind === 'coupon'
+        ? { rate: COUPON_RATE, cap: COUPON_CAP }
+        : prizeRateCap ?? DISCOUNT_PRIZE_CONFIG[PRIZE_NAMES.DISCOUNT_80];
     const discountAmount = computeDiscountAmount({
       unitPrice,
       totalMinutes: order.totalMinutes,
-      kind,
+      rate: rateCap.rate,
+      cap: rateCap.cap,
     });
     if (discountAmount.lte(0)) return { status: 'no_fee' };
 
