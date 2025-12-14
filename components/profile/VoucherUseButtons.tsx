@@ -206,6 +206,8 @@ export function FlowVoucherButton({ prizeName }: Props) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');
       setMsg('使用成功，额度累计+续期 30 天');
+      setOpen(false);
+      setTarget('');
       router.refresh();
     } catch (err) {
       setMsg((err as Error).message);
@@ -216,9 +218,21 @@ export function FlowVoucherButton({ prizeName }: Props) {
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={ghostBtn}>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+          setMsg(null);
+        }}
+        className={ghostBtn}
+      >
         使用
       </button>
+      {msg && !open ? (
+        <p className={`text-xs ${msg.startsWith('使用成功') ? 'text-emerald-600' : 'text-rose-500'}`}>
+          {msg}
+        </p>
+      ) : null}
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">
           <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg space-y-3">
