@@ -113,7 +113,7 @@ export async function POST(request: Request) {
             ? '/internal/voucher/custom-gift'
             : '/internal/voucher/custom-tag';
         try {
-          await callInternal(path, { userId: session.discordId });
+          await callInternal(path, { userId: session.discordId, voucherId: draw.id });
           return { ok: true };
         } catch (err) {
           return { ok: false, code: 400, message: (err as Error).message };
@@ -134,6 +134,7 @@ export async function POST(request: Request) {
         if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
           payload.peiwanId = numericPeiwanId;
         }
+        payload.voucherId = draw.id;
         try {
           await callInternal('/internal/voucher/commission-minus1', payload);
           return { ok: true };
@@ -151,6 +152,7 @@ export async function POST(request: Request) {
         if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
           payload.peiwanId = numericPeiwanId;
         }
+        payload.voucherId = draw.id;
         try {
           await callInternal('/internal/voucher/double-flow-5000', payload);
           return { ok: true };
