@@ -10,7 +10,7 @@ type DiscountableOrder = {
   displayNo: number;
   workerId: string;
   totalMinutes: number | null;
-  totalAmount?: number;
+  totalAmount?: string;
   endedAt: string | Date | null;
 };
 

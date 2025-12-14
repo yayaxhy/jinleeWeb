@@ -67,7 +67,13 @@ export async function GET() {
       displayNo: order.displayNo,
       workerId: order.workerId,
       totalMinutes: order.totalMinutes,
-      totalAmount: Number(order.unitPrice ?? 0) * Number(order.totalMinutes ?? 0),
+      totalAmount: (() => {
+        const minutes = Number(order.totalMinutes ?? 0);
+        const unitPrice = Number(order.unitPrice ?? 0); // 按小时计价
+        if (!Number.isFinite(minutes) || !Number.isFinite(unitPrice)) return undefined;
+        const amount = (unitPrice * minutes) / 60;
+        return amount.toFixed(2);
+      })(),
       endedAt: order.endedAt,
     })),
   });
