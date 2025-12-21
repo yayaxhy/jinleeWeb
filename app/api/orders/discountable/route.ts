@@ -4,7 +4,7 @@ import { getServerSession } from '@/lib/session';
 
 const MAX_FETCH = 50;
 const MAX_RETURN = 20;
-const DISCOUNT_PRIZE_NAMES = ['8折券', '7折券', '特殊九折券'];
+const DISCOUNT_PRIZE_NAMES = ['8折券', '7折券', '特殊9折券'];
 
 export async function GET() {
   const session = await getServerSession();
