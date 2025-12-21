@@ -482,14 +482,13 @@ export default async function Profile(props: ProfilePageProps = {}) {
           </div>
         </div>
 
-        {isPeiwanMember && (
+        {(isPeiwanMember || isLaobanMember) && (
           <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-semibold tracking-wide text-[#5c43a3]">流水记录</h2>
-              <p className="text-sm text-gray-500">与陪玩账户关联的收支流水</p>
-            </div>
-             
+                <p className="text-sm text-gray-500">与账户关联的收支流水</p>
+              </div>
             </div>
             {transactions.length > 0 ? (
               <div className="overflow-x-auto">
