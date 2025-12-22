@@ -28,10 +28,18 @@ const PRIZE_NAMES = {
   DISCOUNT_70: '7折券',
   DISCOUNT_90_LOTTERY: '特殊9折券',
 } as const;
+const LEGACY_DISCOUNT_90_NAME = '特殊九折券';
+const DISCOUNT_PRIZE_NAMES = [
+  PRIZE_NAMES.DISCOUNT_70,
+  PRIZE_NAMES.DISCOUNT_80,
+  PRIZE_NAMES.DISCOUNT_90_LOTTERY,
+  LEGACY_DISCOUNT_90_NAME,
+];
 const DISCOUNT_PRIZE_CONFIG: Record<string, { rate: Prisma.Decimal; cap: Prisma.Decimal }> = {
   [PRIZE_NAMES.DISCOUNT_70]: { rate: new Prisma.Decimal(0.3), cap: new Prisma.Decimal(150) },
   [PRIZE_NAMES.DISCOUNT_80]: { rate: new Prisma.Decimal(0.2), cap: new Prisma.Decimal(100) },
   [PRIZE_NAMES.DISCOUNT_90_LOTTERY]: { rate: new Prisma.Decimal(0.1), cap: new Prisma.Decimal(50) },
+  [LEGACY_DISCOUNT_90_NAME]: { rate: new Prisma.Decimal(0.1), cap: new Prisma.Decimal(50) },
 };
 
 const suppressRechargeNotifications = async (_tx: PrismaNamespace.TransactionClient) => {
