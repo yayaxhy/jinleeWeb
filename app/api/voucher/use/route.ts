@@ -161,6 +161,24 @@ export async function POST(request: Request) {
         }
       }
 
+      if (special.kind === 'spend') {
+        const numericPeiwanId = Number(rawTarget);
+        const payload: Record<string, unknown> = {
+          userId: session.discordId,
+          targetDiscordId: targetId,
+        };
+        if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
+          payload.peiwanId = numericPeiwanId;
+        }
+        payload.voucherId = draw.id;
+        try {
+          await callInternal('/internal/voucher/double-spend-5000', payload);
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, code: 400, message: (err as Error).message };
+        }
+      }
+
       return { ok: false, code: 400, message: '不支持的奖品' };
     });
 

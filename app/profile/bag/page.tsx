@@ -8,6 +8,7 @@ import {
   CommissionVoucherButton,
   FlowVoucherButton,
   SimpleVoucherUseButton,
+  SpendVoucherButton,
 } from '@/components/profile/VoucherUseButtons';
 import { resolveSpecialVoucher } from '@/lib/voucher';
 
@@ -114,6 +115,9 @@ export default async function BagPage() {
                                     }
                                     if (special?.kind === 'flow') {
                                       return <FlowVoucherButton prizeName={prizeName} lotteryId={draw.id} />;
+                                    }
+                                    if (special?.kind === 'spend') {
+                                      return <SpendVoucherButton prizeName={prizeName} lotteryId={draw.id} />;
                                     }
                                     if (isVanityCard) {
                                       return <SelfUseButton lotteryId={draw.id} prizeName={prizeName} />;
