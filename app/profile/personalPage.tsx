@@ -456,14 +456,14 @@ export default async function Profile(props: ProfilePageProps = {}) {
               <span className="text-xs uppercase tracking-[0.4em] text-gray-400">实时同步</span>
             </div>
             {hasBuffData ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
                 {buffCards.map((buff) => {
                   const statusMeta = getBuffStatusMeta(buff.expiresAt);
                   const valueDisplay = formatBuffValue(buff.value);
                   return (
                     <div
                       key={buff.key}
-                      className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
+                      className="min-w-[240px] flex-1 shrink-0 rounded-2xl border border-black/5 bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)] snap-start"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
