@@ -465,22 +465,21 @@ export default async function Profile(props: ProfilePageProps = {}) {
                       key={buff.key}
                       className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
                     >
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.subtitle}</p>
-                        <h3 className="text-lg font-semibold text-[#171717]">{buff.title}</h3>
-                        <span className={`inline-flex w-fit px-3 py-1 rounded-full text-xs font-medium ${statusMeta.badgeClass}`}>
-                          {statusMeta.label}
-                        </span>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h3 className="text-lg font-semibold text-[#171717]">{buff.title}</h3>
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusMeta.badgeClass}`}>
+                            {statusMeta.label}
+                          </span>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <div className="space-y-1">
-                          <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.valueLabel}</p>
-                          <p className="text-3xl font-semibold text-[#5c43a3]">{valueDisplay}</p>
-                        </div>
-                        <div className="text-sm text-gray-500 space-y-1">
-                          <p>到期：{formatDate(buff.expiresAt)}</p>
-                          <p className="text-gray-400 text-xs">创建于 {formatDate(buff.createdAt)}</p>
-                        </div>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <p className="flex flex-wrap items-center gap-2">
+                          <span className="text-gray-500">{buff.valueLabel}</span>
+                          <span className="text-2xl font-semibold text-[#5c43a3] leading-none">{valueDisplay}</span>
+                        </p>
+                        <p>到期：{formatDate(buff.expiresAt)}</p>
                       </div>
                     </div>
                   );
