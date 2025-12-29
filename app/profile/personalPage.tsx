@@ -272,7 +272,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const buffCards = [
     {
       key: 'commission',
-      title: '佣金 Buff',
+      title: '抽成 Buff',
       subtitle: '抽成/返佣加成',
       valueLabel: '加成值',
       value: commissionBuff?.boost ?? null,
@@ -447,7 +447,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
           </div>
 
         <div className="grid gap-8 lg:grid-cols-2">
-          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
+          <div className="lg:col-span-2 bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">Buff 状态</h2>
@@ -456,31 +456,31 @@ export default async function Profile(props: ProfilePageProps = {}) {
               <span className="text-xs uppercase tracking-[0.4em] text-gray-400">实时同步</span>
             </div>
             {hasBuffData ? (
-              <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
+              <div className="space-y-4">
                 {buffCards.map((buff) => {
                   const statusMeta = getBuffStatusMeta(buff.expiresAt);
                   const valueDisplay = formatBuffValue(buff.value);
                   return (
                     <div
                       key={buff.key}
-                      className="min-w-[240px] flex-1 shrink-0 rounded-2xl border border-black/5 bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)] snap-start"
+                      className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.subtitle}</p>
-                          <h3 className="text-lg font-semibold text-[#171717]">{buff.title}</h3>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusMeta.badgeClass}`}>
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.subtitle}</p>
+                        <h3 className="text-lg font-semibold text-[#171717]">{buff.title}</h3>
+                        <span className={`inline-flex w-fit px-3 py-1 rounded-full text-xs font-medium ${statusMeta.badgeClass}`}>
                           {statusMeta.label}
                         </span>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.valueLabel}</p>
-                        <p className="text-3xl font-semibold text-[#5c43a3]">{valueDisplay}</p>
-                      </div>
-                      <div className="text-sm text-gray-500 space-y-1">
-                        <p>到期：{formatDate(buff.expiresAt)}</p>
-                        <p className="text-gray-400 text-xs">创建于 {formatDate(buff.createdAt)}</p>
+                      <div className="space-y-2">
+                        <div className="space-y-1">
+                          <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.valueLabel}</p>
+                          <p className="text-3xl font-semibold text-[#5c43a3]">{valueDisplay}</p>
+                        </div>
+                        <div className="text-sm text-gray-500 space-y-1">
+                          <p>到期：{formatDate(buff.expiresAt)}</p>
+                          <p className="text-gray-400 text-xs">创建于 {formatDate(buff.createdAt)}</p>
+                        </div>
                       </div>
                     </div>
                   );
