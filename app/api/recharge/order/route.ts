@@ -46,14 +46,14 @@ export async function POST(request: Request) {
 
   const { merchantId, secret } = requiredZPayConfig();
 
-  let body: Record<string, unknown> | null = null;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 });
   }
 
-  const rawAmount = parseAmount(body?.amount);
+  const rawAmount = parseAmount(body.amount);
   if (rawAmount === null || rawAmount <= 0) {
     return NextResponse.json({ ok: false, error: 'invalid_amount' }, { status: 400 });
   }
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'amount_too_small', min: MIN_AMOUNT }, { status: 400 });
   }
 
-  const requestedChannel: ZPayChannel = SUPPORTED_CHANNELS.includes(body?.channel as ZPayChannel)
+  const requestedChannel: ZPayChannel = SUPPORTED_CHANNELS.includes(body.channel as ZPayChannel)
     ? (body.channel as ZPayChannel)
     : 'alipay';
 
