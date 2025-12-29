@@ -182,6 +182,7 @@ export function ReferralManager() {
           <p className="text-xs uppercase tracking-[0.4em] text-white/50">ADMIN</p>
           <h2 className="text-2xl font-semibold">邀请人管理</h2>
           <p className="text-sm text-white/70">插入 / 查询 / 删除 邀请人 记录</p>
+          <p className="text-xs text-white/60">当前总数：{total}</p>
         </div>
         
       </div>

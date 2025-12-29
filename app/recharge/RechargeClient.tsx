@@ -19,7 +19,6 @@ const PAYMENT_CHANNELS = [
   },
 ] as const;
 
-const QR_ENDPOINT = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=';
 const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
 
 type RechargeClientProps = {
@@ -103,14 +102,13 @@ export default function RechargeClient({ username }: RechargeClientProps) {
         channel: payload.channel,
       });
       setHint('订单已创建，请在 15 分钟内完成支付，系统会自动更新余额。');
-    } catch (err: any) {
-      setError(err?.message ?? '创建订单失败');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '创建订单失败';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
-
-  const qrImage = order?.payUrl ? `${QR_ENDPOINT}${encodeURIComponent(order.payUrl)}` : null;
 
   const copyLink = async () => {
     if (typeof window === 'undefined' || !order?.payUrl || !navigator?.clipboard) return;
@@ -152,6 +150,9 @@ export default function RechargeClient({ username }: RechargeClientProps) {
               })}
             </div>
             <p className="text-sm text-gray-500">{selectedChannel.description}</p>
+            <p className="text-xs text-gray-500">
+              转账备注建议填写 Discord ID：<span className="font-mono">{username ?? '未登录'}</span>
+            </p>
           </div>
 
           {/* <div

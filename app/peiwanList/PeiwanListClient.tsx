@@ -55,6 +55,7 @@ const CardImage = ({ item, onPreview }: { item: PeiwanItem; onPreview?: (src: st
   const currentSrc = sources[Math.min(idx, sources.length - 1)];
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={currentSrc}
       alt={`Peiwan ${item.id}`}
@@ -127,9 +128,10 @@ export function PeiwanListClient() {
         }
         const data = (await res.json()) as ApiResponse;
         setResult(data);
-      } catch (err: any) {
-        if (err.name === 'AbortError') return;
-        setError(err.message ?? '加载失败');
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        const message = err instanceof Error ? err.message : '加载失败';
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -317,6 +319,7 @@ export function PeiwanListClient() {
           className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setPreviewSrc(null)}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewSrc}
             alt="预览"

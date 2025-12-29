@@ -81,7 +81,6 @@ export function PeiwanRecommendations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [available, setAvailable] = useState<{ item: PeiwanItem; src: string }[]>([]);
-  const [imageEntries, setImageEntries] = useState<ImageEntry[]>([]);
   const [start, setStart] = useState(0);
 
   useEffect(() => {
@@ -97,7 +96,6 @@ export function PeiwanRecommendations() {
         if (!imgRes.ok) throw new Error('图片列表加载失败');
         const imgJson = (await imgRes.json()) as { data?: ImageEntry[] };
         const imgs = (imgJson.data || []).slice(0, MAX_DISPLAY);
-        setImageEntries(imgs);
         if (imgs.length === 0) {
           setAvailable([]);
           return;

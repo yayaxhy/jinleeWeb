@@ -2,11 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/session';
 
-type RechargeResultProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
-};
-
-export default async function RechargeResult(_: RechargeResultProps = {}) {
+export default async function RechargeResult() {
   const session = await getServerSession();
   if (!session?.discordId) {
     redirect('/');

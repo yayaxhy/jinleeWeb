@@ -77,8 +77,9 @@ export function PeiwanCardUploader({
       setSuccess(`已成功上传 ${savedNames.length || files.length} 个文件${savedNames.length ? `：${savedNames.join(', ')}` : ''}`);
       setFiles([]);
       setInputKey((prev) => prev + 1);
-    } catch (err: any) {
-      setError(err.message ?? '上传失败');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '上传失败';
+      setError(message);
     } finally {
       setUploading(false);
     }

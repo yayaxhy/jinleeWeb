@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import type { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
 
   const { merchantId, secret } = requiredZPayConfig();
 
-  let body: any = null;
+  let body: Record<string, unknown> | null = null;
   try {
     body = await request.json();
   } catch {

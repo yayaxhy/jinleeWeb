@@ -14,15 +14,6 @@ const isVanityCardPrize = (name: string | undefined | null) => {
   return VANITY_CARD_NAMES.has(name.trim());
 };
 
-const toDecimalString = (value: unknown) => {
-  if (value === null || value === undefined) return '';
-  try {
-    return value.toString();
-  } catch {
-    return '';
-  }
-};
-
 const resolveTargetDiscordId = async (raw: string) => {
   const trimmed = raw.trim();
   if (!trimmed) return null;

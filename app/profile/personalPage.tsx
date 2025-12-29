@@ -63,6 +63,30 @@ const formatDate = (value?: Date | string | null) => {
   return date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
+const getBuffStatusMeta = (expiresAt?: Date | string | null) => {
+  if (!expiresAt) {
+    return { label: '未激活', badgeClass: 'bg-gray-100 text-gray-500' };
+  }
+  const expiry = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
+  if (Number.isNaN(expiry.getTime())) {
+    return { label: '时间未知', badgeClass: 'bg-gray-100 text-gray-500' };
+  }
+  const diffMs = expiry.getTime() - Date.now();
+  if (diffMs <= 0) {
+    return { label: '已过期', badgeClass: 'bg-rose-50 text-rose-600' };
+  }
+  const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return { label: `剩余 ${daysLeft} 天`, badgeClass: 'bg-emerald-50 text-emerald-600' };
+};
+
+const formatBuffValue = (value: unknown, suffix?: string) => {
+  const formatted = formatNumber(value);
+  if (suffix && formatted !== '—') {
+    return `${formatted}${suffix}`;
+  }
+  return formatted;
+};
+
 const resolveAmountChange = (
   amountChange: unknown,
   balanceBefore: unknown,
@@ -169,21 +193,6 @@ export default async function Profile(props: ProfilePageProps = {}) {
     orderBy: { issuedAt: 'desc' },
   });
   type CouponRecord = Awaited<typeof couponsPromise>[number];
-  const heartsReceivedPromise = prisma.heartCounter.aggregate({
-    _sum: { total: true },
-    where: { toMemberId: discordId },
-  });
-  const heartsGivenPromise = prisma.heartCounter.aggregate({
-    _sum: { total: true },
-    where: { fromMemberId: discordId },
-  });
-  const heartTopPromise = prisma.heartCounter.findMany({
-    where: { toMemberId: discordId },
-    orderBy: { total: 'desc' },
-    take: 5,
-    include: { fromMember: { select: { serverDisplayName: true, discordUserId: true } } },
-  });
-  type HeartRecord = Awaited<typeof heartTopPromise>[number];
   const totalTransactionsPromise = prisma.individualTransaction.count({
     where: { discordId },
   });
@@ -193,15 +202,24 @@ export default async function Profile(props: ProfilePageProps = {}) {
     skip,
     take: TRANSACTIONS_PER_PAGE,
   });
+  const commissionBuffPromise = prisma.commissionBuff.findUnique({
+    where: { userId: discordId },
+  });
+  const flowBuffPromise = prisma.flowBuff.findUnique({
+    where: { userId: discordId },
+  });
+  const spendBuffPromise = prisma.spendBuff.findUnique({
+    where: { userId: discordId },
+  });
   type TransactionRecord = Awaited<typeof transactionsPromise>[number];
 
-  const [coupons, heartsReceived, heartsGiven, heartTop, totalTransactions, transactions] = await Promise.all([
+  const [coupons, totalTransactions, transactions, commissionBuff, flowBuff, spendBuff] = await Promise.all([
     couponsPromise,
-    heartsReceivedPromise,
-    heartsGivenPromise,
-    heartTopPromise,
     totalTransactionsPromise,
     transactionsPromise,
+    commissionBuffPromise,
+    flowBuffPromise,
+    spendBuffPromise,
   ]);
   const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
   const hasPrevPage = currentPage > 1;
@@ -242,11 +260,6 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const bossProgressPercent = Math.min(100, Math.max(0, bossProgressRatio * 100));
   const amountToNextBossLevel = nextBossLevel ? Math.max(0, nextBossLevel.threshold - totalSpentValue) : 0;
   const currentBossLevelName = currentBossLevel?.label ?? '锦鲤创始成员';
-  const heartsReceivedTotal = heartsReceived._sum.total ?? 0;
-  const heartsGivenTotal = heartsGiven._sum.total ?? 0;
-  const formatHeartName = (record: HeartRecord) =>
-    record.fromMember?.serverDisplayName ?? record.fromMember?.discordUserId ?? '未知用户';
-
   const couponStatusLabel: Record<string, string> = {
     ACTIVE: '可用',
     USED: '已使用',
@@ -255,6 +268,39 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const couponTypeLabel: Record<string, string> = {
     DISCOUNT_90: '9折券',
   };
+
+  const buffCards = [
+    {
+      key: 'commission',
+      title: '佣金 Buff',
+      subtitle: '抽成/返佣加成',
+      valueLabel: '加成值',
+      value: commissionBuff?.boost ?? null,
+      expiresAt: commissionBuff?.expiresAt ?? null,
+      createdAt: commissionBuff?.createdAt ?? null,
+    },
+    {
+      key: 'flow',
+      title: '流水 Buff',
+      subtitle: '额外流水额度',
+      valueLabel: '剩余额度',
+      value: flowBuff?.remainingExtra ?? null,
+      expiresAt: flowBuff?.expiresAt ?? null,
+      createdAt: flowBuff?.createdAt ?? null,
+    },
+    {
+      key: 'spend',
+      title: '消费 Buff',
+      subtitle: '消费额外额度',
+      valueLabel: '剩余额度',
+      value: spendBuff?.remainingExtra ?? null,
+      expiresAt: spendBuff?.expiresAt ?? null,
+      createdAt: spendBuff?.createdAt ?? null,
+    },
+  ];
+  const hasBuffData = buffCards.some(
+    (buff) => buff.value !== null || buff.expiresAt !== null || buff.createdAt !== null,
+  );
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
@@ -401,6 +447,50 @@ export default async function Profile(props: ProfilePageProps = {}) {
           </div>
 
         <div className="grid gap-8 lg:grid-cols-2">
+          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">Buff 状态</h2>
+                <p className="text-sm text-gray-500">查看额度与到期时间</p>
+              </div>
+              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">实时同步</span>
+            </div>
+            {hasBuffData ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {buffCards.map((buff) => {
+                  const statusMeta = getBuffStatusMeta(buff.expiresAt);
+                  const valueDisplay = formatBuffValue(buff.value);
+                  return (
+                    <div
+                      key={buff.key}
+                      className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.subtitle}</p>
+                          <h3 className="text-lg font-semibold text-[#171717]">{buff.title}</h3>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusMeta.badgeClass}`}>
+                          {statusMeta.label}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.valueLabel}</p>
+                        <p className="text-3xl font-semibold text-[#5c43a3]">{valueDisplay}</p>
+                      </div>
+                      <div className="text-sm text-gray-500 space-y-1">
+                        <p>到期：{formatDate(buff.expiresAt)}</p>
+                        <p className="text-gray-400 text-xs">创建于 {formatDate(buff.createdAt)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-sm">暂无 Buff 信息。</p>
+            )}
+          </div>
+
           <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold tracking-wide">个人信息</h2>

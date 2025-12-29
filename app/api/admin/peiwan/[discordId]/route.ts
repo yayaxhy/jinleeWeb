@@ -3,7 +3,7 @@ import { isAdminDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { buildPeiwanDataObject, normalizePeiwanPayload } from '@/lib/peiwan/payload';
 import { getServerSession } from '@/lib/session';
-import { MemberStatus, Prisma } from '@prisma/client';
+import { MemberStatus } from '@prisma/client';
 
 const ensureAdminSession = async () => {
   const session = await getServerSession();
