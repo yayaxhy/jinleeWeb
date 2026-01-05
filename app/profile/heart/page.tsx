@@ -46,12 +46,10 @@ export default async function HeartPage() {
   const [receivedAgg, givenAgg, topSenders, topRecipients] = await Promise.all([
     prisma.heartCounter.aggregate({
       _max: { total: true },
-      _sum: { total: true },
       where: { toMemberId: discordId },
     }),
     prisma.heartCounter.aggregate({
       _max: { total: true },
-      _sum: { total: true },
       where: { fromMemberId: discordId },
     }),
     prisma.heartCounter.findMany({
@@ -68,10 +66,8 @@ export default async function HeartPage() {
     }),
   ]);
 
-  const receivedTotal = receivedAgg._max.total ?? 0;
-  const givenTotal = givenAgg._max.total ?? 0;
-  const receivedSum = receivedAgg._sum.total ?? 0;
-  const givenSum = givenAgg._sum.total ?? 0;
+  const receivedTotal = Number(receivedAgg._max.total ?? 0);
+  const givenTotal = Number(givenAgg._max.total ?? 0);
 
   const resolveTier = (total: number) => {
     let current = HEART_ROLE_TIERS[0];
@@ -100,8 +96,8 @@ export default async function HeartPage() {
     return { current, next, progress, prevThreshold, nextThreshold };
   };
 
-  const receivedTier = resolveTier(Number(receivedSum));
-  const givenTier = resolveTier(Number(givenSum));
+  const receivedTier = resolveTier(receivedTotal);
+  const givenTier = resolveTier(givenTotal);
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
@@ -123,12 +119,12 @@ export default async function HeartPage() {
           <div className="rounded-3xl border border-black/10 bg-gradient-to-br from-[#fdfbff] to-[#f3efff] p-6 space-y-2">
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">我是陪玩</p>
             <p className="text-4xl font-semibold text-[#5c43a3]">{formatNumber(receivedTotal)}</p>
-            <p className="text-sm text-gray-500">累计最高心动值</p>
+            <p className="text-sm text-gray-500">与你单个对象的最高心动值</p>
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>{receivedTier.current.roles}</span>
                 <span>
-                  {formatNumber(receivedSum)} / {formatNumber(receivedTier.next?.threshold ?? receivedTier.prevThreshold)}
+                  {formatNumber(receivedTotal)} / {formatNumber(receivedTier.next?.threshold ?? receivedTier.prevThreshold)}
                 </span>
               </div>
               
@@ -137,12 +133,12 @@ export default async function HeartPage() {
           <div className="rounded-3xl border border-black/10 bg-gradient-to-br from-[#fdfbff] to-[#e9f4ff] p-6 space-y-2">
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">我是老板</p>
             <p className="text-4xl font-semibold text-[#171717]">{formatNumber(givenTotal)}</p>
-            <p className="text-sm text-gray-500">累计最高心动值</p>
+            <p className="text-sm text-gray-500">与你单个对象的最高心动值</p>
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>{givenTier.current.roles}</span>
                 <span>
-                  {formatNumber(givenSum)} / {formatNumber(givenTier.next?.threshold ?? givenTier.prevThreshold)}
+                  {formatNumber(givenTotal)} / {formatNumber(givenTier.next?.threshold ?? givenTier.prevThreshold)}
                 </span>
               </div>
               
