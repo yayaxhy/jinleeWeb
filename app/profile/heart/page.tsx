@@ -66,8 +66,10 @@ export default async function HeartPage() {
     }),
   ]);
 
-  const receivedTotal = Number(receivedAgg._max.total ?? 0);
-  const givenTotal = Number(givenAgg._max.total ?? 0);
+  const topSender = topSenders[0] ?? null;
+  const topRecipient = topRecipients[0] ?? null;
+  const receivedTotal = Number(topSender?.total ?? receivedAgg._max.total ?? 0);
+  const givenTotal = Number(topRecipient?.total ?? givenAgg._max.total ?? 0);
 
   const resolveTier = (total: number) => {
     let current = HEART_ROLE_TIERS[0];
@@ -119,7 +121,10 @@ export default async function HeartPage() {
           <div className="rounded-3xl border border-black/10 bg-gradient-to-br from-[#fdfbff] to-[#f3efff] p-6 space-y-2">
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">我是陪玩</p>
             <p className="text-4xl font-semibold text-[#5c43a3]">{formatNumber(receivedTotal)}</p>
-            <p className="text-sm text-gray-500">与你单个对象的最高心动值</p>
+            <p className="text-sm text-gray-500">
+              单对象最高心动值
+              {topSender ? `（来自 ${resolveDisplayName(topSender.fromMember ?? { serverDisplayName: null, discordUserId: '未知' })}）` : ''}
+            </p>
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>{receivedTier.current.roles}</span>
@@ -133,7 +138,10 @@ export default async function HeartPage() {
           <div className="rounded-3xl border border-black/10 bg-gradient-to-br from-[#fdfbff] to-[#e9f4ff] p-6 space-y-2">
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">我是老板</p>
             <p className="text-4xl font-semibold text-[#171717]">{formatNumber(givenTotal)}</p>
-            <p className="text-sm text-gray-500">与你单个对象的最高心动值</p>
+            <p className="text-sm text-gray-500">
+              单对象最高心动值
+              {topRecipient ? `（送给 ${resolveDisplayName(topRecipient.toMember ?? { serverDisplayName: null, discordUserId: '未知' })}）` : ''}
+            </p>
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>{givenTier.current.roles}</span>
