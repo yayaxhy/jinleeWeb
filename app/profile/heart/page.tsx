@@ -122,7 +122,7 @@ export default async function HeartPage() {
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">我是陪玩</p>
             <p className="text-4xl font-semibold text-[#5c43a3]">{formatNumber(receivedTotal)}</p>
             <p className="text-sm text-gray-500">
-              单对象最高心动值
+              最高心动值对象
               {topSender ? `（来自 ${resolveDisplayName(topSender.fromMember ?? { serverDisplayName: null, discordUserId: '未知' })}）` : ''}
             </p>
             <div className="mt-3 space-y-1">
@@ -139,7 +139,7 @@ export default async function HeartPage() {
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">我是老板</p>
             <p className="text-4xl font-semibold text-[#171717]">{formatNumber(givenTotal)}</p>
             <p className="text-sm text-gray-500">
-              单对象最高心动值
+              最高心动值对象
               {topRecipient ? `（送给 ${resolveDisplayName(topRecipient.toMember ?? { serverDisplayName: null, discordUserId: '未知' })}）` : ''}
             </p>
             <div className="mt-3 space-y-1">
