@@ -138,6 +138,10 @@ model Member {
   lotteryDraws LotteryDraw[]
   lotteryPity  LotteryPity?
 
+  // Gift wall unlocks/rewards
+  giftUnlocks      PeiwanGiftUnlock[]
+  giftRewardClaims PeiwanGiftRewardClaim[]
+
   // Back-relation for WorkerLock (one active lock at most)
   workerLock WorkerLock? @relation("MemberWorkerLock")
 
@@ -151,6 +155,10 @@ model Member {
 
   // Display name inside target Discord guild
   serverDisplayName String?
+
+  // Order request logs/clicks
+  orderRequestsCreated OrderRequestLog[] @relation("OrderRequestOwner")
+  orderRequestClicks   OrderRequestClick[] @relation("OrderRequestWorker")
 }
 
 model Transaction {
@@ -259,6 +267,64 @@ model Gift {
   url_link String?
   rate     Decimal  @default(1) @db.Decimal(10, 2)
 
+  unlocks PeiwanGiftUnlock[]
+}
+
+model GiftAudit {
+  id                       String   @id @default(cuid())
+  paymentTransactionId     String   @unique
+  individualTransactionId  String   @unique
+  orderId                  Int
+  giftName                 String
+  quantity                 Decimal  @db.Decimal(19, 4)
+  unitPrice                Decimal  @db.Decimal(19, 4)
+  gross                    Decimal  @db.Decimal(19, 4)
+  payable                  Decimal  @db.Decimal(19, 4)
+  feeAmount                Decimal  @db.Decimal(19, 4)
+  netAmount                Decimal  @db.Decimal(19, 4)
+  receiverRate             Decimal  @db.Decimal(19, 6)
+  heartGain                Int
+  giverId                  String
+  receiverId               String
+  giverFromIncome          Decimal  @db.Decimal(19, 4)
+  giverFromRecharge        Decimal  @db.Decimal(19, 4)
+  spendBonusExtra          Decimal  @db.Decimal(19, 4)
+  spendRemainingBefore     Decimal  @db.Decimal(19, 4)
+  flowBonusExtra           Decimal  @db.Decimal(19, 4)
+  flowRemainingBefore      Decimal  @db.Decimal(19, 4)
+  voucherIds               Json?
+  bossReferralInviterId    String?
+  bossReferralAmount       Decimal? @db.Decimal(19, 4)
+  workerReferralInviterId  String?
+  workerReferralAmount     Decimal? @db.Decimal(19, 4)
+  createdAt                DateTime @default(now())
+
+  @@map("gift_audit")
+}
+
+model PeiwanGiftUnlock {
+  id            String   @id @default(cuid())
+  discordUserId String
+  giftName      String
+  unlockedAt    DateTime @default(now())
+
+  member Member @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade)
+  gift   Gift   @relation(fields: [giftName], references: [GiftName], onDelete: Cascade)
+
+  @@unique([discordUserId, giftName])
+  @@index([discordUserId])
+}
+
+model PeiwanGiftRewardClaim {
+  id            String   @id @default(cuid())
+  discordUserId String
+  rewardKey     String
+  grantedAt     DateTime @default(now())
+
+  member Member @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade)
+
+  @@unique([discordUserId, rewardKey])
+  @@index([discordUserId])
 }
 
 model Recharge {
@@ -391,6 +457,34 @@ model Order {
   @@index([status, cutoffAt])
   @@index([workerId, status])
   @@index([hostId, status])
+}
+
+model OrderRequestLog {
+  orderId   String   @id
+  ownerId   String
+  ownerDisplayName String?
+  content   String
+  createdAt DateTime @default(now())
+
+  owner  Member             @relation("OrderRequestOwner", fields: [ownerId], references: [discordUserId], onDelete: Cascade)
+  clicks OrderRequestClick[]
+
+  @@index([ownerId])
+}
+
+model OrderRequestClick {
+  id        String   @id @default(cuid())
+  orderId   String
+  workerId  String
+  workerDisplayName String?
+  clickedAt DateTime @default(now())
+
+  request OrderRequestLog @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  worker  Member          @relation("OrderRequestWorker", fields: [workerId], references: [discordUserId], onDelete: Cascade)
+
+  @@unique([orderId, workerId])
+  @@index([orderId])
+  @@index([workerId])
 }
 
 model PeiwanDeletion {
@@ -558,6 +652,17 @@ model ReferralPayout {
   referral Referral @relation(fields: [referralId], references: [inviteeId], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([referralId, orderId])
+}
+
+model Revert {
+  id                     String   @id @default(cuid())
+  originalTransactionId  String   @unique
+  operatorId             String
+  reason                 String?
+  status                 String   @default("PENDING")
+  details                Json?
+  createdAt              DateTime @default(now())
+  @@map("revert")
 }
 
 /// 记录用户是否曾经进入过目标 Guild（只插入一次，用于防止重复邀请奖励）

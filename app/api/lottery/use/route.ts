@@ -131,6 +131,10 @@ export async function POST(request: Request) {
       南瓜车代金券: '南瓜车',
       留声机代金券: '留声机',
       一日冠75折券: '一日冠',
+      一日冠9折券: '一日冠',
+      三日冠9折券: '三日冠',
+      一周冠9折券: '一周冠',
+      月冠名9折券: '月冠名',
     };
     const giftNameForBot = prizeToGift[prizeName] ?? prizeName.replace(/代金券$/, '') ?? '礼物';
     const requestId = `GIFT:${receiverId}`;
