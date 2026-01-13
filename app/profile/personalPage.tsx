@@ -211,18 +211,6 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const spendBuffPromise = prisma.spendBuff.findUnique({
     where: { userId: discordId },
   });
-  const giftsPromise = isPeiwanMember
-    ? prisma.gift.findMany({
-        select: { GiftName: true, url_link: true },
-        orderBy: { GiftName: 'asc' },
-      })
-    : Promise.resolve([] as Array<{ GiftName: string; url_link: string | null }>);
-  const giftUnlocksPromise = isPeiwanMember
-    ? prisma.peiwanGiftUnlock.findMany({
-        where: { discordUserId: discordId },
-        select: { giftName: true },
-      })
-    : Promise.resolve([] as Array<{ giftName: string }>);
   type TransactionRecord = Awaited<typeof transactionsPromise>[number];
 
   const [
@@ -232,8 +220,6 @@ export default async function Profile(props: ProfilePageProps = {}) {
     commissionBuff,
     flowBuff,
     spendBuff,
-    gifts,
-    giftUnlocks,
   ] = await Promise.all([
     couponsPromise,
     totalTransactionsPromise,
@@ -241,8 +227,6 @@ export default async function Profile(props: ProfilePageProps = {}) {
     commissionBuffPromise,
     flowBuffPromise,
     spendBuffPromise,
-    giftsPromise,
-    giftUnlocksPromise,
   ]);
   const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
   const hasPrevPage = currentPage > 1;
@@ -325,13 +309,6 @@ export default async function Profile(props: ProfilePageProps = {}) {
     (buff) => buff.value !== null || buff.expiresAt !== null || buff.createdAt !== null,
   );
 
-  const unlockedGiftNames = new Set((giftUnlocks ?? []).map((row) => row.giftName));
-  const giftWallItems = (gifts ?? []).map((gift) => ({
-    name: gift.GiftName,
-    imageUrl: gift.url_link,
-    unlocked: unlockedGiftNames.has(gift.GiftName),
-  }));
-  const giftWallUnlockedCount = giftWallItems.filter((item) => item.unlocked).length;
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
@@ -520,49 +497,6 @@ export default async function Profile(props: ProfilePageProps = {}) {
               <p className="text-gray-400 text-sm">暂无 Buff 信息。</p>
             )}
           </div>
-
-          {isPeiwanMember && giftWallItems.length > 0 && (
-            <div className="lg:col-span-2 bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">礼物墙</h2>
-                  <p className="text-sm text-gray-500">
-                    已解锁 {giftWallUnlockedCount} / {giftWallItems.length}
-                  </p>
-                </div>
-                <span className="text-xs uppercase tracking-[0.4em] text-gray-400">礼物图鉴</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                {giftWallItems.map((gift) => (
-                  <div
-                    key={gift.name}
-                    className={`rounded-2xl border border-black/10 p-3 space-y-2 ${
-                      gift.unlocked ? 'bg-white' : 'bg-gray-100/70 opacity-60 grayscale'
-                    }`}
-                  >
-                    <div className="relative aspect-square rounded-xl bg-white/80 overflow-hidden border border-black/5">
-                      {gift.imageUrl ? (
-                        <img
-                          src={gift.imageUrl}
-                          alt={gift.name}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-xs text-gray-400">
-                          暂无图片
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-sm font-medium text-gray-700 truncate">{gift.name}</div>
-                    <div className="text-xs text-gray-400">
-                      {gift.unlocked ? '已解锁' : '未解锁'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
             <div className="flex justify-between items-center">
