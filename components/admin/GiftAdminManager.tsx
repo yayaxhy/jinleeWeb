@@ -33,10 +33,26 @@ type Props = {
   endpoint: string;
 };
 
+type GiftSnapshot = {
+  price: string;
+  urlLink: string;
+  rate: string;
+  category: string;
+  active: boolean;
+};
+
 const normalizeCategory = (value: string) => {
   const trimmed = value.trim();
   return trimmed ? trimmed : '默认';
 };
+
+const normalizeSnapshot = (gift: GiftItem): GiftSnapshot => ({
+  price: gift.price.trim(),
+  urlLink: gift.urlLink.trim(),
+  rate: gift.rate.trim(),
+  category: normalizeCategory(gift.category),
+  active: gift.active,
+});
 
 export function GiftAdminManager({ initialGifts, endpoint }: Props) {
   const [gifts, setGifts] = useState<GiftItem[]>(() => initialGifts);
@@ -45,6 +61,13 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
     const map: Record<string, string> = {};
     initialGifts.forEach((gift) => {
       map[gift.name] = normalizeCategory(gift.category);
+    });
+    return map;
+  });
+  const [savedSnapshots, setSavedSnapshots] = useState<Record<string, GiftSnapshot>>(() => {
+    const map: Record<string, GiftSnapshot> = {};
+    initialGifts.forEach((gift) => {
+      map[gift.name] = normalizeSnapshot(gift);
     });
     return map;
   });
@@ -94,6 +117,23 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
     });
     return groups;
   }, [displayCategories, giftMap, giftOrder, selectedCategory]);
+  const isGiftDirty = (giftName: string) => {
+    const current = giftMap.get(giftName);
+    if (!current) return false;
+    const snapshot = savedSnapshots[giftName];
+    const normalized = normalizeSnapshot(current);
+    const hasFieldChanges =
+      !snapshot ||
+      snapshot.price !== normalized.price ||
+      snapshot.urlLink !== normalized.urlLink ||
+      snapshot.rate !== normalized.rate ||
+      snapshot.category !== normalized.category ||
+      snapshot.active !== normalized.active;
+    const renameValue = (renameInputs[giftName] ?? '').trim();
+    const hasRename = !!renameValue && renameValue !== giftName;
+    const hasFile = !!files[giftName];
+    return hasFieldChanges || hasRename || hasFile;
+  };
 
   const handleGiftFieldChange = (giftName: string, field: keyof GiftItem, value: string | boolean) => {
     setGifts((prev) =>
@@ -143,6 +183,13 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       setDisplayCategories((prev) => {
         const preserved = prev[giftName] ?? normalizeCategory(current?.category ?? data.gift!.category);
         const next = { ...prev, [nextName]: preserved };
+        if (nextName !== giftName) {
+          delete next[giftName];
+        }
+        return next;
+      });
+      setSavedSnapshots((prev) => {
+        const next = { ...prev, [nextName]: normalizeSnapshot(data.gift!) };
         if (nextName !== giftName) {
           delete next[giftName];
         }
@@ -211,6 +258,10 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       setDisplayCategories((prev) => ({
         ...prev,
         [data.gift!.name]: normalizeCategory(data.gift!.category),
+      }));
+      setSavedSnapshots((prev) => ({
+        ...prev,
+        [data.gift!.name]: normalizeSnapshot(data.gift!),
       }));
       setCreateForm({
         name: '',
@@ -362,6 +413,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
                     const isSaving = saving[gift.name];
                     const inputKey = inputKeys[gift.name] ?? 0;
                     const current = giftMap.get(gift.name);
+                    const isDirty = isGiftDirty(gift.name);
 
                     return (
                       <div key={gift.name} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
@@ -470,7 +522,11 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
                             type="button"
                             onClick={() => handleUpdate(gift.name)}
                             disabled={isSaving}
-                            className="inline-flex w-full items-center justify-center rounded-full bg-white/15 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white hover:bg-white/25 disabled:opacity-60"
+                            className={`inline-flex w-full items-center justify-center rounded-full px-4 py-2 text-xs uppercase tracking-[0.3em] text-white disabled:opacity-60 ${
+                              isDirty
+                                ? 'bg-emerald-500 hover:bg-emerald-400'
+                                : 'bg-white/15 hover:bg-white/25'
+                            }`}
                           >
                             {isSaving ? '保存中…' : '保存修改'}
                           </button>
