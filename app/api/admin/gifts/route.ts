@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
   const rateRaw = formData.get('rate');
   const categoryRaw = formData.get('category');
   const activeRaw = formData.get('active');
+  const newGiftNameRaw = formData.get('newGiftName');
   const file = formData.get('file');
 
   const giftName = typeof giftNameRaw === 'string' ? giftNameRaw.trim() : '';
