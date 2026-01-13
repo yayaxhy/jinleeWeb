@@ -51,7 +51,8 @@ export default async function GiftWallPage() {
   const [gifts, giftUnlocks] = isPeiwanMember
     ? await Promise.all([
         prisma.gift.findMany({
-          select: { GiftName: true, url_link: true },
+          where: { active: true },
+          select: { GiftName: true, giftImage: { select: { fileName: true, category: true } } },
           orderBy: { GiftName: 'asc' },
         }),
         prisma.peiwanGiftUnlock.findMany({
@@ -64,11 +65,24 @@ export default async function GiftWallPage() {
   const unlockedMap = new Map(giftUnlocks.map((row) => [row.giftName, row.unlockedAt]));
   const giftWallItems = gifts.map((gift) => ({
     name: gift.GiftName,
-    imageUrl: gift.url_link,
+    imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,
+    category: gift.giftImage?.category ?? '默认',
     unlocked: unlockedMap.has(gift.GiftName),
     unlockedAt: unlockedMap.get(gift.GiftName) ?? null,
   }));
   const giftWallUnlockedCount = giftWallItems.filter((item) => item.unlocked).length;
+  const groupedGiftWall = giftWallItems.reduce((map, item) => {
+    const group = map.get(item.category) ?? [];
+    group.push(item);
+    map.set(item.category, group);
+    return map;
+  }, new Map<string, typeof giftWallItems>());
+  const groupedGiftWallList = Array.from(groupedGiftWall.entries())
+    .map(([category, items]) => ({
+      category,
+      items: [...items].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN')),
+    }))
+    .sort((a, b) => a.category.localeCompare(b.category, 'zh-Hans-CN'));
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
@@ -110,31 +124,43 @@ export default async function GiftWallPage() {
             {giftWallItems.length === 0 ? (
               <p className="text-sm text-gray-500">暂无礼物配置。</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                {giftWallItems.map((gift) => (
-                  <div
-                    key={gift.name}
-                    className={`rounded-2xl border border-black/10 p-3 space-y-2 ${
-                      gift.unlocked ? 'bg-white' : 'bg-gray-100/70 opacity-60 grayscale'
-                    }`}
-                  >
-                    <div className="relative aspect-square rounded-xl bg-white/80 overflow-hidden border border-black/5">
-                      {gift.imageUrl ? (
-                        <img
-                          src={gift.imageUrl}
-                          alt={gift.name}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-xs text-gray-400">
-                          暂无图片
-                        </div>
-                      )}
+              <div className="space-y-8">
+                {groupedGiftWallList.map((group) => (
+                  <div key={group.category} className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-lg font-semibold text-gray-700">{group.category}</h3>
+                      <span className="text-xs uppercase tracking-[0.3em] text-gray-400">
+                        {group.items.length} 件
+                      </span>
                     </div>
-                    <div className="text-sm font-medium text-gray-700 truncate">{gift.name}</div>
-                    <div className="text-xs text-gray-400">
-                      {gift.unlocked ? `已解锁 · ${formatDate(gift.unlockedAt)}` : '未解锁'}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                      {group.items.map((gift) => (
+                        <div
+                          key={gift.name}
+                          className={`rounded-2xl border border-black/10 p-3 space-y-2 ${
+                            gift.unlocked ? 'bg-white' : 'bg-gray-100/70 opacity-60 grayscale'
+                          }`}
+                        >
+                          <div className="relative aspect-square rounded-xl bg-white/80 overflow-hidden border border-black/5">
+                            {gift.imageUrl ? (
+                              <img
+                                src={gift.imageUrl}
+                                alt={gift.name}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-xs text-gray-400">
+                                暂无图片
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-sm font-medium text-gray-700 truncate">{gift.name}</div>
+                          <div className="text-xs text-gray-400">
+                            {gift.unlocked ? `已解锁 · ${formatDate(gift.unlockedAt)}` : '未解锁'}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}

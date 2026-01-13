@@ -33,7 +33,8 @@ export async function GET(request: Request) {
 
   const [gifts, unlocks] = await Promise.all([
     prisma.gift.findMany({
-      select: { GiftName: true, url_link: true },
+      where: { active: true },
+      select: { GiftName: true, giftImage: { select: { fileName: true, category: true } } },
       orderBy: { GiftName: 'asc' },
     }),
     prisma.peiwanGiftUnlock.findMany({
@@ -45,16 +46,18 @@ export async function GET(request: Request) {
   const unlockedMap = new Map(unlocks.map((row) => [row.giftName, row.unlockedAt]));
   const data = gifts.map((gift) => ({
     giftName: gift.GiftName,
-    imageUrl: gift.url_link,
+    imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,
+    category: gift.giftImage?.category ?? '默认',
     unlocked: unlockedMap.has(gift.GiftName),
     unlockedAt: unlockedMap.get(gift.GiftName)?.toISOString() ?? null,
   }));
+  const unlockedCount = data.filter((gift) => gift.unlocked).length;
 
   return NextResponse.json({
     ok: true,
     discordUserId: resolvedId,
     total: gifts.length,
-    unlockedCount: unlockedMap.size,
+    unlockedCount,
     gifts: data,
   });
 }
