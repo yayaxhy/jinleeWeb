@@ -17,7 +17,7 @@ export default function AdminHomePage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm text-white/70">查询流水</p>
-              <p className="text-xs text-white/50">输入 Discord ID 查看全部 individual transactions</p>
+              <p className="text-xs text-white/50">默认展示全部流水，可选条件筛选</p>
             </div>
             <Link
               href="/admin/transactions"
