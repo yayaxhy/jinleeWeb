@@ -38,11 +38,16 @@ const normalizeCategory = (value: string) => {
   return trimmed ? trimmed : '默认';
 };
 
-const sortByName = (items: GiftItem[]) =>
-  [...items].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'));
-
 export function GiftAdminManager({ initialGifts, endpoint }: Props) {
-  const [gifts, setGifts] = useState<GiftItem[]>(() => sortByName(initialGifts));
+  const [gifts, setGifts] = useState<GiftItem[]>(() => initialGifts);
+  const [giftOrder, setGiftOrder] = useState<string[]>(() => initialGifts.map((gift) => gift.name));
+  const [displayCategories, setDisplayCategories] = useState<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    initialGifts.forEach((gift) => {
+      map[gift.name] = normalizeCategory(gift.category);
+    });
+    return map;
+  });
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [messages, setMessages] = useState<Record<string, string>>({});
@@ -65,27 +70,30 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
   const giftMap = useMemo(() => new Map(gifts.map((gift) => [gift.name, gift])), [gifts]);
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
-    gifts.forEach((gift) => {
-      set.add(normalizeCategory(gift.category));
+    giftOrder.forEach((name) => {
+      const category = displayCategories[name];
+      if (category) set.add(category);
     });
     return ['全部', ...Array.from(set).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))];
-  }, [gifts]);
+  }, [displayCategories, giftOrder]);
   const groupedGifts = useMemo(() => {
+    const groups: Array<{ category: string; items: GiftItem[] }> = [];
     const map = new Map<string, GiftItem[]>();
-    gifts.forEach((gift) => {
-      const category = normalizeCategory(gift.category);
+    giftOrder.forEach((name) => {
+      const gift = giftMap.get(name);
+      if (!gift) return;
+      const category = normalizeCategory(displayCategories[name] ?? gift.category);
       if (selectedCategory !== '全部' && category !== selectedCategory) return;
-      const group = map.get(category) ?? [];
+      let group = map.get(category);
+      if (!group) {
+        group = [];
+        map.set(category, group);
+        groups.push({ category, items: group });
+      }
       group.push(gift);
-      map.set(category, group);
     });
-    return Array.from(map.entries())
-      .map(([category, items]) => ({
-        category,
-        items: sortByName(items),
-      }))
-      .sort((a, b) => a.category.localeCompare(b.category, 'zh-Hans-CN'));
-  }, [gifts, selectedCategory]);
+    return groups;
+  }, [displayCategories, giftMap, giftOrder, selectedCategory]);
 
   const handleGiftFieldChange = (giftName: string, field: keyof GiftItem, value: string | boolean) => {
     setGifts((prev) =>
@@ -130,9 +138,16 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       }
 
       const nextName = data.gift.name;
-      setGifts((prev) =>
-        sortByName(prev.map((gift) => (gift.name === giftName ? data.gift! : gift)))
-      );
+      setGifts((prev) => prev.map((gift) => (gift.name === giftName ? data.gift! : gift)));
+      setGiftOrder((prev) => prev.map((name) => (name === giftName ? nextName : name)));
+      setDisplayCategories((prev) => {
+        const preserved = prev[giftName] ?? normalizeCategory(current?.category ?? data.gift!.category);
+        const next = { ...prev, [nextName]: preserved };
+        if (nextName !== giftName) {
+          delete next[giftName];
+        }
+        return next;
+      });
       setFiles((prev) => {
         const { [giftName]: _removed, ...rest } = prev;
         return { ...rest, [nextName]: null };
@@ -191,7 +206,12 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
         throw new Error(data.error ?? '创建失败');
       }
 
-      setGifts((prev) => sortByName([...prev, data.gift!]));
+      setGifts((prev) => [...prev, data.gift!]);
+      setGiftOrder((prev) => [...prev, data.gift!.name]);
+      setDisplayCategories((prev) => ({
+        ...prev,
+        [data.gift!.name]: normalizeCategory(data.gift!.category),
+      }));
       setCreateForm({
         name: '',
         price: '',
