@@ -7,9 +7,6 @@ export default function AdminHomePage() {
     <div className="space-y-6 text-white">
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold">欢迎进入管理后台</h2>
-        <p className="text-sm text-white/70">
-          请选择操作：可直接新增陪玩，或输入 Discord ID 修改对应信息。
-        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

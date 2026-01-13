@@ -70,8 +70,9 @@ export default async function GiftWallPage() {
     unlocked: unlockedMap.has(gift.GiftName),
     unlockedAt: unlockedMap.get(gift.GiftName) ?? null,
   }));
-  const giftWallUnlockedCount = giftWallItems.filter((item) => item.unlocked).length;
-  const groupedGiftWall = giftWallItems.reduce((map, item) => {
+  const visibleGiftWallItems = giftWallItems.filter((item) => item.category !== '老板');
+  const giftWallUnlockedCount = visibleGiftWallItems.filter((item) => item.unlocked).length;
+  const groupedGiftWall = visibleGiftWallItems.reduce((map, item) => {
     const group = map.get(item.category) ?? [];
     group.push(item);
     map.set(item.category, group);
@@ -121,7 +122,7 @@ export default async function GiftWallPage() {
               <span className="text-xs uppercase tracking-[0.4em] text-gray-400">持续收礼即可解锁</span>
             </div>
 
-            {giftWallItems.length === 0 ? (
+            {visibleGiftWallItems.length === 0 ? (
               <p className="text-sm text-gray-500">暂无礼物配置。</p>
             ) : (
               <div className="space-y-8">

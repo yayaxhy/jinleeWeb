@@ -19,6 +19,8 @@ export default async function AdminGiftManagementPage() {
     select: {
       GiftName: true,
       price: true,
+      url_link: true,
+      rate: true,
       active: true,
       giftImage: { select: { fileName: true, category: true } },
     },
@@ -28,6 +30,8 @@ export default async function AdminGiftManagementPage() {
   const initialGifts = gifts.map((gift) => ({
     name: gift.GiftName,
     price: gift.price?.toString() ?? '',
+    urlLink: gift.url_link ?? '',
+    rate: gift.rate?.toString() ?? '',
     active: gift.active,
     category: gift.giftImage?.category ?? '默认',
     imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,

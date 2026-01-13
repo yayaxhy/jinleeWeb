@@ -44,12 +44,34 @@ const parsePrice = (raw: string, required: boolean) => {
   return { price: new Prisma.Decimal(trimmed) };
 };
 
-const serializeGift = (gift: { GiftName: string; price: Prisma.Decimal | null; active: boolean }, image: {
+const parseRate = (raw: string, required: boolean) => {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return required ? { error: '请填写 rate' } : { rate: null };
+  }
+  const numeric = Number(trimmed);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return { error: 'rate 必须为 0 或正数' };
+  }
+  return { rate: new Prisma.Decimal(trimmed) };
+};
+
+const serializeGift = (
+  gift: {
+    GiftName: string;
+    price: Prisma.Decimal | null;
+    url_link: string | null;
+    rate: Prisma.Decimal | null;
+    active: boolean;
+  },
+  image: {
   fileName: string;
   category: string;
 } | null) => ({
   name: gift.GiftName,
   price: gift.price?.toString() ?? '',
+  urlLink: gift.url_link ?? '',
+  rate: gift.rate?.toString() ?? '',
   active: gift.active,
   category: image?.category ?? '默认',
   imageUrl: image?.fileName ? `/gift-wall/${image.fileName}` : null,
@@ -63,6 +85,8 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const giftNameRaw = formData.get('giftName');
   const priceRaw = formData.get('price');
+  const urlLinkRaw = formData.get('urlLink');
+  const rateRaw = formData.get('rate');
   const categoryRaw = formData.get('category');
   const activeRaw = formData.get('active');
   const file = formData.get('file');
@@ -75,6 +99,11 @@ export async function POST(request: NextRequest) {
   const priceValue = typeof priceRaw === 'string' ? parsePrice(priceRaw, true) : { error: '请填写礼物价格' };
   if ('error' in priceValue) {
     return NextResponse.json({ error: priceValue.error }, { status: 400 });
+  }
+
+  const rateValue = typeof rateRaw === 'string' ? parseRate(rateRaw, false) : { rate: null };
+  if ('error' in rateValue) {
+    return NextResponse.json({ error: rateValue.error }, { status: 400 });
   }
 
   if (!(file instanceof File) || file.size === 0) {
@@ -103,11 +132,14 @@ export async function POST(request: NextRequest) {
     typeof activeRaw === 'string' ? activeRaw === 'true' || activeRaw === '1' || activeRaw === 'on' : true;
   const category =
     typeof categoryRaw === 'string' ? normalizeCategory(categoryRaw) : '默认';
+  const urlLink = typeof urlLinkRaw === 'string' ? urlLinkRaw.trim() : '';
 
   const gift = await prisma.gift.create({
     data: {
       GiftName: giftName,
       price: priceValue.price,
+      url_link: urlLink ? urlLink : null,
+      rate: rateValue.rate ?? undefined,
       active,
     },
   });
@@ -126,6 +158,8 @@ export async function PATCH(request: NextRequest) {
   const formData = await request.formData();
   const giftNameRaw = formData.get('giftName');
   const priceRaw = formData.get('price');
+  const urlLinkRaw = formData.get('urlLink');
+  const rateRaw = formData.get('rate');
   const categoryRaw = formData.get('category');
   const activeRaw = formData.get('active');
   const file = formData.get('file');
@@ -143,7 +177,23 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: '未找到该礼物' }, { status: 404 });
   }
 
+  const newGiftName =
+    typeof newGiftNameRaw === 'string' ? newGiftNameRaw.trim() : '';
+  const renameTarget = newGiftName && newGiftName !== giftName ? newGiftName : null;
+  if (renameTarget) {
+    const duplicate = await prisma.gift.findUnique({
+      where: { GiftName: renameTarget },
+      select: { GiftName: true },
+    });
+    if (duplicate) {
+      return NextResponse.json({ error: '礼物名已存在' }, { status: 409 });
+    }
+  }
+
   const updates: Prisma.GiftUpdateInput = {};
+  if (renameTarget) {
+    updates.GiftName = renameTarget;
+  }
   if (typeof priceRaw === 'string') {
     const parsed = parsePrice(priceRaw, false);
     if ('error' in parsed) {
@@ -151,6 +201,21 @@ export async function PATCH(request: NextRequest) {
     }
     if (parsed.price) {
       updates.price = parsed.price;
+    }
+  }
+
+  if (typeof urlLinkRaw === 'string') {
+    const trimmed = urlLinkRaw.trim();
+    updates.url_link = trimmed ? trimmed : null;
+  }
+
+  if (typeof rateRaw === 'string') {
+    const parsed = parseRate(rateRaw, false);
+    if ('error' in parsed) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    if (parsed.rate) {
+      updates.rate = parsed.rate;
     }
   }
 
@@ -167,7 +232,15 @@ export async function PATCH(request: NextRequest) {
     });
   }
 
+  if (renameTarget) {
+    await prisma.giftAudit.updateMany({
+      where: { giftName },
+      data: { giftName: gift.GiftName },
+    });
+  }
+
   let updatedImage = gift.giftImage;
+  const targetGiftName = gift.GiftName;
   const hasFile = file instanceof File && file.size > 0;
   const categoryProvided = typeof categoryRaw === 'string';
   const nextCategory = categoryProvided ? normalizeCategory(categoryRaw) : updatedImage?.category ?? '默认';
@@ -179,13 +252,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     await fs.mkdir(TARGET_DIR, { recursive: true });
-    const fileName = resolveFileName(giftName, ext);
+    const fileName = resolveFileName(targetGiftName, ext);
     const targetPath = path.join(TARGET_DIR, fileName);
     await fs.writeFile(targetPath, await toBuffer(file));
 
     updatedImage = await prisma.giftImage.upsert({
-      where: { giftName },
-      create: { giftName, fileName, category: nextCategory },
+      where: { giftName: targetGiftName },
+      create: { giftName: targetGiftName, fileName, category: nextCategory },
       update: { fileName, category: nextCategory, uploadedAt: new Date() },
     });
 
@@ -195,7 +268,7 @@ export async function PATCH(request: NextRequest) {
     }
   } else if (categoryProvided && updatedImage) {
     updatedImage = await prisma.giftImage.update({
-      where: { giftName },
+      where: { giftName: targetGiftName },
       data: { category: nextCategory },
     });
   }

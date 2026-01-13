@@ -51,13 +51,14 @@ export async function GET(request: Request) {
     unlocked: unlockedMap.has(gift.GiftName),
     unlockedAt: unlockedMap.get(gift.GiftName)?.toISOString() ?? null,
   }));
-  const unlockedCount = data.filter((gift) => gift.unlocked).length;
+  const visibleGifts = data.filter((gift) => gift.category !== '老板');
+  const unlockedCount = visibleGifts.filter((gift) => gift.unlocked).length;
 
   return NextResponse.json({
     ok: true,
     discordUserId: resolvedId,
-    total: gifts.length,
+    total: visibleGifts.length,
     unlockedCount,
-    gifts: data,
+    gifts: visibleGifts,
   });
 }
