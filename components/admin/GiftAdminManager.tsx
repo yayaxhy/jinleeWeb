@@ -169,10 +169,6 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       setCreateMessage('请填写礼物价格');
       return;
     }
-    if (!createForm.file) {
-      setCreateMessage('请上传礼物图片');
-      return;
-    }
 
     setCreating(true);
     setCreateMessage('');
@@ -185,7 +181,9 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       formData.append('rate', createForm.rate.trim());
       formData.append('category', normalizeCategory(createForm.category));
       formData.append('active', createForm.active ? 'true' : 'false');
-      formData.append('file', createForm.file);
+      if (createForm.file) {
+        formData.append('file', createForm.file);
+      }
 
       const response = await fetch(endpoint, { method: 'POST', body: formData });
       const data = (await response.json().catch(() => ({}))) as ApiResponse;

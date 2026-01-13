@@ -44,13 +44,15 @@ export async function GET(request: Request) {
   ]);
 
   const unlockedMap = new Map(unlocks.map((row) => [row.giftName, row.unlockedAt]));
-  const data = gifts.map((gift) => ({
-    giftName: gift.GiftName,
-    imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,
-    category: gift.giftImage?.category ?? '默认',
-    unlocked: unlockedMap.has(gift.GiftName),
-    unlockedAt: unlockedMap.get(gift.GiftName)?.toISOString() ?? null,
-  }));
+  const data = gifts
+    .filter((gift) => gift.giftImage?.fileName)
+    .map((gift) => ({
+      giftName: gift.GiftName,
+      imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,
+      category: gift.giftImage?.category ?? '默认',
+      unlocked: unlockedMap.has(gift.GiftName),
+      unlockedAt: unlockedMap.get(gift.GiftName)?.toISOString() ?? null,
+    }));
   const visibleGifts = data.filter((gift) => gift.category !== '老板');
   const unlockedCount = visibleGifts.filter((gift) => gift.unlocked).length;
 

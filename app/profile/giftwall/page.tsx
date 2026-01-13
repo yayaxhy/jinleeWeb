@@ -63,13 +63,15 @@ export default async function GiftWallPage() {
     : [[], []];
 
   const unlockedMap = new Map(giftUnlocks.map((row) => [row.giftName, row.unlockedAt]));
-  const giftWallItems = gifts.map((gift) => ({
-    name: gift.GiftName,
-    imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,
-    category: gift.giftImage?.category ?? '默认',
-    unlocked: unlockedMap.has(gift.GiftName),
-    unlockedAt: unlockedMap.get(gift.GiftName) ?? null,
-  }));
+  const giftWallItems = gifts
+    .filter((gift) => gift.giftImage?.fileName)
+    .map((gift) => ({
+      name: gift.GiftName,
+      imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,
+      category: gift.giftImage?.category ?? '默认',
+      unlocked: unlockedMap.has(gift.GiftName),
+      unlockedAt: unlockedMap.get(gift.GiftName) ?? null,
+    }));
   const visibleGiftWallItems = giftWallItems.filter((item) => item.category !== '老板');
   const giftWallUnlockedCount = visibleGiftWallItems.filter((item) => item.unlocked).length;
   const groupedGiftWall = visibleGiftWallItems.reduce((map, item) => {

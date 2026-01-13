@@ -89,7 +89,6 @@ export async function POST(request: NextRequest) {
   const rateRaw = formData.get('rate');
   const categoryRaw = formData.get('category');
   const activeRaw = formData.get('active');
-  const newGiftNameRaw = formData.get('newGiftName');
   const file = formData.get('file');
 
   const giftName = typeof giftNameRaw === 'string' ? giftNameRaw.trim() : '';
@@ -107,14 +106,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: rateValue.error }, { status: 400 });
   }
 
-  if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json({ error: '请上传图片文件' }, { status: 400 });
-  }
-
-  const ext = path.extname(file.name).toLowerCase();
-  if (!ALLOWED_EXTS.has(ext)) {
-    return NextResponse.json({ error: `不支持的文件类型：${ext}` }, { status: 400 });
-  }
+  const hasFile = file instanceof File && file.size > 0;
 
   const existing = await prisma.gift.findUnique({
     where: { GiftName: giftName },
@@ -124,10 +116,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '礼物已存在' }, { status: 409 });
   }
 
-  await fs.mkdir(TARGET_DIR, { recursive: true });
-  const fileName = resolveFileName(giftName, ext);
-  const targetPath = path.join(TARGET_DIR, fileName);
-  await fs.writeFile(targetPath, await toBuffer(file));
+  let fileName = '';
+  if (hasFile) {
+    const ext = path.extname(file.name).toLowerCase();
+    if (!ALLOWED_EXTS.has(ext)) {
+      return NextResponse.json({ error: `不支持的文件类型：${ext}` }, { status: 400 });
+    }
+    await fs.mkdir(TARGET_DIR, { recursive: true });
+    fileName = resolveFileName(giftName, ext);
+    const targetPath = path.join(TARGET_DIR, fileName);
+    await fs.writeFile(targetPath, await toBuffer(file));
+  }
 
   const active =
     typeof activeRaw === 'string' ? activeRaw === 'true' || activeRaw === '1' || activeRaw === 'on' : true;
