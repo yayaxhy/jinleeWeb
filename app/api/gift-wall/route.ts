@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   const [gifts, unlocks] = await Promise.all([
     prisma.gift.findMany({
       where: { active: true },
-      select: { GiftName: true, giftImage: { select: { fileName: true, category: true } } },
+      select: { GiftName: true, price: true, giftImage: { select: { fileName: true, category: true } } },
       orderBy: { GiftName: 'asc' },
     }),
     prisma.peiwanGiftUnlock.findMany({
@@ -52,8 +52,15 @@ export async function GET(request: Request) {
       category: gift.giftImage?.category ?? '默认',
       unlocked: unlockedMap.has(gift.GiftName),
       unlockedAt: unlockedMap.get(gift.GiftName)?.toISOString() ?? null,
+      priceValue: gift.price ? Number(gift.price.toString()) : 0,
     }));
-  const visibleGifts = data.filter((gift) => gift.category !== '老板');
+  const visibleGifts = data
+    .filter((gift) => gift.category !== '老板')
+    .sort((a, b) => {
+      if (a.priceValue !== b.priceValue) return a.priceValue - b.priceValue;
+      return a.giftName.localeCompare(b.giftName, 'zh-Hans-CN');
+    })
+    .map(({ priceValue, ...gift }) => gift);
   const unlockedCount = visibleGifts.filter((gift) => gift.unlocked).length;
 
   return NextResponse.json({

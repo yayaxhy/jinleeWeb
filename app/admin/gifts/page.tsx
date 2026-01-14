@@ -56,7 +56,7 @@ export default async function AdminGiftManagementPage() {
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
           <p className="text-xs text-white/60">
-            图片将保存到本地目录并用于礼物墙展示，支持 jpg / png。
+            图片将保存到本地目录并用于礼物墙展示，支持 jpg / png / gif。
           </p>
           <p className="text-xs text-white/60">如果不需要上架礼物墙，则不需要上传图片。</p>
           <GiftAdminManager initialGifts={initialGifts} endpoint="/api/admin/gifts" />

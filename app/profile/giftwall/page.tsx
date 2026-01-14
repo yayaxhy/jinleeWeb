@@ -52,7 +52,7 @@ export default async function GiftWallPage() {
     ? await Promise.all([
         prisma.gift.findMany({
           where: { active: true },
-          select: { GiftName: true, giftImage: { select: { fileName: true, category: true } } },
+          select: { GiftName: true, price: true, giftImage: { select: { fileName: true, category: true } } },
           orderBy: { GiftName: 'asc' },
         }),
         prisma.peiwanGiftUnlock.findMany({
@@ -67,6 +67,7 @@ export default async function GiftWallPage() {
     .filter((gift) => gift.giftImage?.fileName)
     .map((gift) => ({
       name: gift.GiftName,
+      priceValue: gift.price ? Number(gift.price.toString()) : 0,
       imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,
       category: gift.giftImage?.category ?? '默认',
       unlocked: unlockedMap.has(gift.GiftName),
@@ -83,7 +84,12 @@ export default async function GiftWallPage() {
   const groupedGiftWallList = Array.from(groupedGiftWall.entries())
     .map(([category, items]) => ({
       category,
-      items: [...items].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN')),
+      items: [...items].sort((a, b) => {
+        if (a.priceValue !== b.priceValue) {
+          return a.priceValue - b.priceValue;
+        }
+        return a.name.localeCompare(b.name, 'zh-Hans-CN');
+      }),
     }))
     .sort((a, b) => a.category.localeCompare(b.category, 'zh-Hans-CN'));
 

@@ -9,7 +9,7 @@ import { isAdminDiscordId } from '@/lib/admin';
 
 export const runtime = 'nodejs';
 
-const ALLOWED_EXTS = new Set(['.png', '.jpg', '.jpeg']);
+const ALLOWED_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif']);
 const TARGET_DIR = path.join(process.cwd(), 'public', 'gift-wall');
 
 const ensureAdmin = async () => {
