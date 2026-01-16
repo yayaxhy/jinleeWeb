@@ -334,6 +334,18 @@ model LeaderboardPost {
   @@index([kind])
 }
 
+model LeaderboardPostChannel {
+  id          String   @id @default(cuid())
+  kind        String
+  periodStart DateTime
+  channelId   String
+  createdAt   DateTime @default(now())
+
+  @@unique([kind, periodStart, channelId])
+  @@index([kind])
+  @@index([channelId])
+}
+
 model PeiwanGiftUnlock {
   id            String   @id @default(cuid())
   discordUserId String
