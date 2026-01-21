@@ -69,6 +69,21 @@ export default function AdminHomePage() {
             </Link>
           </div>
         </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-white/70">账号迁移</p>
+              <p className="text-xs text-white/50">将旧 Discord ID 的全部数据迁移到新 ID</p>
+            </div>
+            <Link
+              href="/admin/migrate-discord"
+              className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
+            >
+              前往迁移
+            </Link>
+          </div>
+        </div>
       </div>
 
       <AdminPeiwanActions />
