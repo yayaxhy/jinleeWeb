@@ -137,8 +137,8 @@ export default async function Profile(props: ProfilePageProps = {}) {
     { href: '/profile', label: '个人主页' },
     { href: '/profile/bag', label: '我的背包' },
     { href: '/profile/heart', label: '心动值' },
+    { href: '/profile/giftwall', label: '礼物墙' },
     { href: '/recharge', label: '充值中心' },
-    { href: '/join', label: '加入陪玩' },
   ];
 
   const session = await getServerSession();

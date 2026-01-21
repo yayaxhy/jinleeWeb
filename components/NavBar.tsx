@@ -5,9 +5,9 @@ import { LoginButton } from './LoginButton';
 
 const links = [
   { href: '/', label: 'HOME' },
-  { href: '/join', label: '加入我们' },
   { href: '/peiwanList', label: '陪玩列表' },
   { href: '/profile', label: '个人主页' },
+  { href: '/profile/giftwall', label: '礼物墙' },
 ];
 
 export function NavBar() {

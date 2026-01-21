@@ -27,7 +27,9 @@ export default async function AdminGiftManagementPage() {
     orderBy: { GiftName: 'asc' },
   });
 
-  const initialGifts = gifts.map((gift) => ({
+  type GiftRecord = (typeof gifts)[number];
+
+  const initialGifts = gifts.map((gift: GiftRecord) => ({
     name: gift.GiftName,
     price: gift.price?.toString() ?? '',
     urlLink: gift.url_link ?? '',
