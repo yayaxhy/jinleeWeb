@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import './admin.css';
 import { redirect } from 'next/navigation';
 import { isAdminDiscordId } from '@/lib/admin';
 import { getServerSession } from '@/lib/session';
@@ -18,7 +19,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <section className="min-h-screen bg-[#020204] text-white">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12">
+      <div className="admin-shell mx-auto flex max-w-[1400px] flex-col gap-10 px-6 py-12">
         <header className="space-y-2">
           <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
           <h1 className="text-3xl font-semibold">锦鲤公会管理后台</h1>

@@ -1,0 +1,19 @@
+.admin-shell {
+  /* Wider shell for data-heavy tables */
+  max-width: 1400px;
+}
+
+.admin-shell table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.admin-shell th,
+.admin-shell td {
+  white-space: normal !important;
+  word-break: break-word;
+}
+
+.admin-shell .overflow-x-auto {
+  overflow-x: visible !important;
+}
