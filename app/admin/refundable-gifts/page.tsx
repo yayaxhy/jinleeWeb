@@ -105,7 +105,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
             <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
             <h1 className="text-3xl font-semibold">可退回打赏</h1>
             <p className="text-sm text-white/60">
-              展示 Gift Audit 记录（排除内部字段），按时间倒序。
+              按时间倒序
             </p>
           </div>
           <Link
@@ -118,11 +118,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-white/60">
-              已隐藏字段：id, paymentTransactionId, giverFromIncome, giverFromRecharge, spendBonusExtra,
-              spendRemainingBefore, flowBonusExtra, flowRemainingBefore, bossReferralInviterId,
-              bossReferralAmount, workerReferralInviterId, workerReferralAmount。
-            </p>
+            
             <p className="text-xs text-white/50">
               第 {currentPage} / {totalPages} 页 · 共 {totalCount} 条
             </p>
@@ -132,7 +128,8 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
             <table className="min-w-full text-sm text-white">
               <thead className="bg-white/5 text-xs uppercase tracking-[0.4em] text-white/50">
                 <tr>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">Individual Tx</th>
+                  <th className="px-4 py-3 text-left whitespace-nowrap">Individual</th>
+                  <th className="px-4 py-3 text-left whitespace-nowrap">时间</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">订单 ID</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">礼物</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">数量</th>
@@ -146,7 +143,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                   <th className="px-4 py-3 text-left whitespace-nowrap">赠送人</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">收礼人</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">券 IDs</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">时间</th>
+                  
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -162,6 +159,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                     <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
                       {record.individualTransactionId}
                     </td>
+                    <td className="px-4 py-3 text-white/70 whitespace-nowrap">{formatDate(record.createdAt)}</td>
                     <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
                       {record.orderId}
                     </td>
@@ -183,7 +181,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                     <td className="px-4 py-3 text-white/80 whitespace-pre-wrap break-all">
                       {formatVoucher(record.voucherIds)}
                     </td>
-                    <td className="px-4 py-3 text-white/70 whitespace-nowrap">{formatDate(record.createdAt)}</td>
+                    
                   </tr>
                 ))}
               </tbody>
