@@ -124,27 +124,25 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="min-w-full text-sm text-white">
-              <thead className="bg-white/5 text-xs uppercase tracking-[0.4em] text-white/50">
+          <div className="rounded-2xl border border-white/10">
+            <table className="w-full table-auto text-sm text-white">
+              <thead className="bg-white/5 text-[11px] uppercase tracking-[0.4em] text-white/50">
                 <tr>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">Individual</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">时间</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">赠送人</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">收礼人</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">订单 ID</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">礼物</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">数量</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">单价</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">总额</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">应付</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">抽成</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">陪玩到手</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">分成比例</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">心动值</th>
-                  
-                  <th className="px-4 py-3 text-left whitespace-nowrap">券ID</th>
-                  
+                  <th className="px-3 py-3 text-left">Individual</th>
+                  <th className="px-3 py-3 text-left">时间</th>
+                  <th className="px-3 py-3 text-left">赠送人</th>
+                  <th className="px-3 py-3 text-left">收礼人</th>
+                  <th className="px-3 py-3 text-left">订单 ID</th>
+                  <th className="px-3 py-3 text-left">礼物</th>
+                  <th className="px-3 py-3 text-left">数量</th>
+                  <th className="px-3 py-3 text-left">单价</th>
+                  <th className="px-3 py-3 text-left">总额</th>
+                  <th className="px-3 py-3 text-left">应付</th>
+                  <th className="px-3 py-3 text-left">抽成</th>
+                  <th className="px-3 py-3 text-left">陪玩到手</th>
+                  <th className="px-3 py-3 text-left">分成比例</th>
+                  <th className="px-3 py-3 text-left">心动值</th>
+                  <th className="px-3 py-3 text-left">券ID</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -157,33 +155,31 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                 )}
                 {records.map((record) => (
                   <tr key={record.individualTransactionId} className="align-top">
-                    <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
+                    <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
                       {record.individualTransactionId}
                     </td>
-                    <td className="px-4 py-3 text-white/70 whitespace-nowrap">{formatDate(record.createdAt)}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
+                    <td className="px-3 py-3 text-white/70 whitespace-normal break-words">{formatDate(record.createdAt)}</td>
+                    <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
                       {record.giverId}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
+                    <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
                       {record.receiverId}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
+                    <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
                       {record.orderId}
                     </td>
-                    <td className="px-4 py-3 text-white/90">{record.giftName}</td>
-                    <td className="px-4 py-3">{formatNumber(record.quantity, 4)}</td>
-                    <td className="px-4 py-3">{formatNumber(record.unitPrice, 4)}</td>
-                    <td className="px-4 py-3">{formatNumber(record.gross, 4)}</td>
-                    <td className="px-4 py-3">{formatNumber(record.payable, 4)}</td>
-                    <td className="px-4 py-3">{formatNumber(record.feeAmount, 4)}</td>
-                    <td className="px-4 py-3">{formatNumber(record.netAmount, 4)}</td>
-                    <td className="px-4 py-3">{formatNumber(record.receiverRate, 4)}</td>
-                    <td className="px-4 py-3">{formatNumber(record.heartGain, 0)}</td>
-                    
-                    <td className="px-4 py-3 text-white/80 whitespace-pre-wrap break-all">
+                    <td className="px-3 py-3 text-white/90 whitespace-normal break-words">{record.giftName}</td>
+                    <td className="px-3 py-3 whitespace-normal break-words">{formatNumber(record.quantity, 4)}</td>
+                    <td className="px-3 py-3 whitespace-normal break-words">{formatNumber(record.unitPrice, 4)}</td>
+                    <td className="px-3 py-3 whitespace-normal break-words">{formatNumber(record.gross, 4)}</td>
+                    <td className="px-3 py-3 whitespace-normal break-words">{formatNumber(record.payable, 4)}</td>
+                    <td className="px-3 py-3 whitespace-normal break-words">{formatNumber(record.feeAmount, 4)}</td>
+                    <td className="px-3 py-3 whitespace-normal break-words">{formatNumber(record.netAmount, 4)}</td>
+                    <td className="px-3 py-3 whitespace-normal break-words">{formatNumber(record.receiverRate, 4)}</td>
+                    <td className="px-3 py-3 whitespace-normal break-words">{formatNumber(record.heartGain, 0)}</td>
+                    <td className="px-3 py-3 text-white/80 whitespace-normal break-words">
                       {formatVoucher(record.voucherIds)}
                     </td>
-                    
                   </tr>
                 ))}
               </tbody>
