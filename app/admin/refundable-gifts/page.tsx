@@ -130,6 +130,8 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                 <tr>
                   <th className="px-4 py-3 text-left whitespace-nowrap">Individual</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">时间</th>
+                  <th className="px-4 py-3 text-left whitespace-nowrap">赠送人</th>
+                  <th className="px-4 py-3 text-left whitespace-nowrap">收礼人</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">订单 ID</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">礼物</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">数量</th>
@@ -140,8 +142,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                   <th className="px-4 py-3 text-left whitespace-nowrap">陪玩到手</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">分成比例</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">心动值</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">赠送人</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">收礼人</th>
+                  
                   <th className="px-4 py-3 text-left whitespace-nowrap">券ID</th>
                   
                 </tr>
@@ -161,6 +162,12 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                     </td>
                     <td className="px-4 py-3 text-white/70 whitespace-nowrap">{formatDate(record.createdAt)}</td>
                     <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
+                      {record.giverId}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
+                      {record.receiverId}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
                       {record.orderId}
                     </td>
                     <td className="px-4 py-3 text-white/90">{record.giftName}</td>
@@ -172,12 +179,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                     <td className="px-4 py-3">{formatNumber(record.netAmount, 4)}</td>
                     <td className="px-4 py-3">{formatNumber(record.receiverRate, 4)}</td>
                     <td className="px-4 py-3">{formatNumber(record.heartGain, 0)}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
-                      {record.giverId}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-white/80 whitespace-pre-wrap break-all">
-                      {record.receiverId}
-                    </td>
+                    
                     <td className="px-4 py-3 text-white/80 whitespace-pre-wrap break-all">
                       {formatVoucher(record.voucherIds)}
                     </td>
