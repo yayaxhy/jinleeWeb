@@ -136,13 +136,13 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                   <th className="px-4 py-3 text-left whitespace-nowrap">单价</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">总额</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">应付</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">手续费</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">净额</th>
+                  <th className="px-4 py-3 text-left whitespace-nowrap">抽成</th>
+                  <th className="px-4 py-3 text-left whitespace-nowrap">陪玩到手</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">分成比例</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">心动值</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">赠送人</th>
                   <th className="px-4 py-3 text-left whitespace-nowrap">收礼人</th>
-                  <th className="px-4 py-3 text-left whitespace-nowrap">券 IDs</th>
+                  <th className="px-4 py-3 text-left whitespace-nowrap">券ID</th>
                   
                 </tr>
               </thead>
