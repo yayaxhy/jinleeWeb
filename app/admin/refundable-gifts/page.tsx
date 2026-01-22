@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
+import { Prisma } from '@prisma/client';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const PAGE_SIZE = 50;
@@ -76,15 +77,35 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
 
   const rawParams = await Promise.resolve(props.searchParams);
   const searchParams = rawParams ?? {};
+  const giverParam = searchParams.giverId;
+  const receiverParam = searchParams.receiverId;
+  const giverId =
+    typeof giverParam === 'string'
+      ? giverParam.trim()
+      : Array.isArray(giverParam)
+        ? giverParam[0]?.trim()
+        : '';
+  const receiverId =
+    typeof receiverParam === 'string'
+      ? receiverParam.trim()
+      : Array.isArray(receiverParam)
+        ? receiverParam[0]?.trim()
+        : '';
   const pageParam = searchParams.page;
   const rawPage = Array.isArray(pageParam) ? pageParam[0] : pageParam;
   const parsedPage = rawPage ? Number.parseInt(rawPage, 10) : 1;
   const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (currentPage - 1) * PAGE_SIZE;
 
+  const where: Prisma.GiftAuditWhereInput = {};
+  if (giverId) where.giverId = giverId;
+  if (receiverId) where.receiverId = receiverId;
+  const hasFilters = giverId || receiverId;
+
   const [totalCount, records] = await Promise.all([
-    prisma.giftAudit.count(),
+    prisma.giftAudit.count({ where: hasFilters ? where : undefined }),
     prisma.giftAudit.findMany({
+      where: hasFilters ? where : undefined,
       orderBy: { createdAt: 'desc' },
       skip,
       take: PAGE_SIZE,
@@ -118,11 +139,47 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-8 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            
             <p className="text-xs text-white/50">
               第 {currentPage} / {totalPages} 页 · 共 {totalCount} 条
             </p>
           </div>
+
+          <form className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:grid-cols-2" action="/admin/refundable-gifts" method="get">
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-[0.4em] text-white/60">赠送人 Discord ID</label>
+              <input
+                type="text"
+                name="giverId"
+                defaultValue={giverId}
+                className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+                placeholder="输入赠送人 ID"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-[0.4em] text-white/60">收礼人 Discord ID</label>
+              <input
+                type="text"
+                name="receiverId"
+                defaultValue={receiverId}
+                className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+                placeholder="输入收礼人 ID"
+              />
+            </div>
+            <div className="sm:col-span-2 flex gap-3">
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-full bg-[#5c43a3] px-5 py-2 text-sm font-medium text-white hover:bg-[#4a3388]"
+              >
+                筛选
+              </button>
+              <Link
+                href="/admin/refundable-gifts"
+                className="inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
+              >
+                清除筛选
+              </Link>
+            </div>
+          </form>
 
           <div className="rounded-2xl border border-white/10">
             <table className="w-full table-auto text-sm text-white">
@@ -192,7 +249,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
             </p>
             <div className="flex gap-2">
               <Link
-                href={`/admin/refundable-gifts?page=${prevPage}`}
+                href={`/admin/refundable-gifts?giverId=${encodeURIComponent(giverId)}&receiverId=${encodeURIComponent(receiverId)}&page=${prevPage}`}
                 className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.4em] ${
                   hasPrev ? 'border-white/20 text-white hover:bg-white/10' : 'border-white/10 text-white/40 pointer-events-none'
                 }`}
@@ -201,7 +258,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                 上一页
               </Link>
               <Link
-                href={`/admin/refundable-gifts?page=${nextPage}`}
+                href={`/admin/refundable-gifts?giverId=${encodeURIComponent(giverId)}&receiverId=${encodeURIComponent(receiverId)}&page=${nextPage}`}
                 className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.4em] ${
                   hasNext ? 'border-white/20 text-white hover:bg-white/10' : 'border-white/10 text-white/40 pointer-events-none'
                 }`}
