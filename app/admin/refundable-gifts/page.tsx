@@ -99,7 +99,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
 
   return (
     <section className="min-h-screen bg-[#020204] text-white px-6 py-12">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8">
+      <div className="mx-auto flex max-w-[1400px] flex-col gap-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
@@ -116,7 +116,7 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
           </Link>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-8 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             
             <p className="text-xs text-white/50">
