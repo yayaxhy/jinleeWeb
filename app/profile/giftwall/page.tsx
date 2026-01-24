@@ -127,7 +127,7 @@ export default async function GiftWallPage() {
                   已解锁 {giftWallUnlockedCount} / {giftWallItems.length}
                 </p>
               </div>
-              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">持续收礼即可解锁</span>
+              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">收到对应礼物即可解锁</span>
             </div>
 
             {visibleGiftWallItems.length === 0 ? (
