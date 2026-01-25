@@ -24,6 +24,7 @@ type PeiwanFormState = {
   techTag: boolean;
   exclusive: boolean;
   quotations: Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], string>;
+  quotationsClear: Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], boolean>;
   gameTags: Record<(typeof PEIWAN_GAME_TAG_FIELDS)[number], boolean>;
 };
 
@@ -40,6 +41,7 @@ const createDefaultState = (): PeiwanFormState => ({
   techTag: false,
   exclusive: false,
   quotations: Object.fromEntries(PEIWAN_QUOTATION_FIELDS.map((field) => [field, ''])) as PeiwanFormState['quotations'],
+  quotationsClear: Object.fromEntries(PEIWAN_QUOTATION_FIELDS.map((field) => [field, false])) as PeiwanFormState['quotationsClear'],
   gameTags: Object.fromEntries(PEIWAN_GAME_TAG_FIELDS.map((tag) => [tag, false])) as PeiwanFormState['gameTags'],
 });
 
@@ -67,6 +69,10 @@ const mergeInitialState = (initialValues?: Partial<PeiwanFormState>) => {
     quotations: {
       ...base.quotations,
       ...(initialValues.quotations ?? {}),
+    },
+    quotationsClear: {
+      ...base.quotationsClear,
+      ...(initialValues.quotationsClear ?? {}),
     },
     gameTags: {
       ...base.gameTags,
@@ -111,6 +117,10 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
 
     const requiredQuotationField =
       QUOTATION_CODE_TO_FIELD[formState.defaultQuotationCode] as (typeof PEIWAN_QUOTATION_FIELDS)[number];
+    if (formState.quotationsClear[requiredQuotationField]) {
+      setStatusMessage({ type: 'error', text: `${formState.defaultQuotationCode} 档位不可清空，请先更换默认档位` });
+      return;
+    }
     if (formState.quotations[requiredQuotationField] === '') {
       setStatusMessage({ type: 'error', text: `${formState.defaultQuotationCode} 档位不能为空` });
       return;
@@ -125,13 +135,18 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
 
     setIsSubmitting(true);
     try {
-      const quotationsPayload: Record<string, number> = {};
+      const quotationsPayload: Record<string, number | null> = {};
       for (const field of PEIWAN_QUOTATION_FIELDS) {
+        if (formState.quotationsClear[field]) {
+          quotationsPayload[field] = null;
+          continue;
+        }
         const value = formState.quotations[field];
         if (value !== '') {
           const numeric = Number(value);
           if (Number.isNaN(numeric)) {
-            setStatusMessage({ type: 'error', text: `${field} 请输入数字` });
+            const label = QUOTATION_LABEL_MAP[field] ?? field;
+            setStatusMessage({ type: 'error', text: `${label} 请输入数字` });
             setIsSubmitting(false);
             return;
           }
@@ -336,22 +351,47 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
         <div className="grid gap-4 md:grid-cols-2">
           {PEIWAN_QUOTATION_FIELDS.map((field) => (
             <label key={field} className="space-y-2">
-              <span className="text-sm text-gray-500 tracking-[0.2em]">
-                {QUOTATION_LABEL_MAP[field] ?? field.replace('quotation_', '')}
-              </span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-gray-500 tracking-[0.2em]">
+                  {QUOTATION_LABEL_MAP[field] ?? field.replace('quotation_', '')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormState((prev) => {
+                      const nextCleared = !prev.quotationsClear[field];
+                      return {
+                        ...prev,
+                        quotationsClear: { ...prev.quotationsClear, [field]: nextCleared },
+                        quotations: nextCleared
+                          ? { ...prev.quotations, [field]: '' }
+                          : prev.quotations,
+                      };
+                    })
+                  }
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                    formState.quotationsClear[field]
+                      ? 'bg-white/15 text-white'
+                      : 'border border-white/20 text-white/80 hover:border-white/40'
+                  }`}
+                >
+                  {formState.quotationsClear[field] ? '已标记清空' : '清空'}
+                </button>
+              </div>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={formState.quotations[field]}
+                disabled={formState.quotationsClear[field]}
                 onChange={(event) =>
                   setFormState((prev) => ({
                     ...prev,
                     quotations: { ...prev.quotations, [field]: event.target.value },
                   }))
                 }
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-                placeholder="留空则不修改"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:opacity-60"
+                placeholder={formState.quotationsClear[field] ? '保存后将清空' : '留空则不修改'}
               />
             </label>
           ))}

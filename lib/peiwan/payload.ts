@@ -21,7 +21,7 @@ type NormalizedPeiwanPayload = {
   sex: (typeof PEIWAN_SEX_OPTIONS)[number];
   techTag: boolean;
   exclusive: boolean;
-  quotationValues: Partial<Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], number>>;
+  quotationValues: Partial<Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], number | null>>;
   gameTags: Partial<Record<(typeof PEIWAN_GAME_TAG_FIELDS)[number], boolean>>;
 };
 
@@ -53,8 +53,11 @@ const ensureNumber = (value: unknown, field: string): number => {
   return numeric;
 };
 
-const optionalNumber = (value: unknown) => {
-  if (value === null || value === undefined || value === '') return undefined;
+function optionalNumber(value: unknown, options?: { allowNull?: false }): number | undefined;
+function optionalNumber(value: unknown, options: { allowNull: true }): number | null | undefined;
+function optionalNumber(value: unknown, options: { allowNull?: boolean } = {}) {
+  if (value === null) return options.allowNull ? null : undefined;
+  if (value === undefined || value === '') return undefined;
   const numeric = Number(value);
   if (Number.isNaN(numeric)) {
     throw new Error('报价必须为数字');
@@ -108,11 +111,12 @@ export const normalizePeiwanPayload = (
 
   const quotationValues: NormalizedPeiwanPayload['quotationValues'] = {};
   for (const field of PEIWAN_QUOTATION_FIELDS) {
-    if (field in data) {
-      const numeric = optionalNumber((data as Record<string, unknown>)[field]);
-      if (numeric !== undefined) {
-        quotationValues[field] = numeric;
-      }
+    if (!(field in data)) {
+      continue;
+    }
+    const numeric = optionalNumber((data as Record<string, unknown>)[field], { allowNull: true });
+    if (numeric !== undefined) {
+      quotationValues[field] = numeric;
     }
   }
 
@@ -143,11 +147,10 @@ export const normalizePeiwanPayload = (
 };
 
 export const buildPeiwanDataObject = (payload: NormalizedPeiwanPayload) => {
-  const quotationData: Record<string, string> = {};
+  const quotationData: Record<string, string | null> = {};
   for (const [field, value] of Object.entries(payload.quotationValues)) {
-    if (value !== undefined) {
-      quotationData[field] = value.toString();
-    }
+    if (value === undefined) continue;
+    quotationData[field] = value === null ? null : value.toString();
   }
 
   const tagData: Record<string, boolean> = {};
