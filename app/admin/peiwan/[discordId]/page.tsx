@@ -8,6 +8,7 @@ import {
   QUOTATION_CODES,
 } from '@/constants/peiwan';
 import { PeiwanForm } from '@/components/admin/PeiwanForm';
+import { RestorePeiwanButton } from '@/components/admin/RestorePeiwanButton';
 import { prisma } from '@/lib/prisma';
 
 export const metadata = {
@@ -90,6 +91,12 @@ export default async function EditPeiwanPage(props: EditPageProps) {
       ? await prisma.pEIWAN.findUnique({ where: { PEIWANID: numericId } })
       : null) || (await prisma.pEIWAN.findUnique({ where: { discordUserId: searchToken } }));
   const discordId = peiwan?.discordUserId ?? searchToken;
+  const deletionRecord = peiwan
+    ? await prisma.peiwanDeletion.findUnique({ where: { peiwanId: peiwan.PEIWANID } })
+    : null;
+  const member = discordId
+    ? await prisma.member.findUnique({ where: { discordUserId: discordId }, select: { status: true } })
+    : null;
 
   if (!peiwan) {
     return (
@@ -141,6 +148,25 @@ export default async function EditPeiwanPage(props: EditPageProps) {
         <h2 className="text-2xl font-semibold">编辑陪玩</h2>
         <p className="text-sm text-white/70">当前 Discord ID：{discordId}</p>
         <p className="text-sm text-white/60">陪玩 ID：{peiwan.PEIWANID}</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-2">
+          <p className="text-sm text-white/80">
+            当前身份：<span className="font-semibold text-white">{member?.status ?? '未知'}</span>
+          </p>
+          {deletionRecord ? (
+            <p className="text-xs text-rose-300">
+              已于 {new Date(deletionRecord.deletedAt).toLocaleString()} 下架
+              {deletionRecord.deletedBy ? `，操作人：${deletionRecord.deletedBy}` : ''}
+            </p>
+          ) : (
+            <p className="text-xs text-emerald-300">未下架，正常上架中</p>
+          )}
+        </div>
+        <RestorePeiwanButton
+          restoreToken={String(peiwan.PEIWANID ?? discordId)}
+          isDeleted={Boolean(deletionRecord)}
+        />
       </div>
       <PeiwanForm mode="edit" initialValues={initialValues} />
     </div>

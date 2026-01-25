@@ -44,3 +44,4 @@ next-env.d.ts
 # media assets (local only)
 app/peiwanList/img/
 public/img/
+README.md
