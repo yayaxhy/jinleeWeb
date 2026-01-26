@@ -158,7 +158,7 @@ export default function WithdrawForm({
         <select
           value={selectedSlot}
           onChange={(event) => setSelectedSlot(event.target.value)}
-          disabled={!canWithdraw || parsedAccounts.length === 0}
+          disabled={parsedAccounts.length === 0}
           className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:bg-gray-100 disabled:text-gray-400"
         >
           <option value="">请选择提现方式</option>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { WITHDRAW_METHOD_OPTIONS } from './WithdrawForm';
 
 type SlotKey = 1 | 2 | 3;
@@ -19,6 +20,7 @@ type WithdrawAccountsManagerProps = {
 };
 
 export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsManagerProps) {
+  const router = useRouter();
   const [accounts, setAccounts] = useState<AccountMap>(initialAccounts);
   const [editing, setEditing] = useState<Record<SlotKey, { method: string; detail: string }>>({
     1: { method: WITHDRAW_METHOD_OPTIONS[0], detail: '' },
@@ -60,6 +62,7 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
           [`account${slot}`]: `${method}:${trimmed}`,
         }));
         setStatus(`提现方式${slot} 已保存`);
+        router.refresh();
       } catch (error) {
         setStatus(error instanceof Error ? error.message : '保存失败，请稍后重试');
       }
@@ -133,6 +136,14 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
               >
                 {isPending ? '保存中…' : '保存'}
               </button>
+              <p className="text-xs text-gray-500">
+                例子：<br />
+                支付宝：18888888 真实姓名<br />
+                <br />
+                微信：微信号 真实姓名<br />
+                <br />
+                Paypal: xxx@gmail.com +名字
+              </p>
             </div>
           );
         })}
