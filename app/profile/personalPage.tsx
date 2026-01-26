@@ -364,7 +364,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
             </Link>
           </div>
           <div className="border-t border-dashed border-black/10">
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-dashed divide-black/10">
+            <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-dashed divide-black/10">
               {stats.map((item) => (
                 <div key={item.label} className="p-6 text-center space-y-2">
                   <p className="text-xs tracking-[0.4em] text-gray-500">{item.label}</p>
