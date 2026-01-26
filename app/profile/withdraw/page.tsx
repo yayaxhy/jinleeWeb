@@ -42,7 +42,7 @@ export default async function WithdrawPage() {
   const lastWithdrawAtIso = lastWithdrawAt?.toISOString() ?? null;
   const nextAvailableAtIso = nextAvailableAt?.toISOString() ?? null;
   const savedAccounts = await prisma.withdrawalAccount.findUnique({
-    where: { discordUserId },
+    where: { discordUserId: discordId },
     select: { account1: true, account2: true, account3: true },
   });
 

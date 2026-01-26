@@ -133,6 +133,8 @@ model Member {
   peiwan PEIWAN? @relation("MemberToPeiwan")
   // Loyalty points (one-to-one)
   loyaltyPoint LoyaltyPoint?
+  // Withdrawal account presets (one-to-one)
+  withdrawalAccount WithdrawalAccount?
 
   // Orders (reverse edges)
   ordersAsHost   Order[] @relation("HostOrders")
