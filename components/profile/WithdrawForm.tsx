@@ -1,16 +1,21 @@
 'use client';
 
-import { type FormEvent, useMemo, useState, useTransition } from 'react';
+import { type FormEvent, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
 const MIN_WITHDRAW_AMOUNT = 100;
 const ROME_TIMEZONE = 'Europe/Rome';
-const METHOD_OPTIONS = ['微信', '支付宝', 'Paypal'];
+export const WITHDRAW_METHOD_OPTIONS = ['微信', '支付宝', 'Paypal'] as const;
 
 type WithdrawFormProps = {
   maxAmount?: string;
   lastWithdrawAt?: string | null;
   nextAvailableAt?: string | null;
+  savedAccounts?: {
+    account1?: string | null;
+    account2?: string | null;
+    account3?: string | null;
+  };
 };
 
 const formatDateTime = (value?: string | Date | null) => {
@@ -20,11 +25,25 @@ const formatDateTime = (value?: string | Date | null) => {
   return parsed.toLocaleString('zh-CN', { hour12: false, timeZone: ROME_TIMEZONE });
 };
 
-export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvailableAt }: WithdrawFormProps) {
+type ParsedAccount = { slot: '1' | '2' | '3'; method: string; detail: string };
+
+const parseAccount = (slot: '1' | '2' | '3', value?: string | null): ParsedAccount | null => {
+  if (!value) return null;
+  const [method, ...rest] = value.split(':');
+  const detail = rest.join(':').trim();
+  if (!method || !detail) return null;
+  return { slot, method, detail };
+};
+
+export default function WithdrawForm({
+  maxAmount = '0',
+  lastWithdrawAt,
+  nextAvailableAt,
+  savedAccounts,
+}: WithdrawFormProps) {
   const router = useRouter();
   const [amount, setAmount] = useState('');
-  const [methodType, setMethodType] = useState<string>(METHOD_OPTIONS[0]);
-  const [methodDetail, setMethodDetail] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState<string>('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -53,8 +72,21 @@ export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvai
   const amountError =
     amount.length > 0 &&
     (Number.isNaN(amountValue) || amountValue < MIN_WITHDRAW_AMOUNT || amountValue > maxWithdrawable);
+  const parsedAccounts = useMemo(() => {
+    return [
+      parseAccount('1', savedAccounts?.account1),
+      parseAccount('2', savedAccounts?.account2),
+      parseAccount('3', savedAccounts?.account3),
+    ].filter(Boolean) as ParsedAccount[];
+  }, [savedAccounts?.account1, savedAccounts?.account2, savedAccounts?.account3]);
+  const selectedAccount = parsedAccounts.find((acc) => acc.slot === selectedSlot);
+  useEffect(() => {
+    if (!selectedSlot && parsedAccounts.length > 0) {
+      setSelectedSlot(parsedAccounts[0].slot);
+    }
+  }, [parsedAccounts, selectedSlot]);
   const canSubmit =
-    !amountError && amountValue >= MIN_WITHDRAW_AMOUNT && methodDetail.trim().length > 0 && !inCooldown;
+    !amountError && amountValue >= MIN_WITHDRAW_AMOUNT && !inCooldown && !!selectedAccount;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -63,7 +95,10 @@ export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvai
 
     startTransition(async () => {
       try {
-        const method = `${methodType}:${methodDetail.trim()}`;
+        if (!selectedAccount) {
+          throw new Error('请选择提现方式');
+        }
+        const method = `${selectedAccount.method}:${selectedAccount.detail}`;
         const response = await fetch('/api/withdraw', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -86,8 +121,7 @@ export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvai
           : '提现成功，我们将尽快处理！';
         setStatusMessage(successMessage);
         setAmount('');
-        setMethodType(METHOD_OPTIONS[0]);
-        setMethodDetail('');
+        setSelectedSlot('');
         router.refresh();
       } catch (error) {
         const message =
@@ -119,6 +153,25 @@ export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvai
           {statusMessage}
         </p>
       )}
+      <div className="space-y-2">
+        <label className="text-xs uppercase tracking-[0.4em] text-gray-500">选择提现方式</label>
+        <select
+          value={selectedSlot}
+          onChange={(event) => setSelectedSlot(event.target.value)}
+          disabled={!canWithdraw || parsedAccounts.length === 0}
+          className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:bg-gray-100 disabled:text-gray-400"
+        >
+          <option value="">请选择提现方式</option>
+          {parsedAccounts.map((acc) => (
+            <option key={acc.slot} value={acc.slot}>
+              提现方式{acc.slot} · {acc.method} · {acc.detail}
+            </option>
+          ))}
+        </select>
+        {parsedAccounts.length === 0 && (
+          <p className="text-xs text-gray-500">尚未保存提现方式，请先在下方添加。</p>
+        )}
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4 text-left">
         <div className="space-y-2">
           <label className="text-xs uppercase tracking-[0.4em] text-gray-500">提现金额</label>
@@ -143,36 +196,6 @@ export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvai
               提现金额必须大于 {MIN_WITHDRAW_AMOUNT} 且不超过可提现余额。
             </p>
           )}
-        </div>
-        <div className="space-y-2">
-          <label className="text-xs uppercase tracking-[0.4em] text-gray-500">提现方式 *</label>
-          <div className="flex flex-col gap-2">
-            <select
-              value={methodType}
-              onChange={(event) => setMethodType(event.target.value)}
-              disabled={!canWithdraw}
-              className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:bg-gray-100 disabled:text-gray-400"
-            >
-              {METHOD_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={methodDetail}
-              onChange={(event) => setMethodDetail(event.target.value)}
-              disabled={!canWithdraw}
-              className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:bg-gray-100 disabled:text-gray-400"
-              placeholder="请输入账号信息"
-              required
-            />
-          </div>
-          <p className="text-xs text-gray-500">
-            例子：<br />支付宝：18888888 真实姓名<br /><br />微信：微信号 真实姓名<br /><br />Paypal:
-            xxx@gmail.com +名字<br /><br />如有错误，请联系客服
-          </p>
         </div>
         <div className="flex gap-3">
           <button

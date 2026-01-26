@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import WithdrawForm from '@/components/profile/WithdrawForm';
+import { WithdrawAccountsManager } from '@/components/profile/WithdrawAccountsManager';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
@@ -40,6 +41,10 @@ export default async function WithdrawPage() {
 
   const lastWithdrawAtIso = lastWithdrawAt?.toISOString() ?? null;
   const nextAvailableAtIso = nextAvailableAt?.toISOString() ?? null;
+  const savedAccounts = await prisma.withdrawalAccount.findUnique({
+    where: { discordUserId },
+    select: { account1: true, account2: true, account3: true },
+  });
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
@@ -75,7 +80,12 @@ export default async function WithdrawPage() {
             maxAmount={String(member.income ?? '0')}
             lastWithdrawAt={lastWithdrawAtIso}
             nextAvailableAt={nextAvailableAtIso}
+            savedAccounts={savedAccounts ?? undefined}
           />
+        </div>
+
+        <div className="rounded-3xl border border-black/5 bg-white p-8 space-y-6 shadow-sm">
+          <WithdrawAccountsManager initialAccounts={savedAccounts ?? {}} />
         </div>
       </section>
     </main>

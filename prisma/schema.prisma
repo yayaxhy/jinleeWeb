@@ -219,6 +219,17 @@ model IndividualTransaction {
   @@index([discordId])
 }
 
+model WithdrawalAccount {
+  discordUserId String   @id
+  account1      String?
+  account2      String?
+  account3      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  member Member @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade)
+}
+
 enum CouponType {
   DISCOUNT_90
   DISCOUNT_80
