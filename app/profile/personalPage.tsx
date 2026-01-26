@@ -211,6 +211,9 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const spendBuffPromise = prisma.spendBuff.findUnique({
     where: { userId: discordId },
   });
+  const loyaltyPointPromise = prisma.loyaltyPoint.findUnique({
+    where: { discordUserId: discordId },
+  });
   type TransactionRecord = Awaited<typeof transactionsPromise>[number];
 
   const [
@@ -220,6 +223,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
     commissionBuff,
     flowBuff,
     spendBuff,
+    loyaltyPoint,
   ] = await Promise.all([
     couponsPromise,
     totalTransactionsPromise,
@@ -227,6 +231,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
     commissionBuffPromise,
     flowBuffPromise,
     spendBuffPromise,
+    loyaltyPointPromise,
   ]);
   const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
   const hasPrevPage = currentPage > 1;
@@ -252,6 +257,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
     { label: '可提现余额', value: balanceValue },
     { label: '累计消费', value: member.totalSpent },
     { label: '累计流水', value: peiwan?.totalEarn ?? null },
+    { label: '锦鲤积分', value: loyaltyPoint?.points ?? 0 },
   ];
 
   const totalSpentValue = parseNumeric(member.totalSpent) ?? 0;
