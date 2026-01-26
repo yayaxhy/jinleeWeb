@@ -2,7 +2,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PEIWAN_GAME_TAG_FIELDS } from '@/constants/peiwan';
-import WithdrawForm from '@/components/profile/WithdrawForm';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
@@ -138,6 +137,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
     { href: '/profile/bag', label: '我的背包' },
     { href: '/profile/heart', label: '心动值' },
     { href: '/profile/giftwall', label: '礼物墙' },
+    { href: '/profile/withdraw', label: '提现' },
     { href: '/recharge', label: '充值中心' },
   ];
 
@@ -240,18 +240,6 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const nextPage = Math.min(totalPages, currentPage + 1);
 
   const balanceValue = member.income;
-  const withdrawMaxString = stringifyUnknown(balanceValue) || '0';
-  const withdrawCooldownMs = 3 * 24 * 60 * 60 * 1000;
-  const lastWithdraw = await prisma.withdraw.findFirst({
-    where: { discordId },
-    orderBy: { createdAt: 'desc' },
-    select: { createdAt: true },
-  });
-  const lastWithdrawAt = lastWithdraw?.createdAt ?? null;
-  const nextAvailableAt =
-    lastWithdrawAt !== null ? new Date(lastWithdrawAt.getTime() + withdrawCooldownMs) : null;
-  const nextAvailableAtIso = nextAvailableAt?.toISOString() ?? null;
-  const lastWithdrawAtIso = lastWithdrawAt?.toISOString() ?? null;
   const stats = [
     { label: '账户余额', value: member.totalBalance },
     { label: '可提现余额', value: balanceValue },
@@ -371,11 +359,12 @@ export default async function Profile(props: ProfilePageProps = {}) {
                   <p className="text-2xl font-mono">{formatNumber(item.value)}</p>
                   {item.label === '可提现余额' && (
                     <div className="pt-2">
-                      <WithdrawForm
-                        maxAmount={withdrawMaxString}
-                        lastWithdrawAt={lastWithdrawAtIso}
-                        nextAvailableAt={nextAvailableAtIso}
-                      />
+                      <Link
+                        href="/profile/withdraw"
+                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition inline-flex items-center justify-center"
+                      >
+                        去提现
+                      </Link>
                     </div>
                   )}
                   {item.label === '账户余额' && (
