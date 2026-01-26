@@ -22,7 +22,6 @@ const formatDateTime = (value?: string | Date | null) => {
 
 export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvailableAt }: WithdrawFormProps) {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [methodType, setMethodType] = useState<string>(METHOD_OPTIONS[0]);
   const [methodDetail, setMethodDetail] = useState('');
@@ -86,7 +85,6 @@ export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvai
           ? `提现成功！下次可提现时间：${nextAvailableFromResponse}`
           : '提现成功，我们将尽快处理！';
         setStatusMessage(successMessage);
-        setIsOpen(false);
         setAmount('');
         setMethodType(METHOD_OPTIONS[0]);
         setMethodDetail('');
@@ -101,14 +99,6 @@ export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvai
 
   return (
     <div className="space-y-3">
-      <button
-        type="button"
-        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition disabled:opacity-50"
-        onClick={() => setIsOpen((open) => !open)}
-        disabled={!canWithdraw || isPending}
-      >
-        提现
-      </button>
       {!canWithdraw && (
         <div className="space-y-1">
           {inCooldown && nextAvailableDate && (
@@ -129,79 +119,71 @@ export default function WithdrawForm({ maxAmount = '0', lastWithdrawAt, nextAvai
           {statusMessage}
         </p>
       )}
-      {isOpen && (
-        <form onSubmit={handleSubmit} className="space-y-4 text-left">
-          <div className="space-y-2">
-            <label className="text-xs uppercase tracking-[0.4em] text-gray-500">提现金额</label>
-            <input
-              type="number"
-              min={MIN_WITHDRAW_AMOUNT}
-              step="0.01"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              className={`w-full rounded-2xl border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] ${
-                amountError ? 'border-red-400 text-red-500' : 'border-black/10'
-              }`}
-              placeholder={
-                canWithdraw
-                  ? `最多可提 ¥${maxWithdrawable.toLocaleString('zh-CN')}`
-                  : '暂无可提现金额'
-              }
-            />
-            {amountError && (
-              <p className="text-xs text-red-500">
-                提现金额必须大于 {MIN_WITHDRAW_AMOUNT} 且不超过可提现余额。
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs uppercase tracking-[0.4em] text-gray-500">提现方式 *</label>
-            <div className="flex flex-col gap-2">
-              <select
-                value={methodType}
-                onChange={(event) => setMethodType(event.target.value)}
-                className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-              >
-                {METHOD_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-                value={methodDetail}
-                onChange={(event) => setMethodDetail(event.target.value)}
-                className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-                placeholder="请输入账号信息"
-                required
-              />
-            </div>
-            <p className="text-xs text-gray-500">
-              例子：<br/>支付宝：18888888 真实姓名<br/><br/>微信：微信号 真实姓名<br/><br/>Paypal: xxx@gmail.com +名字<br/><br/>如有错误，请联系客服
+      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+        <div className="space-y-2">
+          <label className="text-xs uppercase tracking-[0.4em] text-gray-500">提现金额</label>
+          <input
+            type="number"
+            min={MIN_WITHDRAW_AMOUNT}
+            step="0.01"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            disabled={!canWithdraw}
+            className={`w-full rounded-2xl border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] ${
+              amountError ? 'border-red-400 text-red-500' : 'border-black/10'
+            } ${!canWithdraw ? 'bg-gray-100 text-gray-400' : ''}`}
+            placeholder={
+              canWithdraw
+                ? `最多可提 ¥${maxWithdrawable.toLocaleString('zh-CN')}`
+                : '暂无可提现金额'
+            }
+          />
+          {amountError && (
+            <p className="text-xs text-red-500">
+              提现金额必须大于 {MIN_WITHDRAW_AMOUNT} 且不超过可提现余额。
             </p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em]"
-              onClick={() => {
-                setIsOpen(false);
-                setStatusMessage(null);
-              }}
+          )}
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs uppercase tracking-[0.4em] text-gray-500">提现方式 *</label>
+          <div className="flex flex-col gap-2">
+            <select
+              value={methodType}
+              onChange={(event) => setMethodType(event.target.value)}
+              disabled={!canWithdraw}
+              className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:bg-gray-100 disabled:text-gray-400"
             >
-              取消
-            </button>
-            <button
-              type="submit"
-              disabled={!canSubmit || isPending}
-              className="px-4 py-2 rounded-full bg-[#5c43a3] text-white text-xs uppercase tracking-[0.4em] disabled:bg-gray-300 disabled:text-gray-500"
-            >
-              {isPending ? '提交中…' : '确认'}
-            </button>
+              {METHOD_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={methodDetail}
+              onChange={(event) => setMethodDetail(event.target.value)}
+              disabled={!canWithdraw}
+              className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:bg-gray-100 disabled:text-gray-400"
+              placeholder="请输入账号信息"
+              required
+            />
           </div>
-        </form>
-      )}
+          <p className="text-xs text-gray-500">
+            例子：<br />支付宝：18888888 真实姓名<br /><br />微信：微信号 真实姓名<br /><br />Paypal:
+            xxx@gmail.com +名字<br /><br />如有错误，请联系客服
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={!canSubmit || isPending}
+            className="px-4 py-2 rounded-full bg-[#5c43a3] text-white text-xs uppercase tracking-[0.4em] disabled:bg-gray-300 disabled:text-gray-500"
+          >
+            {isPending ? '提交中…' : '确认'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

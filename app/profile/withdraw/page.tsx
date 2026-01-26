@@ -47,7 +47,7 @@ export default async function WithdrawPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">Withdraw</p>
-            <h1 className="text-3xl font-semibold tracking-wide">提现中心</h1>
+            <h1 className="text-3xl font-semibold tracking-wide">提现</h1>
           </div>
           <Link
             href="/profile"
@@ -70,9 +70,7 @@ export default async function WithdrawPage() {
 
         <div className="rounded-3xl border border-black/5 bg-white p-8 space-y-4 shadow-sm">
           <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">提交提现</h2>
-          <p className="text-sm text-gray-500">
-            单次最低提现 ¥100，提交后我们将尽快处理。若处于冷却期，请稍后再试。
-          </p>
+          
           <WithdrawForm
             maxAmount={String(member.income ?? '0')}
             lastWithdrawAt={lastWithdrawAtIso}
