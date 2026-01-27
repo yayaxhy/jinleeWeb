@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import {
   PEIWAN_GAME_TAG_FIELDS,
   PEIWAN_LEVEL_OPTIONS,
@@ -92,12 +92,17 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
   const [formState, setFormState] = useState<PeiwanFormState>(() => mergeInitialState(initialValues));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const initialPeiwanIdRef = useRef<string>(initialValues?.peiwanId ?? '');
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatusMessage(null);
     const trimmedPeiwanId = formState.peiwanId.trim();
-    if (mode === 'create' && trimmedPeiwanId) {
+    if (mode === 'edit' && !trimmedPeiwanId) {
+      setStatusMessage({ type: 'error', text: '陪玩ID 不能为空' });
+      return;
+    }
+    if (trimmedPeiwanId) {
       const numeric = Number(trimmedPeiwanId);
       if (!Number.isInteger(numeric) || numeric <= 0) {
         setStatusMessage({ type: 'error', text: '陪玩ID 必须为正整数' });
@@ -133,6 +138,18 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
       return;
     }
 
+    const isIdChanged =
+      mode === 'edit' &&
+      trimmedPeiwanId &&
+      trimmedPeiwanId !== (initialPeiwanIdRef.current?.trim?.() ?? initialPeiwanIdRef.current);
+
+    if (isIdChanged) {
+      const confirmed = window.confirm(
+        `是否确认把陪玩ID从 ${initialPeiwanIdRef.current || '（空）'} 改成 ${trimmedPeiwanId}？`,
+      );
+      if (!confirmed) return;
+    }
+
     setIsSubmitting(true);
     try {
       const quotationsPayload: Record<string, number | null> = {};
@@ -154,8 +171,9 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
         }
       }
 
+      const peiwanIdValue = trimmedPeiwanId ? Number(trimmedPeiwanId) : undefined;
       const payload = {
-        peiwanId: mode === 'create' && trimmedPeiwanId ? Number(trimmedPeiwanId) : undefined,
+        ...(peiwanIdValue !== undefined ? { peiwanId: peiwanIdValue } : {}),
         discordUserId: formState.discordUserId.trim(),
         defaultQuotationCode: formState.defaultQuotationCode,
         commissionRate,
@@ -185,6 +203,13 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
         setStatusMessage({ type: 'success', text: mode === 'create' ? '新增成功' : '修改已保存' });
         if (mode === 'create') {
           setFormState(createDefaultState());
+        } else {
+          const nextId =
+            typeof result?.peiwanId === 'number'
+              ? String(result.peiwanId)
+              : trimmedPeiwanId || formState.peiwanId;
+          setFormState((prev) => ({ ...prev, peiwanId: nextId }));
+          initialPeiwanIdRef.current = nextId;
         }
       }
     } catch (error) {
