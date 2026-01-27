@@ -207,7 +207,6 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
             onChange={(event) => setFormState((prev) => ({ ...prev, peiwanId: event.target.value }))}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:opacity-60"
             placeholder="正整数，例如 51001"
-            disabled={mode === 'edit'}
           />
         </label>
 

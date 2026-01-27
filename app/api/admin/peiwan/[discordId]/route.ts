@@ -27,13 +27,31 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const payload = normalizePeiwanPayload({ ...body, discordUserId: discordId });
+    const payload = normalizePeiwanPayload({ ...body, discordUserId: discordId }, { allowPeiwanId: true });
     const { discordUserId } = payload;
     const data = buildPeiwanDataObject(payload);
 
-    const updated = await prisma.pEIWAN.update({
-      where: { discordUserId },
-      data,
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.pEIWAN.findUnique({ where: { discordUserId } });
+      if (!existing) throw new Error('Record to update not found');
+
+      const targetId = payload.peiwanId ?? existing.PEIWANID;
+      if (targetId !== existing.PEIWANID) {
+        const conflict = await tx.pEIWAN.findUnique({ where: { PEIWANID: targetId } });
+        if (conflict) {
+          throw new Error('陪玩ID 已被占用');
+        }
+      }
+
+      const updatedPeiwan = await tx.pEIWAN.update({
+        where: { discordUserId },
+        data: {
+          PEIWANID: targetId,
+          ...data,
+        },
+      });
+
+      return updatedPeiwan;
     });
 
     return NextResponse.json({ peiwanId: updated.PEIWANID }, { status: 200 });
