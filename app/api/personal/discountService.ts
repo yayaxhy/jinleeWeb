@@ -8,7 +8,7 @@ export type ApplyDiscountResult =
   | {
       status: 'applied';
       kind: DiscountKind;
-      discountAmount: Prisma.Decimal;
+      consumeAmount: Prisma.Decimal;
       couponId?: string;
       lotteryId?: string;
     }
@@ -69,6 +69,12 @@ const recordIndividualTransaction = async (
 const COUPON_RATE = new Prisma.Decimal(0.1);
 const COUPON_CAP = new Prisma.Decimal(20);
 const FREE_MINUTES = 5;
+const COUPON_RATE_CAP_BY_TYPE: Partial<Record<CouponType, { rate: Prisma.Decimal; cap: Prisma.Decimal }>> = {
+  [CouponType.DISCOUNT_90]: { rate: COUPON_RATE, cap: COUPON_CAP },
+  [CouponType.DISCOUNT_80]: DISCOUNT_PRIZE_CONFIG[PRIZE_NAMES.DISCOUNT_80],
+  [CouponType.DISCOUNT_70]: DISCOUNT_PRIZE_CONFIG[PRIZE_NAMES.DISCOUNT_70],
+  [CouponType.DISCOUNT_90_LOTTERY]: DISCOUNT_PRIZE_CONFIG[PRIZE_NAMES.DISCOUNT_90_LOTTERY],
+};
 
 function computeDiscountAmount(params: {
   unitPrice: Prisma.Decimal;
@@ -164,7 +170,6 @@ export async function applyDiscountForOrder(params: {
             where: {
               id: targetCouponId,
               discordId: userId,
-              type: CouponType.DISCOUNT_90,
               status: 'ACTIVE',
               expiresAt: { gt: now },
             },
@@ -172,14 +177,15 @@ export async function applyDiscountForOrder(params: {
         : await tx.coupon.findFirst({
             where: {
               discordId: userId,
-              type: CouponType.DISCOUNT_90,
               status: 'ACTIVE',
               expiresAt: { gt: now },
+              type: { in: Object.keys(COUPON_RATE_CAP_BY_TYPE) as CouponType[] },
             },
             orderBy: { issuedAt: 'asc' },
           });
       if (!available) return { status: 'no_coupon' };
       couponId = available.id;
+      prizeRateCap = COUPON_RATE_CAP_BY_TYPE[available.type];
     } else {
       const voucher = targetLotteryId
         ? await tx.lotteryDraw.findFirst({
@@ -214,7 +220,7 @@ export async function applyDiscountForOrder(params: {
     const unitPrice = new Prisma.Decimal(order.unitPrice);
     const rateCap =
       kind === 'coupon'
-        ? { rate: COUPON_RATE, cap: COUPON_CAP }
+        ? prizeRateCap ?? { rate: COUPON_RATE, cap: COUPON_CAP }
         : prizeRateCap ?? DISCOUNT_PRIZE_CONFIG[PRIZE_NAMES.DISCOUNT_80];
     const discountAmount = computeDiscountAmount({
       unitPrice,
@@ -238,7 +244,8 @@ export async function applyDiscountForOrder(params: {
         data: {
           consumedAt: now,
           orderId: order.id,
-          discountAmount,
+          consumeAmount: discountAmount,
+          consumeTargetId: order.workerId ?? null,
           status: 'USED',
         },
       });
@@ -275,7 +282,7 @@ export async function applyDiscountForOrder(params: {
     return {
       status: 'applied',
       kind,
-      discountAmount,
+      consumeAmount: discountAmount,
       couponId: couponId ?? undefined,
       lotteryId: lotteryId ?? undefined,
     };

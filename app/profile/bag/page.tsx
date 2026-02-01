@@ -11,9 +11,11 @@ import {
   SpendVoucherButton,
 } from '@/components/profile/VoucherUseButtons';
 import { resolveSpecialVoucher } from '@/lib/voucher';
+import { CouponStatus, CouponType, LotteryPrizeType, LotteryStatus } from '@prisma/client';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const VANITY_CARD_NAMES = new Set(['3位数靓号卡', '4位数靓号卡', '5位数靓号卡']);
+const DISCOUNT_COUPON_NAMES = new Set(['9折券', '8折券', '7折券', '特殊9折券', '特殊九折券']);
 
 const formatDateOnly = (value?: Date | string | null) => {
   if (!value) return '—';
@@ -29,15 +31,98 @@ export default async function BagPage() {
     redirect('/');
   }
 
-  const draws = await prisma.lotteryDraw.findMany({
-    where: { userId: session.discordId },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      prize: {
-        select: { name: true, pool: true, imageUrl: true, type: true },
+  const [draws, coupons] = await Promise.all([
+    prisma.lotteryDraw.findMany({
+      where: { userId: session.discordId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        prize: {
+          select: { name: true, pool: true, imageUrl: true, type: true },
+        },
       },
-    },
-    take: 200,
+      take: 200,
+    }),
+    prisma.coupon.findMany({
+      where: { discordId: session.discordId },
+      orderBy: { issuedAt: 'desc' },
+      take: 200,
+    }),
+  ]);
+
+  type BagItem = {
+    id: string;
+    source: 'lottery' | 'coupon';
+    status: LotteryStatus;
+    prizeName: string;
+    prizeType: LotteryPrizeType;
+    expiresAt?: Date | string | null;
+    consumeAt?: Date | string | null;
+    lotteryId?: string;
+    couponId?: string;
+  };
+
+  const couponMeta: Record<CouponType, { name: string; type: LotteryPrizeType }> = {
+    [CouponType.DISCOUNT_90]: { name: '9折券', type: LotteryPrizeType.COUPON },
+    [CouponType.DISCOUNT_80]: { name: '8折券', type: LotteryPrizeType.COUPON },
+    [CouponType.DISCOUNT_70]: { name: '7折券', type: LotteryPrizeType.COUPON },
+    [CouponType.DISCOUNT_90_LOTTERY]: { name: '特殊9折券', type: LotteryPrizeType.COUPON },
+    [CouponType.CAKE_VOUCHER]: { name: '小蛋糕代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.LOLLIPOP_VOUCHER]: { name: '棒棒糖代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.PERFUME_VOUCHER]: { name: '香水代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.CAROUSEL_VOUCHER]: { name: '旋转木马代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.PUMPKIN_CAR_VOUCHER]: { name: '南瓜车代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.PHONOGRAPH_VOUCHER]: { name: '留声机代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_75_VOUCHER]: { name: '一日冠75折券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_DAY_90_VOUCHER]: { name: '一日冠9折券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_3DAY_90_VOUCHER]: { name: '三日冠9折券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_WEEK_90_VOUCHER]: { name: '一周冠9折券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_MONTH_90_VOUCHER]: { name: '月冠名9折券', type: LotteryPrizeType.GIFT },
+    [CouponType.LOTTERY_VOUCHER]: { name: '抽奖代金券', type: LotteryPrizeType.COUPON },
+    [CouponType.CUSTOM_GIFT_VOUCHER]: { name: '自定义礼物券', type: LotteryPrizeType.COUPON },
+    [CouponType.CUSTOM_TAG_VOUCHER]: { name: '自定义tag券', type: LotteryPrizeType.COUPON },
+    [CouponType.COMMISSION_MINUS1_VOUCHER]: { name: '抽成降1%券', type: LotteryPrizeType.COUPON },
+    [CouponType.DOUBLE_FLOW_5000_VOUCHER]: { name: '双倍流水5000券', type: LotteryPrizeType.COUPON },
+    [CouponType.DOUBLE_SPEND_5000_VOUCHER]: { name: '双倍消费5000券', type: LotteryPrizeType.COUPON },
+    [CouponType.RENAME_CARD_3]: { name: '3位数靓号卡', type: LotteryPrizeType.SELFUSE },
+    [CouponType.RENAME_CARD]: { name: '4位数靓号卡', type: LotteryPrizeType.SELFUSE },
+    [CouponType.RENAME_CARD_5]: { name: '5位数靓号卡', type: LotteryPrizeType.SELFUSE },
+  };
+
+  const couponItems: BagItem[] = coupons.map((coupon) => {
+    const meta = couponMeta[coupon.type] ?? { name: coupon.type, type: LotteryPrizeType.COUPON };
+    const status =
+      coupon.status === CouponStatus.ACTIVE
+        ? LotteryStatus.UNUSED
+        : coupon.status === CouponStatus.USED
+          ? LotteryStatus.USED
+          : LotteryStatus.EXPIRED;
+    return {
+      id: coupon.id,
+      source: 'coupon',
+      status,
+      prizeName: meta.name,
+      prizeType: meta.type,
+      expiresAt: coupon.expiresAt,
+      consumeAt: coupon.consumedAt,
+      couponId: coupon.id,
+    };
+  });
+
+  const drawItems: BagItem[] = draws.map((draw) => ({
+    id: draw.id,
+    source: 'lottery',
+    status: draw.status,
+    prizeName: draw.prize?.name ?? '未中奖',
+    prizeType: draw.prize?.type ?? LotteryPrizeType.COUPON,
+    expiresAt: draw.expiresAt,
+    consumeAt: draw.consumeAt,
+    lotteryId: draw.id,
+  }));
+
+  const allItems = [...couponItems, ...drawItems].sort((a, b) => {
+    const aTime = new Date((a.consumeAt ?? a.expiresAt ?? 0) as any).getTime();
+    const bTime = new Date((b.consumeAt ?? b.expiresAt ?? 0) as any).getTime();
+    return bTime - aTime;
   });
 
   return (
@@ -59,18 +144,18 @@ export default async function BagPage() {
 
         <div className="bg-white rounded-[32px] border border-black/5 p-6 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[#5c43a3]">Lottery 资产</h2>
-            <span className="text-xs uppercase tracking-[0.4em] text-gray-500">共 {draws.length} 个</span>
+            <h2 className="text-xl font-semibold text-[#5c43a3]">我的资产</h2>
+            <span className="text-xs uppercase tracking-[0.4em] text-gray-500">共 {allItems.length} 个</span>
           </div>
 
-          {draws.length === 0 ? (
+          {allItems.length === 0 ? (
             <p className="text-gray-500 text-sm">暂无记录。</p>
           ) : (
             <div className="space-y-8">
               {[
-                { title: '未使用', list: draws.filter((draw) => draw.status === 'UNUSED') },
-                { title: '已使用', list: draws.filter((draw) => draw.status === 'USED') },
-                { title: '已过期', list: draws.filter((draw) => draw.status === 'EXPIRED') },
+                { title: '未使用', list: allItems.filter((item) => item.status === 'UNUSED') },
+                { title: '已使用', list: allItems.filter((item) => item.status === 'USED') },
+                { title: '已过期', list: allItems.filter((item) => item.status === 'EXPIRED') },
               ].map(({ title, list }) => (
                 <div key={title} className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -83,20 +168,20 @@ export default async function BagPage() {
                     <p className="text-sm text-gray-400">暂无{title}记录。</p>
                   ) : (
                     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                      {list.map((draw) => {
-                        const prizeName = draw.prize?.name ?? '未中奖';
-                        const prizeType = draw.prize?.type ?? 'COUPON';
-                        const isUsed = draw.status === 'USED';
+                      {list.map((item) => {
+                        const prizeName = item.prizeName;
+                        const prizeType = item.prizeType ?? LotteryPrizeType.COUPON;
+                        const isUsed = item.status === 'USED';
                         const isVanityCard = VANITY_CARD_NAMES.has(prizeName);
-                        const status = draw.status === 'UNUSED' ? '未使用' : draw.status === 'USED' ? '已使用' : '已过期';
+                        const status = item.status === 'UNUSED' ? '未使用' : item.status === 'USED' ? '已使用' : '已过期';
                         const metaTime =
-                          draw.status === 'UNUSED'
-                            ? formatDateOnly(draw.expiresAt)
-                            : formatDateOnly(draw.consumeAt ?? draw.expiresAt);
+                          item.status === 'UNUSED'
+                            ? formatDateOnly(item.expiresAt)
+                            : formatDateOnly(item.consumeAt ?? item.expiresAt);
 
                         return (
                             <div
-                              key={draw.id}
+                              key={`${item.source}:${item.id}`}
                               className="rounded-2xl border border-dashed border-black/10 bg-gradient-to-br from-[#fdfbff] to-[#f6f1ff] p-5 space-y-3 shadow-sm"
                             >
                             <div className="space-y-2">
@@ -104,38 +189,84 @@ export default async function BagPage() {
                                 <span className="px-3 py-1 rounded-full border border-black/10 bg-white/60 text-xs uppercase tracking-[0.3em] text-gray-600">
                                   {status}
                                 </span>
-                                {draw.status === 'UNUSED' ? (
+                                {item.status === 'UNUSED' ? (
                                   (() => {
                                     const special = resolveSpecialVoucher(prizeName);
                                     if (special?.kind === 'simple') {
-                                      return <SimpleVoucherUseButton prizeName={prizeName} lotteryId={draw.id} />;
+                                      return (
+                                        <SimpleVoucherUseButton
+                                          prizeName={prizeName}
+                                          lotteryId={item.lotteryId}
+                                          couponId={item.couponId}
+                                        />
+                                      );
                                     }
                                     if (special?.kind === 'commission') {
-                                      return <CommissionVoucherButton prizeName={prizeName} lotteryId={draw.id} />;
+                                      return (
+                                        <CommissionVoucherButton
+                                          prizeName={prizeName}
+                                          lotteryId={item.lotteryId}
+                                          couponId={item.couponId}
+                                        />
+                                      );
                                     }
                                     if (special?.kind === 'flow') {
-                                      return <FlowVoucherButton prizeName={prizeName} lotteryId={draw.id} />;
+                                      return (
+                                        <FlowVoucherButton
+                                          prizeName={prizeName}
+                                          lotteryId={item.lotteryId}
+                                          couponId={item.couponId}
+                                        />
+                                      );
                                     }
                                     if (special?.kind === 'spend') {
-                                      return <SpendVoucherButton prizeName={prizeName} lotteryId={draw.id} />;
+                                      return (
+                                        <SpendVoucherButton
+                                          prizeName={prizeName}
+                                          lotteryId={item.lotteryId}
+                                          couponId={item.couponId}
+                                        />
+                                      );
                                     }
                                     if (isVanityCard) {
-                                      return <SelfUseButton lotteryId={draw.id} prizeName={prizeName} />;
+                                      return (
+                                        <SelfUseButton
+                                          lotteryId={item.lotteryId}
+                                          couponId={item.couponId}
+                                          prizeName={prizeName}
+                                        />
+                                      );
                                     }
                                     if (prizeType === 'COUPON') {
+                                      if (!DISCOUNT_COUPON_NAMES.has(prizeName)) {
+                                        return null;
+                                      }
                                       return (
                                         <DiscountUsageButton
-                                          kind="lottery"
+                                          kind={item.source === 'coupon' ? 'coupon' : 'lottery'}
                                           triggerLabel="使用"
-                                          lotteryId={draw.id}
+                                          lotteryId={item.lotteryId}
+                                          couponId={item.couponId}
                                         />
                                       );
                                     }
                                     if (prizeType === 'GIFT') {
-                                      return <GiftUsageButton lotteryId={draw.id} prizeName={prizeName} />;
+                                      return (
+                                        <GiftUsageButton
+                                          lotteryId={item.lotteryId}
+                                          couponId={item.couponId}
+                                          prizeName={prizeName}
+                                        />
+                                      );
                                     }
                                     if (prizeType === 'SELFUSE') {
-                                      return <SelfUseButton lotteryId={draw.id} prizeName={prizeName} />;
+                                      return (
+                                        <SelfUseButton
+                                          lotteryId={item.lotteryId}
+                                          couponId={item.couponId}
+                                          prizeName={prizeName}
+                                        />
+                                      );
                                     }
                                     return null;
                                   })()

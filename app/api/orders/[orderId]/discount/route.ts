@@ -55,7 +55,7 @@ export async function POST(
 
   if (result.status === 'applied') {
     return NextResponse.json(
-      { amount: result.discountAmount.toString(), kind: result.kind },
+      { amount: result.consumeAmount.toString(), kind: result.kind },
       { status: 200 },
     );
   }

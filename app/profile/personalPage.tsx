@@ -268,6 +268,29 @@ export default async function Profile(props: ProfilePageProps = {}) {
   };
   const couponTypeLabel: Record<string, string> = {
     DISCOUNT_90: '9折券',
+    DISCOUNT_80: '8折券',
+    DISCOUNT_70: '7折券',
+    DISCOUNT_90_LOTTERY: '特殊9折券',
+    CAKE_VOUCHER: '小蛋糕代金券',
+    LOLLIPOP_VOUCHER: '棒棒糖代金券',
+    PERFUME_VOUCHER: '香水代金券',
+    CAROUSEL_VOUCHER: '旋转木马代金券',
+    PUMPKIN_CAR_VOUCHER: '南瓜车代金券',
+    PHONOGRAPH_VOUCHER: '留声机代金券',
+    CROWN_75_VOUCHER: '一日冠75折券',
+    CROWN_DAY_90_VOUCHER: '一日冠9折券',
+    CROWN_3DAY_90_VOUCHER: '三日冠9折券',
+    CROWN_WEEK_90_VOUCHER: '一周冠9折券',
+    CROWN_MONTH_90_VOUCHER: '月冠名9折券',
+    LOTTERY_VOUCHER: '抽奖代金券',
+    CUSTOM_GIFT_VOUCHER: '自定义礼物券',
+    CUSTOM_TAG_VOUCHER: '自定义tag券',
+    COMMISSION_MINUS1_VOUCHER: '抽成降1%券',
+    DOUBLE_FLOW_5000_VOUCHER: '双倍流水5000券',
+    DOUBLE_SPEND_5000_VOUCHER: '双倍消费5000券',
+    RENAME_CARD_3: '3位数靓号卡',
+    RENAME_CARD: '4位数靓号卡',
+    RENAME_CARD_5: '5位数靓号卡',
   };
 
   const buffCards = [

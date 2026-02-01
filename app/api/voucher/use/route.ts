@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LotteryStatus } from '@prisma/client';
+import { CouponStatus, CouponType, LotteryStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { resolveSpecialVoucher } from '@/lib/voucher';
@@ -8,6 +8,7 @@ type UseVoucherPayload = {
   prizeName?: string;
   target?: string;
   lotteryId?: string;
+  couponId?: string;
 };
 
 const resolveTargetDiscordId = async (raw: string | undefined | null) => {
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
   const prizeName = typeof body.prizeName === 'string' ? body.prizeName.trim() : '';
   const rawTarget = typeof body.target === 'string' ? body.target.trim() : '';
   const lotteryId = typeof body.lotteryId === 'string' ? body.lotteryId.trim() : '';
+  const couponId = typeof body.couponId === 'string' ? body.couponId.trim() : '';
   if (!prizeName) {
     return NextResponse.json({ error: '缺少 prizeName' }, { status: 400 });
   }
@@ -81,30 +83,70 @@ export async function POST(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      const couponTypeMap: Record<string, CouponType> = {
+        自定义礼物券: CouponType.CUSTOM_GIFT_VOUCHER,
+        自定义tag券: CouponType.CUSTOM_TAG_VOUCHER,
+        抽成降1%券: CouponType.COMMISSION_MINUS1_VOUCHER,
+        双倍流水5000券: CouponType.DOUBLE_FLOW_5000_VOUCHER,
+        双倍消费5000券: CouponType.DOUBLE_SPEND_5000_VOUCHER,
+      };
+      const couponType = couponTypeMap[prizeName];
+
       // 仅校验是否存在可用券，不在本地消耗，交由机器人处理
-      const draw = lotteryId
-        ? await tx.lotteryDraw.findFirst({
-            where: {
-              id: lotteryId,
-              userId: session.discordId,
-              status: LotteryStatus.UNUSED,
-              prize: { name: prizeName },
-              expiresAt: { gt: now },
-            },
-            select: { id: true },
-          })
-        : await tx.lotteryDraw.findFirst({
-            where: {
-              userId: session.discordId,
-              status: LotteryStatus.UNUSED,
-              prize: { name: prizeName },
-              expiresAt: { gt: now },
-            },
-            orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
-            select: { id: true },
-          });
-      if (!draw) {
-        return { ok: false, code: 400, message: '礼物券不可用或已过期' };
+      let voucherId = '';
+      if (couponType) {
+        const coupon = couponId
+          ? await tx.coupon.findFirst({
+              where: {
+                id: couponId,
+                discordId: session.discordId,
+                type: couponType,
+                status: CouponStatus.ACTIVE,
+                expiresAt: { gt: now },
+              },
+              select: { id: true },
+            })
+          : await tx.coupon.findFirst({
+              where: {
+                discordId: session.discordId,
+                type: couponType,
+                status: CouponStatus.ACTIVE,
+                expiresAt: { gt: now },
+              },
+              orderBy: { issuedAt: 'asc' },
+              select: { id: true },
+            });
+        if (coupon) {
+          voucherId = coupon.id;
+        }
+      }
+
+      if (!voucherId) {
+        const draw = lotteryId
+          ? await tx.lotteryDraw.findFirst({
+              where: {
+                id: lotteryId,
+                userId: session.discordId,
+                status: LotteryStatus.UNUSED,
+                prize: { name: prizeName },
+                expiresAt: { gt: now },
+              },
+              select: { id: true },
+            })
+          : await tx.lotteryDraw.findFirst({
+              where: {
+                userId: session.discordId,
+                status: LotteryStatus.UNUSED,
+                prize: { name: prizeName },
+                expiresAt: { gt: now },
+              },
+              orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
+              select: { id: true },
+            });
+        if (!draw) {
+          return { ok: false, code: 400, message: '礼物券不可用或已过期' };
+        }
+        voucherId = draw.id;
       }
 
       if (special.kind === 'simple') {
@@ -113,7 +155,7 @@ export async function POST(request: Request) {
             ? '/internal/voucher/custom-gift'
             : '/internal/voucher/custom-tag';
         try {
-          await callInternal(path, { userId: session.discordId, voucherId: draw.id });
+          await callInternal(path, { userId: session.discordId, voucherId });
           return { ok: true };
         } catch (err) {
           return { ok: false, code: 400, message: (err as Error).message };
@@ -134,7 +176,7 @@ export async function POST(request: Request) {
         if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
           payload.peiwanId = numericPeiwanId;
         }
-        payload.voucherId = draw.id;
+        payload.voucherId = voucherId;
         try {
           await callInternal('/internal/voucher/commission-minus1', payload);
           return { ok: true };
@@ -152,7 +194,7 @@ export async function POST(request: Request) {
         if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
           payload.peiwanId = numericPeiwanId;
         }
-        payload.voucherId = draw.id;
+        payload.voucherId = voucherId;
         try {
           await callInternal('/internal/voucher/double-flow-5000', payload);
           return { ok: true };
@@ -170,7 +212,7 @@ export async function POST(request: Request) {
         if (Number.isInteger(numericPeiwanId) && numericPeiwanId > 0) {
           payload.peiwanId = numericPeiwanId;
         }
-        payload.voucherId = draw.id;
+        payload.voucherId = voucherId;
         try {
           await callInternal('/internal/voucher/double-spend-5000', payload);
           return { ok: true };

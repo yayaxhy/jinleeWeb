@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { LotteryPrizeType, LotteryStatus } from '@prisma/client';
+import { CouponStatus, CouponType, LotteryPrizeType, LotteryStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
 type UsePayload =
-  | { lotteryId: string; mode: 'gift'; target: string }
-  | { lotteryId: string; mode: 'selfuse' };
+  | { lotteryId?: string; couponId?: string; mode: 'gift'; target: string; prizeName?: string }
+  | { lotteryId?: string; couponId?: string; mode: 'selfuse'; prizeName?: string };
 
 const VANITY_CARD_NAMES = new Set(['3位数靓号卡', '4位数靓号卡', '5位数靓号卡']);
 
@@ -91,27 +91,72 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as Partial<UsePayload>;
   const lotteryId = typeof body.lotteryId === 'string' ? body.lotteryId : '';
+  const couponId = typeof body.couponId === 'string' ? body.couponId : '';
   const mode = body.mode;
 
-  if (!lotteryId || (mode !== 'gift' && mode !== 'selfuse')) {
+  if ((!lotteryId && !couponId) || (mode !== 'gift' && mode !== 'selfuse')) {
     return NextResponse.json({ error: '参数错误' }, { status: 400 });
   }
 
-  const draw = await prisma.lotteryDraw.findUnique({
-    where: { id: lotteryId },
-    include: {
-      prize: { select: { name: true, type: true } },
-    },
-  });
+  const couponTypeToPrize: Record<CouponType, { name: string; type: LotteryPrizeType }> = {
+    [CouponType.CAKE_VOUCHER]: { name: '小蛋糕代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.LOLLIPOP_VOUCHER]: { name: '棒棒糖代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.PERFUME_VOUCHER]: { name: '香水代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.CAROUSEL_VOUCHER]: { name: '旋转木马代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.PUMPKIN_CAR_VOUCHER]: { name: '南瓜车代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.PHONOGRAPH_VOUCHER]: { name: '留声机代金券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_75_VOUCHER]: { name: '一日冠75折券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_DAY_90_VOUCHER]: { name: '一日冠9折券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_3DAY_90_VOUCHER]: { name: '三日冠9折券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_WEEK_90_VOUCHER]: { name: '一周冠9折券', type: LotteryPrizeType.GIFT },
+    [CouponType.CROWN_MONTH_90_VOUCHER]: { name: '月冠名9折券', type: LotteryPrizeType.GIFT },
+    [CouponType.RENAME_CARD_3]: { name: '3位数靓号卡', type: LotteryPrizeType.SELFUSE },
+    [CouponType.RENAME_CARD]: { name: '4位数靓号卡', type: LotteryPrizeType.SELFUSE },
+    [CouponType.RENAME_CARD_5]: { name: '5位数靓号卡', type: LotteryPrizeType.SELFUSE },
+  };
 
-  if (!draw || draw.userId !== session.discordId) {
-    return NextResponse.json({ error: '记录不存在' }, { status: 404 });
-  }
-  if (draw.status !== LotteryStatus.UNUSED) {
-    return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
-  }
   const now = new Date();
-  const prizeType = draw.prize?.type ?? LotteryPrizeType.COUPON;
+  let prizeName = typeof body.prizeName === 'string' ? body.prizeName.trim() : '';
+  let prizeType: LotteryPrizeType = LotteryPrizeType.COUPON;
+  let source: 'coupon' | 'lottery' = 'lottery';
+
+  if (couponId) {
+    const coupon = await prisma.coupon.findFirst({
+      where: {
+        id: couponId,
+        discordId: session.discordId,
+        status: CouponStatus.ACTIVE,
+        expiresAt: { gt: now },
+      },
+      select: { id: true, type: true },
+    });
+    if (!coupon) {
+      return NextResponse.json({ error: '券已使用或已过期' }, { status: 409 });
+    }
+    const mapped = couponTypeToPrize[coupon.type];
+    if (!mapped) {
+      return NextResponse.json({ error: '该券不支持在此处使用' }, { status: 400 });
+    }
+    prizeName = mapped.name;
+    prizeType = mapped.type;
+    source = 'coupon';
+  } else {
+    const draw = await prisma.lotteryDraw.findUnique({
+      where: { id: lotteryId },
+      include: {
+        prize: { select: { name: true, type: true } },
+      },
+    });
+
+    if (!draw || draw.userId !== session.discordId) {
+      return NextResponse.json({ error: '记录不存在' }, { status: 404 });
+    }
+    if (draw.status !== LotteryStatus.UNUSED) {
+      return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
+    }
+    prizeName = draw.prize?.name ?? prizeName;
+    prizeType = draw.prize?.type ?? LotteryPrizeType.COUPON;
+  }
 
   if (mode === 'gift') {
     if (prizeType !== LotteryPrizeType.GIFT) {
@@ -122,7 +167,6 @@ export async function POST(request: Request) {
     if (!receiverId) {
       return NextResponse.json({ error: '未找到目标用户' }, { status: 404 });
     }
-    const prizeName = draw.prize?.name ?? '';
     const prizeToGift: Record<string, string> = {
       小蛋糕代金券: '小蛋糕',
       棒棒糖代金券: '棒棒糖',
@@ -144,7 +188,7 @@ export async function POST(request: Request) {
         receiverId,
         giftName: giftNameForBot,
         quantity: 1,
-        lotteryId,
+        lotteryId: source === 'lottery' ? lotteryId : undefined,
         requestId,
       });
     } catch (error) {
@@ -154,7 +198,7 @@ export async function POST(request: Request) {
   }
 
   if (mode === 'selfuse') {
-    const isVanityCard = isVanityCardPrize(draw.prize?.name);
+    const isVanityCard = isVanityCardPrize(prizeName);
     if (prizeType !== LotteryPrizeType.SELFUSE && !isVanityCard) {
       return NextResponse.json({ error: '非自用券，无法自用' }, { status: 400 });
     }
@@ -174,7 +218,7 @@ export async function POST(request: Request) {
           'Content-Type': 'application/json',
           'X-Internal-Token': token,
         },
-        body: JSON.stringify({ userId: session.discordId, voucherId: lotteryId }),
+        body: JSON.stringify({ userId: session.discordId, voucherId: couponId || lotteryId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -184,16 +228,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    const updateResult = await prisma.lotteryDraw.updateMany({
-      where: { id: lotteryId, status: LotteryStatus.UNUSED },
-      data: {
-        status: LotteryStatus.USED,
-        consumeAt: now,
-        requestId: 'SELFUSE',
-      },
-    });
-    if (updateResult.count !== 1) {
-      return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
+    if (source === 'coupon') {
+      const updateResult = await prisma.coupon.updateMany({
+        where: { id: couponId, status: CouponStatus.ACTIVE },
+        data: {
+          status: CouponStatus.USED,
+          consumedAt: now,
+          consumeAmount: 0,
+          consumeTargetId: session.discordId,
+        },
+      });
+      if (updateResult.count !== 1) {
+        return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
+      }
+    } else {
+      const updateResult = await prisma.lotteryDraw.updateMany({
+        where: { id: lotteryId, status: LotteryStatus.UNUSED },
+        data: {
+          status: LotteryStatus.USED,
+          consumeAt: now,
+          requestId: 'SELFUSE',
+        },
+      });
+      if (updateResult.count !== 1) {
+        return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
+      }
     }
     return NextResponse.json({ ok: true });
   }
