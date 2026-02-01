@@ -90,8 +90,9 @@ export default async function BagPage() {
 
   const couponItems: BagItem[] = coupons.map((coupon) => {
     const meta = couponMeta[coupon.type] ?? { name: coupon.type, type: LotteryPrizeType.COUPON };
+    const isExpired = coupon.expiresAt ? new Date(coupon.expiresAt).getTime() <= Date.now() : false;
     const status =
-      coupon.status === CouponStatus.ACTIVE
+      coupon.status === CouponStatus.ACTIVE && !isExpired
         ? LotteryStatus.UNUSED
         : coupon.status === CouponStatus.USED
           ? LotteryStatus.USED
@@ -108,16 +109,22 @@ export default async function BagPage() {
     };
   });
 
-  const drawItems: BagItem[] = draws.map((draw) => ({
-    id: draw.id,
-    source: 'lottery',
-    status: draw.status,
-    prizeName: draw.prize?.name ?? '未中奖',
-    prizeType: draw.prize?.type ?? LotteryPrizeType.COUPON,
-    expiresAt: draw.expiresAt,
-    consumeAt: draw.consumeAt,
-    lotteryId: draw.id,
-  }));
+  const drawItems: BagItem[] = draws.map((draw) => {
+    const drawExpired =
+      draw.status === LotteryStatus.UNUSED && draw.expiresAt
+        ? new Date(draw.expiresAt).getTime() <= Date.now()
+        : false;
+    return {
+      id: draw.id,
+      source: 'lottery',
+      status: drawExpired ? LotteryStatus.EXPIRED : draw.status,
+      prizeName: draw.prize?.name ?? '未中奖',
+      prizeType: draw.prize?.type ?? LotteryPrizeType.COUPON,
+      expiresAt: draw.expiresAt,
+      consumeAt: draw.consumeAt,
+      lotteryId: draw.id,
+    };
+  });
 
   const allItems = [...couponItems, ...drawItems].sort((a, b) => {
     const aTime = new Date((a.consumeAt ?? a.expiresAt ?? 0) as any).getTime();
