@@ -172,6 +172,7 @@ export async function applyDiscountForOrder(params: {
               discordId: userId,
               status: 'ACTIVE',
               expiresAt: { gt: now },
+              type: { in: Object.keys(COUPON_RATE_CAP_BY_TYPE) as CouponType[] },
             },
           })
         : await tx.coupon.findFirst({

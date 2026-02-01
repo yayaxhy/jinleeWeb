@@ -84,11 +84,11 @@ export async function POST(request: Request) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       const couponTypeMap: Record<string, CouponType> = {
-        自定义礼物券: CouponType.CUSTOM_GIFT_VOUCHER,
-        自定义tag券: CouponType.CUSTOM_TAG_VOUCHER,
-        抽成降1%券: CouponType.COMMISSION_MINUS1_VOUCHER,
-        双倍流水5000券: CouponType.DOUBLE_FLOW_5000_VOUCHER,
-        双倍消费5000券: CouponType.DOUBLE_SPEND_5000_VOUCHER,
+        '自定义礼物券': CouponType.CUSTOM_GIFT_VOUCHER,
+        '自定义tag券': CouponType.CUSTOM_TAG_VOUCHER,
+        '抽成降1%券': CouponType.COMMISSION_MINUS1_VOUCHER,
+        '双倍流水5000券': CouponType.DOUBLE_FLOW_5000_VOUCHER,
+        '双倍消费5000券': CouponType.DOUBLE_SPEND_5000_VOUCHER,
       };
       const couponType = couponTypeMap[prizeName];
 

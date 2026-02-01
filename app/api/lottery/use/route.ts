@@ -43,6 +43,7 @@ const callGiftWebhook = async (params: {
   giftName: string;
   quantity?: number;
   lotteryId?: string;
+  couponId?: string;
   requestId?: string;
 }) => {
   const port = process.env.INTERNAL_API_PORT;
@@ -59,6 +60,7 @@ const callGiftWebhook = async (params: {
     quantity: params.quantity ?? 1,
     anonymous: false,
     lotteryId: params.lotteryId,
+    couponId: params.couponId,
     requestId: params.requestId,
   };
   const res = await fetch(endpoint, {
@@ -98,7 +100,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '参数错误' }, { status: 400 });
   }
 
-  const couponTypeToPrize: Record<CouponType, { name: string; type: LotteryPrizeType }> = {
+  const couponTypeToPrize: Partial<Record<CouponType, { name: string; type: LotteryPrizeType }>> = {
     [CouponType.CAKE_VOUCHER]: { name: '小蛋糕代金券', type: LotteryPrizeType.GIFT },
     [CouponType.LOLLIPOP_VOUCHER]: { name: '棒棒糖代金券', type: LotteryPrizeType.GIFT },
     [CouponType.PERFUME_VOUCHER]: { name: '香水代金券', type: LotteryPrizeType.GIFT },
@@ -189,6 +191,7 @@ export async function POST(request: Request) {
         giftName: giftNameForBot,
         quantity: 1,
         lotteryId: source === 'lottery' ? lotteryId : undefined,
+        couponId: source === 'coupon' ? couponId : undefined,
         requestId,
       });
     } catch (error) {
