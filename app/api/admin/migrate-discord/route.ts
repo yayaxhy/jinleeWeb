@@ -142,11 +142,19 @@ export async function POST(request: NextRequest) {
       );
       await run(
         'GiftAudit.giverId',
-        tx.$executeRaw`UPDATE "GiftAudit" SET "giverId" = ${newId} WHERE "giverId" = ${oldId}`,
+        tx.$executeRaw`UPDATE "gift_audit" SET "giverId" = ${newId} WHERE "giverId" = ${oldId}`,
       );
       await run(
         'GiftAudit.receiverId',
-        tx.$executeRaw`UPDATE "GiftAudit" SET "receiverId" = ${newId} WHERE "receiverId" = ${oldId}`,
+        tx.$executeRaw`UPDATE "gift_audit" SET "receiverId" = ${newId} WHERE "receiverId" = ${oldId}`,
+      );
+      await run(
+        'GiftAudit.bossReferralInviterId',
+        tx.$executeRaw`UPDATE "gift_audit" SET "bossReferralInviterId" = ${newId} WHERE "bossReferralInviterId" = ${oldId}`,
+      );
+      await run(
+        'GiftAudit.workerReferralInviterId',
+        tx.$executeRaw`UPDATE "gift_audit" SET "workerReferralInviterId" = ${newId} WHERE "workerReferralInviterId" = ${oldId}`,
       );
       await run(
         'Recharge.toWhom',
@@ -161,12 +169,40 @@ export async function POST(request: NextRequest) {
         tx.$executeRaw`UPDATE "Withdraw" SET "discordId" = ${newId} WHERE "discordId" = ${oldId}`,
       );
       await run(
+        'WithdrawalAccount',
+        tx.$executeRaw`UPDATE "WithdrawalAccount" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
         'IndividualTransaction.discordId',
         tx.$executeRaw`UPDATE "IndividualTransaction" SET "discordId" = ${newId} WHERE "discordId" = ${oldId}`,
       );
       await run(
         'IndividualTransaction.thirdPartydiscordId',
         tx.$executeRaw`UPDATE "IndividualTransaction" SET "thirdPartydiscordId" = ${newId} WHERE "thirdPartydiscordId" = ${oldId}`,
+      );
+      await run(
+        'Expense.operatorId',
+        tx.$executeRaw`UPDATE "Expense" SET "operatorId" = ${newId} WHERE "operatorId" = ${oldId}`,
+      );
+      await run(
+        'Expense.targetId',
+        tx.$executeRaw`UPDATE "Expense" SET "targetId" = ${newId} WHERE "targetId" = ${oldId}`,
+      );
+      await run(
+        'PureProfit.operatorId',
+        tx.$executeRaw`UPDATE "PureProfit" SET "operatorId" = ${newId} WHERE "operatorId" = ${oldId}`,
+      );
+      await run(
+        'PureProfit.targetId',
+        tx.$executeRaw`UPDATE "PureProfit" SET "targetId" = ${newId} WHERE "targetId" = ${oldId}`,
+      );
+      await run(
+        'Coupon.discordId',
+        tx.$executeRaw`UPDATE "Coupon" SET "discordId" = ${newId} WHERE "discordId" = ${oldId}`,
+      );
+      await run(
+        'Coupon.consumeTargetId',
+        tx.$executeRaw`UPDATE "Coupon" SET "consumeTargetId" = ${newId} WHERE "consumeTargetId" = ${oldId}`,
       );
       await run(
         'InteractionLog',
@@ -189,8 +225,16 @@ export async function POST(request: NextRequest) {
         tx.$executeRaw`UPDATE "LotteryDraw" SET "userId" = ${newId} WHERE "userId" = ${oldId}`,
       );
       await run(
+        'LotteryDraw.consumeTargetId',
+        tx.$executeRaw`UPDATE "LotteryDraw" SET "consumeTargetId" = ${newId} WHERE "consumeTargetId" = ${oldId}`,
+      );
+      await run(
         'LotteryPity',
         tx.$executeRaw`UPDATE "LotteryPity" SET "userId" = ${newId} WHERE "userId" = ${oldId}`,
+      );
+      await run(
+        'Revert.operatorId',
+        tx.$executeRaw`UPDATE "revert" SET "operatorId" = ${newId} WHERE "operatorId" = ${oldId}`,
       );
       await run(
         'Referral.inviterId',
