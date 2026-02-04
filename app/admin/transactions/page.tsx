@@ -222,6 +222,7 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                 <thead>
                   <tr className="text-left text-white/60 uppercase tracking-[0.3em] border-b border-white/10">
                     <th className="py-3 pr-4">时间</th>
+                    <th className="py-3 pr-4">Discord ID</th>
                     <th className="py-3 pr-4">类型</th>
                     <th className="py-3 pr-4">变动前余额</th>
                     <th className="py-3 pr-4">金额变动</th>
@@ -236,6 +237,7 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                     return (
                       <tr key={tx.transactionId} className="border-b border-white/10 last:border-0">
                         <td className="py-3 pr-4 font-mono text-white/90">{formatDate(tx.timeCreatedAt)}</td>
+                        <td className="py-3 pr-4 font-mono text-white/80">{tx.discordId}</td>
                         <td className="py-3 pr-4 text-white/90">{tx.typeOfTransaction}</td>
                         <td className="py-3 pr-4 font-mono text-white/80">{formatNumber(tx.balanceBefore)}</td>
                         <td className={`py-3 pr-4 font-mono ${meta.className}`}>{meta.label}</td>
