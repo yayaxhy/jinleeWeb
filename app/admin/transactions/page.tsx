@@ -135,6 +135,13 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
   const hasNext = currentPage < totalPages;
   const prevPage = Math.max(1, currentPage - 1);
   const nextPage = Math.min(totalPages, currentPage + 1);
+  const exportParams = new URLSearchParams({
+    ...(discordId ? { discordId } : {}),
+    ...(startParam ? { startDate: startParam } : {}),
+    ...(endParam ? { endDate: endParam } : {}),
+  });
+  const exportQuery = exportParams.toString();
+  const exportUrl = exportQuery ? `/api/admin/transactions/export?${exportQuery}` : '/api/admin/transactions/export';
 
   return (
     <section className="min-h-screen bg-[#020204] text-white px-6 py-12">
@@ -211,9 +218,17 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                 ) : null}
               </p>
             </div>
-            <span className="text-xs uppercase tracking-[0.4em] text-white/50">
-              共 {totalCount} 条 · 第 {Math.min(currentPage, totalPages)} / {totalPages} 页
-            </span>
+            <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.4em] text-white/50">
+              <a
+                href={exportUrl}
+                className="inline-flex items-center justify-center rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white hover:bg-white/10"
+              >
+                下载 XLSX
+              </a>
+              <span>
+                共 {totalCount} 条 · 第 {Math.min(currentPage, totalPages)} / {totalPages} 页
+              </span>
+            </div>
           </div>
 
           {transactions.length > 0 ? (
