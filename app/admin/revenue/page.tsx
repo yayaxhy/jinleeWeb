@@ -1,0 +1,251 @@
+﻿import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from '@/lib/session';
+import { isAdminDiscordId } from '@/lib/admin';
+
+export const metadata = {
+  title: '查看收益',
+};
+
+type PageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+};
+
+const normalizeId = (raw: string) => {
+  const cleaned = raw.trim().replace(/^<@!?/, '').replace(/>$/, '');
+  return /^\d+$/.test(cleaned) ? cleaned : '';
+};
+
+const parseExcludeIds = (value: string) => {
+  return value
+    .split(/[\s,]+/)
+    .map(normalizeId)
+    .filter(Boolean);
+};
+
+const parseMonth = (value?: string) => {
+  const now = new Date();
+  const fallback = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  const monthValue = value && /^\d{4}-\d{2}$/.test(value) ? value : fallback;
+  const [year, month] = monthValue.split('-').map(Number);
+  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month, 1, 0, 0, 0));
+  return { monthValue, start, end };
+};
+
+const parseNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return Number.isNaN(value) ? null : value;
+  if (typeof value === 'bigint') return Number(value);
+  if (typeof value === 'string') {
+    const numeric = Number(value);
+    return Number.isNaN(numeric) ? null : numeric;
+  }
+  if (typeof value === 'object' && value !== null && 'toString' in value) {
+    const text = (value as { toString?: () => string }).toString?.();
+    if (text) {
+      const numeric = Number(text);
+      return Number.isNaN(numeric) ? null : numeric;
+    }
+  }
+  return null;
+};
+
+const formatNumber = (value: unknown, maximumFractionDigits = 2) => {
+  const numeric = parseNumber(value);
+  if (numeric === null) return '—';
+  return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits });
+};
+
+const dec = (value: unknown) => {
+  if (value instanceof Prisma.Decimal) return value;
+  const numeric = parseNumber(value);
+  return new Prisma.Decimal(numeric ?? 0);
+};
+
+export default async function AdminRevenuePage(props: PageProps = {}) {
+  const session = await getServerSession();
+  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+    redirect('/');
+  }
+
+  const rawParams = await Promise.resolve(props.searchParams);
+  const searchParams = rawParams ?? {};
+  const monthParam = Array.isArray(searchParams.month) ? searchParams.month[0] : searchParams.month;
+  const excludeParam = Array.isArray(searchParams.exclude) ? searchParams.exclude[0] : searchParams.exclude;
+  const excludeInput = (excludeParam ?? '').trim();
+  const excludeIds = excludeInput ? parseExcludeIds(excludeInput) : [];
+  const { monthValue, start, end } = parseMonth(monthParam);
+
+  const blockStackAgg = await prisma.blockStackGame.aggregate({
+    _sum: {
+      totalRevenue: true,
+      settledAmount: true,
+      collapseEnvelopeAmount: true,
+      collapseRewardNet: true,
+    },
+    where: {
+      createdAt: { gte: start, lt: end },
+    },
+  });
+
+  const blockTotalRevenue = dec(blockStackAgg._sum.totalRevenue);
+  const blockSettled = dec(blockStackAgg._sum.settledAmount);
+  const blockEnvelope = dec(blockStackAgg._sum.collapseEnvelopeAmount);
+  const blockReward = dec(blockStackAgg._sum.collapseRewardNet);
+  const blockEarning = blockTotalRevenue.sub(blockSettled).sub(blockEnvelope).sub(blockReward);
+
+  const rechargeWhere: Prisma.RechargeWhereInput = {
+    createdAt: { gte: start, lt: end },
+  };
+  if (excludeIds.length) {
+    rechargeWhere.toWhom = { notIn: excludeIds };
+  }
+  const rechargeAgg = await prisma.recharge.aggregate({
+    _sum: { amount: true },
+    where: rechargeWhere,
+  });
+
+  const withdrawAgg = await prisma.withdraw.aggregate({
+    _sum: { amount: true },
+    where: { createdAt: { gte: start, lt: end } },
+  });
+
+  const zpayAgg = await prisma.zPayRechargeOrder.aggregate({
+    _sum: { amount: true },
+    where: { status: 'PAID', createdAt: { gte: start, lt: end } },
+  });
+
+  const rechargeTotal = dec(rechargeAgg._sum.amount);
+  const withdrawTotal = dec(withdrawAgg._sum.amount);
+  const netRecharge = rechargeTotal.sub(withdrawTotal);
+  const zpayTotal = dec(zpayAgg._sum.amount);
+
+  const memberWhere: Prisma.MemberWhereInput = {};
+  if (excludeIds.length) {
+    memberWhere.discordUserId = { notIn: excludeIds };
+  }
+
+  const memberAgg = await prisma.member.aggregate({
+    _sum: {
+      recharge: true,
+      income: true,
+      totalBalance: true,
+    },
+    where: memberWhere,
+  });
+
+  const commissionWhere: Prisma.CommissionWhereInput = {
+    createdAt: { gte: start, lt: end },
+  };
+  if (excludeIds.length) {
+    commissionWhere.toId = { notIn: excludeIds };
+  }
+  const commissionAgg = await prisma.commission.aggregate({
+    _sum: { feeAmount: true },
+    where: commissionWhere,
+  });
+
+  const drawCount = await prisma.lotteryDraw.count({
+    where: { createdAt: { gte: start, lt: end } },
+  });
+  const consumeAgg = await prisma.lotteryDraw.aggregate({
+    _sum: { consumeAmount: true },
+    where: { consumeAt: { gte: start, lt: end } },
+  });
+
+  const grossIncome = new Prisma.Decimal(drawCount).mul(29);
+  const consumeTotal = dec(consumeAgg._sum.consumeAmount);
+  const netProfit = grossIncome.sub(consumeTotal);
+
+  return (
+    <div className="space-y-8 text-white">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
+          <h2 className="text-2xl font-semibold">查看收益</h2>
+        </div>
+        <Link
+          href="/admin"
+          className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm text-white hover:bg-white/10"
+        >
+          返回管理首页
+        </Link>
+      </div>
+
+      <form className="grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 md:grid-cols-2" method="get">
+        <label className="space-y-2 text-sm">
+          <span className="text-white/70">月份 (YYYY-MM)</span>
+          <input
+            type="month"
+            name="month"
+            defaultValue={monthValue}
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
+          />
+        </label>
+        <label className="space-y-2 text-sm">
+          <span className="text-white/70">排除的 Discord IDs (逗号/空格/换行分隔)</span>
+          <textarea
+            name="exclude"
+            defaultValue={excludeInput}
+            rows={3}
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
+          />
+        </label>
+        <div className="md:col-span-2">
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center rounded-full bg-white/15 px-6 py-2 text-sm text-white hover:bg-white/25"
+          >
+            刷新数据
+          </button>
+        </div>
+      </form>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">积木游戏收益</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>总收入：¥{formatNumber(blockTotalRevenue)}</p>
+            <p>结算支出：¥{formatNumber(blockSettled)}</p>
+            <p>塌方红包：¥{formatNumber(blockEnvelope)}</p>
+            <p>捣蛋奖励：¥{formatNumber(blockReward)}</p>
+            <p className="text-white">净收益：¥{formatNumber(blockEarning)}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">当月充值/提现</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>Recharge 充值总额：¥{formatNumber(rechargeTotal)}</p>
+            <p>ZPay 已支付：¥{formatNumber(zpayTotal)}</p>
+            <p>提现总额：¥{formatNumber(withdrawTotal)}</p>
+            <p className="text-white">净充值：¥{formatNumber(netRecharge)}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">会员余额汇总</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>Member.recharge 合计：¥{formatNumber(memberAgg._sum.recharge)}</p>
+            <p>Member.income 合计：¥{formatNumber(memberAgg._sum.income)}</p>
+            <p>Member.totalBalance 合计：¥{formatNumber(memberAgg._sum.totalBalance)}</p>
+            <p>当月 Commission 合计：¥{formatNumber(commissionAgg._sum.feeAmount)}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">抽奖收益</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>抽奖次数：{drawCount}</p>
+            <p>毛收入 (次数 × 29)：¥{formatNumber(grossIncome)}</p>
+            <p>券抵扣消耗：¥{formatNumber(consumeTotal)}</p>
+            <p className="text-white">净收益：¥{formatNumber(netProfit)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

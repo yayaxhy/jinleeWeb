@@ -28,6 +28,21 @@ export default function AdminHomePage() {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
+              <p className="text-sm text-white/70">查看收益</p>
+              <p className="text-xs text-white/50">积木游戏、充值、抽奖的当月汇总</p>
+            </div>
+            <Link
+              href="/admin/revenue"
+              className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
+            >
+              前往查看
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
               <p className="text-sm text-white/70">抢单记录</p>
               <p className="text-xs text-white/50">查看派单内容与陪玩抢单名单</p>
             </div>
