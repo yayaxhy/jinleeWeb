@@ -74,9 +74,19 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
   const rawParams = await Promise.resolve(props.searchParams);
   const searchParams = rawParams ?? {};
   const monthParam = Array.isArray(searchParams.month) ? searchParams.month[0] : searchParams.month;
-  const excludeParam = Array.isArray(searchParams.exclude) ? searchParams.exclude[0] : searchParams.exclude;
-  const excludeInput = (excludeParam ?? '').trim();
-  const excludeIds = excludeInput ? parseExcludeIds(excludeInput) : [];
+  const excludeRechargeParam = Array.isArray(searchParams.excludeRecharge)
+    ? searchParams.excludeRecharge[0]
+    : searchParams.excludeRecharge;
+  const excludeMemberParam = Array.isArray(searchParams.excludeMember)
+    ? searchParams.excludeMember[0]
+    : searchParams.excludeMember;
+
+  const excludeRechargeInput = (excludeRechargeParam ?? '').trim();
+  const excludeMemberDefault = ['1012932103509377034', '1441310169492361268'].join(', ');
+  const excludeMemberInput = (excludeMemberParam ?? excludeMemberDefault).trim();
+
+  const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
+  const excludeMemberIds = excludeMemberInput ? parseExcludeIds(excludeMemberInput) : [];
   const { monthValue, start, end } = parseMonth(monthParam);
 
   const blockStackAgg = await prisma.blockStackGame.aggregate({
@@ -100,22 +110,33 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
   const rechargeWhere: Prisma.RechargeWhereInput = {
     createdAt: { gte: start, lt: end },
   };
-  if (excludeIds.length) {
-    rechargeWhere.toWhom = { notIn: excludeIds };
+  if (excludeRechargeIds.length) {
+    rechargeWhere.toWhom = { notIn: excludeRechargeIds };
   }
   const rechargeAgg = await prisma.recharge.aggregate({
     _sum: { amount: true },
     where: rechargeWhere,
   });
 
+  const withdrawWhere: Prisma.WithdrawWhereInput = { createdAt: { gte: start, lt: end } };
+  if (excludeRechargeIds.length) {
+    withdrawWhere.discordId = { notIn: excludeRechargeIds };
+  }
   const withdrawAgg = await prisma.withdraw.aggregate({
     _sum: { amount: true },
-    where: { createdAt: { gte: start, lt: end } },
+    where: withdrawWhere,
   });
 
+  const zpayWhere: Prisma.ZPayRechargeOrderWhereInput = {
+    status: 'PAID',
+    createdAt: { gte: start, lt: end },
+  };
+  if (excludeRechargeIds.length) {
+    zpayWhere.discordUserId = { notIn: excludeRechargeIds };
+  }
   const zpayAgg = await prisma.zPayRechargeOrder.aggregate({
     _sum: { amount: true },
-    where: { status: 'PAID', createdAt: { gte: start, lt: end } },
+    where: zpayWhere,
   });
 
   const rechargeTotal = dec(rechargeAgg._sum.amount);
@@ -124,8 +145,8 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
   const zpayTotal = dec(zpayAgg._sum.amount);
 
   const memberWhere: Prisma.MemberWhereInput = {};
-  if (excludeIds.length) {
-    memberWhere.discordUserId = { notIn: excludeIds };
+  if (excludeMemberIds.length) {
+    memberWhere.discordUserId = { notIn: excludeMemberIds };
   }
 
   const memberAgg = await prisma.member.aggregate({
@@ -140,8 +161,8 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
   const commissionWhere: Prisma.CommissionWhereInput = {
     createdAt: { gte: start, lt: end },
   };
-  if (excludeIds.length) {
-    commissionWhere.toId = { notIn: excludeIds };
+  if (excludeMemberIds.length) {
+    commissionWhere.toId = { notIn: excludeMemberIds };
   }
   const commissionAgg = await prisma.commission.aggregate({
     _sum: { feeAmount: true },
@@ -186,11 +207,29 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
           />
         </label>
         <label className="space-y-2 text-sm">
-          <span className="text-white/70">排除的 Discord IDs (逗号/空格/换行分隔)</span>
+          <span className="text-white/70">充值/提现排除 IDs</span>
           <textarea
-            name="exclude"
-            defaultValue={excludeInput}
-            rows={3}
+            name="excludeRecharge"
+            defaultValue={excludeRechargeInput}
+            rows={2}
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
+          />
+        </label>
+        <label className="space-y-2 text-sm">
+          <span className="text-white/70">会员余额排除 IDs</span>
+          <textarea
+            name="excludeMember"
+            defaultValue={excludeMemberInput}
+            rows={2}
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
+          />
+        </label>
+        <label className="space-y-2 text-sm">
+          <span className="text-white/70">会员余额排除 IDs</span>
+          <textarea
+            name="excludeMember"
+            defaultValue={excludeMemberInput}
+            rows={2}
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
           />
         </label>
