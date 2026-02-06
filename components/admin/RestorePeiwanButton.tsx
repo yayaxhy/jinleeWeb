@@ -5,15 +5,16 @@ import { useState } from 'react';
 type RestorePeiwanButtonProps = {
   restoreToken: string;
   isDeleted: boolean;
+  readOnly?: boolean;
 };
 
-export function RestorePeiwanButton({ restoreToken, isDeleted }: RestorePeiwanButtonProps) {
+export function RestorePeiwanButton({ restoreToken, isDeleted, readOnly = false }: RestorePeiwanButtonProps) {
   const [state, setState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
   const [deleted, setDeleted] = useState(isDeleted);
 
   const handleRestore = async () => {
-    if (state === 'loading' || !deleted) return;
+    if (state === 'loading' || !deleted || readOnly) return;
     setState('loading');
     setMessage(null);
     try {
@@ -42,7 +43,7 @@ export function RestorePeiwanButton({ restoreToken, isDeleted }: RestorePeiwanBu
         </div>
         <button
           type="button"
-          disabled={!deleted || state === 'loading'}
+          disabled={!deleted || state === 'loading' || readOnly}
           onClick={handleRestore}
           className={`rounded-full px-4 py-2 text-xs font-semibold tracking-[0.15em] text-white transition ${
             deleted

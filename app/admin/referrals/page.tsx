@@ -1,10 +1,19 @@
+import { redirect } from 'next/navigation';
 import { ReferralManager } from '@/components/admin/ReferralManager';
+import { getServerSession } from '@/lib/session';
+import { canViewReferrals, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: '邀请人管理 - 锦鲤管理后台',
 };
 
-export default function AdminReferralsPage() {
+export default async function AdminReferralsPage() {
+  const session = await getServerSession();
+  if (!session?.discordId || !canViewReferrals(session.discordId)) {
+    redirect('/');
+  }
+  const readOnly = isHowardReadOnlyDiscordId(session.discordId);
+
   return (
     <section className="min-h-screen bg-[#020204] text-white px-6 py-12">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
@@ -14,7 +23,7 @@ export default function AdminReferralsPage() {
           <p className="text-sm text-white/60">插入 / 查询 / 修改 / 删除 邀请 记录。</p>
         </div>
 
-        <ReferralManager />
+        <ReferralManager readOnly={readOnly} />
       </div>
     </section>
   );

@@ -3,7 +3,7 @@ import ExcelJS from 'exceljs';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canViewTransactions } from '@/lib/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,7 +66,7 @@ const toExcelFileName = (prefix: string, date: Date) => {
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canViewTransactions(session.discordId)) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }
 

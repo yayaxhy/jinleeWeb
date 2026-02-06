@@ -19,7 +19,7 @@ type FilterState = {
 const REFERRAL_TYPES: ReferralType[] = ['LAOBAN', 'PEIWAN'];
 const ROME_TIMEZONE = 'Europe/Rome';
 
-export function ReferralManager() {
+export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
   const [createForm, setCreateForm] = useState<{ inviteeId: string; inviterId: string; type: ReferralType }>({
     inviteeId: '',
     inviterId: '',
@@ -90,6 +90,10 @@ export function ReferralManager() {
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (readOnly) {
+      setGlobalMessage({ type: 'error', text: '当前账号为只读权限，无法新增或修改邀请关系。' });
+      return;
+    }
     setGlobalMessage(null);
     const inviteeId = createForm.inviteeId.trim();
     const inviterId = createForm.inviterId.trim();
@@ -128,6 +132,10 @@ export function ReferralManager() {
   };
 
   const handleUpdateType = async (inviteeId: string) => {
+    if (readOnly) {
+      setGlobalMessage({ type: 'error', text: '当前账号为只读权限，无法修改邀请关系。' });
+      return;
+    }
     const nextType = draftTypes[inviteeId];
     if (!nextType) return;
     setRowBusyId(inviteeId);
@@ -154,6 +162,10 @@ export function ReferralManager() {
   };
 
   const handleDelete = async (inviteeId: string) => {
+    if (readOnly) {
+      setGlobalMessage({ type: 'error', text: '当前账号为只读权限，无法删除邀请关系。' });
+      return;
+    }
     const confirmed = window.confirm(`确认删除 ${inviteeId} 的邀请记录吗？`);
     if (!confirmed) return;
     setRowBusyId(inviteeId);
@@ -201,6 +213,7 @@ export function ReferralManager() {
               onChange={(event) => setCreateForm((prev) => ({ ...prev, inviteeId: event.target.value }))}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
               placeholder="必填且唯一"
+              disabled={readOnly}
             />
           </label>
           <label className="space-y-1 text-sm">
@@ -211,6 +224,7 @@ export function ReferralManager() {
               onChange={(event) => setCreateForm((prev) => ({ ...prev, inviterId: event.target.value }))}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
               placeholder="必填"
+              disabled={readOnly}
             />
           </label>
           <label className=" text-sm">
@@ -221,6 +235,7 @@ export function ReferralManager() {
                 setCreateForm((prev) => ({ ...prev, type: event.target.value as ReferralType }))
               }
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+              disabled={readOnly}
             >
               {REFERRAL_TYPES.map((type) => (
                 <option key={type} value={type} className="bg-[#0f0f0f] text-white">
@@ -231,7 +246,7 @@ export function ReferralManager() {
           </label>
           <button
             type="submit"
-            disabled={isCreating}
+            disabled={isCreating || readOnly}
             className="mt-2 w-full rounded-full bg-[#5c43a3] px-4 py-2 text-sm font-semibold tracking-[0.2em] text-white hover:bg-[#4a3388] disabled:opacity-60 md:mt-4"
           >
             保存
@@ -330,7 +345,7 @@ export function ReferralManager() {
                         }))
                       }
                       className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-[#5c43a3]"
-                      disabled={rowBusyId === record.inviteeId}
+                      disabled={rowBusyId === record.inviteeId || readOnly}
                     >
                       {REFERRAL_TYPES.map((type) => (
                         <option key={type} value={type} className="bg-[#0f0f0f] text-white">
@@ -347,7 +362,7 @@ export function ReferralManager() {
                       <button
                         type="button"
                         onClick={() => void handleUpdateType(record.inviteeId)}
-                        disabled={rowBusyId === record.inviteeId}
+                        disabled={rowBusyId === record.inviteeId || readOnly}
                         className="rounded-full border border-white/20 px-3 py-2 text-xs text-white hover:bg-white/10 disabled:opacity-60"
                       >
                         保存
@@ -355,7 +370,7 @@ export function ReferralManager() {
                       <button
                         type="button"
                         onClick={() => void handleDelete(record.inviteeId)}
-                        disabled={rowBusyId === record.inviteeId}
+                        disabled={rowBusyId === record.inviteeId || readOnly}
                         className="rounded-full border border-rose-400/40 px-3 py-2 text-xs text-rose-300 hover:bg-rose-400/10 disabled:opacity-60"
                       >
                         删除

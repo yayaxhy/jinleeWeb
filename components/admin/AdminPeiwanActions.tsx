@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export function AdminPeiwanActions() {
+export function AdminPeiwanActions({ readOnly = false }: { readOnly?: boolean }) {
   const router = useRouter();
   const [editDiscordId, setEditDiscordId] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -25,12 +25,18 @@ export function AdminPeiwanActions() {
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
         <h3 className="text-xl font-semibold">新增陪玩</h3>
         <p className="text-sm text-white/70">填完表单即可创建新的陪玩账号信息。</p>
-        <Link
-          href="/admin/peiwan/new"
-          className="inline-flex items-center justify-center rounded-full bg-[#5c43a3] px-6 py-2 text-sm tracking-[0.2em] text-white hover:bg-[#4a3388]"
-        >
-          前往新增
-        </Link>
+        {readOnly ? (
+          <span className="inline-flex items-center justify-center rounded-full bg-white/10 px-6 py-2 text-sm tracking-[0.2em] text-white/50">
+            只读账号不可新增
+          </span>
+        ) : (
+          <Link
+            href="/admin/peiwan/new"
+            className="inline-flex items-center justify-center rounded-full bg-[#5c43a3] px-6 py-2 text-sm tracking-[0.2em] text-white hover:bg-[#4a3388]"
+          >
+            前往新增
+          </Link>
+        )}
       </div>
 
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">

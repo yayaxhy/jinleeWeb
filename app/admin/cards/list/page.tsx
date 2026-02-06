@@ -1,11 +1,19 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { PeiwanCardUploader } from '@/components/admin/PeiwanCardUploader';
+import { getServerSession } from '@/lib/session';
+import { isAdminDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: '管理陪玩列表名片',
 };
 
-export default function ManagePeiwanListCardsPage() {
+export default async function ManagePeiwanListCardsPage() {
+  const session = await getServerSession();
+  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+    redirect('/');
+  }
+
   return (
     <div className="space-y-6 text-white">
       <div className="flex flex-wrap items-center justify-between gap-3">

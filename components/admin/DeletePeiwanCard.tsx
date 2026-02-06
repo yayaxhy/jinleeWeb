@@ -2,13 +2,18 @@
 
 import { useState } from 'react';
 
-export function DeletePeiwanCard() {
+export function DeletePeiwanCard({ readOnly = false }: { readOnly?: boolean }) {
   const [peiwanId, setPeiwanId] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const handleDelete = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (readOnly) {
+      setMessage('当前账号为只读权限，无法删除陪玩。');
+      setState('error');
+      return;
+    }
     const trimmed = peiwanId.trim();
     if (!trimmed) {
       setMessage('请输入陪玩ID');
@@ -46,11 +51,12 @@ export function DeletePeiwanCard() {
           value={peiwanId}
           onChange={(event) => setPeiwanId(event.target.value)}
           placeholder="陪玩ID（数字）"
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:opacity-60"
+          disabled={readOnly}
         />
         <button
           type="submit"
-          disabled={state === 'loading'}
+          disabled={state === 'loading' || readOnly}
           className="w-full rounded-full bg-rose-500 px-6 py-2 text-sm tracking-[0.2em] text-white hover:bg-rose-600 disabled:opacity-50"
         >
           {state === 'loading' ? '删除中…' : '确认删除'}

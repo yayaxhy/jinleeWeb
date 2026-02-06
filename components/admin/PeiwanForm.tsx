@@ -58,6 +58,7 @@ const QUOTATION_LABEL_MAP: Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], stri
 type PeiwanFormProps = {
   mode: 'create' | 'edit';
   initialValues?: Partial<PeiwanFormState>;
+  readOnly?: boolean;
 };
 
 const mergeInitialState = (initialValues?: Partial<PeiwanFormState>) => {
@@ -88,14 +89,19 @@ const SectionTitle = ({ title, subtitle }: { title: string; subtitle?: string })
   </div>
 );
 
-export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
+export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanFormProps) {
   const [formState, setFormState] = useState<PeiwanFormState>(() => mergeInitialState(initialValues));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const initialPeiwanIdRef = useRef<string>(initialValues?.peiwanId ?? '');
+  const isReadOnly = readOnly;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isReadOnly) {
+      setStatusMessage({ type: 'error', text: '当前账号为只读权限，无法保存陪玩信息。' });
+      return;
+    }
     setStatusMessage(null);
     const trimmedPeiwanId = formState.peiwanId.trim();
     if (mode === 'edit' && !trimmedPeiwanId) {
@@ -221,7 +227,11 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="grid gap-6 md:grid-cols-2">
+      {isReadOnly ? (
+        <p className="text-sm text-rose-300">当前账号为只读权限，无法保存或修改陪玩信息。</p>
+      ) : null}
+      <fieldset disabled={isReadOnly} className="space-y-8">
+        <div className="grid gap-6 md:grid-cols-2">
         <label className="space-y-2">
           <span className="text-sm text-gray-500">陪玩 ID（必填，不可重复）</span>
           <input
@@ -451,7 +461,7 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
         <button
           type="submit"
           disabled={isSubmitting}
@@ -468,7 +478,8 @@ export function PeiwanForm({ mode, initialValues }: PeiwanFormProps) {
             {statusMessage.text}
           </p>
         ) : null}
-      </div>
+        </div>
+      </fieldset>
     </form>
   );
 }

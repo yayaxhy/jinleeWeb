@@ -1,15 +1,25 @@
 import { ReferralType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canViewReferrals, isAdminDiscordId, isHowardDiscordId, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
-const ensureAdminSession = async () => {
+const ensureReferralReadSession = async () => {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canViewReferrals(session.discordId)) {
     return null;
   }
   return session;
+};
+
+const ensureReferralWriteSession = async () => {
+  const session = await getServerSession();
+  if (!session?.discordId) return null;
+  if (isHowardReadOnlyDiscordId(session.discordId)) return null;
+  if (isAdminDiscordId(session.discordId) || isHowardDiscordId(session.discordId)) {
+    return session;
+  }
+  return null;
 };
 
 const normalizeId = (value?: string | null) => value?.trim() ?? '';
@@ -21,7 +31,7 @@ const parseReferralType = (value?: string | null): ReferralType | null => {
 };
 
 export async function GET(request: NextRequest) {
-  const session = await ensureAdminSession();
+  const session = await ensureReferralReadSession();
   if (!session) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }
@@ -50,7 +60,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: Request) {
-  const session = await ensureAdminSession();
+  const session = await ensureReferralWriteSession();
   if (!session) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }

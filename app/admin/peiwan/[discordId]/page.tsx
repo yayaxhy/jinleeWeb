@@ -10,6 +10,9 @@ import {
 import { PeiwanForm } from '@/components/admin/PeiwanForm';
 import { RestorePeiwanButton } from '@/components/admin/RestorePeiwanButton';
 import { prisma } from '@/lib/prisma';
+import { redirect } from 'next/navigation';
+import { getServerSession } from '@/lib/session';
+import { canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: '编辑陪玩 - 锦鲤管理后台',
@@ -62,6 +65,12 @@ type EditPageProps = {
 };
 
 export default async function EditPeiwanPage(props: EditPageProps) {
+  const session = await getServerSession();
+  if (!session?.discordId || !canManagePeiwan(session.discordId)) {
+    redirect('/');
+  }
+  const readOnly = isHowardReadOnlyDiscordId(session.discordId);
+
   const resolvedParams = await Promise.resolve(props.params);
   const rawId = resolvedParams?.discordId ?? '';
   const searchToken = decodeURIComponent(rawId).trim();
@@ -166,9 +175,10 @@ export default async function EditPeiwanPage(props: EditPageProps) {
         <RestorePeiwanButton
           restoreToken={String(peiwan.PEIWANID ?? discordId)}
           isDeleted={Boolean(deletionRecord)}
+          readOnly={readOnly}
         />
       </div>
-      <PeiwanForm mode="edit" initialValues={initialValues} />
+      <PeiwanForm mode="edit" initialValues={initialValues} readOnly={readOnly} />
     </div>
   );
 }

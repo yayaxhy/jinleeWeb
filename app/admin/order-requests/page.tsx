@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canViewOrderRequests } from '@/lib/admin';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const PAGE_SIZE = 20;
@@ -21,7 +21,7 @@ type PageProps = {
 
 export default async function AdminOrderRequestsPage(props: PageProps = {}) {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canViewOrderRequests(session.discordId)) {
     redirect('/');
   }
 

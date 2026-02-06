@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/session';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canViewTransactions } from '@/lib/admin';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 
@@ -78,7 +78,7 @@ type PageProps = {
 
 export default async function AdminTransactionsPage(props: PageProps = {}) {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canViewTransactions(session.discordId)) {
     redirect('/');
   }
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canViewRefundableGifts } from '@/lib/admin';
 import { Prisma } from '@prisma/client';
 
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -71,7 +71,7 @@ export const metadata = {
 
 export default async function RefundableGiftsPage(props: PageProps = {}) {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canViewRefundableGifts(session.discordId)) {
     redirect('/');
   }
 

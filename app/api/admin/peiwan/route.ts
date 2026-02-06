@@ -1,20 +1,23 @@
 import { NextResponse } from 'next/server';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { buildPeiwanDataObject, normalizePeiwanPayload } from '@/lib/peiwan/payload';
 import { getServerSession } from '@/lib/session';
 import { registerPeiwanProfile } from '@/lib/peiwan/registerPeiwan';
 
-const ensureAdminSession = async () => {
+const ensurePeiwanWriteSession = async () => {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canManagePeiwan(session.discordId)) {
+    return null;
+  }
+  if (isHowardReadOnlyDiscordId(session.discordId)) {
     return null;
   }
   return session;
 };
 
 export async function POST(request: Request) {
-  const session = await ensureAdminSession();
+  const session = await ensurePeiwanWriteSession();
   if (!session) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }

@@ -1,8 +1,16 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { AdminPeiwanActions } from '@/components/admin/AdminPeiwanActions';
 import { DeletePeiwanCard } from '@/components/admin/DeletePeiwanCard';
+import { getServerSession } from '@/lib/session';
+import { isAdminDiscordId } from '@/lib/admin';
 
-export default function AdminHomePage() {
+export default async function AdminHomePage() {
+  const session = await getServerSession();
+  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+    redirect('/');
+  }
+
   return (
     <div className="space-y-6 text-white">
       <div className="space-y-2">

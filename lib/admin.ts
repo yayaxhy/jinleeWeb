@@ -1,12 +1,31 @@
-const DEFAULT_ADMIN_IDS = ['308164614846414851', '1008032640445710447'];
+const ADMIN_DISCORD_IDS = [
+  '525770714574225408',
+  '794340158991237121',
+  '1012932103509377034',
+];
 
-const ADMIN_DISCORD_IDS = Array.from(
-  new Set(
-    [...DEFAULT_ADMIN_IDS, ...(process.env.ADMIN_DISCORD_IDS ?? '').split(',')]
-      .map((value) => value.trim())
-      .filter(Boolean),
-  ),
-);
+const KEFU_DISCORD_IDS = [
+  '525770714574225408',
+  '794340158991237121',
+  '1012932103509377034',
+  '1421651539247894549',
+];
+
+const HOWARD_DISCORD_IDS = [
+  '525770714574225408',
+  '794340158991237121',
+  '1012932103509377034',
+  '1421651539247894549',
+];
+
+const IRIA_DISCORD_IDS = [
+  '525770714574225408',
+  '794340158991237121',
+  '1012932103509377034',
+  '1008032640445710447',
+];
+
+const HOWARD_READONLY_IDS = ['1421651539247894549'];
 
 export const getAdminDiscordIds = () => ADMIN_DISCORD_IDS;
 
@@ -14,3 +33,45 @@ export const isAdminDiscordId = (discordId?: string | null) => {
   if (!discordId) return false;
   return ADMIN_DISCORD_IDS.includes(discordId);
 };
+
+export const isKefuDiscordId = (discordId?: string | null) => {
+  if (!discordId) return false;
+  return KEFU_DISCORD_IDS.includes(discordId);
+};
+
+export const isHowardDiscordId = (discordId?: string | null) => {
+  if (!discordId) return false;
+  return HOWARD_DISCORD_IDS.includes(discordId);
+};
+
+export const isIriaDiscordId = (discordId?: string | null) => {
+  if (!discordId) return false;
+  return IRIA_DISCORD_IDS.includes(discordId);
+};
+
+export const isHowardReadOnlyDiscordId = (discordId?: string | null) => {
+  if (!discordId) return false;
+  return HOWARD_READONLY_IDS.includes(discordId);
+};
+
+export const isBackofficeDiscordId = (discordId?: string | null) => {
+  if (!discordId) return false;
+  return (
+    isAdminDiscordId(discordId) ||
+    isKefuDiscordId(discordId) ||
+    isHowardDiscordId(discordId) ||
+    isIriaDiscordId(discordId)
+  );
+};
+
+export const canViewTransactions = (discordId?: string | null) =>
+  isAdminDiscordId(discordId) || isKefuDiscordId(discordId) || isHowardDiscordId(discordId) || isIriaDiscordId(discordId);
+
+export const canViewOrderRequests = canViewTransactions;
+export const canViewRefundableGifts = canViewTransactions;
+
+export const canViewReferrals = (discordId?: string | null) =>
+  isAdminDiscordId(discordId) || isKefuDiscordId(discordId) || isHowardDiscordId(discordId);
+
+export const canManagePeiwan = (discordId?: string | null) =>
+  isAdminDiscordId(discordId) || isHowardDiscordId(discordId);
