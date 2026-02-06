@@ -224,15 +224,6 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
           />
         </label>
-        <label className="space-y-2 text-sm">
-          <span className="text-white/70">会员余额排除 IDs</span>
-          <textarea
-            name="excludeMember"
-            defaultValue={excludeMemberInput}
-            rows={2}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
-          />
-        </label>
         <div className="md:col-span-2">
           <button
             type="submit"
