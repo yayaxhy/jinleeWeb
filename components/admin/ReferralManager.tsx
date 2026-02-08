@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 type ReferralRecord = {
   inviteeId: string;
   inviterId: string;
+  inviteeDisplayName?: string | null;
+  inviterDisplayName?: string | null;
   type: ReferralType;
   createdAt: string;
 };
@@ -333,8 +335,18 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
             ) : (
               referrals.map((record) => (
                 <tr key={record.inviteeId} className="border-t border-white/10">
-                  <td className="px-4 py-3 font-mono text-white/90">{record.inviteeId}</td>
-                  <td className="px-4 py-3 font-mono text-white/80">{record.inviterId}</td>
+                  <td className="px-4 py-3">
+                    <div className="space-y-1">
+                      <div className="text-white/90">{record.inviteeDisplayName?.trim() || '未知用户'}</div>
+                      <div className="font-mono text-white/80">{record.inviteeId}</div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="space-y-1">
+                      <div className="text-white/90">{record.inviterDisplayName?.trim() || '未知用户'}</div>
+                      <div className="font-mono text-white/80">{record.inviterId}</div>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <select
                       value={draftTypes[record.inviteeId] ?? record.type}

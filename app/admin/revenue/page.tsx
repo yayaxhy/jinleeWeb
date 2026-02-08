@@ -116,6 +116,17 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
 
   const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
   const excludeMemberIds = excludeMemberInput ? parseExcludeIds(excludeMemberInput) : [];
+  const excludePreviewIds = Array.from(new Set([...excludeRechargeIds, ...excludeMemberIds]));
+  const excludeMembers = excludePreviewIds.length
+    ? await prisma.member.findMany({
+        where: { discordUserId: { in: excludePreviewIds } },
+        select: { discordUserId: true, serverDisplayName: true },
+      })
+    : [];
+  const excludeDisplayMap = new Map(
+    excludeMembers.map((row) => [row.discordUserId, row.serverDisplayName?.trim() ?? ''])
+  );
+  const resolveDisplayName = (discordId: string) => excludeDisplayMap.get(discordId) || '未知用户';
   const startParam = Array.isArray(searchParams.startDate) ? searchParams.startDate[0] : searchParams.startDate;
   const endParam = Array.isArray(searchParams.endDate) ? searchParams.endDate[0] : searchParams.endDate;
   const { start, end, startValue, endValue } = parseDateRange(startParam, endParam);
@@ -212,6 +223,23 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
   const consumeTotal = dec(consumeAgg._sum.consumeAmount);
   const netProfit = grossIncome.sub(consumeTotal);
 
+  const scratchAggRows = await prisma.$queryRaw<{ revealed_count: bigint | number; prize_sum: Prisma.Decimal | null }[]>(
+    Prisma.sql`
+      SELECT
+        COUNT(*) AS revealed_count,
+        COALESCE(SUM("prizeAmount"), 0) AS prize_sum
+      FROM "ScratchTicket"
+      WHERE "status" = 'REVEALED'
+        AND "revealedAt" >= ${start}
+        AND "revealedAt" < ${end}
+    `,
+  );
+  const scratchAgg = scratchAggRows[0] ?? { revealed_count: 0, prize_sum: new Prisma.Decimal(0) };
+  const scratchRevealedCount = Number(scratchAgg.revealed_count ?? 0);
+  const scratchGross = new Prisma.Decimal(scratchRevealedCount).mul(29);
+  const scratchReward = dec(scratchAgg.prize_sum);
+  const scratchNet = scratchGross.sub(scratchReward);
+
   return (
     <div className="space-y-8 text-white">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -254,6 +282,17 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             rows={2}
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
           />
+          {excludeRechargeIds.length ? (
+            <div className="space-y-1">
+              {excludeRechargeIds.map((id) => (
+                <div key={`recharge-${id}`} className="text-xs text-white/60">
+                  <span className="text-white/80">{resolveDisplayName(id)}</span>
+                  <span className="mx-1">·</span>
+                  <span className="font-mono">{id}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </label>
         <label className="space-y-2 text-sm">
           <span className="text-white/70">会员余额排除 IDs</span>
@@ -263,6 +302,17 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             rows={2}
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
           />
+          {excludeMemberIds.length ? (
+            <div className="space-y-1">
+              {excludeMemberIds.map((id) => (
+                <div key={`member-${id}`} className="text-xs text-white/60">
+                  <span className="text-white/80">{resolveDisplayName(id)}</span>
+                  <span className="mx-1">·</span>
+                  <span className="font-mono">{id}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </label>
         <div className="md:col-span-2">
           <button
@@ -313,6 +363,16 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             <p>毛收入 (次数 × 29)：¥{formatNumber(grossIncome)}</p>
             <p>券抵扣消耗：¥{formatNumber(consumeTotal)}</p>
             <p className="text-white">净收益：¥{formatNumber(netProfit)}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">刮刮乐收益</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>已刮开数量：{scratchRevealedCount}</p>
+            <p>毛收入（已刮开数量 × 29）：¥{formatNumber(scratchGross)}</p>
+            <p>中奖支出：¥{formatNumber(scratchReward)}</p>
+            <p className="text-white">净收益：¥{formatNumber(scratchNet)}</p>
           </div>
         </div>
       </div>

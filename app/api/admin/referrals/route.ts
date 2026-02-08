@@ -47,14 +47,27 @@ export async function GET(request: NextRequest) {
     ...(type ? { type } : {}),
   };
 
-  const [total, referrals] = await Promise.all([
+  const [total, referralsRaw] = await Promise.all([
     prisma.referral.count({ where }),
     prisma.referral.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: 100,
+      include: {
+        invitee: { select: { serverDisplayName: true } },
+        inviter: { select: { serverDisplayName: true } },
+      },
     }),
   ]);
+
+  const referrals = referralsRaw.map((row) => ({
+    inviteeId: row.inviteeId,
+    inviterId: row.inviterId,
+    type: row.type,
+    createdAt: row.createdAt,
+    inviteeDisplayName: row.invitee?.serverDisplayName ?? null,
+    inviterDisplayName: row.inviter?.serverDisplayName ?? null,
+  }));
 
   return NextResponse.json({ referrals, total });
 }

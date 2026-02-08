@@ -104,7 +104,10 @@ export default async function EditPeiwanPage(props: EditPageProps) {
     ? await prisma.peiwanDeletion.findUnique({ where: { peiwanId: peiwan.PEIWANID } })
     : null;
   const member = discordId
-    ? await prisma.member.findUnique({ where: { discordUserId: discordId }, select: { status: true } })
+    ? await prisma.member.findUnique({
+        where: { discordUserId: discordId },
+        select: { status: true, serverDisplayName: true },
+      })
     : null;
 
   if (!peiwan) {
@@ -155,7 +158,10 @@ export default async function EditPeiwanPage(props: EditPageProps) {
     <div className="space-y-6 text-white">
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold">编辑陪玩</h2>
-        <p className="text-sm text-white/70">当前 Discord ID：{discordId}</p>
+        <p className="text-sm text-white/70">
+          当前用户：{member?.serverDisplayName?.trim() || '未知用户'}
+        </p>
+        <p className="text-sm text-white/60 font-mono">Discord ID：{discordId}</p>
         <p className="text-sm text-white/60">陪玩 ID：{peiwan.PEIWANID}</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

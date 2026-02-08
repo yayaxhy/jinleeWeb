@@ -153,13 +153,14 @@ export default async function AdminOrderRequestsPage(props: PageProps = {}) {
                 ?? row.owner?.serverDisplayName
                 ?? row.owner?.discordUserId
                 ?? row.ownerId;
-              const clickers = row.clicks.map((click) =>
-                click.workerDisplayName
-                ?? click.worker?.serverDisplayName
-                ?? click.worker?.discordUserId
-                ?? click.workerId
-              );
-              const clickerLabel = clickers.length ? clickers.join('、') : '—';
+              const clickers = row.clicks.map((click) => ({
+                name:
+                  click.workerDisplayName
+                  ?? click.worker?.serverDisplayName
+                  ?? click.worker?.discordUserId
+                  ?? click.workerId,
+                id: click.workerId,
+              }));
               return (
                 <tr key={row.orderId} className="align-top">
                   <td className="px-4 py-4 text-white/70 whitespace-nowrap">{formatDate(row.createdAt)}</td>
@@ -176,7 +177,18 @@ export default async function AdminOrderRequestsPage(props: PageProps = {}) {
                   <td className="px-4 py-4 text-white/80">
                     <div className="space-y-1">
                       <div>共 {row.clicks.length} 人</div>
-                      <div className="text-xs text-white/60 whitespace-pre-wrap">{clickerLabel}</div>
+                      {clickers.length ? (
+                        <div className="space-y-1">
+                          {clickers.map((clicker, index) => (
+                            <div key={`${row.orderId}-${clicker.id}-${index}`} className="text-xs text-white/70">
+                              <div>{clicker.name}</div>
+                              <div className="font-mono text-white/50">{clicker.id}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-white/60">—</div>
+                      )}
                     </div>
                   </td>
                 </tr>

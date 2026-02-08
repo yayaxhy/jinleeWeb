@@ -112,6 +112,29 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
     }),
   ]);
 
+  const relatedDiscordIds = Array.from(
+    new Set(
+      records
+        .flatMap((record) => [record.giverId, record.receiverId])
+        .map((id) => id.trim())
+        .filter((id) => /^\d+$/.test(id))
+    )
+  );
+  const relatedMembers = relatedDiscordIds.length
+    ? await prisma.member.findMany({
+        where: { discordUserId: { in: relatedDiscordIds } },
+        select: { discordUserId: true, serverDisplayName: true },
+      })
+    : [];
+  const displayNameMap = new Map(
+    relatedMembers.map((row) => [row.discordUserId, row.serverDisplayName?.trim() ?? ''])
+  );
+  const resolveDisplayName = (discordUserId: string) => {
+    const mapped = displayNameMap.get(discordUserId)?.trim();
+    if (mapped) return mapped;
+    return '未知用户';
+  };
+
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const hasPrev = currentPage > 1;
   const hasNext = currentPage < totalPages;
@@ -216,11 +239,17 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
                       {record.individualTransactionId}
                     </td>
                     <td className="px-3 py-3 text-white/70 whitespace-normal break-words">{formatDate(record.createdAt)}</td>
-                    <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
-                      {record.giverId}
+                    <td className="px-3 py-3 whitespace-normal break-words">
+                      <div className="space-y-1">
+                        <div className="text-white/90">{resolveDisplayName(record.giverId)}</div>
+                        <div className="font-mono text-[11px] text-white/80">{record.giverId}</div>
+                      </div>
                     </td>
-                    <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
-                      {record.receiverId}
+                    <td className="px-3 py-3 whitespace-normal break-words">
+                      <div className="space-y-1">
+                        <div className="text-white/90">{resolveDisplayName(record.receiverId)}</div>
+                        <div className="font-mono text-[11px] text-white/80">{record.receiverId}</div>
+                      </div>
                     </td>
                     <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
                       {record.orderId}

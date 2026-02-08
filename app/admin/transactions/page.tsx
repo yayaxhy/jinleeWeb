@@ -130,6 +130,31 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
       take: PAGE_SIZE,
     }),
   ]);
+
+  const relatedDiscordIds = Array.from(
+    new Set(
+      transactions
+        .flatMap((tx) => [tx.discordId, tx.thirdPartydiscordId ?? ''])
+        .map((id) => id.trim())
+        .filter((id) => /^\d+$/.test(id))
+    )
+  );
+  const relatedMembers = relatedDiscordIds.length
+    ? await prisma.member.findMany({
+        where: { discordUserId: { in: relatedDiscordIds } },
+        select: { discordUserId: true, serverDisplayName: true },
+      })
+    : [];
+  const displayNameMap = new Map(
+    relatedMembers.map((row) => [row.discordUserId, row.serverDisplayName?.trim() ?? ''])
+  );
+  const resolveDisplayName = (discordUserId?: string | null) => {
+    if (!discordUserId) return '—';
+    const mapped = displayNameMap.get(discordUserId)?.trim();
+    if (mapped) return mapped;
+    if (discordUserId === 'SYSTEM') return '系统';
+    return '未知用户';
+  };
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const hasPrev = currentPage > 1;
   const hasNext = currentPage < totalPages;
@@ -237,12 +262,12 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                 <thead>
                   <tr className="text-left text-white/60 uppercase tracking-[0.3em] border-b border-white/10">
                     <th className="py-3 pr-4">时间</th>
-                    <th className="py-3 pr-4">Discord ID</th>
+                    <th className="py-3 pr-4">用户</th>
                     <th className="py-3 pr-4">类型</th>
                     <th className="py-3 pr-4">变动前余额</th>
                     <th className="py-3 pr-4">金额变动</th>
                     <th className="py-3 pr-4">变动后余额</th>
-                    <th className="py-3 pr-4">备注</th>
+                    <th className="py-3 pr-4">关联对象</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -252,12 +277,26 @@ export default async function AdminTransactionsPage(props: PageProps = {}) {
                     return (
                       <tr key={tx.transactionId} className="border-b border-white/10 last:border-0">
                         <td className="py-3 pr-4 font-mono text-white/90">{formatDate(tx.timeCreatedAt)}</td>
-                        <td className="py-3 pr-4 font-mono text-white/80">{tx.discordId}</td>
+                        <td className="py-3 pr-4">
+                          <div className="space-y-1">
+                            <div className="text-white/90">{resolveDisplayName(tx.discordId)}</div>
+                            <div className="text-xs text-white/50 font-mono">{tx.discordId}</div>
+                          </div>
+                        </td>
                         <td className="py-3 pr-4 text-white/90">{tx.typeOfTransaction}</td>
                         <td className="py-3 pr-4 font-mono text-white/80">{formatNumber(tx.balanceBefore)}</td>
                         <td className={`py-3 pr-4 font-mono ${meta.className}`}>{meta.label}</td>
                         <td className="py-3 pr-4 font-mono text-white/80">{formatNumber(tx.balanceAfter)}</td>
-                        <td className="py-3 pr-4 text-white/60">{tx.thirdPartydiscordId ?? '—'}</td>
+                        <td className="py-3 pr-4">
+                          {tx.thirdPartydiscordId ? (
+                            <div className="space-y-1">
+                              <div className="text-white/70">{resolveDisplayName(tx.thirdPartydiscordId)}</div>
+                              <div className="text-xs text-white/50 font-mono">{tx.thirdPartydiscordId}</div>
+                            </div>
+                          ) : (
+                            <span className="text-white/60">—</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
