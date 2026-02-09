@@ -236,7 +236,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
   );
   const scratchAgg = scratchAggRows[0] ?? { revealed_count: 0, prize_sum: new Prisma.Decimal(0) };
   const scratchRevealedCount = Number(scratchAgg.revealed_count ?? 0);
-  const scratchGross = new Prisma.Decimal(scratchRevealedCount).mul(29);
+  const scratchGross = new Prisma.Decimal(scratchRevealedCount).mul(19);
   const scratchReward = dec(scratchAgg.prize_sum);
   const scratchNet = scratchGross.sub(scratchReward);
 
@@ -370,7 +370,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
           <h3 className="text-lg font-semibold">刮刮乐收益</h3>
           <div className="space-y-1 text-sm text-white/70">
             <p>已刮开数量：{scratchRevealedCount}</p>
-            <p>毛收入（已刮开数量 × 29）：¥{formatNumber(scratchGross)}</p>
+            <p>毛收入（已刮开数量 × 19）：¥{formatNumber(scratchGross)}</p>
             <p>中奖支出：¥{formatNumber(scratchReward)}</p>
             <p className="text-white">净收益：¥{formatNumber(scratchNet)}</p>
           </div>
