@@ -111,7 +111,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
     : searchParams.excludeMember;
 
   const excludeRechargeInput = (excludeRechargeParam ?? '').trim();
-  const excludeMemberDefault = ['1012932103509377034', '1441310169492361268'].join(', ');
+  const excludeMemberDefault = ['1441310169492361268'].join(', ');
   const excludeMemberInput = (excludeMemberParam ?? excludeMemberDefault).trim();
 
   const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
