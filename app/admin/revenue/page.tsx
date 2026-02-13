@@ -210,6 +210,43 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
     _sum: { feeAmount: true },
     where: commissionWhere,
   });
+  const commissionTotal = dec(commissionAgg._sum.feeAmount);
+
+  const giftAgg = await prisma.giftAudit.aggregate({
+    _sum: {
+      gross: true,
+      payable: true,
+      feeAmount: true,
+      bossReferralAmount: true,
+      workerReferralAmount: true,
+    },
+    where: {
+      createdAt: { gte: start, lt: end },
+    },
+  });
+  const orderAgg = await prisma.order.aggregate({
+    _sum: {
+      grossAmount: true,
+      netAmount: true,
+    },
+    where: {
+      status: 'ENDED',
+      endedAt: { gte: start, lt: end },
+    },
+  });
+
+  const giftGross = dec(giftAgg._sum.gross);
+  const giftPaid = dec(giftAgg._sum.payable);
+  const giftSubsidy = giftGross.sub(giftPaid);
+  const giftFee = dec(giftAgg._sum.feeAmount);
+  const giftReferral = dec(giftAgg._sum.bossReferralAmount).add(dec(giftAgg._sum.workerReferralAmount));
+  const orderGross = dec(orderAgg._sum.grossAmount);
+  const orderNet = dec(orderAgg._sum.netAmount);
+  const orderFee = orderGross.sub(orderNet);
+  const totalPaidFlow = giftPaid.add(orderGross);
+  const totalFaceFlow = giftGross.add(orderGross);
+  const feeFromOrderAndGiftModel = giftFee.add(orderFee);
+  const commissionOtherSources = commissionTotal.sub(feeFromOrderAndGiftModel);
 
   const drawCount = await prisma.lotteryDraw.count({
     where: { createdAt: { gte: start, lt: end } },
@@ -347,12 +384,31 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">抽成详情</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>打赏面值流水：¥{formatNumber(giftGross, 4)}</p>
+            <p>打赏实付流水：¥{formatNumber(giftPaid, 4)}</p>
+            <p>打赏补贴(代金券)：¥{formatNumber(giftSubsidy, 4)}</p>
+            <p>打赏抽成：¥{formatNumber(giftFee, 4)}</p>
+            <p>打赏返利：¥{formatNumber(giftReferral, 4)}</p>
+            <p>订单流水：¥{formatNumber(orderGross, 4)}</p>
+            <p>订单结算：¥{formatNumber(orderNet, 4)}</p>
+            <p>订单抽成：¥{formatNumber(orderFee, 4)}</p>
+            <p>总抽成：¥{formatNumber(commissionTotal, 4)}</p>
+            <p>总实付流水：¥{formatNumber(totalPaidFlow, 4)}</p>
+            <p>总面值流水：¥{formatNumber(totalFaceFlow, 4)}</p>
+            <p>模型抽成合计（订单+打赏）：¥{formatNumber(feeFromOrderAndGiftModel, 4)}</p>
+            <p className="text-white">其他来源抽成：¥{formatNumber(commissionOtherSources, 4)}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">会员余额汇总</h3>
           <div className="space-y-1 text-sm text-white/70">
             <p>Member.recharge 合计：¥{formatNumber(memberAgg._sum.recharge)}</p>
             <p>Member.income 合计：¥{formatNumber(memberAgg._sum.income)}</p>
             <p>Member.totalBalance 合计：¥{formatNumber(memberAgg._sum.totalBalance)}</p>
-            <p>当月 Commission 合计：¥{formatNumber(commissionAgg._sum.feeAmount)}</p>
+            <p>当月 Commission 合计：¥{formatNumber(commissionTotal)}</p>
           </div>
         </div>
 
