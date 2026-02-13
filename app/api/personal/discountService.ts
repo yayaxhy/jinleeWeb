@@ -258,6 +258,8 @@ export async function applyDiscountForOrder(params: {
           status: LotteryStatus.USED,
           consumeAt: now,
           requestId: order.id,
+          consumeAmount: discountAmount,
+          consumeTargetId: order.workerId ?? null,
         },
       });
     }

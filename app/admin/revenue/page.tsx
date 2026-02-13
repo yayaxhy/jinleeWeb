@@ -1,6 +1,6 @@
 ﻿import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { CouponType, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
@@ -247,17 +247,18 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
   const totalFaceFlow = giftGross.add(orderGross);
   const feeFromOrderAndGiftModel = giftFee.add(orderFee);
   const commissionOtherSources = commissionTotal.sub(feeFromOrderAndGiftModel);
-  const discountCouponAgg = await prisma.coupon.aggregate({
-    _sum: { consumeAmount: true },
-    where: {
-      status: 'USED',
-      consumedAt: { gte: start, lt: end },
-      type: {
-        in: [CouponType.DISCOUNT_90, CouponType.DISCOUNT_80, CouponType.DISCOUNT_70, CouponType.DISCOUNT_90_LOTTERY],
-      },
-    },
+  const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
+    typeOfTransaction: '优惠返利',
+    timeCreatedAt: { gte: start, lt: end },
+  };
+  if (excludeMemberIds.length) {
+    discountRebateWhere.discordId = { notIn: excludeMemberIds };
+  }
+  const discountRebateAgg = await prisma.individualTransaction.aggregate({
+    _sum: { amountChange: true },
+    where: discountRebateWhere,
   });
-  const discountCouponDeduction = dec(discountCouponAgg._sum.consumeAmount);
+  const discountDeductionTotal = dec(discountRebateAgg._sum.amountChange);
 
   const drawCount = await prisma.lotteryDraw.count({
     where: { createdAt: { gte: start, lt: end } },
@@ -432,7 +433,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             <p>打赏抽成：¥{formatNumber(giftFee, 4)}</p>
             <p>打赏返利：¥{formatNumber(giftReferral, 4)}</p>
             <p>打赏补贴(代金券)：¥{formatNumber(giftSubsidy, 4)}</p>
-            <p>打折券抵扣金额：¥{formatNumber(discountCouponDeduction, 4)}</p>
+            <p>打折券抵扣金额：¥{formatNumber(discountDeductionTotal, 4)}</p>
             <p>订单流水：¥{formatNumber(orderGross, 4)}</p>
             <p>订单结算：¥{formatNumber(orderNet, 4)}</p>
             <p>订单抽成：¥{formatNumber(orderFee, 4)}</p>
