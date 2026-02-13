@@ -361,8 +361,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
         </div>
       </form>
 
-      
-
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">当月充值/提现</h3>
           <div className="space-y-1 text-sm text-white/70">
@@ -372,8 +371,6 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             <p className="text-white">净充值：¥{formatNumber(netRecharge)}</p>
           </div>
         </div>
-
-        
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">会员余额汇总</h3>
@@ -405,7 +402,6 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">积木游戏收益</h3>
           <div className="space-y-1 text-sm text-white/70">
@@ -417,7 +413,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
           </div>
         </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">抽成详情</h3>
           <div className="space-y-1 text-sm text-white/70">
             <p>打赏面值流水：¥{formatNumber(giftGross, 4)}</p>
@@ -435,7 +431,6 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             <p className="text-white">其他来源抽成：¥{formatNumber(commissionOtherSources, 4)}</p>
           </div>
         </div>
-
       </div>
     </div>
   );
