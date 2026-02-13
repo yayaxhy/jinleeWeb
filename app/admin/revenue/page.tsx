@@ -1,6 +1,6 @@
 ﻿import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Prisma } from '@prisma/client';
+import { CouponType, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
@@ -247,6 +247,17 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
   const totalFaceFlow = giftGross.add(orderGross);
   const feeFromOrderAndGiftModel = giftFee.add(orderFee);
   const commissionOtherSources = commissionTotal.sub(feeFromOrderAndGiftModel);
+  const discountCouponAgg = await prisma.coupon.aggregate({
+    _sum: { consumeAmount: true },
+    where: {
+      status: 'USED',
+      consumedAt: { gte: start, lt: end },
+      type: {
+        in: [CouponType.DISCOUNT_90, CouponType.DISCOUNT_80, CouponType.DISCOUNT_70, CouponType.DISCOUNT_90_LOTTERY],
+      },
+    },
+  });
+  const discountCouponDeduction = dec(discountCouponAgg._sum.consumeAmount);
 
   const drawCount = await prisma.lotteryDraw.count({
     where: { createdAt: { gte: start, lt: end } },
@@ -418,15 +429,16 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
           <div className="space-y-1 text-sm text-white/70">
             <p>打赏面值流水：¥{formatNumber(giftGross, 4)}</p>
             <p>打赏实付流水：¥{formatNumber(giftPaid, 4)}</p>
-            <p>打赏补贴(代金券)：¥{formatNumber(giftSubsidy, 4)}</p>
             <p>打赏抽成：¥{formatNumber(giftFee, 4)}</p>
             <p>打赏返利：¥{formatNumber(giftReferral, 4)}</p>
+            <p>打赏补贴(代金券)：¥{formatNumber(giftSubsidy, 4)}</p>
+            <p>打折券抵扣金额：¥{formatNumber(discountCouponDeduction, 4)}</p>
             <p>订单流水：¥{formatNumber(orderGross, 4)}</p>
             <p>订单结算：¥{formatNumber(orderNet, 4)}</p>
             <p>订单抽成：¥{formatNumber(orderFee, 4)}</p>
             <p>总抽成：¥{formatNumber(commissionTotal, 4)}</p>
+            <p>总面值原价流水：¥{formatNumber(totalFaceFlow, 4)}</p>
             <p>总实付流水：¥{formatNumber(totalPaidFlow, 4)}</p>
-            <p>总面值流水：¥{formatNumber(totalFaceFlow, 4)}</p>
             <p>模型抽成合计（订单+打赏）：¥{formatNumber(feeFromOrderAndGiftModel, 4)}</p>
             <p className="text-white">其他来源抽成：¥{formatNumber(commissionOtherSources, 4)}</p>
           </div>
