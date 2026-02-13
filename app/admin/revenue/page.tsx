@@ -361,7 +361,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
         </div>
       </form>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">当月充值/提现</h3>
           <div className="space-y-1 text-sm text-white/70">
