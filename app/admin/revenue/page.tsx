@@ -224,20 +224,35 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
       createdAt: { gte: start, lt: end },
     },
   });
+  const orderWhere: Prisma.OrderWhereInput = {
+    status: 'ENDED',
+    endedAt: { gte: start, lt: end },
+  };
   const orderAgg = await prisma.order.aggregate({
     _sum: {
       grossAmount: true,
       netAmount: true,
     },
-    where: {
-      status: 'ENDED',
-      endedAt: { gte: start, lt: end },
-    },
+    where: orderWhere,
   });
+  const orderCount = await prisma.order.count({ where: orderWhere });
 
   const giftGross = dec(giftAgg._sum.gross);
   const giftPaid = dec(giftAgg._sum.payable);
   const giftSubsidy = giftGross.sub(giftPaid);
+  const revertedGiftRows = await prisma.$queryRaw<{ reverted_subsidy: Prisma.Decimal | null }[]>(
+    Prisma.sql`
+      SELECT COALESCE(SUM(ga."gross" - ga."payable"), 0) AS reverted_subsidy
+      FROM "gift_audit" ga
+      JOIN "revert" r
+        ON r."originalTransactionId" = ga."individualTransactionId"
+      WHERE r."status" = 'SUCCESS'
+        AND ga."createdAt" >= ${start}
+        AND ga."createdAt" < ${end}
+    `,
+  );
+  const revertedGiftSubsidy = dec(revertedGiftRows[0]?.reverted_subsidy);
+  const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = dec(giftAgg._sum.feeAmount);
   const giftReferral = dec(giftAgg._sum.bossReferralAmount).add(dec(giftAgg._sum.workerReferralAmount));
   const orderGross = dec(orderAgg._sum.grossAmount);
@@ -432,8 +447,11 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             <p>打赏实付流水：¥{formatNumber(giftPaid, 4)}</p>
             <p>打赏抽成：¥{formatNumber(giftFee, 4)}</p>
             <p>打赏返利：¥{formatNumber(giftReferral, 4)}</p>
-            <p>打赏补贴(代金券)：¥{formatNumber(giftSubsidy, 4)}</p>
+            <p>打赏补贴(代金券原始)：¥{formatNumber(giftSubsidy, 4)}</p>
+            <p>打赏补贴回退(打赏撤销)：¥{formatNumber(revertedGiftSubsidy, 4)}</p>
+            <p>打赏补贴(代金券净额)：¥{formatNumber(giftSubsidyNet, 4)}</p>
             <p>打折券抵扣金额：¥{formatNumber(discountDeductionTotal, 4)}</p>
+            <p>单子总数：{orderCount}</p>
             <p>订单流水：¥{formatNumber(orderGross, 4)}</p>
             <p>订单结算：¥{formatNumber(orderNet, 4)}</p>
             <p>订单抽成：¥{formatNumber(orderFee, 4)}</p>
