@@ -362,17 +362,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
       </form>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <h3 className="text-lg font-semibold">积木游戏收益</h3>
-          <div className="space-y-1 text-sm text-white/70">
-            <p>总收入：¥{formatNumber(blockTotalRevenue)}</p>
-            <p>结算支出：¥{formatNumber(blockSettled)}</p>
-            <p>塌方红包：¥{formatNumber(blockEnvelope)}</p>
-            <p>捣蛋奖励：¥{formatNumber(blockReward)}</p>
-            <p className="text-white">净收益：¥{formatNumber(blockEarning)}</p>
-          </div>
-        </div>
-
+        
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">当月充值/提现</h3>
           <div className="space-y-1 text-sm text-white/70">
@@ -383,24 +373,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <h3 className="text-lg font-semibold">抽成详情</h3>
-          <div className="space-y-1 text-sm text-white/70">
-            <p>打赏面值流水：¥{formatNumber(giftGross, 4)}</p>
-            <p>打赏实付流水：¥{formatNumber(giftPaid, 4)}</p>
-            <p>打赏补贴(代金券)：¥{formatNumber(giftSubsidy, 4)}</p>
-            <p>打赏抽成：¥{formatNumber(giftFee, 4)}</p>
-            <p>打赏返利：¥{formatNumber(giftReferral, 4)}</p>
-            <p>订单流水：¥{formatNumber(orderGross, 4)}</p>
-            <p>订单结算：¥{formatNumber(orderNet, 4)}</p>
-            <p>订单抽成：¥{formatNumber(orderFee, 4)}</p>
-            <p>总抽成：¥{formatNumber(commissionTotal, 4)}</p>
-            <p>总实付流水：¥{formatNumber(totalPaidFlow, 4)}</p>
-            <p>总面值流水：¥{formatNumber(totalFaceFlow, 4)}</p>
-            <p>模型抽成合计（订单+打赏）：¥{formatNumber(feeFromOrderAndGiftModel, 4)}</p>
-            <p className="text-white">其他来源抽成：¥{formatNumber(commissionOtherSources, 4)}</p>
-          </div>
-        </div>
+        
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">会员余额汇总</h3>
@@ -430,6 +403,37 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             <p>中奖支出：¥{formatNumber(scratchReward)}</p>
             <p className="text-white">净收益：¥{formatNumber(scratchNet)}</p>
           </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">积木游戏收益</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>总收入：¥{formatNumber(blockTotalRevenue)}</p>
+            <p>结算支出：¥{formatNumber(blockSettled)}</p>
+            <p>塌方红包：¥{formatNumber(blockEnvelope)}</p>
+            <p>捣蛋奖励：¥{formatNumber(blockReward)}</p>
+            <p className="text-white">净收益：¥{formatNumber(blockEarning)}</p>
+          </div>
+        </div>
+        
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">抽成详情</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>打赏面值流水：¥{formatNumber(giftGross, 4)}</p>
+            <p>打赏实付流水：¥{formatNumber(giftPaid, 4)}</p>
+            <p>打赏补贴(代金券)：¥{formatNumber(giftSubsidy, 4)}</p>
+            <p>打赏抽成：¥{formatNumber(giftFee, 4)}</p>
+            <p>打赏返利：¥{formatNumber(giftReferral, 4)}</p>
+            <p>订单流水：¥{formatNumber(orderGross, 4)}</p>
+            <p>订单结算：¥{formatNumber(orderNet, 4)}</p>
+            <p>订单抽成：¥{formatNumber(orderFee, 4)}</p>
+            <p>总抽成：¥{formatNumber(commissionTotal, 4)}</p>
+            <p>总实付流水：¥{formatNumber(totalPaidFlow, 4)}</p>
+            <p>总面值流水：¥{formatNumber(totalFaceFlow, 4)}</p>
+            <p>模型抽成合计（订单+打赏）：¥{formatNumber(feeFromOrderAndGiftModel, 4)}</p>
+            <p className="text-white">其他来源抽成：¥{formatNumber(commissionOtherSources, 4)}</p>
+          </div>
+        </div>
         </div>
       </div>
     </div>
