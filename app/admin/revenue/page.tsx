@@ -304,6 +304,24 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
   const scratchReward = dec(scratchAgg.prize_sum);
   const scratchNet = scratchGross.sub(scratchReward);
 
+  const expenseWhere: Prisma.ExpenseWhereInput = {
+    createdAt: { gte: start, lt: end },
+  };
+  const expenseAgg = await prisma.expense.aggregate({
+    _sum: { amount: true },
+    _count: { id: true },
+    where: expenseWhere,
+  });
+  const expenseByReason = await prisma.expense.groupBy({
+    by: ['reason'],
+    _sum: { amount: true },
+    _count: { id: true },
+    where: expenseWhere,
+  });
+  const expenseByReasonSorted = [...expenseByReason].sort(
+    (a, b) => (parseNumber(b._sum.amount) ?? 0) - (parseNumber(a._sum.amount) ?? 0)
+  );
+
   return (
     <div className="space-y-8 text-white">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -461,6 +479,26 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
             <p>模型抽成合计（订单+打赏）：¥{formatNumber(feeFromOrderAndGiftModel, 4)}</p>
             <p className="text-white">其他来源抽成：¥{formatNumber(commissionOtherSources, 4)}</p>
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-2">
+        <h3 className="text-lg font-semibold">支出记录（Expense）</h3>
+        <div className="space-y-1 text-sm text-white/70">
+          <p>笔数：{expenseAgg._count.id}</p>
+          <p>总额：¥{formatNumber(expenseAgg._sum.amount, 4)}</p>
+        </div>
+        <div className="space-y-1 text-sm text-white/70">
+          <p className="text-white/90">按原因分类：</p>
+          {expenseByReasonSorted.length ? (
+            expenseByReasonSorted.map((row) => (
+              <p key={row.reason}>
+                {row.reason}：{row._count.id} 笔 · ¥{formatNumber(row._sum.amount, 4)}
+              </p>
+            ))
+          ) : (
+            <p>当前区间暂无分类数据</p>
+          )}
         </div>
       </div>
     </div>
