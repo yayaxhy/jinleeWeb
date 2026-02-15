@@ -322,6 +322,37 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
     (a, b) => (parseNumber(b._sum.amount) ?? 0) - (parseNumber(a._sum.amount) ?? 0)
   );
 
+  const pointShopOrderWhere: Prisma.PointShopOrderWhereInput = {
+    createdAt: { gte: start, lt: end },
+  };
+  if (excludeMemberIds.length) {
+    pointShopOrderWhere.discordUserId = { notIn: excludeMemberIds };
+  }
+
+  const [pointShopOrderAgg, pointShopCouponConsumedAgg, pointShopBalanceAgg] =
+    await Promise.all([
+      prisma.pointShopOrder.aggregate({
+        _sum: { totalPoints: true },
+        where: pointShopOrderWhere,
+      }),
+      prisma.pointShopGrant.aggregate({
+        _sum: { consumeAmount: true },
+        where: {
+          deliveryType: 'COUPON',
+          consumedAt: { gte: start, lt: end },
+          ...(excludeMemberIds.length ? { discordUserId: { notIn: excludeMemberIds } } : {}),
+        },
+      }),
+      prisma.pointShopGrant.aggregate({
+        _sum: { consumeAmount: true },
+        where: {
+          deliveryType: 'BALANCE',
+          issuedAt: { gte: start, lt: end },
+          ...(excludeMemberIds.length ? { discordUserId: { notIn: excludeMemberIds } } : {}),
+        },
+      }),
+    ]);
+
   return (
     <div className="space-y-8 text-white">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -448,6 +479,15 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">积分商城</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>累计消耗积分：{formatNumber(pointShopOrderAgg._sum.totalPoints, 4)}</p>
+            <p>券已使用抵扣金额：¥{formatNumber(pointShopCouponConsumedAgg._sum.consumeAmount, 4)}</p>
+            <p>余额到账金额：¥{formatNumber(pointShopBalanceAgg._sum.consumeAmount, 4)}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">积木游戏收益</h3>
           <div className="space-y-1 text-sm text-white/70">
             <p>总收入：¥{formatNumber(blockTotalRevenue)}</p>
@@ -509,6 +549,7 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
           </div>
         </div>
       </div>
+
     </div>
   );
 }

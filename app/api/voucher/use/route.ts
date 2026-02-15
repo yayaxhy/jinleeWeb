@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { CouponStatus, CouponType, LotteryStatus } from '@prisma/client';
+import { CouponStatus, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { resolveSpecialVoucher } from '@/lib/voucher';
+import { SPECIAL_ACTION_COUPON_TYPE_BY_PRIZE } from '@/lib/voucherCatalog';
 
 type UseVoucherPayload = {
   prizeName?: string;
@@ -83,14 +84,7 @@ export async function POST(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const couponTypeMap: Record<string, CouponType> = {
-        '自定义礼物券': CouponType.CUSTOM_GIFT_VOUCHER,
-        '自定义tag券': CouponType.CUSTOM_TAG_VOUCHER,
-        '抽成降1%券': CouponType.COMMISSION_MINUS1_VOUCHER,
-        '双倍流水5000券': CouponType.DOUBLE_FLOW_5000_VOUCHER,
-        '双倍消费5000券': CouponType.DOUBLE_SPEND_5000_VOUCHER,
-      };
-      const couponType = couponTypeMap[prizeName];
+      const couponType = SPECIAL_ACTION_COUPON_TYPE_BY_PRIZE[prizeName];
 
       // 仅校验是否存在可用券，不在本地消耗，交由机器人处理
       let voucherId = '';
@@ -118,6 +112,35 @@ export async function POST(request: Request) {
             });
         if (coupon) {
           voucherId = coupon.id;
+        } else {
+          const pointShopGrant = couponId
+            ? await tx.pointShopGrant.findFirst({
+                where: {
+                  id: couponId,
+                  discordUserId: session.discordId,
+                  deliveryType: PointShopDeliveryType.COUPON,
+                  deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+                  couponType,
+                  couponStatus: CouponStatus.ACTIVE,
+                  OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+                },
+                select: { id: true },
+              })
+            : await tx.pointShopGrant.findFirst({
+                where: {
+                  discordUserId: session.discordId,
+                  deliveryType: PointShopDeliveryType.COUPON,
+                  deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+                  couponType,
+                  couponStatus: CouponStatus.ACTIVE,
+                  OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+                },
+                orderBy: { issuedAt: 'asc' },
+                select: { id: true },
+              });
+          if (pointShopGrant) {
+            voucherId = pointShopGrant.id;
+          }
         }
       }
 

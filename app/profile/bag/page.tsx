@@ -11,11 +11,14 @@ import {
   SpendVoucherButton,
 } from '@/components/profile/VoucherUseButtons';
 import { resolveSpecialVoucher } from '@/lib/voucher';
-import { CouponStatus, CouponType, LotteryPrizeType, LotteryStatus } from '@prisma/client';
+import {
+  COUPON_VOUCHER_META,
+  DISCOUNT_COUPON_PRIZE_NAMES,
+  VANITY_CARD_PRIZE_NAMES,
+} from '@/lib/voucherCatalog';
+import { CouponStatus, CouponType, LotteryPrizeType, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
 
 const ROME_TIMEZONE = 'Europe/Rome';
-const VANITY_CARD_NAMES = new Set(['3位数靓号卡', '4位数靓号卡', '5位数靓号卡']);
-const DISCOUNT_COUPON_NAMES = new Set(['9折券', '8折券', '7折券', '特殊9折券', '特殊九折券']);
 
 const formatDateOnly = (value?: Date | string | null) => {
   if (!value) return '—';
@@ -25,13 +28,20 @@ const formatDateOnly = (value?: Date | string | null) => {
     : date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
+const toMillis = (value?: Date | string | null) => {
+  if (!value) return 0;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
 export default async function BagPage() {
   const session = await getServerSession();
   if (!session?.discordId) {
     redirect('/');
   }
+  const nowTs = Date.parse(new Date().toISOString());
 
-  const [draws, coupons] = await Promise.all([
+  const [draws, coupons, pointShopGrants] = await Promise.all([
     prisma.lotteryDraw.findMany({
       where: { userId: session.discordId },
       orderBy: { createdAt: 'desc' },
@@ -47,11 +57,21 @@ export default async function BagPage() {
       orderBy: { issuedAt: 'desc' },
       take: 200,
     }),
+    prisma.pointShopGrant.findMany({
+      where: {
+        discordUserId: session.discordId,
+        deliveryType: PointShopDeliveryType.COUPON,
+        deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+        couponType: { not: null },
+      },
+      orderBy: { issuedAt: 'desc' },
+      take: 200,
+    }),
   ]);
 
   type BagItem = {
     id: string;
-    source: 'lottery' | 'coupon';
+    source: 'lottery' | 'coupon' | 'pointshop';
     status: LotteryStatus;
     prizeName: string;
     prizeType: LotteryPrizeType;
@@ -61,36 +81,9 @@ export default async function BagPage() {
     couponId?: string;
   };
 
-  const couponMeta: Record<CouponType, { name: string; type: LotteryPrizeType }> = {
-    [CouponType.DISCOUNT_90]: { name: '9折券', type: LotteryPrizeType.COUPON },
-    [CouponType.DISCOUNT_80]: { name: '8折券', type: LotteryPrizeType.COUPON },
-    [CouponType.DISCOUNT_70]: { name: '7折券', type: LotteryPrizeType.COUPON },
-    [CouponType.DISCOUNT_90_LOTTERY]: { name: '特殊9折券', type: LotteryPrizeType.COUPON },
-    [CouponType.CAKE_VOUCHER]: { name: '小蛋糕代金券', type: LotteryPrizeType.GIFT },
-    [CouponType.LOLLIPOP_VOUCHER]: { name: '棒棒糖代金券', type: LotteryPrizeType.GIFT },
-    [CouponType.PERFUME_VOUCHER]: { name: '香水代金券', type: LotteryPrizeType.GIFT },
-    [CouponType.CAROUSEL_VOUCHER]: { name: '旋转木马代金券', type: LotteryPrizeType.GIFT },
-    [CouponType.PUMPKIN_CAR_VOUCHER]: { name: '南瓜车代金券', type: LotteryPrizeType.GIFT },
-    [CouponType.PHONOGRAPH_VOUCHER]: { name: '留声机代金券', type: LotteryPrizeType.GIFT },
-    [CouponType.CROWN_75_VOUCHER]: { name: '一日冠75折券', type: LotteryPrizeType.GIFT },
-    [CouponType.CROWN_DAY_90_VOUCHER]: { name: '一日冠9折券', type: LotteryPrizeType.GIFT },
-    [CouponType.CROWN_3DAY_90_VOUCHER]: { name: '三日冠9折券', type: LotteryPrizeType.GIFT },
-    [CouponType.CROWN_WEEK_90_VOUCHER]: { name: '一周冠9折券', type: LotteryPrizeType.GIFT },
-    [CouponType.CROWN_MONTH_90_VOUCHER]: { name: '月冠名9折券', type: LotteryPrizeType.GIFT },
-    [CouponType.LOTTERY_VOUCHER]: { name: '抽奖代金券', type: LotteryPrizeType.COUPON },
-    [CouponType.CUSTOM_GIFT_VOUCHER]: { name: '自定义礼物券', type: LotteryPrizeType.COUPON },
-    [CouponType.CUSTOM_TAG_VOUCHER]: { name: '自定义tag券', type: LotteryPrizeType.COUPON },
-    [CouponType.COMMISSION_MINUS1_VOUCHER]: { name: '抽成降1%券', type: LotteryPrizeType.COUPON },
-    [CouponType.DOUBLE_FLOW_5000_VOUCHER]: { name: '双倍流水5000券', type: LotteryPrizeType.COUPON },
-    [CouponType.DOUBLE_SPEND_5000_VOUCHER]: { name: '双倍消费5000券', type: LotteryPrizeType.COUPON },
-    [CouponType.RENAME_CARD_3]: { name: '3位数靓号卡', type: LotteryPrizeType.SELFUSE },
-    [CouponType.RENAME_CARD]: { name: '4位数靓号卡', type: LotteryPrizeType.SELFUSE },
-    [CouponType.RENAME_CARD_5]: { name: '5位数靓号卡', type: LotteryPrizeType.SELFUSE },
-  };
-
   const couponItems: BagItem[] = coupons.map((coupon) => {
-    const meta = couponMeta[coupon.type] ?? { name: coupon.type, type: LotteryPrizeType.COUPON };
-    const isExpired = coupon.expiresAt ? new Date(coupon.expiresAt).getTime() <= Date.now() : false;
+    const meta = COUPON_VOUCHER_META[coupon.type] ?? { prizeName: coupon.type, prizeType: LotteryPrizeType.COUPON };
+    const isExpired = coupon.expiresAt ? new Date(coupon.expiresAt).getTime() <= nowTs : false;
     const status =
       coupon.status === CouponStatus.ACTIVE && !isExpired
         ? LotteryStatus.UNUSED
@@ -101,8 +94,8 @@ export default async function BagPage() {
       id: coupon.id,
       source: 'coupon',
       status,
-      prizeName: meta.name,
-      prizeType: meta.type,
+      prizeName: meta.prizeName,
+      prizeType: meta.prizeType,
       expiresAt: coupon.expiresAt,
       consumeAt: coupon.consumedAt,
       couponId: coupon.id,
@@ -112,7 +105,7 @@ export default async function BagPage() {
   const drawItems: BagItem[] = draws.map((draw) => {
     const drawExpired =
       draw.status === LotteryStatus.UNUSED && draw.expiresAt
-        ? new Date(draw.expiresAt).getTime() <= Date.now()
+        ? new Date(draw.expiresAt).getTime() <= nowTs
         : false;
     return {
       id: draw.id,
@@ -126,9 +119,35 @@ export default async function BagPage() {
     };
   });
 
-  const allItems = [...couponItems, ...drawItems].sort((a, b) => {
-    const aTime = new Date((a.consumeAt ?? a.expiresAt ?? 0) as any).getTime();
-    const bTime = new Date((b.consumeAt ?? b.expiresAt ?? 0) as any).getTime();
+  const pointShopItems: BagItem[] = pointShopGrants.map((grant) => {
+    const type = grant.couponType as CouponType | null;
+    const meta = type ? COUPON_VOUCHER_META[type] : null;
+    const drawExpired =
+      grant.couponStatus === CouponStatus.ACTIVE && grant.expiresAt
+        ? new Date(grant.expiresAt).getTime() <= nowTs
+        : false;
+    const status =
+      grant.couponStatus === CouponStatus.ACTIVE && !drawExpired
+        ? LotteryStatus.UNUSED
+        : grant.couponStatus === CouponStatus.USED
+          ? LotteryStatus.USED
+          : LotteryStatus.EXPIRED;
+
+    return {
+      id: grant.id,
+      source: 'pointshop',
+      status,
+      prizeName: meta?.prizeName ?? grant.itemName ?? '积分商城券',
+      prizeType: meta?.prizeType ?? LotteryPrizeType.COUPON,
+      expiresAt: grant.expiresAt,
+      consumeAt: grant.consumedAt,
+      couponId: grant.id,
+    };
+  });
+
+  const allItems = [...couponItems, ...drawItems, ...pointShopItems].sort((a, b) => {
+    const aTime = toMillis(a.consumeAt ?? a.expiresAt);
+    const bTime = toMillis(b.consumeAt ?? b.expiresAt);
     return bTime - aTime;
   });
 
@@ -179,7 +198,7 @@ export default async function BagPage() {
                         const prizeName = item.prizeName;
                         const prizeType = item.prizeType ?? LotteryPrizeType.COUPON;
                         const isUsed = item.status === 'USED';
-                        const isVanityCard = VANITY_CARD_NAMES.has(prizeName);
+                        const isVanityCard = VANITY_CARD_PRIZE_NAMES.has(prizeName);
                         const status = item.status === 'UNUSED' ? '未使用' : item.status === 'USED' ? '已使用' : '已过期';
                         const metaTime =
                           item.status === 'UNUSED'
@@ -245,12 +264,12 @@ export default async function BagPage() {
                                       );
                                     }
                                     if (prizeType === 'COUPON') {
-                                      if (!DISCOUNT_COUPON_NAMES.has(prizeName)) {
+                                      if (!DISCOUNT_COUPON_PRIZE_NAMES.has(prizeName)) {
                                         return null;
                                       }
                                       return (
                                         <DiscountUsageButton
-                                          kind={item.source === 'coupon' ? 'coupon' : 'lottery'}
+                                          kind={item.source === 'lottery' ? 'lottery' : 'coupon'}
                                           triggerLabel="使用"
                                           lotteryId={item.lotteryId}
                                           couponId={item.couponId}

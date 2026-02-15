@@ -138,8 +138,12 @@ export default async function Profile(props: ProfilePageProps = {}) {
     { href: '/profile/heart', label: '心动值' },
     { href: '/profile/giftwall', label: '礼物墙' },
     { href: '/profile/withdraw', label: '提现' },
+    { href: '/profile/point-shop', label: '积分商城' },
     { href: '/recharge', label: '充值中心' },
   ];
+  const quickEntryLinks = navLinks.filter(
+    (link) => link.href !== '/profile' && link.href !== '/recharge' && link.href !== '/profile/withdraw',
+  );
 
   const session = await getServerSession();
   const discordId = session?.discordId;
@@ -325,66 +329,85 @@ export default async function Profile(props: ProfilePageProps = {}) {
   const hasBuffData = buffCards.some(
     (buff) => buff.value !== null || buff.expiresAt !== null || buff.createdAt !== null,
   );
+  const tabCandidates = [
+    ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-level', label: 'VIP升级进度' }] : []),
+    { id: 'profile-buff', label: 'Buff 状态' },
+    { id: 'profile-info', label: '个人信息' },
+    ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-tx', label: '流水记录' }] : []),
+  ] as const;
+  const tabParam = resolvedSearchParams?.tab;
+  const requestedTab = typeof tabParam === 'string' ? tabParam : tabParam?.[0];
+  const profileTabs = tabCandidates;
+  const activeTab = profileTabs.some((tab) => tab.id === requestedTab)
+    ? requestedTab!
+    : profileTabs[0]?.id ?? 'profile-heart';
+  const cardClass = 'bg-white rounded-[32px] border border-black/5 p-8 space-y-6 shadow-[0_10px_30px_rgba(17,24,39,0.04)]';
 
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
-      <section className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[240px_1fr]">
-        <aside className="rounded-[24px] border border-black/5 bg-white p-6 h-max sticky top-8 space-y-4">
-          <p className="text-xs uppercase tracking-[0.4em] text-gray-500">跳转</p>
-          <nav className="space-y-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="block rounded-xl border border-black/5 px-4 py-3 text-sm font-medium text-[#171717] hover:border-[#5c43a3] hover:text-[#5c43a3] transition bg-white/50"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        </aside>
-
-        <div className="space-y-10">
-          <div className="bg-white border border-black/5 rounded-[32px] shadow-sm overflow-hidden">
-          <div className="relative flex flex-col items-center gap-3 py-12 text-center">
+      <section className="max-w-7xl mx-auto">
+        <div className="space-y-8">
+          <div id="profile-overview" className={`${cardClass} overflow-hidden`}>
+          <div className="space-y-4">
             <p className="text-xs uppercase tracking-[0.6em] text-gray-400">My Profile</p>
-            <div className="relative w-28 h-28 rounded-2xl border border-black/10 bg-gradient-to-br from-[#f6f1ff] to-[#e1d5ff] flex items-center justify-center text-4xl font-semibold text-[#5c43a3] overflow-hidden">
-              {avatarUrl ? (
-                <Image
-                  src={avatarUrl}
-                  alt={`${displayName} avatar`}
-                  fill
-                  sizes="112px"
-                  className="object-cover"
-                  priority
-                />
-              ) : (
-                avatarLetter
-              )}
+            <div className="flex items-center gap-4">
+              <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-black/10 bg-gradient-to-br from-[#f6f1ff] to-[#e1d5ff] text-3xl font-semibold text-[#5c43a3] flex items-center justify-center">
+                {avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt={`${displayName} avatar`}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  avatarLetter
+                )}
+              </div>
+              <div className="space-y-1">
+                <p className="text-3xl font-semibold tracking-wide">{displayName}</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">ID: {member.discordUserId}</p>
+              </div>
             </div>
-
-            <p className="text-3xl font-semibold tracking-wide">{displayName}</p>
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">ID: {member.discordUserId}</p>
-
-            <Link
-              href="/"
-              className="absolute left-8 top-8 text-xs uppercase tracking-[0.4em] text-gray-500 hover:text-black transition"
-            >
-              返回主页
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/"
+                className="rounded-full border-2 border-black/15 px-5 py-2 text-xs font-semibold tracking-[0.22em] text-gray-600 transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
+              >
+                返回主页
+              </Link>
+              <Link
+                href="/recharge"
+                className="rounded-full border-2 border-black/15 px-5 py-2 text-xs font-semibold tracking-[0.22em] text-gray-600 transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
+              >
+                充值中心
+              </Link>
+              {quickEntryLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-full border-2 border-black/15 px-5 py-2 text-xs font-semibold tracking-[0.2em] text-gray-600 transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
-          <div className="border-t border-dashed border-black/10">
-            <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-dashed divide-black/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
               {stats.map((item) => (
-                <div key={item.label} className="p-6 text-center space-y-2">
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-dashed border-black/10 bg-white/70 p-5 text-center space-y-2"
+                >
                   <p className="text-xs tracking-[0.4em] text-gray-500">{item.label}</p>
                   <p className="text-2xl font-mono">{formatNumber(item.value)}</p>
                   {item.label === '可提现余额' && (
                     <div className="pt-2">
                       <Link
                         href="/profile/withdraw"
-                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition inline-flex items-center justify-center"
+                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition inline-flex items-center justify-center hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
                       >
                         去提现
                       </Link>
@@ -394,7 +417,7 @@ export default async function Profile(props: ProfilePageProps = {}) {
                     <div className="pt-2">
                       <Link
                         href="/recharge"
-                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition"
+                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
                       >
                         充值
                       </Link>
@@ -402,274 +425,306 @@ export default async function Profile(props: ProfilePageProps = {}) {
                   )}
                 </div>
               ))}
-            </div>
           </div>
         </div>
 
-        {(isLaobanMember || isPeiwanMember) && (
-          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-5">
-            <div>
-              <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">老板升级进度</h2>
-              <p className="text-sm text-gray-500">累计消费越多，等级越高</p>
-            </div>
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between text-sm text-gray-600 gap-2">
-                <span>当前等级：{currentBossLevelName}</span>
-                {nextBossLevel ? (
-                  <span>
-                    距离 {nextBossLevel.label} 还差 {formatNumber(amountToNextBossLevel)}
-                  </span>
-                ) : (
-                  <span>已达到最高等级</span>
-                )}
-              </div>
-              <div className="h-3 w-full rounded-full bg-gray-200 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#5c43a3] to-[#a585ff]"
-                  style={{ width: `${bossProgressPercent}%` }}
-                  aria-hidden="true"
-                />
-              </div>
-              <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 gap-2">
-                <span>累计消费：{formatNumber(totalSpentValue)}</span>
-                <span>
-                  下一门槛：{formatNumber(nextBossLevel?.threshold ?? currentBossLevel?.threshold ?? totalSpentValue)}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3 text-xs">
-              {BOSS_LEVELS.map((role) => {
-                const achieved = totalSpentValue >= role.threshold;
-                return (
-                  <span
-                    key={role.threshold}
-                    className={`px-3 py-1 rounded-full border ${
-                      achieved ? 'border-2 border-[#f5c04d] text-[#d69b00]' : 'border-black/10 text-gray-400'
+        <div className={cardClass}>
+          <div className="border-b border-dashed border-black/10 pb-6 grid gap-6 lg:grid-cols-[220px_1fr]">
+            <div className="space-y-3 lg:border-r lg:border-dashed lg:border-black/10 lg:pr-6">
+              <nav className="space-y-2">
+                {profileTabs.map((tab) => {
+                  const active = tab.id === activeTab;
+                  return (
+                  <Link
+                    key={tab.id}
+                    href={`/profile?tab=${tab.id}`}
+                    scroll={false}
+                    prefetch={false}
+                    className={`block rounded-xl border px-4 py-3 text-sm transition ${
+                      active
+                        ? 'border-[#f8c84a] bg-[#f8c84a]/18 text-[#c18400]'
+                        : 'border-black/10 text-gray-600 hover:border-[#f8c84a] hover:text-[#c18400]'
                     }`}
                   >
-                    {role.label} · {formatNumber(role.threshold)}
-                  </span>
-                );
-              })}
+                    {tab.label}
+                  </Link>
+                  );
+                })}
+              </nav>
             </div>
-          </div>
-        )}
-
-          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">心动值</h2>
-              </div>
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/profile/heart"
-                  className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] text-[#5c43a3] hover:bg-black/5 transition"
-                >
-                  查看心动值
-                </Link>
-                <span className="text-xs uppercase tracking-[0.4em] text-gray-400">点击进入页面</span>
-              </div>
-            </div>
-          </div>
-
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="lg:col-span-2 bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">Buff 状态</h2>
-                <p className="text-sm text-gray-500">查看额度与到期时间</p>
-              </div>
-              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">实时同步</span>
-            </div>
-            {hasBuffData ? (
-              <div className="space-y-4">
-                {buffCards.map((buff) => {
-                  const statusMeta = getBuffStatusMeta(buff.expiresAt);
-                  const valueDisplay = formatBuffValue(buff.value);
-                  return (
-                    <div
-                      key={buff.key}
-                      className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
-                    >
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.subtitle}</p>
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h3 className="text-lg font-semibold text-[#171717]">{buff.title}</h3>
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusMeta.badgeClass}`}>
-                            {statusMeta.label}
+            <div className="space-y-3">
+              <div className="pt-2">
+                {activeTab === 'profile-level' && (isLaobanMember || isPeiwanMember) && (
+                  <div id="profile-level" className="space-y-5">
+                    <div>
+                      <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">VIP升级进度</h2>
+                      <p className="text-sm text-gray-500">累计消费越多，等级越高</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between text-sm text-gray-600 gap-2">
+                        <span>当前等级：{currentBossLevelName}</span>
+                        {nextBossLevel ? (
+                          <span>
+                            距离 {nextBossLevel.label} 还差 {formatNumber(amountToNextBossLevel)}
                           </span>
+                        ) : (
+                          <span>已达到最高等级</span>
+                        )}
+                      </div>
+                      <div className="h-3 w-full rounded-full bg-gray-200 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[#f8c84a] to-[#ffe08a]"
+                          style={{ width: `${bossProgressPercent}%` }}
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 gap-2">
+                        <span>累计消费：{formatNumber(totalSpentValue)}</span>
+                        <span>
+                          下一门槛：{formatNumber(nextBossLevel?.threshold ?? currentBossLevel?.threshold ?? totalSpentValue)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      {BOSS_LEVELS.map((role) => {
+                        const achieved = totalSpentValue >= role.threshold;
+                        return (
+                          <span
+                            key={role.threshold}
+                            className={`px-3 py-1 rounded-full border ${
+                              achieved ? 'border-2 border-[#f5c04d] text-[#d69b00]' : 'border-black/10 text-gray-400'
+                            }`}
+                          >
+                            {role.label} · {formatNumber(role.threshold)}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'profile-heart' && (
+                  <div id="profile-heart" className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">心动值</h2>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Link
+                          href="/profile/heart"
+                          className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] text-[#5c43a3] hover:bg-black/5 transition"
+                        >
+                          查看心动值
+                        </Link>
+                        <span className="text-xs uppercase tracking-[0.4em] text-gray-400">点击进入页面</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'profile-buff' && (
+                  <div id="profile-buff" className="space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">Buff 状态</h2>
+                        <p className="text-sm text-gray-500">查看额度与到期时间</p>
+                      </div>
+                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">实时同步</span>
+                    </div>
+                    {hasBuffData ? (
+                      <div className="space-y-4">
+                        {buffCards.map((buff) => {
+                          const statusMeta = getBuffStatusMeta(buff.expiresAt);
+                          const valueDisplay = formatBuffValue(buff.value);
+                          return (
+                            <div
+                              key={buff.key}
+                              className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
+                            >
+                              <div className="space-y-1">
+                                <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.subtitle}</p>
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <h3 className="text-lg font-semibold text-[#171717]">{buff.title}</h3>
+                                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusMeta.badgeClass}`}>
+                                    {statusMeta.label}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="space-y-1 text-sm text-gray-600">
+                                <p className="flex flex-wrap items-center gap-2">
+                                  <span className="text-gray-500">{buff.valueLabel}</span>
+                                  <span className="text-2xl font-semibold text-[#5c43a3] leading-none">{valueDisplay}</span>
+                                </p>
+                                <p>到期：{formatDate(buff.expiresAt)}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 text-sm">暂无 Buff 信息。</p>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'profile-info' && (
+                  <div id="profile-info" className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-xl font-semibold tracking-wide">个人信息</h2>
+                    </div>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
+                      <div>
+                        <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">陪玩等级</dt>
+                        <dd className="text-lg font-medium">{level}</dd>
+                      </div>
+                      {!isLaobanMember && (
+                        <div>
+                          <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">抽成比例</dt>
+                          <dd className="text-lg font-medium">{member.commissionRate.toString()}</dd>
+                        </div>
+                      )}
+                    </dl>
+                    {isPeiwanMember && peiwan && (
+                      <div className="border-t border-dashed border-black/10 pt-5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm uppercase tracking-[0.4em] text-gray-400">Game Tags</h3>
+                          <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PEIWAN</span>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          {PEIWAN_GAME_TAG_FIELDS.map((tag) => {
+                            const active = peiwan[tag];
+                            return (
+                              <span
+                                key={tag}
+                                className={`px-4 py-1 rounded-full border text-sm tracking-wide ${
+                                  active ? 'border-[#5c43a3] text-[#5c43a3]' : 'border-black/5 text-gray-300'
+                                }`}
+                              >
+                                {tag}
+                              </span>
+                            );
+                          })}
                         </div>
                       </div>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p className="flex flex-wrap items-center gap-2">
-                          <span className="text-gray-500">{buff.valueLabel}</span>
-                          <span className="text-2xl font-semibold text-[#5c43a3] leading-none">{valueDisplay}</span>
-                        </p>
-                        <p>到期：{formatDate(buff.expiresAt)}</p>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'profile-coupon' && (
+                  <div id="profile-coupon" className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-semibold tracking-wide">我的优惠券</h2>
+                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {coupons.length} 张</span>
+                    </div>
+                    {coupons.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {coupons.map((coupon: CouponRecord) => {
+                          const statusLabel = couponStatusLabel[coupon.status] ?? coupon.status;
+                          const typeLabel = couponTypeLabel[coupon.type] ?? coupon.type;
+                          const isUsed = coupon.status === 'USED';
+                          return (
+                            <div
+                              key={coupon.id}
+                              className={`rounded-2xl border border-dashed p-5 space-y-3 ${
+                                isUsed
+                                  ? 'bg-gray-200 border-gray-200 text-gray-500'
+                                  : 'bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] border-black/10'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em]">
+                                <span className={isUsed ? 'text-gray-500' : 'text-[#5c43a3]'}>{statusLabel}</span>
+                              </div>
+                              <p className="text-3xl font-semibold text-[#171717]">{typeLabel}</p>
+                              <div className="text-xs text-gray-500 space-y-1">
+                                <p>有效期至 {formatDate(coupon.expiresAt)}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 text-sm">暂无优惠券。</p>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'profile-tx' && (isPeiwanMember || isLaobanMember) && (
+                  <div id="profile-tx" className="space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-2xl font-semibold tracking-wide text-[#5c43a3]">流水记录</h2>
+                        <p className="text-sm text-gray-500">与账户关联的收支流水</p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-400 text-sm">暂无 Buff 信息。</p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold tracking-wide">个人信息</h2>
-            </div>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
-              <div>
-                <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">陪玩等级</dt>
-                <dd className="text-lg font-medium">{level}</dd>
-              </div>
-              {!isLaobanMember && (
-                <div>
-                  <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">抽成比例</dt>
-                  <dd className="text-lg font-medium">{member.commissionRate.toString()}</dd>
-                </div>
-              )}
-            </dl>
-            {isPeiwanMember && peiwan && (
-              <div className="border-t border-dashed border-black/10 pt-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm uppercase tracking-[0.4em] text-gray-400">Game Tags</h3>
-                  <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PEIWAN</span>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {PEIWAN_GAME_TAG_FIELDS.map((tag) => {
-                    const active = peiwan[tag];
-                    return (
-                      <span
-                        key={tag}
-                        className={`px-4 py-1 rounded-full border text-sm tracking-wide ${
-                          active ? 'border-[#5c43a3] text-[#5c43a3]' : 'border-black/5 text-gray-300'
-                        }`}
-                      >
-                        {tag}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold tracking-wide">我的优惠券</h2>
-              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {coupons.length} 张</span>
-            </div>
-            {coupons.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {coupons.map((coupon: CouponRecord) => {
-                  const statusLabel = couponStatusLabel[coupon.status] ?? coupon.status;
-                  const typeLabel = couponTypeLabel[coupon.type] ?? coupon.type;
-                  const isUsed = coupon.status === 'USED';
-                  return (
-                    <div
-                      key={coupon.id}
-                      className={`rounded-2xl border border-dashed p-5 space-y-3 ${
-                        isUsed
-                          ? 'bg-gray-200 border-gray-200 text-gray-500'
-                          : 'bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] border-black/10'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em]">
-                        
-                        <span className={isUsed ? 'text-gray-500' : 'text-[#5c43a3]'}>{statusLabel}</span> 
-                        
+                    {transactions.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-sm">
+                          <thead>
+                            <tr className="text-left text-gray-400 uppercase tracking-[0.4em] border-b border-black/5">
+                              <th className="py-3 pr-4">时间</th>
+                              <th className="py-3 pr-4">类型</th>
+                              <th className="py-3 pr-4">变动前余额</th>
+                              <th className="py-3 pr-4">金额变动</th>
+                              <th className="py-3 pr-4">变动后余额</th>
+                              <th className="py-3 pr-4">备注</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {transactions.map((tx: TransactionRecord) => {
+                              const resolvedChange = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
+                              const changeMeta = getAmountChangeMeta(resolvedChange);
+                              return (
+                                <tr key={tx.transactionId} className="border-b border-black/5 last:border-0">
+                                  <td className="py-4 pr-4 font-mono">{formatDate(tx.timeCreatedAt)}</td>
+                                  <td className="py-4 pr-4">{tx.typeOfTransaction}</td>
+                                  <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceBefore)}</td>
+                                  <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
+                                  <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceAfter)}</td>
+                                  <td className="py-4 pr-4 text-gray-500">{tx.thirdPartydiscordId ?? '—'}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 text-sm text-gray-500">
+                          <p>
+                            第 {Math.min(currentPage, totalPages)} / {totalPages} 页 · 共 {totalTransactions} 条
+                          </p>
+                          <div className="flex gap-2">
+                            <Link
+                              href={`/profile?tab=profile-tx&page=${prevPage}`}
+                              scroll={false}
+                              prefetch={false}
+                              className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
+                                hasPrevPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
+                              }`}
+                              aria-disabled={!hasPrevPage}
+                            >
+                              上一页
+                            </Link>
+                            <Link
+                              href={`/profile?tab=profile-tx&page=${nextPage}`}
+                              scroll={false}
+                              prefetch={false}
+                              className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
+                                hasNextPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
+                              }`}
+                              aria-disabled={!hasNextPage}
+                            >
+                              下一页
+                            </Link>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-3xl font-semibold text-[#171717]">{typeLabel}</p>
-                      <div className="text-xs text-gray-500 space-y-1">
-                        <p>有效期至 {formatDate(coupon.expiresAt)}</p>
-
-                      </div>
-                    </div>
-                  );
-                })}
+                    ) : (
+                      <p className="text-gray-500">暂时没有流水记录。</p>
+                    )}
+                  </div>
+                )}
               </div>
-            ) : (
-              <p className="text-gray-400 text-sm">暂无优惠券。</p>
-            )}
+            </div>
           </div>
         </div>
-
-        {(isPeiwanMember || isLaobanMember) && (
-          <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-wide text-[#5c43a3]">流水记录</h2>
-                <p className="text-sm text-gray-500">与账户关联的收支流水</p>
-              </div>
-            </div>
-            {transactions.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-400 uppercase tracking-[0.4em] border-b border-black/5">
-                      <th className="py-3 pr-4">时间</th>
-                      <th className="py-3 pr-4">类型</th>
-                      <th className="py-3 pr-4">变动前余额</th>
-                      <th className="py-3 pr-4">金额变动</th>
-                      <th className="py-3 pr-4">变动后余额</th>
-                      <th className="py-3 pr-4">备注</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                {transactions.map((tx: TransactionRecord) => {
-                      const resolvedChange = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
-                      const changeMeta = getAmountChangeMeta(resolvedChange);
-                      return (
-                        <tr key={tx.transactionId} className="border-b border-black/5 last:border-0">
-                          <td className="py-4 pr-4 font-mono">{formatDate(tx.timeCreatedAt)}</td>
-                          <td className="py-4 pr-4">{tx.typeOfTransaction}</td>
-                          <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceBefore)}</td>
-                          <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
-                          <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceAfter)}</td>
-                          <td className="py-4 pr-4 text-gray-500">{tx.thirdPartydiscordId ?? '—'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 text-sm text-gray-500">
-                  <p>
-                    第 {Math.min(currentPage, totalPages)} / {totalPages} 页 · 共 {totalTransactions} 条
-                  </p>
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/profile?page=${prevPage}`}
-                      scroll={false}
-                      prefetch={false}
-                      className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
-                        hasPrevPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
-                      }`}
-                      aria-disabled={!hasPrevPage}
-                    >
-                      上一页
-                    </Link>
-                    <Link
-                      href={`/profile?page=${nextPage}`}
-                      scroll={false}
-                      prefetch={false}
-                      className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
-                        hasNextPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
-                      }`}
-                      aria-disabled={!hasNextPage}
-                    >
-                      下一页
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-500">暂时没有流水记录。</p>
-            )}
-          </div>
-        )}
         </div>
       </section>
     </main>

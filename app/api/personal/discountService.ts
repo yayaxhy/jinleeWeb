@@ -1,4 +1,4 @@
-import { CouponType, LotteryStatus, OrderStatus, Prisma } from '@prisma/client';
+import { CouponStatus, CouponType, LotteryStatus, OrderStatus, PointShopDeliveryType, Prisma } from '@prisma/client';
 import type { Prisma as PrismaNamespace } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
@@ -129,20 +129,30 @@ export async function applyDiscountForOrder(params: {
     if (order.status !== OrderStatus.ENDED) return { status: 'order_not_ended' };
 
     // prevent reuse
-    const existingCouponUsage = await tx.coupon.findFirst({
-      where: { orderId, status: 'USED' },
-      select: { id: true },
-    });
-    const existingLotteryUsage = await tx.lotteryDraw.findFirst({
-      where: {
-        userId,
-        status: LotteryStatus.USED,
-        requestId: orderId,
-        prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
-      },
-      select: { id: true },
-    });
-    if (existingCouponUsage || existingLotteryUsage) {
+    const [existingCouponUsage, existingPointShopCouponUsage, existingLotteryUsage] = await Promise.all([
+      tx.coupon.findFirst({
+        where: { orderId, status: 'USED' },
+        select: { id: true },
+      }),
+      tx.pointShopGrant.findFirst({
+        where: {
+          consumeOrderId: orderId,
+          deliveryType: PointShopDeliveryType.COUPON,
+          couponStatus: CouponStatus.USED,
+        },
+        select: { id: true },
+      }),
+      tx.lotteryDraw.findFirst({
+        where: {
+          userId,
+          status: LotteryStatus.USED,
+          requestId: orderId,
+          prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
+        },
+        select: { id: true },
+      }),
+    ]);
+    if (existingCouponUsage || existingPointShopCouponUsage || existingLotteryUsage) {
       return { status: 'already_used' };
     }
 
@@ -162,31 +172,91 @@ export async function applyDiscountForOrder(params: {
     });
 
     let couponId: string | null = null;
+    let couponSource: 'coupon' | 'point_shop_coupon' | null = null;
     let lotteryId: string | null = null;
 
     if (kind === 'coupon') {
-      const available = targetCouponId
-        ? await tx.coupon.findFirst({
+      const discountCouponTypes = Object.keys(COUPON_RATE_CAP_BY_TYPE) as CouponType[];
+
+      if (targetCouponId) {
+        const availableCoupon = await tx.coupon.findFirst({
+          where: {
+            id: targetCouponId,
+            discordId: userId,
+            status: CouponStatus.ACTIVE,
+            expiresAt: { gt: now },
+            type: { in: discountCouponTypes },
+          },
+        });
+
+        if (availableCoupon) {
+          couponId = availableCoupon.id;
+          couponSource = 'coupon';
+          prizeRateCap = COUPON_RATE_CAP_BY_TYPE[availableCoupon.type];
+        } else {
+          const availablePointShopCoupon = await tx.pointShopGrant.findFirst({
             where: {
               id: targetCouponId,
-              discordId: userId,
-              status: 'ACTIVE',
+              discordUserId: userId,
+              deliveryType: PointShopDeliveryType.COUPON,
+              couponStatus: CouponStatus.ACTIVE,
               expiresAt: { gt: now },
-              type: { in: Object.keys(COUPON_RATE_CAP_BY_TYPE) as CouponType[] },
+              couponType: { in: discountCouponTypes },
             },
-          })
-        : await tx.coupon.findFirst({
+            select: { id: true, couponType: true },
+          });
+
+          if (availablePointShopCoupon?.couponType) {
+            couponId = availablePointShopCoupon.id;
+            couponSource = 'point_shop_coupon';
+            prizeRateCap = COUPON_RATE_CAP_BY_TYPE[availablePointShopCoupon.couponType];
+          }
+        }
+      } else {
+        const [availableCoupon, availablePointShopCoupon] = await Promise.all([
+          tx.coupon.findFirst({
             where: {
               discordId: userId,
-              status: 'ACTIVE',
+              status: CouponStatus.ACTIVE,
               expiresAt: { gt: now },
-              type: { in: Object.keys(COUPON_RATE_CAP_BY_TYPE) as CouponType[] },
+              type: { in: discountCouponTypes },
             },
             orderBy: { issuedAt: 'asc' },
-          });
-      if (!available) return { status: 'no_coupon' };
-      couponId = available.id;
-      prizeRateCap = COUPON_RATE_CAP_BY_TYPE[available.type];
+            select: { id: true, type: true, issuedAt: true },
+          }),
+          tx.pointShopGrant.findFirst({
+            where: {
+              discordUserId: userId,
+              deliveryType: PointShopDeliveryType.COUPON,
+              couponStatus: CouponStatus.ACTIVE,
+              expiresAt: { gt: now },
+              couponType: { in: discountCouponTypes },
+            },
+            orderBy: { issuedAt: 'asc' },
+            select: { id: true, couponType: true, issuedAt: true },
+          }),
+        ]);
+
+        const usePointShopCoupon =
+          !availableCoupon ||
+          !!(
+            availablePointShopCoupon &&
+            availablePointShopCoupon.couponType &&
+            availablePointShopCoupon.issuedAt <= availableCoupon.issuedAt
+          );
+
+        if (usePointShopCoupon && availablePointShopCoupon?.couponType) {
+          couponId = availablePointShopCoupon.id;
+          couponSource = 'point_shop_coupon';
+          prizeRateCap = COUPON_RATE_CAP_BY_TYPE[availablePointShopCoupon.couponType];
+        } else if (availableCoupon) {
+          couponId = availableCoupon.id;
+          couponSource = 'coupon';
+          prizeRateCap = COUPON_RATE_CAP_BY_TYPE[availableCoupon.type];
+        }
+      }
+
+      if (!couponId || !couponSource) return { status: 'no_coupon' };
     } else {
       const voucher = targetLotteryId
         ? await tx.lotteryDraw.findFirst({
@@ -240,16 +310,29 @@ export async function applyDiscountForOrder(params: {
     const balanceAfter = balanceBefore.add(discountAmount);
 
     if (kind === 'coupon' && couponId) {
-      await tx.coupon.update({
-        where: { id: couponId },
-        data: {
-          consumedAt: now,
-          orderId: order.id,
-          consumeAmount: discountAmount,
-          consumeTargetId: order.workerId ?? null,
-          status: 'USED',
-        },
-      });
+      if (couponSource === 'point_shop_coupon') {
+        await tx.pointShopGrant.update({
+          where: { id: couponId },
+          data: {
+            consumedAt: now,
+            consumeOrderId: order.id,
+            consumeAmount: discountAmount,
+            consumeTargetId: order.workerId ?? null,
+            couponStatus: CouponStatus.USED,
+          },
+        });
+      } else {
+        await tx.coupon.update({
+          where: { id: couponId },
+          data: {
+            consumedAt: now,
+            orderId: order.id,
+            consumeAmount: discountAmount,
+            consumeTargetId: order.workerId ?? null,
+            status: CouponStatus.USED,
+          },
+        });
+      }
     }
     if (kind === 'lottery' && lotteryId) {
       await tx.lotteryDraw.update({
