@@ -65,9 +65,12 @@ export const GIFT_NAME_BY_PRIZE_NAME: Record<string, string> = prizeEntries.redu
   {} as Record<string, string>,
 );
 
-export const VANITY_CARD_PRIZE_NAMES = new Set(
-  prizeEntries.filter(([, meta]) => !!meta.isVanityCard).map(([, meta]) => meta.prizeName),
-);
+const LEGACY_VANITY_CARD_PRIZE_NAMES = ['3位数靓号券', '4位数靓号券', '5位数靓号券'] as const;
+
+export const VANITY_CARD_PRIZE_NAMES = new Set([
+  ...prizeEntries.filter(([, meta]) => !!meta.isVanityCard).map(([, meta]) => meta.prizeName),
+  ...LEGACY_VANITY_CARD_PRIZE_NAMES,
+]);
 
 export const DISCOUNT_COUPON_PRIZE_NAMES = new Set([
   ...prizeEntries.filter(([, meta]) => !!meta.isDiscount).map(([, meta]) => meta.prizeName),

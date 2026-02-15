@@ -214,17 +214,34 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: '内部接口未配置' }, { status: 500 });
       }
       const endpoint = `http://${host}:${port}/internal/rename-card`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Internal-Token': token,
-        },
-        body: JSON.stringify({ userId: session.discordId, voucherId: couponId || lotteryId }),
-      });
+      let res: Response;
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        try {
+          res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Internal-Token': token,
+            },
+            body: JSON.stringify({ userId: session.discordId, voucherId: couponId || lotteryId }),
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeout);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error && error.name === 'AbortError'
+            ? '靓号券服务超时，请稍后重试'
+            : '靓号券服务暂不可用，请联系管理员';
+        return NextResponse.json({ error: message }, { status: 502 });
+      }
+
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg = typeof data?.error === 'string' ? data.error : '内部接口错误';
+        const msg = typeof data?.error === 'string' ? data.error : '靓号券服务返回异常';
         return NextResponse.json({ error: msg }, { status: res.status });
       }
       return NextResponse.json({ ok: true });
