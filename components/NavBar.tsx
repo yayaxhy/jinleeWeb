@@ -7,7 +7,7 @@ const links = [
   { href: '/', label: 'HOME' },
   { href: '/peiwanList', label: '陪玩列表' },
   { href: '/profile', label: '个人主页' },
-  { href: '/profile/giftwall', label: '礼物墙' },
+  { href: '/recharge', label: '充值中心' },
 ];
 
 export function NavBar() {

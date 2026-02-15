@@ -6,7 +6,7 @@ import RechargeClient from './RechargeClient';
 export default async function RechargePage() {
   const session = await getServerSession();
   if (!session?.discordId) {
-    redirect('/');
+    redirect('/accounts/discord/login?callbackUrl=%2Frecharge');
   }
 
   return (
