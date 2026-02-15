@@ -423,6 +423,16 @@ export default async function Profile(props: ProfilePageProps = {}) {
                       </Link>
                     </div>
                   )}
+                  {item.label === '锦鲤积分' && (
+                    <div className="pt-2">
+                      <Link
+                        href="/profile/point-shop"
+                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
+                      >
+                        使用积分
+                      </Link>
+                    </div>
+                  )}
                 </div>
               ))}
           </div>
