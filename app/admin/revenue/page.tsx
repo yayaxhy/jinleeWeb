@@ -459,7 +459,15 @@ export default async function AdminRevenuePage(props: PageProps = {}) {
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-2">
-          <h3 className="text-lg font-semibold">支出记录（Expense）</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-lg font-semibold">支出记录（Expense）</h3>
+            <Link
+              href="/admin/expenses"
+              className="inline-flex items-center justify-center rounded-full border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10"
+            >
+              查看全部
+            </Link>
+          </div>
           <div className="space-y-1 text-sm text-white/70">
             <p>笔数：{expenseAgg._count.id}</p>
             <p>总额：¥{formatNumber(expenseAgg._sum.amount, 4)}</p>

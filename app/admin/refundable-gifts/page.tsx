@@ -140,6 +140,13 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
   const hasNext = currentPage < totalPages;
   const prevPage = Math.max(1, currentPage - 1);
   const nextPage = Math.min(totalPages, currentPage + 1);
+  const exportParams = new URLSearchParams({
+    ...(giverId ? { giverId } : {}),
+    ...(receiverId ? { receiverId } : {}),
+  });
+  const exportUrl = exportParams.toString()
+    ? `/api/admin/refundable-gifts/export?${exportParams.toString()}`
+    : '/api/admin/refundable-gifts/export';
 
   return (
     <section className="min-h-screen bg-[#020204] text-white px-6 py-12">
@@ -165,6 +172,12 @@ export default async function RefundableGiftsPage(props: PageProps = {}) {
             <p className="text-xs text-white/50">
               第 {currentPage} / {totalPages} 页 · 共 {totalCount} 条
             </p>
+            <a
+              href={exportUrl}
+              className="inline-flex items-center justify-center rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white hover:bg-white/10"
+            >
+              下载 XLSX
+            </a>
           </div>
 
           <form className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:grid-cols-2" action="/admin/refundable-gifts" method="get">

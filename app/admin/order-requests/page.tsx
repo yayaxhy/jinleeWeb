@@ -82,6 +82,14 @@ export default async function AdminOrderRequestsPage(props: PageProps = {}) {
   const hasNext = currentPage < totalPages;
   const prevPage = Math.max(1, currentPage - 1);
   const nextPage = Math.min(totalPages, currentPage + 1);
+  const exportParams = new URLSearchParams({
+    ...(orderId ? { orderId } : {}),
+    ...(ownerId ? { ownerId } : {}),
+    ...(workerId ? { workerId } : {}),
+  });
+  const exportUrl = exportParams.toString()
+    ? `/api/admin/order-requests/export?${exportParams.toString()}`
+    : '/api/admin/order-requests/export';
 
   return (
     <div className="space-y-6">
@@ -129,6 +137,14 @@ export default async function AdminOrderRequestsPage(props: PageProps = {}) {
       </form>
 
       <div className="overflow-x-auto rounded-2xl border border-white/10">
+        <div className="flex items-center justify-end border-b border-white/10 bg-white/5 px-4 py-3">
+          <a
+            href={exportUrl}
+            className="inline-flex items-center justify-center rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white hover:bg-white/10"
+          >
+            下载 XLSX
+          </a>
+        </div>
         <table className="min-w-full text-sm text-white">
           <thead className="bg-white/5 text-xs uppercase tracking-[0.4em] text-white/50">
             <tr>

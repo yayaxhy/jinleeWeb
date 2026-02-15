@@ -46,6 +46,13 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
     }),
     [filters],
   );
+  const exportUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (appliedFilters.inviteeId) params.set('inviteeId', appliedFilters.inviteeId);
+    if (appliedFilters.inviterId) params.set('inviterId', appliedFilters.inviterId);
+    if (appliedFilters.type) params.set('type', appliedFilters.type);
+    return params.toString() ? `/api/admin/referrals/export?${params.toString()}` : '/api/admin/referrals/export';
+  }, [appliedFilters]);
 
   const fetchReferrals = useCallback(
     async (criteria: FilterState) => {
@@ -198,7 +205,12 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
           <p className="text-sm text-white/70">插入 / 查询 / 删除 邀请人 记录</p>
           <p className="text-xs text-white/60">当前总数：{total}</p>
         </div>
-        
+        <a
+          href={exportUrl}
+          className="inline-flex items-center justify-center rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white hover:bg-white/10"
+        >
+          下载 XLSX
+        </a>
       </div>
 
      <div className="grid gap-4 md:grid-cols-2">
