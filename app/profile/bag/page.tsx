@@ -19,7 +19,6 @@ import {
 import { CouponStatus, CouponType, LotteryPrizeType, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
 
 const ROME_TIMEZONE = 'Europe/Rome';
-const BAG_EXTRA_POINT_SHOP_SKUS = ['BLOCK_STACK_VOUCHER'] as const;
 
 const formatDateOnly = (value?: Date | string | null) => {
   if (!value) return '—';
@@ -63,7 +62,6 @@ export default async function BagPage() {
         discordUserId: session.discordId,
         deliveryType: PointShopDeliveryType.COUPON,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
-        OR: [{ couponType: { not: null } }, { itemSku: { in: [...BAG_EXTRA_POINT_SHOP_SKUS] } }],
       },
       orderBy: { issuedAt: 'desc' },
       take: 200,

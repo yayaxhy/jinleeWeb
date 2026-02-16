@@ -170,7 +170,7 @@ export function PointShopClient({ initialData }: PointShopClientProps) {
       if (result?.status === 'ok') {
         await refreshAll();
         setNotice({
-          text: `兑换成功。订单 ${result.orderId}，消耗 ${fmt(result.totalPoints)} 积分，余额 ${fmt(
+          text: `兑换成功。消耗 ${fmt(result.totalPoints)} 积分，余额 ${fmt(
             result.pointsBefore,
           )} -> ${fmt(result.pointsAfter)}。`,
           level: 'success',
@@ -181,7 +181,7 @@ export function PointShopClient({ initialData }: PointShopClientProps) {
       if (result?.status === 'already_processed') {
         await refreshAll();
         setNotice({
-          text: `请求已处理。订单 ${result.orderId}，消耗 ${fmt(result.totalPoints)} 积分。`,
+          text: `请求已处理。消耗 ${fmt(result.totalPoints)} 积分。`,
           level: 'success',
         });
         return;
