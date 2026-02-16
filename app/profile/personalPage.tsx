@@ -124,13 +124,13 @@ const getAmountChangeMeta = (value: number | null) => {
 };
 
 export type ProfilePageProps = {
-  searchParams?: Record<string, string | string[] | undefined> | Promise<Record<string, string | string[] | undefined>>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function Profile(props: ProfilePageProps = {}) {
+export default async function Profile(props: ProfilePageProps) {
   const rawSearchParams = props.searchParams;
   const resolvedSearchParams =
-    ((await Promise.resolve(rawSearchParams)) ?? {}) as Record<string, string | string[] | undefined>;
+    ((await rawSearchParams) ?? {}) as Record<string, string | string[] | undefined>;
 
   const navLinks = [
     { href: '/profile', label: '个人主页' },

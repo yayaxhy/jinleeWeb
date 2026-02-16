@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const normalizeId = (raw: string) => {
@@ -95,14 +95,13 @@ const dec = (value: unknown) => {
   return new Prisma.Decimal(numeric ?? 0);
 };
 
-export default async function AdminRevenuePage(props: PageProps = {}) {
+export default async function AdminRevenuePage(props: PageProps) {
   const session = await getServerSession();
   if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
     redirect('/');
   }
 
-  const rawParams = await Promise.resolve(props.searchParams);
-  const searchParams = rawParams ?? {};
+  const searchParams = (await props.searchParams) ?? {};
   const excludeRechargeParam = Array.isArray(searchParams.excludeRecharge)
     ? searchParams.excludeRecharge[0]
     : searchParams.excludeRecharge;

@@ -73,17 +73,16 @@ export const metadata = {
 const PAGE_SIZE = 20;
 
 type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function AdminTransactionsPage(props: PageProps = {}) {
+export default async function AdminTransactionsPage(props: PageProps) {
   const session = await getServerSession();
   if (!session?.discordId || !canViewTransactions(session.discordId)) {
     redirect('/');
   }
 
-  const rawParams = await Promise.resolve(props.searchParams);
-  const searchParams = rawParams ?? {};
+  const searchParams = (await props.searchParams) ?? {};
   const discordIdParam = searchParams.discordId;
   const discordId =
     typeof discordIdParam === 'string'

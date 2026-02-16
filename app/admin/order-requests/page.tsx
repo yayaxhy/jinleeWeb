@@ -16,17 +16,16 @@ const formatDate = (value?: Date | string | null) => {
 };
 
 type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function AdminOrderRequestsPage(props: PageProps = {}) {
+export default async function AdminOrderRequestsPage(props: PageProps) {
   const session = await getServerSession();
   if (!session?.discordId || !canViewOrderRequests(session.discordId)) {
     redirect('/');
   }
 
-  const rawParams = await Promise.resolve(props.searchParams);
-  const searchParams = rawParams ?? {};
+  const searchParams = (await props.searchParams) ?? {};
   const orderIdParam = searchParams.orderId;
   const ownerIdParam = searchParams.ownerId;
   const workerIdParam = searchParams.workerId;

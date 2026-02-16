@@ -46,7 +46,7 @@ const formatNumber = (value: unknown, maximumFractionDigits = 2) => {
 };
 
 type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const resolveBackHref = (discordId?: string | null) => {
@@ -62,14 +62,13 @@ export const metadata = {
   title: '正在进行的订单',
 };
 
-export default async function RunningOrdersPage(props: PageProps = {}) {
+export default async function RunningOrdersPage(props: PageProps) {
   const session = await getServerSession();
   if (!session?.discordId || !canViewOrderRequests(session.discordId)) {
     redirect('/');
   }
 
-  const rawParams = await Promise.resolve(props.searchParams);
-  const searchParams = rawParams ?? {};
+  const searchParams = (await props.searchParams) ?? {};
   const orderIdParam = searchParams.orderId;
   const hostIdParam = searchParams.hostId;
   const workerIdParam = searchParams.workerId;

@@ -62,21 +62,20 @@ const formatVoucher = (value: unknown) => {
 };
 
 type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export const metadata = {
   title: '可退回打赏',
 };
 
-export default async function RefundableGiftsPage(props: PageProps = {}) {
+export default async function RefundableGiftsPage(props: PageProps) {
   const session = await getServerSession();
   if (!session?.discordId || !canViewRefundableGifts(session.discordId)) {
     redirect('/');
   }
 
-  const rawParams = await Promise.resolve(props.searchParams);
-  const searchParams = rawParams ?? {};
+  const searchParams = (await props.searchParams) ?? {};
   const giverParam = searchParams.giverId;
   const receiverParam = searchParams.receiverId;
   const giverId =

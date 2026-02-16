@@ -61,7 +61,7 @@ const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.find
 };
 
 type EditPageProps = {
-  params: { discordId: string } | Promise<{ discordId: string }>;
+  params: Promise<{ discordId: string }>;
 };
 
 export default async function EditPeiwanPage(props: EditPageProps) {
@@ -71,7 +71,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
   }
   const readOnly = isHowardReadOnlyDiscordId(session.discordId);
 
-  const resolvedParams = await Promise.resolve(props.params);
+  const resolvedParams = await props.params;
   const rawId = resolvedParams?.discordId ?? '';
   const searchToken = decodeURIComponent(rawId).trim();
   const MAX_PEIWAN_ID = 2_147_483_647; // align with Postgres int4 upper bound

@@ -45,18 +45,17 @@ export const metadata = {
 };
 
 type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function AdminExpensesPage(props: PageProps = {}) {
+export default async function AdminExpensesPage(props: PageProps) {
   const session = await getServerSession();
   if (!session?.discordId || !canViewTransactions(session.discordId)) {
     redirect('/');
   }
   const readOnly = isHowardReadOnlyDiscordId(session.discordId);
 
-  const rawParams = await Promise.resolve(props.searchParams);
-  const searchParams = rawParams ?? {};
+  const searchParams = (await props.searchParams) ?? {};
   const operatorIdParam = searchParams.operatorId;
   const targetIdParam = searchParams.targetId;
   const reasonParam = searchParams.reason;
