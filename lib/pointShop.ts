@@ -17,6 +17,7 @@ const DEFAULT_COUPON_EXPIRE_DAYS = 30;
 const MAX_CART_QTY_PER_ITEM = 99;
 const MAX_CHECKOUT_RETRIES = 3;
 const POINT_SHOP_SYSTEM_ACCOUNT = 'SYSTEM';
+const BLOCK_STACK_VOUCHER_SKUS = new Set(['BLOCK_STACK_VOUCHER']);
 
 class CheckoutAbortError extends Error {
   result: CheckoutCartResult;
@@ -123,6 +124,7 @@ export type CheckoutCartResult =
     };
 
 const normalizeSku = (input: string) => input.trim().toUpperCase();
+const isBlockStackVoucherSku = (sku: string) => BLOCK_STACK_VOUCHER_SKUS.has(normalizeSku(sku));
 
 const normalizeRequestKey = (input?: string | null) => {
   const value = (input ?? '').trim();
@@ -454,6 +456,40 @@ async function deliverOrderItemTx(
     couponExpireDays,
     balanceCreditAmount,
   } = params;
+
+  if (isBlockStackVoucherSku(itemSku)) {
+    const days = couponExpireDays && couponExpireDays > 0 ? couponExpireDays : DEFAULT_COUPON_EXPIRE_DAYS;
+    const issuedAt = new Date();
+    const expiresAt = new Date(issuedAt.getTime() + days * 24 * 60 * 60 * 1000);
+
+    await tx.pointShopGrant.createMany({
+      data: Array.from({ length: quantity }, () => ({
+        orderId,
+        orderItemId,
+        discordUserId: ownerId,
+        deliveryType: PointShopDeliveryType.COUPON,
+        itemSku,
+        itemName,
+        quantity: 1,
+        unitPoints,
+        subtotalPoints: unitPoints,
+        deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+        deliveryNote: '自动发放（积木游戏代金券）',
+        couponStatus: CouponStatus.ACTIVE,
+        issuedAt,
+        expiresAt,
+      })),
+    });
+
+    await tx.pointShopOrderItem.update({
+      where: { id: orderItemId },
+      data: {
+        deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+        deliveryNote: `自动发放 ${quantity} 张（积木游戏代金券）`,
+      },
+    });
+    return;
+  }
 
   if (deliveryType === PointShopDeliveryType.COUPON && couponType) {
     const days = couponExpireDays && couponExpireDays > 0 ? couponExpireDays : DEFAULT_COUPON_EXPIRE_DAYS;
