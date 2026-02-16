@@ -12,13 +12,11 @@ const safeRedirectTo = (raw: string | null) => {
   return text;
 };
 
-const buildRedirectUrl = (request: NextRequest, path: string) => {
-  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
-  const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
-  const host = forwardedHost || request.headers.get('host') || request.nextUrl.host;
-  const proto = forwardedProto || request.nextUrl.protocol.replace(':', '') || 'https';
-  return new URL(path, `${proto}://${host}`);
-};
+const redirectBack = (path: string) =>
+  new NextResponse(null, {
+    status: 303,
+    headers: { Location: path },
+  });
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession();
@@ -35,7 +33,7 @@ export async function POST(request: NextRequest) {
   const redirectTo = safeRedirectTo(typeof formData.get('redirectTo') === 'string' ? (formData.get('redirectTo') as string) : null);
 
   if (!id || !reason) {
-    return NextResponse.redirect(buildRedirectUrl(request, redirectTo));
+    return redirectBack(redirectTo);
   }
 
   await prisma.expense
@@ -45,5 +43,5 @@ export async function POST(request: NextRequest) {
     })
     .catch(() => null);
 
-  return NextResponse.redirect(buildRedirectUrl(request, redirectTo));
+  return redirectBack(redirectTo);
 }
