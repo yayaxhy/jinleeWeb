@@ -5,7 +5,8 @@ type SpecialVoucherResult =
   | null;
 
 export function resolveSpecialVoucher(prizeName: string): SpecialVoucherResult {
-  const kind = SPECIAL_ACTION_KIND_BY_PRIZE[prizeName];
+  const normalizedPrizeName = prizeName.trim();
+  const kind = SPECIAL_ACTION_KIND_BY_PRIZE[normalizedPrizeName];
   if (kind) return { kind };
   return null;
 }

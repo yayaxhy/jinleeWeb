@@ -195,7 +195,7 @@ export default async function BagPage() {
                   ) : (
                     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                       {list.map((item) => {
-                        const prizeName = item.prizeName;
+                        const prizeName = item.prizeName.trim();
                         const prizeType = item.prizeType ?? LotteryPrizeType.COUPON;
                         const isUsed = item.status === 'USED';
                         const isVanityCard = VANITY_CARD_PRIZE_NAMES.has(prizeName);
