@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PEIWAN_GAME_TAG_FIELDS } from '@/constants/peiwan';
+import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
@@ -218,6 +219,13 @@ export default async function Profile(props: ProfilePageProps) {
   const loyaltyPointPromise = prisma.loyaltyPoint.findUnique({
     where: { discordUserId: discordId },
   });
+  const peiwanReviewsPromise = isPeiwanMember
+    ? prisma.peiwanReview.findMany({
+        where: { peiwanDiscordId: discordId },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      })
+    : Promise.resolve([]);
   type TransactionRecord = Awaited<typeof transactionsPromise>[number];
 
   const [
@@ -228,6 +236,7 @@ export default async function Profile(props: ProfilePageProps) {
     flowBuff,
     spendBuff,
     loyaltyPoint,
+    peiwanReviews,
   ] = await Promise.all([
     couponsPromise,
     totalTransactionsPromise,
@@ -236,6 +245,7 @@ export default async function Profile(props: ProfilePageProps) {
     flowBuffPromise,
     spendBuffPromise,
     loyaltyPointPromise,
+    peiwanReviewsPromise,
   ]);
   const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
   const hasPrevPage = currentPage > 1;
@@ -295,6 +305,7 @@ export default async function Profile(props: ProfilePageProps) {
     RENAME_CARD_3: '3位数靓号卡',
     RENAME_CARD: '4位数靓号卡',
     RENAME_CARD_5: '5位数靓号卡',
+    PEIWAN_REVIEW_VOUCHER: '陪玩评语券',
   };
 
   const buffCards = [
@@ -332,6 +343,7 @@ export default async function Profile(props: ProfilePageProps) {
   const tabCandidates = [
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-level', label: 'VIP升级进度' }] : []),
     { id: 'profile-buff', label: 'Buff 状态' },
+    ...(isPeiwanMember ? [{ id: 'profile-personalisation', label: '个性化' }] : []),
     { id: 'profile-info', label: '个人信息' },
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-tx', label: '流水记录' }] : []),
   ] as const;
@@ -574,6 +586,28 @@ export default async function Profile(props: ProfilePageProps) {
                     ) : (
                       <p className="text-gray-400 text-sm">暂无 Buff 信息。</p>
                     )}
+                  </div>
+                )}
+
+                {activeTab === 'profile-personalisation' && isPeiwanMember && (
+                  <div id="profile-personalisation" className="space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">老板评语</h2>
+                        <p className="text-sm text-gray-500">选择是否展示到你的名片中</p>
+                      </div>
+                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {peiwanReviews.length} 条</span>
+                    </div>
+                    <PeiwanReviewManager
+                      reviews={peiwanReviews.map((review) => ({
+                        id: review.id,
+                        reviewerDiscordId: review.reviewerDiscordId,
+                        reviewerName: review.reviewerName ?? null,
+                        content: review.content,
+                        displayMode: review.displayMode,
+                        createdAtLabel: formatDate(review.createdAt),
+                      }))}
+                    />
                   </div>
                 )}
 

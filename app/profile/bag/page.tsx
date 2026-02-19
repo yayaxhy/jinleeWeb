@@ -7,6 +7,7 @@ import { GiftUsageButton, SelfUseButton } from '@/components/profile/GiftAndSelf
 import {
   CommissionVoucherButton,
   FlowVoucherButton,
+  PeiwanReviewVoucherButton,
   SimpleVoucherUseButton,
   SpendVoucherButton,
 } from '@/components/profile/VoucherUseButtons';
@@ -247,6 +248,18 @@ export default async function BagPage() {
                                     if (special?.kind === 'spend') {
                                       return (
                                         <SpendVoucherButton
+                                          prizeName={prizeName}
+                                          lotteryId={item.lotteryId}
+                                          couponId={item.couponId}
+                                        />
+                                      );
+                                    }
+                                    if (special?.kind === 'peiwan_review') {
+                                      if (item.source !== 'pointshop') {
+                                        return null;
+                                      }
+                                      return (
+                                        <PeiwanReviewVoucherButton
                                           prizeName={prizeName}
                                           lotteryId={item.lotteryId}
                                           couponId={item.couponId}

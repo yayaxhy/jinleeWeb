@@ -8,6 +8,7 @@ import { SPECIAL_ACTION_COUPON_TYPE_BY_PRIZE } from '@/lib/voucherCatalog';
 type UseVoucherPayload = {
   prizeName?: string;
   target?: string;
+  reviewText?: string;
   lotteryId?: string;
   couponId?: string;
 };
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as UseVoucherPayload;
   const prizeName = typeof body.prizeName === 'string' ? body.prizeName.trim() : '';
   const rawTarget = typeof body.target === 'string' ? body.target.trim() : '';
+  const reviewText = typeof body.reviewText === 'string' ? body.reviewText.trim() : '';
   const lotteryId = typeof body.lotteryId === 'string' ? body.lotteryId.trim() : '';
   const couponId = typeof body.couponId === 'string' ? body.couponId.trim() : '';
   if (!prizeName) {
@@ -88,7 +90,7 @@ export async function POST(request: Request) {
 
       // 仅校验是否存在可用券，不在本地消耗，交由机器人处理
       let voucherId = '';
-      if (couponType) {
+      if (couponType && special.kind !== 'peiwan_review') {
         const coupon = couponId
           ? await tx.coupon.findFirst({
               where: {
@@ -144,6 +146,41 @@ export async function POST(request: Request) {
         }
       }
 
+      if (couponType && special.kind === 'peiwan_review') {
+        const pointShopGrant = couponId
+          ? await tx.pointShopGrant.findFirst({
+              where: {
+                id: couponId,
+                discordUserId: session.discordId,
+                deliveryType: PointShopDeliveryType.COUPON,
+                deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+                couponType,
+                couponStatus: CouponStatus.ACTIVE,
+                OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+              },
+              select: { id: true },
+            })
+          : await tx.pointShopGrant.findFirst({
+              where: {
+                discordUserId: session.discordId,
+                deliveryType: PointShopDeliveryType.COUPON,
+                deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+                couponType,
+                couponStatus: CouponStatus.ACTIVE,
+                OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+              },
+              orderBy: { issuedAt: 'asc' },
+              select: { id: true },
+            });
+        if (pointShopGrant) {
+          voucherId = pointShopGrant.id;
+        }
+      }
+
+      if (!voucherId && special.kind === 'peiwan_review') {
+        return { ok: false, code: 400, message: '陪玩评语券不可用或已过期' };
+      }
+
       if (!voucherId) {
         const draw = lotteryId
           ? await tx.lotteryDraw.findFirst({
@@ -179,6 +216,41 @@ export async function POST(request: Request) {
             : '/internal/voucher/custom-tag';
         try {
           await callInternal(path, { userId: session.discordId, voucherId });
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, code: 400, message: (err as Error).message };
+        }
+      }
+
+      if (special.kind === 'peiwan_review') {
+        if (!reviewText) {
+          return { ok: false, code: 400, message: '请输入评语内容' };
+        }
+        if (reviewText.length > 500) {
+          return { ok: false, code: 400, message: '评语最多 500 字' };
+        }
+
+        const targetId = await resolveTargetDiscordId(rawTarget);
+        if (!targetId) {
+          return { ok: false, code: 404, message: '未找到目标陪玩' };
+        }
+
+        const targetPeiwan = await tx.pEIWAN.findUnique({
+          where: { discordUserId: targetId },
+          select: { discordUserId: true, PEIWANID: true },
+        });
+        if (!targetPeiwan?.discordUserId) {
+          return { ok: false, code: 404, message: '未找到目标陪玩' };
+        }
+
+        try {
+          await callInternal('/internal/voucher/peiwan-review', {
+            userId: session.discordId,
+            targetDiscordId: targetPeiwan.discordUserId,
+            peiwanId: targetPeiwan.PEIWANID,
+            content: reviewText,
+            voucherId,
+          });
           return { ok: true };
         } catch (err) {
           return { ok: false, code: 400, message: (err as Error).message };

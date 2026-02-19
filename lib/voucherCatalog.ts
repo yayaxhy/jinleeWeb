@@ -8,7 +8,7 @@ type CouponVoucherMeta = {
   isVanityCard?: boolean;
 };
 
-export type SpecialVoucherKind = 'simple' | 'commission' | 'flow' | 'spend';
+export type SpecialVoucherKind = 'simple' | 'commission' | 'flow' | 'spend' | 'peiwan_review';
 
 export const COUPON_VOUCHER_META: Record<CouponType, CouponVoucherMeta> = {
   [CouponType.DISCOUNT_90]: { prizeName: '9折券', prizeType: LotteryPrizeType.COUPON, isDiscount: true },
@@ -43,6 +43,7 @@ export const COUPON_VOUCHER_META: Record<CouponType, CouponVoucherMeta> = {
   [CouponType.RENAME_CARD_3]: { prizeName: '3位数靓号卡', prizeType: LotteryPrizeType.SELFUSE, isVanityCard: true },
   [CouponType.RENAME_CARD]: { prizeName: '4位数靓号卡', prizeType: LotteryPrizeType.SELFUSE, isVanityCard: true },
   [CouponType.RENAME_CARD_5]: { prizeName: '5位数靓号卡', prizeType: LotteryPrizeType.SELFUSE, isVanityCard: true },
+  [CouponType.PEIWAN_REVIEW_VOUCHER]: { prizeName: '陪玩评语券', prizeType: LotteryPrizeType.COUPON },
 };
 
 const prizeEntries = Object.entries(COUPON_VOUCHER_META) as Array<[CouponType, CouponVoucherMeta]>;
@@ -83,6 +84,7 @@ const SPECIAL_ACTION_PRIZE_NAMES = [
   '抽成降1%券',
   '双倍流水5000券',
   '双倍消费5000券',
+  '陪玩评语券',
 ] as const;
 
 export const SPECIAL_ACTION_COUPON_TYPE_BY_PRIZE: Record<string, CouponType> = SPECIAL_ACTION_PRIZE_NAMES.reduce(
@@ -102,4 +104,5 @@ export const SPECIAL_ACTION_KIND_BY_PRIZE: Record<string, SpecialVoucherKind> = 
   '抽成降1%券': 'commission',
   双倍流水5000券: 'flow',
   双倍消费5000券: 'spend',
+  陪玩评语券: 'peiwan_review',
 };
