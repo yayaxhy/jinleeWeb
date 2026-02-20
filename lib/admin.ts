@@ -76,3 +76,6 @@ export const canViewReferrals = (discordId?: string | null) =>
 
 export const canManagePeiwan = (discordId?: string | null) =>
   isAdminDiscordId(discordId) || isHowardDiscordId(discordId);
+
+export const canManageOrderChannelBindings = (discordId?: string | null) =>
+  isAdminDiscordId(discordId);

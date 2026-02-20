@@ -16,7 +16,9 @@ type PeiwanSearchItem = {
 };
 
 const primaryBtn =
-  'rounded-full bg-[#5c43a3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4a3388] disabled:opacity-50';
+  'rounded-full bg-[#f4c542] px-4 py-2 text-xs font-semibold text-[#3d2c00] hover:bg-[#ffd45b] disabled:opacity-50 transition-colors';
+const useTriggerBtn =
+  'rounded-full border border-[#f4c542] bg-[#fff8dd] px-4 py-2 text-xs font-semibold text-[#8a6300] hover:bg-[#ffefb8] disabled:opacity-50 transition-colors';
 const ghostBtn =
   'rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-black/5';
 
@@ -53,7 +55,7 @@ export function SimpleVoucherUseButton({ prizeName, lotteryId, couponId }: Props
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={ghostBtn}
+        className={useTriggerBtn}
       >
         使用
       </button>
@@ -133,7 +135,7 @@ export function CommissionVoucherButton({ prizeName, lotteryId, couponId }: Prop
           setOpen(true);
           setMsg(null);
         }}
-        className={ghostBtn}
+        className={useTriggerBtn}
       >
         使用
       </button>
@@ -238,7 +240,7 @@ export function FlowVoucherButton({ prizeName, lotteryId, couponId }: Props) {
           setOpen(true);
           setMsg(null);
         }}
-        className={ghostBtn}
+        className={useTriggerBtn}
       >
         使用
       </button>
@@ -343,7 +345,7 @@ export function SpendVoucherButton({ prizeName, lotteryId, couponId }: Props) {
           setOpen(true);
           setMsg(null);
         }}
-        className={ghostBtn}
+        className={useTriggerBtn}
       >
         使用
       </button>
@@ -518,7 +520,7 @@ export function PeiwanReviewVoucherButton({ prizeName, lotteryId, couponId }: Pr
           setConfirmOpen(false);
           setError(null);
         }}
-        className={ghostBtn}
+        className={useTriggerBtn}
       >
         使用
       </button>

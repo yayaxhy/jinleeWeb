@@ -6,7 +6,7 @@ import { useState } from 'react';
 type Feedback = { type: 'success' | 'error'; text: string } | null;
 
 const commonButtonClass =
-  'rounded-full bg-[#5c43a3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4a3388] disabled:opacity-50';
+  'rounded-full bg-[#f4c542] px-4 py-2 text-xs font-semibold text-[#3d2c00] hover:bg-[#ffd45b] disabled:opacity-50 transition-colors';
 
 export function GiftUsageButton({
   lotteryId,

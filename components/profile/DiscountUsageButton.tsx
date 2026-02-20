@@ -95,7 +95,7 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, 
           setOpen(true);
           setMessage(null);
         }}
-        className="rounded-full border border-[#5c43a3] px-4 py-2 text-xs font-semibold text-[#5c43a3] hover:bg-[#5c43a3]/10 transition"
+        className="rounded-full border border-[#f4c542] bg-[#fff8dd] px-4 py-2 text-xs font-semibold text-[#8a6300] hover:bg-[#ffefb8] transition-colors"
       >
         {triggerLabel}
       </button>
@@ -157,7 +157,7 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, 
                         type="button"
                         onClick={() => void applyDiscount(order.id)}
                         disabled={!!submittingId}
-                        className="rounded-full bg-[#5c43a3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4a3388] disabled:opacity-50"
+                        className="rounded-full bg-[#f4c542] px-4 py-2 text-xs font-semibold text-[#3d2c00] hover:bg-[#ffd45b] disabled:opacity-50 transition-colors"
                       >
                         {submittingId === order.id ? '提交中…' : '用在此单'}
                       </button>
