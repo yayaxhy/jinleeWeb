@@ -156,13 +156,21 @@ export default async function EditPeiwanPage(props: EditPageProps) {
 
   return (
     <div className="space-y-6 text-white">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-semibold">编辑陪玩</h2>
-        <p className="text-sm text-white/70">
-          当前用户：{member?.serverDisplayName?.trim() || '未知用户'}
-        </p>
-        <p className="text-sm text-white/60 font-mono">Discord ID：{discordId}</p>
-        <p className="text-sm text-white/60">陪玩 ID：{peiwan.PEIWANID}</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">编辑陪玩</h2>
+          <p className="text-sm text-white/70">
+            当前用户：{member?.serverDisplayName?.trim() || '未知用户'}
+          </p>
+          <p className="text-sm text-white/60 font-mono">Discord ID：{discordId}</p>
+          <p className="text-sm text-white/60">陪玩 ID：{peiwan.PEIWANID}</p>
+        </div>
+        <Link
+          href="/admin"
+          className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10"
+        >
+          返回管理首页
+        </Link>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-2">
