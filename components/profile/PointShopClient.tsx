@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 
 type ItemView = {
   id: string;
@@ -45,12 +46,8 @@ type PointShopClientProps = {
 type NoticeLevel = 'info' | 'success' | 'error';
 
 const fmt = (value: string | number) => {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return '0';
-  return num.toLocaleString('zh-CN', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
+  const formatted = formatAmountDown2(value);
+  return formatted === '—' ? '0.00' : formatted;
 };
 
 async function fetchPointShop(action?: string, payload?: Record<string, unknown>) {

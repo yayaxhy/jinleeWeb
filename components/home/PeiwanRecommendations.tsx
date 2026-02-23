@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { PEIWAN_GAME_TAG_FIELDS } from '@/constants/peiwan';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 
 type PeiwanItem = {
   id: number;
@@ -32,9 +33,9 @@ const buildFallbackItem = (id: number): PeiwanItem => ({
 });
 const formatPrice = (value: PeiwanItem['price']) => {
   if (value === null || value === undefined) return '价格待定';
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) return String(value);
-  return `${numeric} 币/H`;
+  const formatted = formatAmountDown2(value);
+  if (formatted === '—') return String(value);
+  return `${formatted} 币/H`;
 };
 
 const CardImage = ({ item, src }: { item: PeiwanItem; src: string }) => {

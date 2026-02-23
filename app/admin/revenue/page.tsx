@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 
 export const metadata = {
   title: '查看收益',
@@ -84,9 +85,8 @@ const parseNumber = (value: unknown): number | null => {
 };
 
 const formatNumber = (value: unknown, maximumFractionDigits = 2) => {
-  const numeric = parseNumber(value);
-  if (numeric === null) return '—';
-  return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits });
+  void maximumFractionDigits;
+  return formatAmountDown2(value);
 };
 
 const dec = (value: unknown) => {

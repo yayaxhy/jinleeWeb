@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/session';
 import { canViewTransactions } from '@/lib/admin';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 
@@ -27,9 +28,7 @@ const parseNumber = (value: unknown): number | null => {
 };
 
 const formatNumber = (value: unknown) => {
-  const numeric = parseNumber(value);
-  if (numeric === null) return '—';
-  return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return formatAmountDown2(value);
 };
 
 const formatDate = (value?: Date | string | null) => {

@@ -10,6 +10,7 @@ import {
   isHowardDiscordId,
   isIriaDiscordId,
 } from '@/lib/admin';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const PAGE_SIZE = 20;
@@ -40,9 +41,8 @@ const parseNumber = (value: unknown): number | null => {
 };
 
 const formatNumber = (value: unknown, maximumFractionDigits = 2) => {
-  const numeric = parseNumber(value);
-  if (numeric === null) return '—';
-  return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits });
+  void maximumFractionDigits;
+  return formatAmountDown2(value);
 };
 
 type PageProps = {

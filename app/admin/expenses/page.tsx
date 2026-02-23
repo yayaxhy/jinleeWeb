@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewTransactions, isHowardReadOnlyDiscordId } from '@/lib/admin';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const PAGE_SIZE = 50;
@@ -28,9 +29,7 @@ const parseNumber = (value: unknown): number | null => {
 };
 
 const formatNumber = (value: unknown) => {
-  const numeric = parseNumber(value);
-  if (numeric === null) return '—';
-  return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+  return formatAmountDown2(value);
 };
 
 const formatDate = (value?: Date | string | null) => {

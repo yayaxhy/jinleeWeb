@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PEIWAN_GAME_TAG_FIELDS } from '@/constants/peiwan';
 import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
@@ -48,12 +49,12 @@ const parseNumeric = (value: unknown): number | null => {
 
 const formatNumber = (value: unknown) => {
   if (value === null || value === undefined) return '—';
-  const numeric = parseNumeric(value);
-  if (numeric === null) {
+  const formatted = formatAmountDown2(value);
+  if (formatted === '—') {
     const fallback = stringifyUnknown(value);
     return fallback.length > 0 ? fallback : '—';
   }
-  return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return formatted;
 };
 
 const formatDate = (value?: Date | string | null) => {

@@ -7,6 +7,7 @@ import {
   PEIWAN_LEVEL_OPTIONS,
   PEIWAN_SEX_OPTIONS,
 } from '@/constants/peiwan';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 
 type PeiwanItem = {
   id: number;
@@ -33,9 +34,9 @@ const LOCAL_IMG_EXTS = ['png', 'jpg', 'gif'] as const;
 
 const formatPrice = (value: PeiwanItem['price']) => {
   if (value === null || value === undefined) return '未设置';
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) return String(value);
-  return `${numeric} 币/H`;
+  const formatted = formatAmountDown2(value);
+  if (formatted === '—') return String(value);
+  return `${formatted} 币/H`;
 };
 
 const CardImage = ({ item, onPreview }: { item: PeiwanItem; onPreview?: (src: string) => void }) => {

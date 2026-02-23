@@ -2,6 +2,10 @@ import { ReferralType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { canViewReferrals, isAdminDiscordId, isHowardDiscordId, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
+import {
+  buildReferralInviteeIneligibleMessage,
+  checkReferralInviteeEligibility,
+} from '@/lib/referralEligibility';
 import { getServerSession } from '@/lib/session';
 
 const ensureReferralReadSession = async () => {
@@ -95,12 +99,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '该被邀请人已存在邀请记录' }, { status: 409 });
   }
 
-  const [invitee, inviter] = await Promise.all([
-    prisma.member.findUnique({ where: { discordUserId: inviteeId } }),
+  const [inviteeEligibility, inviter] = await Promise.all([
+    checkReferralInviteeEligibility(inviteeId),
     prisma.member.findUnique({ where: { discordUserId: inviterId } }),
   ]);
-  if (!invitee) {
+  if (!inviteeEligibility) {
     return NextResponse.json({ error: '被邀请人不存在，请先创建成员' }, { status: 404 });
+  }
+  if (!inviteeEligibility.ok) {
+    return NextResponse.json(
+      { error: buildReferralInviteeIneligibleMessage(inviteeEligibility) },
+      { status: 400 },
+    );
   }
   if (!inviter) {
     return NextResponse.json({ error: '邀请人不存在，请先创建成员' }, { status: 404 });

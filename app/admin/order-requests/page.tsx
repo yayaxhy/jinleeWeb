@@ -92,9 +92,17 @@ export default async function AdminOrderRequestsPage(props: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-semibold">抢单记录</h2>
-        <p className="text-sm text-white/60">查看派单内容与陪玩抢单名单</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">抢单记录</h2>
+          <p className="text-sm text-white/60">查看派单内容与陪玩抢单名单</p>
+        </div>
+        <Link
+          href="/admin"
+          className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10"
+        >
+          返回管理首页
+        </Link>
       </div>
 
       <form className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-5 md:grid-cols-4" action="/admin/order-requests" method="get">
@@ -243,7 +251,7 @@ export default async function AdminOrderRequestsPage(props: PageProps) {
         href="/admin"
         className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10"
       >
-        返回后台首页
+        返回管理首页
       </Link>
     </div>
   );

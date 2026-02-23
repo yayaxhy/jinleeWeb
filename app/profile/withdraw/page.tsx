@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import WithdrawForm from '@/components/profile/WithdrawForm';
 import { WithdrawAccountsManager } from '@/components/profile/WithdrawAccountsManager';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
@@ -9,9 +10,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const formatNumber = (value: unknown) => {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return '—';
-  return numeric.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return formatAmountDown2(value);
 };
 
 export default async function WithdrawPage() {

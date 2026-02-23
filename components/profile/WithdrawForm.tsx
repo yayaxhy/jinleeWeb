@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 
 const MIN_WITHDRAW_AMOUNT = 100;
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -187,7 +188,7 @@ export default function WithdrawForm({
             } ${!canWithdraw ? 'bg-gray-100 text-gray-400' : ''}`}
             placeholder={
               canWithdraw
-                ? `最多可提 ¥${maxWithdrawable.toLocaleString('zh-CN')}`
+                ? `最多可提 ¥${formatAmountDown2(maxWithdrawable)}`
                 : '暂无可提现金额'
             }
           />
