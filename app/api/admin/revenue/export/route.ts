@@ -344,7 +344,7 @@ export async function GET(request: NextRequest) {
   workbook.creator = 'jinlee admin';
   workbook.created = new Date();
 
-  addKeyValueSheet(workbook, 'Meta', [
+  addKeyValueSheet(workbook, '导出参数', [
     { section: 'filters', key: 'start', value: formatDateTimeLocal(start) },
     { section: 'filters', key: 'end(exclusive)', value: formatDateTimeLocal(end) },
     { section: 'filters', key: 'excludeRecharge(raw)', value: excludeRechargeInput },
@@ -367,7 +367,7 @@ export async function GET(request: NextRequest) {
     { section: 'rows', key: 'RevertedGiftSubsidy(join)', value: revertedGiftRows.length },
   ]);
 
-  addKeyValueSheet(workbook, 'Summary', [
+  addKeyValueSheet(workbook, '收益汇总', [
     { section: '当月充值提现', key: 'Recharge 充值总额', value: rechargeTotal.toString() },
     { section: '当月充值提现', key: 'ZPay 已支付', value: zpayTotal.toString() },
     { section: '当月充值提现', key: '提现总额', value: withdrawTotal.toString() },
@@ -416,24 +416,24 @@ export async function GET(request: NextRequest) {
     { section: '抽成详情', key: '其他来源抽成', value: commissionOtherSources.toString() },
   ]);
 
-  addObjectRowsSheet(workbook, 'ExcludedIdsResolved', excludeMembers);
-  addObjectRowsSheet(workbook, 'BlockStackGame', blockStackRows);
-  addObjectRowsSheet(workbook, 'Recharge', rechargeRows);
-  addObjectRowsSheet(workbook, 'Withdraw', withdrawRows);
-  addObjectRowsSheet(workbook, 'ZPayRechargeOrder_PAID', zpayRows);
-  addObjectRowsSheet(workbook, 'Member_Filtered', memberRows);
-  addObjectRowsSheet(workbook, 'Commission_Filtered', commissionRows);
-  addObjectRowsSheet(workbook, 'GiftAudit', giftAuditRows);
-  addObjectRowsSheet(workbook, 'RevertedGiftSubsidy', revertedGiftRows);
-  addObjectRowsSheet(workbook, 'Orders_ENDED', orderRows);
-  addObjectRowsSheet(workbook, 'DiscountRebate_ITx', discountRebateRows);
-  addObjectRowsSheet(workbook, 'LotteryDraw_CreatedWindow', lotteryCreatedRows);
-  addObjectRowsSheet(workbook, 'LotteryDraw_ConsumeWindow', lotteryConsumeRows);
-  addObjectRowsSheet(workbook, 'ScratchTicket_REVEALED', scratchRows);
-  addObjectRowsSheet(workbook, 'Expense', expenseRows);
+  addObjectRowsSheet(workbook, '排除ID映射', excludeMembers);
+  addObjectRowsSheet(workbook, '积木游戏明细', blockStackRows);
+  addObjectRowsSheet(workbook, '充值明细', rechargeRows);
+  addObjectRowsSheet(workbook, '提现明细', withdrawRows);
+  addObjectRowsSheet(workbook, 'ZPay已支付明细', zpayRows);
+  addObjectRowsSheet(workbook, '会员汇总明细', memberRows);
+  addObjectRowsSheet(workbook, '抽成明细_Commission', commissionRows);
+  addObjectRowsSheet(workbook, '打赏审计明细', giftAuditRows);
+  addObjectRowsSheet(workbook, '打赏补贴回退明细', revertedGiftRows);
+  addObjectRowsSheet(workbook, '订单明细_ENDED', orderRows);
+  addObjectRowsSheet(workbook, '优惠返利流水', discountRebateRows);
+  addObjectRowsSheet(workbook, '抽奖明细_创建时间', lotteryCreatedRows);
+  addObjectRowsSheet(workbook, '抽奖明细_消耗时间', lotteryConsumeRows);
+  addObjectRowsSheet(workbook, '刮刮乐已刮开明细', scratchRows);
+  addObjectRowsSheet(workbook, '支出明细', expenseRows);
   addObjectRowsSheet(
     workbook,
-    'Expense_ByReason',
+    '支出分类汇总',
     expenseByReasonSorted.map((row) => ({ reason: row.reason, count: row.count, amount: row.amount.toString() })),
   );
   const buffer = await workbook.xlsx.writeBuffer();
