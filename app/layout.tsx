@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { getServerSession } from "@/lib/session";
 
 const geistSans = Geist({
@@ -36,7 +37,10 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers initialSession={session}>{children}</Providers>
+        <Providers initialSession={session}>
+          <PageViewTracker />
+          {children}
+        </Providers>
       </body>
     </html>
   );
