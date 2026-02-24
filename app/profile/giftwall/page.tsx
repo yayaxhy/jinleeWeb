@@ -51,8 +51,7 @@ export default async function GiftWallPage() {
   const [gifts, giftUnlocks] = isPeiwanMember
     ? await Promise.all([
         prisma.gift.findMany({
-          where: { active: true },
-          select: { GiftName: true, price: true, giftImage: { select: { fileName: true, category: true } } },
+          select: { GiftName: true, price: true, active: true, giftImage: { select: { fileName: true, category: true } } },
           orderBy: { GiftName: 'asc' },
         }),
         prisma.peiwanGiftUnlock.findMany({
@@ -68,6 +67,7 @@ export default async function GiftWallPage() {
     .map((gift) => ({
       name: gift.GiftName,
       priceValue: gift.price ? Number(gift.price.toString()) : 0,
+      active: gift.active,
       imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,
       category: gift.giftImage?.category ?? '默认',
       unlocked: unlockedMap.has(gift.GiftName),
@@ -167,6 +167,7 @@ export default async function GiftWallPage() {
                           <div className="text-sm font-medium text-gray-700 truncate">{gift.name}</div>
                           <div className="text-xs text-gray-400">
                             {gift.unlocked ? `已解锁 · ${formatDate(gift.unlockedAt)}` : '未解锁'}
+                            {!gift.active ? ' · 已下架' : ''}
                           </div>
                         </div>
                       ))}
