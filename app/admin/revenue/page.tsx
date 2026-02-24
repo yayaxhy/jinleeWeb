@@ -427,12 +427,22 @@ export default async function AdminRevenuePage(props: PageProps) {
           ) : null}
         </label>
         <div className="md:col-span-2">
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center rounded-full bg-white/15 px-6 py-2 text-sm text-white hover:bg-white/25"
-          >
-            刷新数据
-          </button>
+          <div className="flex flex-col items-start gap-3">
+            <button
+              type="submit"
+              formAction="/api/admin/revenue/export"
+              formMethod="get"
+              className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm text-white hover:bg-white/10"
+            >
+              下载 Excel（全部收益数据）
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-full bg-white/15 px-6 py-2 text-sm text-white hover:bg-white/25"
+            >
+              刷新数据
+            </button>
+          </div>
         </div>
       </form>
 
