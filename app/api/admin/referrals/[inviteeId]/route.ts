@@ -50,10 +50,19 @@ export async function PATCH(
     return NextResponse.json({ error: '禁止自邀' }, { status: 400 });
   }
 
+  const existingReferral = await prisma.referral.findUnique({
+    where: { inviteeId },
+    select: { type: true },
+  });
+  if (!existingReferral) {
+    return NextResponse.json({ error: '记录不存在' }, { status: 404 });
+  }
+  const effectiveType = type ?? existingReferral.type;
+
   if (inviterId) {
     const [inviter, inviteeEligibility] = await Promise.all([
       prisma.member.findUnique({ where: { discordUserId: inviterId } }),
-      checkReferralInviteeEligibility(inviteeId),
+      checkReferralInviteeEligibility(inviteeId, effectiveType),
     ]);
     if (!inviter) {
       return NextResponse.json({ error: '新的邀请人不存在，请先创建成员' }, { status: 404 });
@@ -68,7 +77,7 @@ export async function PATCH(
       );
     }
   } else {
-    const inviteeEligibility = await checkReferralInviteeEligibility(inviteeId);
+    const inviteeEligibility = await checkReferralInviteeEligibility(inviteeId, effectiveType);
     if (!inviteeEligibility) {
       return NextResponse.json({ error: '被邀请人不存在，请先创建成员' }, { status: 404 });
     }

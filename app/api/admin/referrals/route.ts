@@ -100,7 +100,7 @@ export async function POST(request: Request) {
   }
 
   const [inviteeEligibility, inviter] = await Promise.all([
-    checkReferralInviteeEligibility(inviteeId),
+    checkReferralInviteeEligibility(inviteeId, type),
     prisma.member.findUnique({ where: { discordUserId: inviterId } }),
   ]);
   if (!inviteeEligibility) {
