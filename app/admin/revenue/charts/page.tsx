@@ -252,20 +252,97 @@ function LineGraphCard({
                 </g>
               ))}
 
-              {hoverZones.map(({ point, left, width }) => (
-                <g key={`hover-${title}-${point.day}`}>
-                  <title>
-                    {point.day} · ¥{formatAmountDown2(point.value)}
-                  </title>
-                  <rect
-                    x={left}
-                    y={padding.top}
-                    width={width}
-                    height={chartH}
-                    fill="rgba(0,0,0,0)"
-                  />
-                </g>
-              ))}
+              {hoverZones.map(({ point, left, width }, idx) => {
+                const x = xOf(idx);
+                const y = yOf(point.value);
+                const tooltipText = `${point.day} · ¥${formatAmountDown2(point.value)}`;
+                const tooltipW = 168;
+                const tooltipH = 42;
+                const tooltipX = Math.min(Math.max(x - tooltipW / 2, padding.left), padding.left + chartW - tooltipW);
+                const tooltipY = Math.max(6, y - tooltipH - 10);
+
+                return (
+                  <g key={`hover-${title}-${point.day}`} className="group">
+                    <title>{tooltipText}</title>
+
+                    {/* hover capture zone */}
+                    <rect
+                      x={left}
+                      y={padding.top}
+                      width={width}
+                      height={chartH}
+                      fill="rgba(0,0,0,0)"
+                    />
+
+                    {/* crosshair */}
+                    <line
+                      x1={x}
+                      y1={padding.top}
+                      x2={x}
+                      y2={padding.top + chartH}
+                      stroke="rgba(255,255,255,0.35)"
+                      strokeWidth="1"
+                      strokeDasharray="4 4"
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                      pointerEvents="none"
+                    />
+                    <line
+                      x1={padding.left}
+                      y1={y}
+                      x2={padding.left + chartW}
+                      y2={y}
+                      stroke="rgba(255,255,255,0.22)"
+                      strokeWidth="1"
+                      strokeDasharray="4 4"
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                      pointerEvents="none"
+                    />
+
+                    {/* highlight point */}
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r="5.5"
+                      fill="rgba(255,255,255,0.08)"
+                      stroke={stroke}
+                      strokeWidth="2"
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                      pointerEvents="none"
+                    />
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r="2.8"
+                      fill={stroke}
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                      pointerEvents="none"
+                    />
+
+                    {/* tooltip */}
+                    <g
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                      pointerEvents="none"
+                    >
+                      <rect
+                        x={tooltipX}
+                        y={tooltipY}
+                        width={tooltipW}
+                        height={tooltipH}
+                        rx="10"
+                        fill="rgba(8,10,15,0.92)"
+                        stroke="rgba(255,255,255,0.18)"
+                        strokeWidth="1"
+                      />
+                      <text x={tooltipX + 10} y={tooltipY + 18} fontSize="11" fill="rgba(255,255,255,0.72)">
+                        {point.day}
+                      </text>
+                      <text x={tooltipX + 10} y={tooltipY + 33} fontSize="13" fill="#ffffff" fontWeight="700">
+                        ¥{formatAmountDown2(point.value)}
+                      </text>
+                    </g>
+                  </g>
+                );
+              })}
             </>
           ) : null}
         </svg>
