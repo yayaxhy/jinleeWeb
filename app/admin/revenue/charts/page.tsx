@@ -34,7 +34,8 @@ const parseExcludeIds = (value: string) =>
 
 const pad2 = (value: number) => String(value).padStart(2, '0');
 
-const toDayKey = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+const toDayKey = (date: Date) =>
+  `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`;
 
 const parseNumber = (value: unknown): number => {
   if (value === null || value === undefined) return 0;
@@ -53,10 +54,13 @@ const parseNumber = (value: unknown): number => {
 };
 
 const getDateRowWindow = (start: Date, end: Date) => {
-  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
-  const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0, 0);
+  const startDay = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), 0, 0, 0, 0));
+  const endDay = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate(), 0, 0, 0, 0));
   const endHasTime =
-    end.getHours() !== 0 || end.getMinutes() !== 0 || end.getSeconds() !== 0 || end.getMilliseconds() !== 0;
+    end.getUTCHours() !== 0 ||
+    end.getUTCMinutes() !== 0 ||
+    end.getUTCSeconds() !== 0 ||
+    end.getUTCMilliseconds() !== 0;
   const endExclusive = new Date(endDay.getTime() + (endHasTime ? DAY_MS : 0));
   return { startDay, endExclusive };
 };
@@ -64,7 +68,7 @@ const getDateRowWindow = (start: Date, end: Date) => {
 const buildDayKeys = (start: Date, end: Date) => {
   const { startDay, endExclusive } = getDateRowWindow(start, end);
   const keys: string[] = [];
-  for (let cur = new Date(startDay); cur < endExclusive; cur.setDate(cur.getDate() + 1)) {
+  for (let cur = new Date(startDay); cur < endExclusive; cur.setUTCDate(cur.getUTCDate() + 1)) {
     keys.push(toDayKey(cur));
   }
   return keys;
