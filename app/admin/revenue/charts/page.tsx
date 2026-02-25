@@ -172,6 +172,14 @@ function LineGraphCard({
   const xLabelStep = Math.max(1, Math.ceil(points.length / 8));
   const total = points.reduce((sum, p) => sum + p.value, 0);
   const peak = points.reduce((prev, cur) => (cur.value > prev.value ? cur : prev), points[0] ?? { day: '-', value: 0 });
+  const hoverZones = points.map((point, idx) => {
+    const x = xOf(idx);
+    const prevX = idx > 0 ? xOf(idx - 1) : padding.left;
+    const nextX = idx < points.length - 1 ? xOf(idx + 1) : padding.left + chartW;
+    const left = idx === 0 ? padding.left : (prevX + x) / 2;
+    const right = idx === points.length - 1 ? padding.left + chartW : (x + nextX) / 2;
+    return { point, left, width: Math.max(0, right - left) };
+  });
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
@@ -241,6 +249,21 @@ function LineGraphCard({
                       {point.day.slice(5)}
                     </text>
                   )}
+                </g>
+              ))}
+
+              {hoverZones.map(({ point, left, width }) => (
+                <g key={`hover-${title}-${point.day}`}>
+                  <title>
+                    {point.day} · ¥{formatAmountDown2(point.value)}
+                  </title>
+                  <rect
+                    x={left}
+                    y={padding.top}
+                    width={width}
+                    height={chartH}
+                    fill="rgba(0,0,0,0)"
+                  />
                 </g>
               ))}
             </>
@@ -331,11 +354,6 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs text-white/65">
-        <p>图表口径说明：每日总充值使用 Recharge.amount；每日总打赏使用 gift_audit.gross（面值）；每日总单子金额使用已结束订单 grossAmount。</p>
-        <p>其中“充值”图表会应用“充值/提现排除 IDs”过滤；打赏与单子图表与当前查看收益页口径一致（不使用会员余额排除 IDs）。</p>
-      </div>
-
       <div className="space-y-5">
         <LineGraphCard title="每日总充值" points={rechargeSeries} stroke="#f5c542" subtitle="Recharge.amount（日汇总）" />
         <LineGraphCard title="每日总打赏" points={giftSeries} stroke="#55d4ff" subtitle="GiftAudit.gross（日汇总）" />
@@ -344,4 +362,3 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
     </div>
   );
 }
-
