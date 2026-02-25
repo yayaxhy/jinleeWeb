@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import { parseUtcDateRange } from '@/lib/utcDateRange';
 
 export const metadata = {
   title: '收益图表',
@@ -33,45 +34,7 @@ const parseExcludeIds = (value: string) =>
 
 const pad2 = (value: number) => String(value).padStart(2, '0');
 
-const formatDateTimeLocal = (date: Date) =>
-  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(
-    date.getMinutes()
-  )}`;
-
 const toDayKey = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
-
-const parseDateRange = (startRaw?: string, endRaw?: string) => {
-  const now = new Date();
-  const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-  const defaultEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
-
-  const startInput = startRaw?.trim() ?? '';
-  const endInput = endRaw?.trim() ?? '';
-  const parsedStart = startInput ? new Date(startInput) : null;
-  const parsedEnd = endInput ? new Date(endInput) : null;
-
-  const startValid = parsedStart && !Number.isNaN(parsedStart.getTime());
-  const endValid = parsedEnd && !Number.isNaN(parsedEnd.getTime());
-
-  const start = startValid ? parsedStart : defaultStart;
-  const end = endValid ? parsedEnd : defaultEnd;
-
-  if (start.getTime() >= end.getTime()) {
-    return {
-      start: defaultStart,
-      end: defaultEnd,
-      startValue: formatDateTimeLocal(defaultStart),
-      endValue: formatDateTimeLocal(defaultEnd),
-    };
-  }
-
-  return {
-    start,
-    end,
-    startValue: formatDateTimeLocal(start),
-    endValue: formatDateTimeLocal(end),
-  };
-};
 
 const parseNumber = (value: unknown): number => {
   if (value === null || value === undefined) return 0;
@@ -367,7 +330,7 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
     ? searchParams.excludeMember[0]
     : searchParams.excludeMember;
 
-  const { start, end, startValue, endValue } = parseDateRange(startParam, endParam);
+  const { start, end, startValue, endValue } = parseUtcDateRange(startParam, endParam);
   const excludeRechargeInput = (excludeRechargeParam ?? '').trim();
   const excludeMemberInput = (excludeMemberParam ?? '').trim();
   const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
@@ -412,7 +375,7 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
           <p className="text-xs uppercase tracking-[0.5em] text-white/60">ADMIN</p>
           <h2 className="text-2xl font-semibold">查看表格</h2>
           <p className="mt-1 text-sm text-white/60">
-            区间：{startValue.replace('T', ' ')} ~ {endValue.replace('T', ' ')}
+            区间（UTC+0）：{startValue.replace('T', ' ')} ~ {endValue.replace('T', ' ')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">

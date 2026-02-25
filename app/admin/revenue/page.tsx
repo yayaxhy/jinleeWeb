@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import { parseUtcDateRange } from '@/lib/utcDateRange';
 
 export const metadata = {
   title: '查看收益',
@@ -24,46 +25,6 @@ const parseExcludeIds = (value: string) => {
     .split(/[\s,]+/)
     .map(normalizeId)
     .filter(Boolean);
-};
-
-const pad2 = (value: number) => String(value).padStart(2, '0');
-
-const formatDateTimeLocal = (date: Date) =>
-  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(
-    date.getMinutes()
-  )}`;
-
-const parseDateRange = (startRaw?: string, endRaw?: string) => {
-  const now = new Date();
-  const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-  const defaultEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
-
-  const startInput = startRaw?.trim() ?? '';
-  const endInput = endRaw?.trim() ?? '';
-  const parsedStart = startInput ? new Date(startInput) : null;
-  const parsedEnd = endInput ? new Date(endInput) : null;
-
-  const startValid = parsedStart && !Number.isNaN(parsedStart.getTime());
-  const endValid = parsedEnd && !Number.isNaN(parsedEnd.getTime());
-
-  const start = startValid ? parsedStart : defaultStart;
-  const end = endValid ? parsedEnd : defaultEnd;
-
-  if (start.getTime() >= end.getTime()) {
-    return {
-      start: defaultStart,
-      end: defaultEnd,
-      startValue: formatDateTimeLocal(defaultStart),
-      endValue: formatDateTimeLocal(defaultEnd),
-    };
-  }
-
-  return {
-    start,
-    end,
-    startValue: formatDateTimeLocal(start),
-    endValue: formatDateTimeLocal(end),
-  };
 };
 
 const parseNumber = (value: unknown): number | null => {
@@ -128,7 +89,7 @@ export default async function AdminRevenuePage(props: PageProps) {
   const resolveDisplayName = (discordId: string) => excludeDisplayMap.get(discordId) || '未知用户';
   const startParam = Array.isArray(searchParams.startDate) ? searchParams.startDate[0] : searchParams.startDate;
   const endParam = Array.isArray(searchParams.endDate) ? searchParams.endDate[0] : searchParams.endDate;
-  const { start, end, startValue, endValue } = parseDateRange(startParam, endParam);
+  const { start, end, startValue, endValue } = parseUtcDateRange(startParam, endParam);
 
   const blockStackAgg = await prisma.blockStackGame.aggregate({
     _sum: {
@@ -369,7 +330,7 @@ export default async function AdminRevenuePage(props: PageProps) {
 
       <form className="grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 md:grid-cols-2" method="get">
         <label className="space-y-2 text-sm">
-          <span className="text-white/70">开始时间</span>
+          <span className="text-white/70">开始时间 (UTC+0)</span>
           <input
             type="datetime-local"
             name="startDate"
@@ -378,7 +339,7 @@ export default async function AdminRevenuePage(props: PageProps) {
           />
         </label>
         <label className="space-y-2 text-sm">
-          <span className="text-white/70">结束时间</span>
+          <span className="text-white/70">结束时间 (UTC+0)</span>
           <input
             type="datetime-local"
             name="endDate"

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isAdminDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
+import { formatDateTimeTextUtc, formatFileTimestampUtc, parseUtcDateRange } from '@/lib/utcDateRange';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,34 +19,6 @@ const parseExcludeIds = (value: string) =>
     .split(/[\s,]+/)
     .map(normalizeId)
     .filter(Boolean);
-
-const pad2 = (value: number) => String(value).padStart(2, '0');
-
-const formatDateTimeLocal = (date: Date) =>
-  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(
-    date.getMinutes(),
-  )}:${pad2(date.getSeconds())}`;
-
-const parseDateRange = (startRaw?: string, endRaw?: string) => {
-  const now = new Date();
-  const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-  const defaultEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
-
-  const startInput = startRaw?.trim() ?? '';
-  const endInput = endRaw?.trim() ?? '';
-  const parsedStart = startInput ? new Date(startInput) : null;
-  const parsedEnd = endInput ? new Date(endInput) : null;
-
-  const startValid = parsedStart && !Number.isNaN(parsedStart.getTime());
-  const endValid = parsedEnd && !Number.isNaN(parsedEnd.getTime());
-  const start = startValid ? parsedStart : defaultStart;
-  const end = endValid ? parsedEnd : defaultEnd;
-
-  if (start.getTime() >= end.getTime()) {
-    return { start: defaultStart, end: defaultEnd };
-  }
-  return { start, end };
-};
 
 const parseNumber = (value: unknown): number | null => {
   if (value === null || value === undefined) return null;
@@ -152,15 +125,7 @@ function addKeyValueSheet(
   }
 }
 
-const toFileName = (prefix: string, date = new Date()) => {
-  const yyyy = date.getFullYear();
-  const mm = pad2(date.getMonth() + 1);
-  const dd = pad2(date.getDate());
-  const hh = pad2(date.getHours());
-  const mi = pad2(date.getMinutes());
-  const ss = pad2(date.getSeconds());
-  return `${prefix}_${yyyy}${mm}${dd}_${hh}${mi}${ss}.xlsx`;
-};
+const toFileName = (prefix: string, date = new Date()) => `${prefix}_${formatFileTimestampUtc(date)}.xlsx`;
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession();
@@ -173,7 +138,7 @@ export async function GET(request: NextRequest) {
   const excludeMemberInput = (searchParams.get('excludeMember') ?? '1441310169492361268').trim();
   const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
   const excludeMemberIds = excludeMemberInput ? parseExcludeIds(excludeMemberInput) : [];
-  const { start, end } = parseDateRange(searchParams.get('startDate') ?? undefined, searchParams.get('endDate') ?? undefined);
+  const { start, end } = parseUtcDateRange(searchParams.get('startDate') ?? undefined, searchParams.get('endDate') ?? undefined);
 
   const excludePreviewIds = Array.from(new Set([...excludeRechargeIds, ...excludeMemberIds]));
   const excludeMembers = excludePreviewIds.length
@@ -345,8 +310,8 @@ export async function GET(request: NextRequest) {
   workbook.created = new Date();
 
   addKeyValueSheet(workbook, '导出参数', [
-    { section: 'filters', key: 'start', value: formatDateTimeLocal(start) },
-    { section: 'filters', key: 'end(exclusive)', value: formatDateTimeLocal(end) },
+    { section: 'filters', key: 'start', value: formatDateTimeTextUtc(start) },
+    { section: 'filters', key: 'end(exclusive)', value: formatDateTimeTextUtc(end) },
     { section: 'filters', key: 'excludeRecharge(raw)', value: excludeRechargeInput },
     { section: 'filters', key: 'excludeMember(raw)', value: excludeMemberInput },
     { section: 'filters', key: 'excludeRechargeIds', value: excludeRechargeIds.join(', ') },
