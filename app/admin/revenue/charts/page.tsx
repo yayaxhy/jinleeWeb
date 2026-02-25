@@ -20,6 +20,7 @@ type DailyPoint = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const CHART_Y_INTERVAL = 5000;
 
 const normalizeId = (raw: string) => {
   const cleaned = raw.trim().replace(/^<@!?/, '').replace(/>$/, '');
@@ -116,10 +117,11 @@ function LineGraphCard({
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
   const maxValue = Math.max(1, ...points.map((p) => p.value));
+  const axisMax = Math.max(CHART_Y_INTERVAL, Math.ceil(maxValue / CHART_Y_INTERVAL) * CHART_Y_INTERVAL);
 
   const xOf = (idx: number) =>
     points.length <= 1 ? padding.left + chartW / 2 : padding.left + (idx / (points.length - 1)) * chartW;
-  const yOf = (value: number) => padding.top + chartH - (value / maxValue) * chartH;
+  const yOf = (value: number) => padding.top + chartH - (value / axisMax) * chartH;
 
   const pointPairs = points.map((p, idx) => `${xOf(idx)},${yOf(p.value)}`);
   const linePath = points
@@ -131,8 +133,8 @@ function LineGraphCard({
       )} ${(padding.top + chartH).toFixed(1)} Z`
     : '';
 
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((t) => {
-    const value = maxValue * t;
+  const yTicks = Array.from({ length: Math.floor(axisMax / CHART_Y_INTERVAL) + 1 }, (_, idx) => {
+    const value = idx * CHART_Y_INTERVAL;
     return { value, y: yOf(value) };
   });
 
