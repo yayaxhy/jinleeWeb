@@ -436,12 +436,22 @@ export default async function AdminRevenuePage(props: PageProps) {
             >
               下载 Excel（全部收益数据）
             </button>
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-full bg-white/15 px-6 py-2 text-sm text-white hover:bg-white/25"
-            >
-              刷新数据
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-full bg-white/15 px-6 py-2 text-sm text-white hover:bg-white/25"
+              >
+                刷新数据
+              </button>
+              <button
+                type="submit"
+                formAction="/admin/revenue/charts"
+                formMethod="get"
+                className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm text-white hover:bg-white/10"
+              >
+                查看表格
+              </button>
+            </div>
           </div>
         </div>
       </form>
