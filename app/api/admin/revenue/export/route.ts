@@ -73,6 +73,17 @@ const toCellValue = (value: unknown): string | number | boolean | null => {
   return String(value);
 };
 
+type OrderReferralRow = {
+  id: string;
+  referralId: string;
+  orderId: string;
+  amount: Prisma.Decimal | null;
+  createdAt: Date;
+  orderEndedAt: Date | null;
+  hostId: string | null;
+  workerId: string | null;
+};
+
 function addObjectRowsSheet(workbook: ExcelJS.Workbook, title: string, rows: any[]) {
   const sheet = workbook.addWorksheet(safeSheetName(title));
   if (!rows.length) {
@@ -182,6 +193,7 @@ export async function GET(request: NextRequest) {
     commissionRows,
     giftAuditRows,
     orderRows,
+    referralPayoutRows,
     discountRebateRows,
     lotteryCreatedRows,
     lotteryConsumeRows,
@@ -215,6 +227,24 @@ export async function GET(request: NextRequest) {
       where: { status: 'ENDED', endedAt: { gte: start, lt: end } },
       orderBy: { endedAt: 'desc' },
     }),
+    prisma.$queryRaw<OrderReferralRow[]>(Prisma.sql`
+      SELECT
+        rp."id",
+        rp."referralId",
+        rp."orderId",
+        rp."amount",
+        rp."createdAt",
+        o."endedAt" AS "orderEndedAt",
+        o."hostId",
+        o."workerId"
+      FROM "ReferralPayout" rp
+      JOIN "Order" o
+        ON o."id" = rp."orderId"
+      WHERE rp."createdAt" >= ${start}
+        AND rp."createdAt" < ${end}
+        AND o."status" = 'ENDED'
+      ORDER BY rp."createdAt" DESC
+    `),
     prisma.individualTransaction.findMany({
       where: discountRebateWhere,
       orderBy: { timeCreatedAt: 'desc' },
@@ -270,6 +300,7 @@ export async function GET(request: NextRequest) {
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = decimalSum(giftAuditRows, 'feeAmount');
   const giftReferral = decimalSum(giftAuditRows, 'bossReferralAmount').add(decimalSum(giftAuditRows, 'workerReferralAmount'));
+  const orderReferral = decimalSum(referralPayoutRows, 'amount');
   const orderGross = decimalSum(orderRows, 'grossAmount');
   const orderNet = decimalSum(orderRows, 'netAmount');
   const orderFee = orderGross.sub(orderNet);
@@ -324,6 +355,7 @@ export async function GET(request: NextRequest) {
     { section: 'rows', key: 'Commission(filtered)', value: commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: giftAuditRows.length },
     { section: 'rows', key: 'Order(ENDED)', value: orderRows.length },
+    { section: 'rows', key: 'ReferralPayout', value: referralPayoutRows.length },
     { section: 'rows', key: 'IndividualTransaction(优惠返利)', value: discountRebateRows.length },
     { section: 'rows', key: 'LotteryDraw(createdAt window)', value: lotteryCreatedRows.length },
     { section: 'rows', key: 'LotteryDraw(consumeAt window)', value: lotteryConsumeRows.length },
@@ -366,6 +398,7 @@ export async function GET(request: NextRequest) {
     { section: '抽成详情', key: '打赏实付流水', value: giftPaid.toString() },
     { section: '抽成详情', key: '打赏抽成', value: giftFee.toString() },
     { section: '抽成详情', key: '打赏返利', value: giftReferral.toString() },
+    { section: '抽成详情', key: '订单返利', value: orderReferral.toString() },
     { section: '抽成详情', key: '打赏补贴(代金券原始)', value: giftSubsidy.toString() },
     { section: '抽成详情', key: '打赏补贴回退(打赏撤销)', value: revertedGiftSubsidy.toString() },
     { section: '抽成详情', key: '打赏补贴(代金券净额)', value: giftSubsidyNet.toString() },
@@ -391,6 +424,7 @@ export async function GET(request: NextRequest) {
   addObjectRowsSheet(workbook, '打赏审计明细', giftAuditRows);
   addObjectRowsSheet(workbook, '打赏补贴回退明细', revertedGiftRows);
   addObjectRowsSheet(workbook, '订单明细_ENDED', orderRows);
+  addObjectRowsSheet(workbook, '订单返利明细', referralPayoutRows);
   addObjectRowsSheet(workbook, '优惠返利流水', discountRebateRows);
   addObjectRowsSheet(workbook, '抽奖明细_创建时间', lotteryCreatedRows);
   addObjectRowsSheet(workbook, '抽奖明细_消耗时间', lotteryConsumeRows);

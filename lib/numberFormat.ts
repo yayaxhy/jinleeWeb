@@ -17,6 +17,10 @@ export const parseNumeric = (value: unknown): number | null => {
 
 export const roundDownTo = (value: number, digits = 2): number => {
   const factor = 10 ** digits;
+  const scaled = value * factor;
+  // Eliminate tiny floating-point noise so exact amounts (e.g. 600.00) don't render as 599.99.
+  const nearest = Math.round(scaled);
+  if (Math.abs(scaled - nearest) < 1e-8) return nearest / factor;
   if (value >= 0) return Math.floor((value + Number.EPSILON) * factor) / factor;
   return Math.ceil((value - Number.EPSILON) * factor) / factor;
 };

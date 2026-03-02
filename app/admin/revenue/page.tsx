@@ -184,6 +184,17 @@ export default async function AdminRevenuePage(props: PageProps) {
       createdAt: { gte: start, lt: end },
     },
   });
+  const orderReferralRows = await prisma.$queryRaw<{ order_referral: Prisma.Decimal | null }[]>(
+    Prisma.sql`
+      SELECT COALESCE(SUM(rp."amount"), 0) AS order_referral
+      FROM "ReferralPayout" rp
+      JOIN "Order" o
+        ON o."id" = rp."orderId"
+      WHERE rp."createdAt" >= ${start}
+        AND rp."createdAt" < ${end}
+        AND o."status" = 'ENDED'
+    `,
+  );
   const orderWhere: Prisma.OrderWhereInput = {
     status: 'ENDED',
     endedAt: { gte: start, lt: end },
@@ -215,6 +226,7 @@ export default async function AdminRevenuePage(props: PageProps) {
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = dec(giftAgg._sum.feeAmount);
   const giftReferral = dec(giftAgg._sum.bossReferralAmount).add(dec(giftAgg._sum.workerReferralAmount));
+  const orderReferral = dec(orderReferralRows[0]?.order_referral);
   const orderGross = dec(orderAgg._sum.grossAmount);
   const orderNet = dec(orderAgg._sum.netAmount);
   const orderFee = orderGross.sub(orderNet);
@@ -513,6 +525,7 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>打赏实付流水：¥{formatNumber(giftPaid, 4)}</p>
             <p>打赏抽成：¥{formatNumber(giftFee, 4)}</p>
             <p>打赏返利：¥{formatNumber(giftReferral, 4)}</p>
+            <p>订单返利：¥{formatNumber(orderReferral, 4)}</p>
             <p>打赏补贴(代金券原始)：¥{formatNumber(giftSubsidy, 4)}</p>
             <p>打赏补贴回退(打赏撤销)：¥{formatNumber(revertedGiftSubsidy, 4)}</p>
             <p>打赏补贴(代金券净额)：¥{formatNumber(giftSubsidyNet, 4)}</p>
