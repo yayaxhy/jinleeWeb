@@ -53,6 +53,7 @@ const QUOTATION_LABEL_MAP: Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], stri
   csgoPrice: 'CSGO单价',
   narakaPrice: '永劫单价',
   apexPrice: 'Apex单价',
+  owPrice: 'OW单价',
 };
 
 type PeiwanFormProps = {

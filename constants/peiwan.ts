@@ -23,7 +23,7 @@ export type PeiwanGameTag = (typeof PEIWAN_GAME_TAG_FIELDS)[number];
 export const PEIWAN_FILTER_TAG_FIELDS = [...PEIWAN_GAME_TAG_FIELDS, 'techTag'] as const;
 export type PeiwanFilterTag = (typeof PEIWAN_FILTER_TAG_FIELDS)[number];
 
-export const QUOTATION_CODES = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7'] as const;
+export const QUOTATION_CODES = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7', 'Q8'] as const;
 export type QuotationCodeValue = (typeof QUOTATION_CODES)[number];
 
 export const QUOTATION_CODE_TO_FIELD = {
@@ -34,6 +34,7 @@ export const QUOTATION_CODE_TO_FIELD = {
   Q5: 'csgoPrice',
   Q6: 'narakaPrice',
   Q7: 'apexPrice',
+  Q8: 'owPrice',
 } as const satisfies Record<QuotationCodeValue, string>;
 
 export const PEIWAN_QUOTATION_FIELDS = Object.values(QUOTATION_CODE_TO_FIELD) as [
