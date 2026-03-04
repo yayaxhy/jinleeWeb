@@ -2,10 +2,6 @@ import { ReferralType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminDiscordId, isHowardDiscordId, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
-import {
-  buildReferralInviteeIneligibleMessage,
-  checkReferralInviteeEligibility,
-} from '@/lib/referralEligibility';
 import { getServerSession } from '@/lib/session';
 
 const ensureReferralWriteSession = async () => {
@@ -57,35 +53,19 @@ export async function PATCH(
   if (!existingReferral) {
     return NextResponse.json({ error: '记录不存在' }, { status: 404 });
   }
-  const effectiveType = type ?? existingReferral.type;
+  const [invitee] = await Promise.all([
+    prisma.member.findUnique({ where: { discordUserId: inviteeId } }),
+  ]);
+  if (!invitee) {
+    return NextResponse.json({ error: '被邀请人不存在，请先创建成员' }, { status: 404 });
+  }
 
   if (inviterId) {
-    const [inviter, inviteeEligibility] = await Promise.all([
+    const [inviter] = await Promise.all([
       prisma.member.findUnique({ where: { discordUserId: inviterId } }),
-      checkReferralInviteeEligibility(inviteeId, effectiveType),
     ]);
     if (!inviter) {
       return NextResponse.json({ error: '新的邀请人不存在，请先创建成员' }, { status: 404 });
-    }
-    if (!inviteeEligibility) {
-      return NextResponse.json({ error: '被邀请人不存在，请先创建成员' }, { status: 404 });
-    }
-    if (!inviteeEligibility.ok) {
-      return NextResponse.json(
-        { error: buildReferralInviteeIneligibleMessage(inviteeEligibility) },
-        { status: 400 },
-      );
-    }
-  } else {
-    const inviteeEligibility = await checkReferralInviteeEligibility(inviteeId, effectiveType);
-    if (!inviteeEligibility) {
-      return NextResponse.json({ error: '被邀请人不存在，请先创建成员' }, { status: 404 });
-    }
-    if (!inviteeEligibility.ok) {
-      return NextResponse.json(
-        { error: buildReferralInviteeIneligibleMessage(inviteeEligibility) },
-        { status: 400 },
-      );
     }
   }
 
