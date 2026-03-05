@@ -63,7 +63,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
     prisma.order.count({ where }),
     prisma.order.findMany({
       where,
-      orderBy: { endedAt: 'desc' },
+      orderBy: [{ endedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
       skip,
       take: PAGE_SIZE,
       select: {
@@ -262,4 +262,3 @@ export default async function RefundableOrdersPage(props: PageProps) {
     </section>
   );
 }
-
