@@ -132,15 +132,11 @@ export type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const formatUtcDateTime = (value?: Date | string | null) => {
+const formatUtcDate = (value?: Date | string | null) => {
   if (!value) return '—';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  const text = date
-    .toISOString()
-    .replace('T', ' ')
-    .replace(/\.\d{3}Z$/, ' UTC');
-  return text;
+  return date.toISOString().slice(0, 10);
 };
 
 const getAutoCommissionWindow = (now = new Date()) => {
@@ -368,7 +364,7 @@ export default async function Profile(props: ProfilePageProps) {
     0,
     Math.min(100, (autoCommissionCurrentAmount / AUTO_COMMISSION_THRESHOLD) * 100),
   );
-  const autoCommissionWindowLabel = `${formatUtcDateTime(autoCommissionWindowStart)} ~ ${formatUtcDateTime(autoCommissionWindowEnd)}`;
+  const autoCommissionWindowLabel = `${formatUtcDate(autoCommissionWindowStart)} ~ ${formatUtcDate(autoCommissionWindowEnd)}`;
   const autoCommissionActiveUntil = autoCommissionBuff?.activeUntil ?? null;
   const autoCommissionStatusMeta = getBuffStatusMeta(autoCommissionActiveUntil);
 
@@ -622,7 +618,7 @@ export default async function Profile(props: ProfilePageProps) {
                         <div className="space-y-1">
                           <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">自动9%进度</p>
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-lg font-semibold text-[#8a6000]">30天累计收入门槛</h3>
+                            <h3 className="text-lg font-semibold text-[#8a6000]">30天累计实际收入</h3>
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${autoCommissionStatusMeta.badgeClass}`}>
                               {autoCommissionStatusMeta.label}
                             </span>
@@ -639,8 +635,7 @@ export default async function Profile(props: ProfilePageProps) {
                           <p>
                             当前累计：{formatNumber(autoCommissionCurrentAmount)} / {formatNumber(AUTO_COMMISSION_THRESHOLD)}
                           </p>
-                          <p>离 1.2W 还差：{formatNumber(autoCommissionRemainingAmount)}</p>
-                          <p>统计时间（UTC+0）：{autoCommissionWindowLabel}</p>
+                          <p>统计时间：{autoCommissionWindowLabel}</p>
                         </div>
                       </div>
                     )}
