@@ -26,6 +26,30 @@ export const metadata = {
   title: '可撤回订单',
 };
 
+type OrderAuditRow = {
+  id: string;
+  orderId: string;
+  paymentTransactionId: string;
+  transactionOrderId: number;
+  hostId: string;
+  workerId: string;
+  peiwanId: number;
+  gross: unknown;
+  pointsEarned: unknown;
+  feeAmount: unknown;
+  netAmount: unknown;
+  commissionRate: unknown;
+  hostFromIncome: unknown;
+  hostFromRecharge: unknown;
+  spendBonusExtra: unknown;
+  spendRemainingBefore: unknown;
+  bossReferralInviterId: string | null;
+  bossReferralAmount: unknown | null;
+  workerReferralInviterId: string | null;
+  workerReferralAmount: unknown | null;
+  createdAt: Date;
+};
+
 export default async function RefundableOrdersPage(props: PageProps) {
   const session = await getServerSession();
   if (!session?.discordId || !canViewRefundableGifts(session.discordId)) {
@@ -53,34 +77,56 @@ export default async function RefundableOrdersPage(props: PageProps) {
   const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (currentPage - 1) * PAGE_SIZE;
 
-  const where: Prisma.OrderWhereInput = {
-    status: 'ENDED',
-  };
-  if (hostId) where.hostId = hostId;
-  if (workerId) where.workerId = workerId;
+  let whereClause = Prisma.empty;
+  if (hostId && workerId) {
+    whereClause = Prisma.sql`WHERE oa."hostId" = ${hostId} AND oa."workerId" = ${workerId}`;
+  } else if (hostId) {
+    whereClause = Prisma.sql`WHERE oa."hostId" = ${hostId}`;
+  } else if (workerId) {
+    whereClause = Prisma.sql`WHERE oa."workerId" = ${workerId}`;
+  }
 
   const [totalCount, records] = await Promise.all([
-    prisma.order.count({ where }),
-    prisma.order.findMany({
-      where,
-      orderBy: [{ endedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
-      skip,
-      take: PAGE_SIZE,
-      select: {
-        id: true,
-        displayNo: true,
-        createdAt: true,
-        acceptedAt: true,
-        endedAt: true,
-        totalMinutes: true,
-        chargedMinutes: true,
-        hostId: true,
-        workerId: true,
-        grossAmount: true,
-        netAmount: true,
-        commissionRate: true,
-      },
-    }),
+    prisma
+      .$queryRaw<Array<{ count: bigint | number }>>(
+        Prisma.sql`
+          SELECT COUNT(*)::bigint AS count
+          FROM "order_audit" oa
+          ${whereClause}
+        `,
+      )
+      .then((rows) => Number(rows[0]?.count ?? 0)),
+    prisma.$queryRaw<OrderAuditRow[]>(
+      Prisma.sql`
+        SELECT
+          oa."id",
+          oa."orderId",
+          oa."paymentTransactionId",
+          oa."transactionOrderId",
+          oa."hostId",
+          oa."workerId",
+          oa."peiwanId",
+          oa."gross",
+          oa."pointsEarned",
+          oa."feeAmount",
+          oa."netAmount",
+          oa."commissionRate",
+          oa."hostFromIncome",
+          oa."hostFromRecharge",
+          oa."spendBonusExtra",
+          oa."spendRemainingBefore",
+          oa."bossReferralInviterId",
+          oa."bossReferralAmount",
+          oa."workerReferralInviterId",
+          oa."workerReferralAmount",
+          oa."createdAt"
+        FROM "order_audit" oa
+        ${whereClause}
+        ORDER BY oa."createdAt" DESC, oa."id" DESC
+        LIMIT ${PAGE_SIZE}
+        OFFSET ${skip}
+      `,
+    ),
   ]);
 
   const relatedDiscordIds = Array.from(
@@ -119,7 +165,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
             <h1 className="text-3xl font-semibold">可撤回订单</h1>
-            <p className="text-sm text-white/60">仅展示订单，不提供网页撤回按钮。</p>
+            <p className="text-sm text-white/60">仅展示 order_audit 数据，不提供网页撤回按钮。</p>
           </div>
           <Link
             href="/admin"
@@ -179,17 +225,17 @@ export default async function RefundableOrdersPage(props: PageProps) {
             <table className="w-full table-auto text-sm text-white">
               <thead className="bg-white/5 text-[11px] uppercase tracking-[0.35em] text-white/50">
                 <tr>
-                  <th className="px-3 py-3 text-left">Order</th>
-                  <th className="px-3 py-3 text-left">创建</th>
-                  <th className="px-3 py-3 text-left">接单</th>
-                  <th className="px-3 py-3 text-left">结单</th>
+                  <th className="px-3 py-3 text-left">Audit</th>
+                  <th className="px-3 py-3 text-left">时间</th>
                   <th className="px-3 py-3 text-left">老板</th>
                   <th className="px-3 py-3 text-left">陪玩</th>
-                  <th className="px-3 py-3 text-left">游玩分钟</th>
-                  <th className="px-3 py-3 text-left">计费分钟</th>
-                  <th className="px-3 py-3 text-left">总额</th>
+                  <th className="px-3 py-3 text-left">订单总额</th>
                   <th className="px-3 py-3 text-left">陪玩到手</th>
                   <th className="px-3 py-3 text-left">抽成比例</th>
+                  <th className="px-3 py-3 text-left">老板收入扣款</th>
+                  <th className="px-3 py-3 text-left">老板充值扣款</th>
+                  <th className="px-3 py-3 text-left">消费Buff额外</th>
+                  <th className="px-3 py-3 text-left">订单返利</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -203,12 +249,14 @@ export default async function RefundableOrdersPage(props: PageProps) {
                 {records.map((record) => (
                   <tr key={record.id} className="align-top">
                     <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
-                      <div>#{record.displayNo}</div>
-                      <div>{record.id}</div>
+                      <div>orderId: {record.orderId}</div>
+                      <div>txnNo: {record.transactionOrderId}</div>
+                      <div>auditId: {record.id}</div>
                     </td>
-                    <td className="px-3 py-3 text-white/70">{formatDate(record.createdAt)}</td>
-                    <td className="px-3 py-3 text-white/70">{formatDate(record.acceptedAt)}</td>
-                    <td className="px-3 py-3 text-white/70">{formatDate(record.endedAt)}</td>
+                    <td className="px-3 py-3 text-white/70 whitespace-normal break-words">
+                      <div>{formatDate(record.createdAt)}</div>
+                      <div className="text-[11px] text-white/50">{record.paymentTransactionId}</div>
+                    </td>
                     <td className="px-3 py-3 whitespace-normal break-words">
                       <div className="space-y-1">
                         <div className="text-white/90">{resolveDisplayName(record.hostId)}</div>
@@ -221,11 +269,16 @@ export default async function RefundableOrdersPage(props: PageProps) {
                         <div className="font-mono text-[11px] text-white/80">{record.workerId}</div>
                       </div>
                     </td>
-                    <td className="px-3 py-3">{record.totalMinutes ?? '—'}</td>
-                    <td className="px-3 py-3">{record.chargedMinutes ?? '—'}</td>
-                    <td className="px-3 py-3">{formatNumber(record.grossAmount)}</td>
+                    <td className="px-3 py-3">{formatNumber(record.gross)}</td>
                     <td className="px-3 py-3">{formatNumber(record.netAmount)}</td>
                     <td className="px-3 py-3">{formatNumber(record.commissionRate)}</td>
+                    <td className="px-3 py-3">{formatNumber(record.hostFromIncome)}</td>
+                    <td className="px-3 py-3">{formatNumber(record.hostFromRecharge)}</td>
+                    <td className="px-3 py-3">{formatNumber(record.spendBonusExtra)}</td>
+                    <td className="px-3 py-3 whitespace-normal break-words">
+                      <div>老板：{formatNumber(record.bossReferralAmount ?? 0)}</div>
+                      <div>陪玩：{formatNumber(record.workerReferralAmount ?? 0)}</div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
