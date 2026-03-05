@@ -779,6 +779,23 @@ model CommissionBuff {
   @@map("commission_buff")
 }
 
+model AutoCommissionBuff {
+  userId          String   @id @map("user_id")
+  targetShare     Decimal  @db.Decimal(10, 4) @default(0.91) @map("target_share")
+  thresholdAmount Decimal  @db.Decimal(19, 4) @default(12000) @map("threshold_amount")
+  windowDays      Int      @default(30) @map("window_days")
+  windowStart     DateTime @map("window_start")
+  windowEnd       DateTime @map("window_end")
+  currentAmount   Decimal  @db.Decimal(19, 4) @default(0) @map("current_amount")
+  tierExpiries    Json?    @map("tier_expiries")
+  activeUntil     DateTime? @map("active_until")
+  lastQualifiedAt DateTime? @map("last_qualified_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("auto_commission_buff")
+}
+
 model FlowBuff {
   userId         String   @id @map("user_id")
   remainingExtra Decimal  @db.Decimal(19, 4) @map("remaining_extra")

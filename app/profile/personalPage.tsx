@@ -21,6 +21,9 @@ const BOSS_LEVELS = [
 
 const TRANSACTIONS_PER_PAGE = 10;
 const ROME_TIMEZONE = 'Europe/Rome';
+const AUTO_COMMISSION_THRESHOLD = 12000;
+const AUTO_COMMISSION_WINDOW_DAYS = 30;
+const AUTO_COMMISSION_INCOME_TYPES = ['点单', '打赏', '红包收入', '订单撤销', '打赏撤销'] as const;
 
 const stringifyUnknown = (value: unknown): string => {
   if (value === null || value === undefined) return '';
@@ -129,6 +132,27 @@ export type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+const formatUtcDateTime = (value?: Date | string | null) => {
+  if (!value) return '—';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  const text = date
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/\.\d{3}Z$/, ' UTC');
+  return text;
+};
+
+const getAutoCommissionWindow = (now = new Date()) => {
+  const utcStartOfToday = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0),
+  );
+  const windowStart = new Date(
+    utcStartOfToday.getTime() - (AUTO_COMMISSION_WINDOW_DAYS - 1) * 24 * 60 * 60 * 1000,
+  );
+  return { windowStart, windowEnd: now };
+};
+
 export default async function Profile(props: ProfilePageProps) {
   const rawSearchParams = props.searchParams;
   const resolvedSearchParams =
@@ -180,6 +204,9 @@ export default async function Profile(props: ProfilePageProps) {
   const peiwan = member.peiwan;
   const isPeiwanMember = member.status === 'PEIWAN';
   const isLaobanMember = member.status === 'LAOBAN';
+  const now = new Date();
+  const { windowStart: autoCommissionWindowStart, windowEnd: autoCommissionWindowEnd } =
+    getAutoCommissionWindow(now);
   const level = peiwan?.level;
   const displayName = session?.username ?? member.discordUserId;
   const avatarUrl = session?.avatar
@@ -211,6 +238,22 @@ export default async function Profile(props: ProfilePageProps) {
   const commissionBuffPromise = prisma.commissionBuff.findUnique({
     where: { userId: discordId },
   });
+  const autoCommissionBuffPromise = prisma.autoCommissionBuff.findUnique({
+    where: { userId: discordId },
+  });
+  const autoCommissionIncomeRowsPromise = isPeiwanMember
+    ? prisma.individualTransaction.findMany({
+        where: {
+          discordId,
+          timeCreatedAt: {
+            gte: autoCommissionWindowStart,
+            lte: autoCommissionWindowEnd,
+          },
+          typeOfTransaction: { in: [...AUTO_COMMISSION_INCOME_TYPES] },
+        },
+        select: { balanceBefore: true, balanceAfter: true },
+      })
+    : Promise.resolve([]);
   const flowBuffPromise = prisma.flowBuff.findUnique({
     where: { userId: discordId },
   });
@@ -234,6 +277,8 @@ export default async function Profile(props: ProfilePageProps) {
     totalTransactions,
     transactions,
     commissionBuff,
+    autoCommissionBuff,
+    autoCommissionIncomeRows,
     flowBuff,
     spendBuff,
     loyaltyPoint,
@@ -243,6 +288,8 @@ export default async function Profile(props: ProfilePageProps) {
     totalTransactionsPromise,
     transactionsPromise,
     commissionBuffPromise,
+    autoCommissionBuffPromise,
+    autoCommissionIncomeRowsPromise,
     flowBuffPromise,
     spendBuffPromise,
     loyaltyPointPromise,
@@ -308,6 +355,22 @@ export default async function Profile(props: ProfilePageProps) {
     RENAME_CARD_5: '5位数靓号卡',
     PEIWAN_REVIEW_VOUCHER: '陪玩评语券',
   };
+
+  const autoCommissionCurrentAmount = isPeiwanMember
+    ? autoCommissionIncomeRows.reduce((sum, row) => {
+        const before = parseNumeric(row.balanceBefore) ?? 0;
+        const after = parseNumeric(row.balanceAfter) ?? 0;
+        return sum + (after - before);
+      }, 0)
+    : 0;
+  const autoCommissionRemainingAmount = Math.max(0, AUTO_COMMISSION_THRESHOLD - autoCommissionCurrentAmount);
+  const autoCommissionProgressPercent = Math.max(
+    0,
+    Math.min(100, (autoCommissionCurrentAmount / AUTO_COMMISSION_THRESHOLD) * 100),
+  );
+  const autoCommissionWindowLabel = `${formatUtcDateTime(autoCommissionWindowStart)} ~ ${formatUtcDateTime(autoCommissionWindowEnd)}`;
+  const autoCommissionActiveUntil = autoCommissionBuff?.activeUntil ?? null;
+  const autoCommissionStatusMeta = getBuffStatusMeta(autoCommissionActiveUntil);
 
   const buffCards = [
     {
@@ -554,6 +617,33 @@ export default async function Profile(props: ProfilePageProps) {
                       </div>
                       <span className="text-xs uppercase tracking-[0.4em] text-gray-400">实时同步</span>
                     </div>
+                    {isPeiwanMember && (
+                      <div className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fff7e0] to-[#fff2cc] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]">
+                        <div className="space-y-1">
+                          <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">自动9%进度</p>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="text-lg font-semibold text-[#8a6000]">30天累计收入门槛</h3>
+                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${autoCommissionStatusMeta.badgeClass}`}>
+                              {autoCommissionStatusMeta.label}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-3 w-full rounded-full bg-black/10 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-[#f8c84a] to-[#ffe08a]"
+                            style={{ width: `${autoCommissionProgressPercent}%` }}
+                            aria-hidden="true"
+                          />
+                        </div>
+                        <div className="space-y-1 text-sm text-[#7a5b12]">
+                          <p>
+                            当前累计：{formatNumber(autoCommissionCurrentAmount)} / {formatNumber(AUTO_COMMISSION_THRESHOLD)}
+                          </p>
+                          <p>离 1.2W 还差：{formatNumber(autoCommissionRemainingAmount)}</p>
+                          <p>统计时间（UTC+0）：{autoCommissionWindowLabel}</p>
+                        </div>
+                      </div>
+                    )}
                     {hasBuffData ? (
                       <div className="space-y-4">
                         {buffCards.map((buff) => {
