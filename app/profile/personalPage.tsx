@@ -23,7 +23,12 @@ const TRANSACTIONS_PER_PAGE = 10;
 const ROME_TIMEZONE = 'Europe/Rome';
 const AUTO_COMMISSION_THRESHOLD = 12000;
 const AUTO_COMMISSION_WINDOW_DAYS = 30;
-const AUTO_COMMISSION_INCOME_TYPES = ['点单', '打赏', '红包收入', '订单撤销', '打赏撤销'] as const;
+const AUTO_COMMISSION_POSITIVE_TYPES = ['点单', '打赏', '红包收入'] as const;
+const AUTO_COMMISSION_REVERT_TYPES = ['订单撤销', '打赏撤销'] as const;
+const AUTO_COMMISSION_INCOME_TYPES = [
+  ...AUTO_COMMISSION_POSITIVE_TYPES,
+  ...AUTO_COMMISSION_REVERT_TYPES,
+] as const;
 
 const stringifyUnknown = (value: unknown): string => {
   if (value === null || value === undefined) return '';
@@ -247,7 +252,7 @@ export default async function Profile(props: ProfilePageProps) {
           },
           typeOfTransaction: { in: [...AUTO_COMMISSION_INCOME_TYPES] },
         },
-        select: { balanceBefore: true, balanceAfter: true },
+        select: { typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
       })
     : Promise.resolve([]);
   const flowBuffPromise = prisma.flowBuff.findUnique({
@@ -354,9 +359,17 @@ export default async function Profile(props: ProfilePageProps) {
 
   const autoCommissionCurrentAmount = isPeiwanMember
     ? autoCommissionIncomeRows.reduce((sum, row) => {
+        const rowType = String((row as { typeOfTransaction?: unknown }).typeOfTransaction ?? '');
         const before = parseNumeric(row.balanceBefore) ?? 0;
         const after = parseNumeric(row.balanceAfter) ?? 0;
-        return sum + (after - before);
+        const delta = after - before;
+        if (AUTO_COMMISSION_POSITIVE_TYPES.includes(rowType as (typeof AUTO_COMMISSION_POSITIVE_TYPES)[number])) {
+          return delta > 0 ? sum + delta : sum;
+        }
+        if (AUTO_COMMISSION_REVERT_TYPES.includes(rowType as (typeof AUTO_COMMISSION_REVERT_TYPES)[number])) {
+          return delta < 0 ? sum + delta : sum;
+        }
+        return sum;
       }, 0)
     : 0;
   const autoCommissionRemainingAmount = Math.max(0, AUTO_COMMISSION_THRESHOLD - autoCommissionCurrentAmount);
