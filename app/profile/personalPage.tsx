@@ -433,7 +433,7 @@ export default async function Profile(props: ProfilePageProps) {
     (buff) => buff.value !== null || buff.expiresAt !== null || buff.createdAt !== null,
   );
   const tabCandidates = [
-    ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-level', label: 'VIP升级进度' }] : []),
+    ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-level', label: '升级进度' }] : []),
     { id: 'profile-buff', label: 'Buff 状态' },
     ...(isPeiwanMember ? [{ id: 'profile-personalisation', label: '个性化' }] : []),
     { id: 'profile-info', label: '个人信息' },
@@ -571,7 +571,7 @@ export default async function Profile(props: ProfilePageProps) {
                 {activeTab === 'profile-level' && (isLaobanMember || isPeiwanMember) && (
                   <div id="profile-level" className="space-y-5">
                     <div>
-                      <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">VIP升级进度</h2>
+                      <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">升级进度</h2>
                       <p className="text-sm text-gray-500">累计消费越多，等级越高</p>
                     </div>
                     <div className="space-y-3">
@@ -614,6 +614,32 @@ export default async function Profile(props: ProfilePageProps) {
                         );
                       })}
                     </div>
+                    {isPeiwanMember && (
+                      <div className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fff7e0] to-[#fff2cc] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]">
+                        <div className="space-y-1">
+                          <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">锦鲤福星陪玩进度</p>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="text-lg font-semibold text-[#8a6000]">30天累计实际收入</h3>
+                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${autoCommissionStatusMeta.badgeClass}`}>
+                              {autoCommissionStatusMeta.label}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-3 w-full rounded-full bg-black/10 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-[#f8c84a] to-[#ffe08a]"
+                            style={{ width: `${autoCommissionProgressPercent}%` }}
+                            aria-hidden="true"
+                          />
+                        </div>
+                        <div className="space-y-1 text-sm text-[#7a5b12]">
+                          <p>
+                            当前累计：{formatNumber(autoCommissionCurrentAmount)} / {formatNumber(AUTO_COMMISSION_THRESHOLD)}
+                          </p>
+                          <p>统计时间：{autoCommissionWindowLabel}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -645,32 +671,6 @@ export default async function Profile(props: ProfilePageProps) {
                       </div>
                       <span className="text-xs uppercase tracking-[0.4em] text-gray-400">实时同步</span>
                     </div>
-                    {isPeiwanMember && (
-                      <div className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fff7e0] to-[#fff2cc] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]">
-                        <div className="space-y-1">
-                          <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">锦鲤福星陪玩进度</p>
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-lg font-semibold text-[#8a6000]">30天累计实际收入</h3>
-                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${autoCommissionStatusMeta.badgeClass}`}>
-                              {autoCommissionStatusMeta.label}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-3 w-full rounded-full bg-black/10 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-[#f8c84a] to-[#ffe08a]"
-                            style={{ width: `${autoCommissionProgressPercent}%` }}
-                            aria-hidden="true"
-                          />
-                        </div>
-                        <div className="space-y-1 text-sm text-[#7a5b12]">
-                          <p>
-                            当前累计：{formatNumber(autoCommissionCurrentAmount)} / {formatNumber(AUTO_COMMISSION_THRESHOLD)}
-                          </p>
-                          <p>统计时间：{autoCommissionWindowLabel}</p>
-                        </div>
-                      </div>
-                    )}
                     {hasBuffData ? (
                       <div className="space-y-4">
                         {buffCards.map((buff) => {
