@@ -96,6 +96,17 @@ const formatBuffValue = (value: unknown, suffix?: string) => {
   return formatted;
 };
 
+const formatCommissionRateDisplay = (value: unknown) => {
+  const numeric = parseNumeric(value);
+  if (numeric === null) return '—';
+  if (numeric >= 0 && numeric <= 1) {
+    const percent = numeric * 100;
+    const rounded = Number.isInteger(percent) ? percent.toString() : percent.toFixed(2);
+    return `${rounded.replace(/\.?0+$/, '')}%`;
+  }
+  return stringifyUnknown(value);
+};
+
 const resolveAmountChange = (
   amountChange: unknown,
   balanceBefore: unknown,
@@ -380,6 +391,14 @@ export default async function Profile(props: ProfilePageProps) {
   const autoCommissionWindowLabel = `${formatUtcDate(autoCommissionWindowStart)} ~ ${formatUtcDate(autoCommissionWindowEnd)}`;
   const autoCommissionActiveUntil = autoCommissionBuff?.activeUntil ?? null;
   const autoCommissionStatusMeta = getBuffStatusMeta(autoCommissionActiveUntil);
+  const autoCommissionActive =
+    isPeiwanMember &&
+    !!autoCommissionActiveUntil &&
+    new Date(autoCommissionActiveUntil).getTime() > Date.now();
+  const profileCommissionRate =
+    autoCommissionActive && autoCommissionBuff?.targetShare != null
+      ? autoCommissionBuff.targetShare
+      : member.commissionRate;
 
   const buffCards = [
     {
@@ -629,7 +648,7 @@ export default async function Profile(props: ProfilePageProps) {
                     {isPeiwanMember && (
                       <div className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fff7e0] to-[#fff2cc] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]">
                         <div className="space-y-1">
-                          <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">自动9%进度</p>
+                          <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">锦鲤福星陪玩进度</p>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-lg font-semibold text-[#8a6000]">30天累计实际收入</h3>
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${autoCommissionStatusMeta.badgeClass}`}>
@@ -723,7 +742,7 @@ export default async function Profile(props: ProfilePageProps) {
                       {!isLaobanMember && (
                         <div>
                           <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">抽成比例</dt>
-                          <dd className="text-lg font-medium">{member.commissionRate.toString()}</dd>
+                          <dd className="text-lg font-medium">{formatCommissionRateDisplay(profileCommissionRate)}</dd>
                         </div>
                       )}
                     </dl>
