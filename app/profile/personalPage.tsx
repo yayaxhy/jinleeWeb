@@ -101,8 +101,8 @@ const formatCommissionRateDisplay = (value: unknown) => {
   if (numeric === null) return '—';
   if (numeric >= 0 && numeric <= 1) {
     const percent = numeric * 100;
-    const rounded = Number.isInteger(percent) ? percent.toString() : percent.toFixed(2);
-    return `${rounded.replace(/\.?0+$/, '')}%`;
+    const rounded = Number(percent.toFixed(2));
+    return `${rounded}%`;
   }
   return stringifyUnknown(value);
 };
