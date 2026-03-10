@@ -165,6 +165,17 @@ const getAutoCommissionWindow = (now = new Date()) => {
   return { windowStart, windowEnd: now };
 };
 
+const getAutoCommissionRetentionWindow = (lastQualifiedAt: Date | null | undefined, now = new Date()) => {
+  if (!lastQualifiedAt) return getAutoCommissionWindow(now);
+  const qualifiedAt = lastQualifiedAt instanceof Date ? lastQualifiedAt : new Date(lastQualifiedAt);
+  if (Number.isNaN(qualifiedAt.getTime())) return getAutoCommissionWindow(now);
+  const windowStart = new Date(
+    Date.UTC(qualifiedAt.getUTCFullYear(), qualifiedAt.getUTCMonth(), qualifiedAt.getUTCDate(), 0, 0, 0, 0),
+  );
+  const windowEnd = new Date(windowStart.getTime() + AUTO_COMMISSION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  return { windowStart, windowEnd };
+};
+
 export default async function Profile(props: ProfilePageProps) {
   const rawSearchParams = props.searchParams;
   const resolvedSearchParams =
@@ -217,8 +228,6 @@ export default async function Profile(props: ProfilePageProps) {
   const isPeiwanMember = member.status === 'PEIWAN';
   const isLaobanMember = member.status === 'LAOBAN';
   const now = new Date();
-  const { windowStart: autoCommissionWindowStart, windowEnd: autoCommissionWindowEnd } =
-    getAutoCommissionWindow(now);
   const level = peiwan?.level;
   const displayName = session?.username ?? member.discordUserId;
   const avatarUrl = session?.avatar
@@ -253,19 +262,6 @@ export default async function Profile(props: ProfilePageProps) {
   const autoCommissionBuffPromise = prisma.autoCommissionBuff.findUnique({
     where: { userId: discordId },
   });
-  const autoCommissionIncomeRowsPromise = isPeiwanMember
-    ? prisma.individualTransaction.findMany({
-        where: {
-          discordId,
-          timeCreatedAt: {
-            gte: autoCommissionWindowStart,
-            lte: autoCommissionWindowEnd,
-          },
-          typeOfTransaction: { in: [...AUTO_COMMISSION_INCOME_TYPES] },
-        },
-        select: { typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
-      })
-    : Promise.resolve([]);
   const flowBuffPromise = prisma.flowBuff.findUnique({
     where: { userId: discordId },
   });
@@ -290,7 +286,6 @@ export default async function Profile(props: ProfilePageProps) {
     transactions,
     commissionBuff,
     autoCommissionBuff,
-    autoCommissionIncomeRows,
     flowBuff,
     spendBuff,
     loyaltyPoint,
@@ -301,12 +296,27 @@ export default async function Profile(props: ProfilePageProps) {
     transactionsPromise,
     commissionBuffPromise,
     autoCommissionBuffPromise,
-    autoCommissionIncomeRowsPromise,
     flowBuffPromise,
     spendBuffPromise,
     loyaltyPointPromise,
     peiwanReviewsPromise,
   ]);
+  const { windowStart: autoCommissionWindowStart, windowEnd: autoCommissionWindowEnd } = isPeiwanMember
+    ? getAutoCommissionRetentionWindow(autoCommissionBuff?.lastQualifiedAt, now)
+    : getAutoCommissionWindow(now);
+  const autoCommissionIncomeRows = isPeiwanMember
+    ? await prisma.individualTransaction.findMany({
+        where: {
+          discordId,
+          timeCreatedAt: {
+            gte: autoCommissionWindowStart,
+            lte: autoCommissionWindowEnd,
+          },
+          typeOfTransaction: { in: [...AUTO_COMMISSION_INCOME_TYPES] },
+        },
+        select: { typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
+      })
+    : [];
   const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
   const hasPrevPage = currentPage > 1;
   const hasNextPage = currentPage < totalPages;
@@ -617,7 +627,7 @@ export default async function Profile(props: ProfilePageProps) {
                     {isPeiwanMember && (
                       <div className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fff7e0] to-[#fff2cc] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]">
                         <div className="space-y-1">
-                          <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">锦鲤福星陪玩进度</p>
+                          <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">锦鲤福星陪玩保级进度</p>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-lg font-semibold text-[#8a6000]">30天累计实际收入</h3>
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${autoCommissionStatusMeta.badgeClass}`}>
@@ -633,6 +643,9 @@ export default async function Profile(props: ProfilePageProps) {
                           />
                         </div>
                         <div className="space-y-1 text-sm text-[#7a5b12]">
+                          <p>
+                            在上次达标日期+30天前累计收入 {formatNumber(AUTO_COMMISSION_THRESHOLD)}-{formatNumber(autoCommissionCurrentAmount)} 完成保级
+                          </p>
                           <p>
                             当前累计：{formatNumber(autoCommissionCurrentAmount)} / {formatNumber(AUTO_COMMISSION_THRESHOLD)}
                           </p>
