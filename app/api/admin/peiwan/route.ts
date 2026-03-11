@@ -54,6 +54,7 @@ export async function POST(request: Request) {
       data: {
         PEIWANID: nextPeiwanId,
         discordUserId,
+        baseCommissionRate: payload.commissionRate.toString(),
         ...data,
       },
     });

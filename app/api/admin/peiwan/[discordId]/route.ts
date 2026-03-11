@@ -33,6 +33,7 @@ export async function PATCH(
     const payload = normalizePeiwanPayload({ ...body, discordUserId: discordId }, { allowPeiwanId: true });
     const { discordUserId } = payload;
     const data = buildPeiwanDataObject(payload);
+    const nextCommissionRate = payload.commissionRate.toString();
 
     const updated = await prisma.$transaction(async (tx) => {
       const existing = await tx.pEIWAN.findUnique({ where: { discordUserId } });
@@ -46,11 +47,22 @@ export async function PATCH(
         }
       }
 
+      const autoCommissionBuff = await tx.autoCommissionBuff.findUnique({
+        where: { userId: discordUserId },
+        select: { activeUntil: true },
+      });
+      const autoCommissionActive =
+        !!autoCommissionBuff?.activeUntil && new Date(autoCommissionBuff.activeUntil).getTime() > Date.now();
+      const commissionRateChanged = existing.commissionRate.toString() !== nextCommissionRate;
+
       const updatedPeiwan = await tx.pEIWAN.update({
         where: { discordUserId },
         data: {
           PEIWANID: targetId,
           ...data,
+          ...(!autoCommissionActive && commissionRateChanged
+            ? { baseCommissionRate: nextCommissionRate }
+            : {}),
         },
       });
 

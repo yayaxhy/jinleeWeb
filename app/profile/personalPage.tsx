@@ -165,13 +165,14 @@ const getAutoCommissionWindow = (now = new Date()) => {
   return { windowStart, windowEnd: now };
 };
 
+const getUtcStartOfNextDay = (value: Date) =>
+  new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate() + 1, 0, 0, 0, 0));
+
 const getAutoCommissionRetentionWindow = (lastQualifiedAt: Date | null | undefined, now = new Date()) => {
   if (!lastQualifiedAt) return getAutoCommissionWindow(now);
   const qualifiedAt = lastQualifiedAt instanceof Date ? lastQualifiedAt : new Date(lastQualifiedAt);
   if (Number.isNaN(qualifiedAt.getTime())) return getAutoCommissionWindow(now);
-  const windowStart = new Date(
-    Date.UTC(qualifiedAt.getUTCFullYear(), qualifiedAt.getUTCMonth(), qualifiedAt.getUTCDate(), 0, 0, 0, 0),
-  );
+  const windowStart = getUtcStartOfNextDay(qualifiedAt);
   const windowEnd = new Date(windowStart.getTime() + AUTO_COMMISSION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   return { windowStart, windowEnd };
 };
@@ -301,9 +302,15 @@ export default async function Profile(props: ProfilePageProps) {
     loyaltyPointPromise,
     peiwanReviewsPromise,
   ]);
-  const { windowStart: autoCommissionWindowStart, windowEnd: autoCommissionWindowEnd } = isPeiwanMember
-    ? getAutoCommissionRetentionWindow(autoCommissionBuff?.lastQualifiedAt, now)
-    : getAutoCommissionWindow(now);
+  const autoCommissionActiveUntil = autoCommissionBuff?.activeUntil ?? null;
+  const autoCommissionActive =
+    isPeiwanMember &&
+    !!autoCommissionActiveUntil &&
+    new Date(autoCommissionActiveUntil).getTime() > now.getTime();
+  const { windowStart: autoCommissionWindowStart, windowEnd: autoCommissionWindowEnd } =
+    isPeiwanMember && autoCommissionActive
+      ? getAutoCommissionRetentionWindow(autoCommissionBuff?.lastQualifiedAt, now)
+      : getAutoCommissionWindow(now);
   const autoCommissionIncomeRows = isPeiwanMember
     ? await prisma.individualTransaction.findMany({
         where: {
@@ -399,12 +406,7 @@ export default async function Profile(props: ProfilePageProps) {
     Math.min(100, (autoCommissionCurrentAmount / AUTO_COMMISSION_THRESHOLD) * 100),
   );
   const autoCommissionWindowLabel = `${formatUtcDate(autoCommissionWindowStart)} ~ ${formatUtcDate(autoCommissionWindowEnd)}`;
-  const autoCommissionActiveUntil = autoCommissionBuff?.activeUntil ?? null;
   const autoCommissionStatusMeta = getBuffStatusMeta(autoCommissionActiveUntil);
-  const autoCommissionActive =
-    isPeiwanMember &&
-    !!autoCommissionActiveUntil &&
-    new Date(autoCommissionActiveUntil).getTime() > Date.now();
   const profileCommissionRate =
     autoCommissionActive && autoCommissionBuff?.targetShare != null
       ? autoCommissionBuff.targetShare
