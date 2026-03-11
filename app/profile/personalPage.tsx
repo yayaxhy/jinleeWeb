@@ -407,6 +407,10 @@ export default async function Profile(props: ProfilePageProps) {
   );
   const autoCommissionWindowLabel = `${formatUtcDate(autoCommissionWindowStart)} ~ ${formatUtcDate(autoCommissionWindowEnd)}`;
   const autoCommissionStatusMeta = getBuffStatusMeta(autoCommissionActiveUntil);
+  const autoCommissionCardTitle = autoCommissionActive ? '锦鲤福星陪玩保级进度' : '锦鲤福星陪玩进度';
+  const autoCommissionHint = autoCommissionActive
+    ? `在上次达标日期+30天前累计收入 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}-${formatNumber(autoCommissionCurrentAmount)} 完成保级`
+    : `最近30天累计实际收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)} 即可晋升锦鲤福星陪玩`;
   const profileCommissionRate =
     autoCommissionActive && autoCommissionBuff?.targetShare != null
       ? autoCommissionBuff.targetShare
@@ -629,7 +633,7 @@ export default async function Profile(props: ProfilePageProps) {
                     {isPeiwanMember && (
                       <div className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fff7e0] to-[#fff2cc] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]">
                         <div className="space-y-1">
-                          <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">锦鲤福星陪玩保级进度</p>
+                          <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">{autoCommissionCardTitle}</p>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-lg font-semibold text-[#8a6000]">30天累计实际收入</h3>
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${autoCommissionStatusMeta.badgeClass}`}>
@@ -645,9 +649,7 @@ export default async function Profile(props: ProfilePageProps) {
                           />
                         </div>
                         <div className="space-y-1 text-sm text-[#7a5b12]">
-                          <p>
-                            在上次达标日期+30天前累计收入 {formatNumber(AUTO_COMMISSION_THRESHOLD)}-{formatNumber(autoCommissionCurrentAmount)} 完成保级
-                          </p>
+                          <p>{autoCommissionHint}</p>
                           <p>
                             当前累计：{formatNumber(autoCommissionCurrentAmount)} / {formatNumber(AUTO_COMMISSION_THRESHOLD)}
                           </p>
