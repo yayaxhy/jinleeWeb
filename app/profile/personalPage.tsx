@@ -408,8 +408,10 @@ export default async function Profile(props: ProfilePageProps) {
   const autoCommissionWindowLabel = `${formatUtcDate(autoCommissionWindowStart)} ~ ${formatUtcDate(autoCommissionWindowEnd)}`;
   const autoCommissionStatusMeta = getBuffStatusMeta(autoCommissionActiveUntil);
   const autoCommissionCardTitle = autoCommissionActive ? '锦鲤福星陪玩保级进度' : '锦鲤福星陪玩进度';
+  const autoCommissionDeadlineLabel = formatUtcDate(autoCommissionWindowEnd);
+  const autoCommissionShortfall = Math.max(0, AUTO_COMMISSION_THRESHOLD - autoCommissionCurrentAmount);
   const autoCommissionHint = autoCommissionActive
-    ? `在上次达标日期+30天前累计收入 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}-${formatNumber(autoCommissionCurrentAmount)} 完成保级`
+    ? `在 ${autoCommissionDeadlineLabel} 前累计收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，当前还差 ${formatNumber(autoCommissionShortfall)} 完成保级`
     : `最近30天累计实际收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)} 即可晋升锦鲤福星陪玩`;
   const profileCommissionRate =
     autoCommissionActive && autoCommissionBuff?.targetShare != null
