@@ -163,6 +163,9 @@ export const buildPeiwanDataObject = (payload: NormalizedPeiwanPayload) => {
   return {
     defaultQuotationCode: payload.defaultQuotationCode,
     commissionRate: payload.commissionRate.toString(),
+    // Keep base commission aligned on manual admin edits to avoid auto-buff
+    // evaluator snapping commissionRate back to an older baseline.
+    baseCommissionRate: payload.commissionRate.toString(),
     MP_url: payload.mpUrl ?? null,
     ...(payload.status ? { status: payload.status } : {}),
     type: payload.type,
