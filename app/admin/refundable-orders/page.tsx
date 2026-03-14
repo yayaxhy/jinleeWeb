@@ -30,7 +30,6 @@ type OrderAuditRow = {
   id: string;
   orderId: string;
   paymentTransactionId: string;
-  transactionOrderId: number;
   hostId: string;
   workerId: string;
   peiwanId: number;
@@ -102,7 +101,6 @@ export default async function RefundableOrdersPage(props: PageProps) {
           oa."id",
           oa."orderId",
           oa."paymentTransactionId",
-          oa."transactionOrderId",
           oa."hostId",
           oa."workerId",
           oa."peiwanId",
@@ -250,8 +248,6 @@ export default async function RefundableOrdersPage(props: PageProps) {
                   <tr key={record.id} className="align-top">
                     <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
                       <div>orderId: {record.orderId}</div>
-                      <div>txnNo: {record.transactionOrderId}</div>
-                      <div>auditId: {record.id}</div>
                     </td>
                     <td className="px-3 py-3 text-white/70 whitespace-normal break-words">
                       <div>{formatDate(record.createdAt)}</div>
