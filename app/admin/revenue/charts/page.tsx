@@ -341,7 +341,7 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
   const excludeMemberInput = (excludeMemberParam ?? '').trim();
   const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
 
-  const [rechargeRows, giftRows, orderRows] = await Promise.all([
+  const [rechargeRows, giftRows, orderRows, commissionRows] = await Promise.all([
     prisma.recharge.findMany({
       where: {
         createdAt: { gte: start, lt: end },
@@ -360,12 +360,18 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
       select: { endedAt: true, grossAmount: true },
       orderBy: { endedAt: 'asc' },
     }),
+    prisma.commission.findMany({
+      where: { createdAt: { gte: start, lt: end } },
+      select: { createdAt: true, feeAmount: true },
+      orderBy: { createdAt: 'asc' },
+    }),
   ]);
 
   const allDays = buildDayKeys(start, end);
   const rechargeSeries = buildDailySeries(rechargeRows, 'createdAt', 'amount', allDays);
   const giftSeries = buildDailySeries(giftRows, 'createdAt', 'gross', allDays);
   const orderSeries = buildDailySeries(orderRows, 'endedAt', 'grossAmount', allDays);
+  const commissionSeries = buildDailySeries(commissionRows, 'createdAt', 'feeAmount', allDays);
 
   const revenueHref = buildSearchHref('/admin/revenue', {
     startDate: startValue,
@@ -404,6 +410,7 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
         <LineGraphCard title="每日总充值" points={rechargeSeries} stroke="#f5c542" subtitle="Recharge.amount（日汇总）" />
         <LineGraphCard title="每日总打赏" points={giftSeries} stroke="#55d4ff" subtitle="GiftAudit.gross（日汇总）" />
         <LineGraphCard title="每日总单子金额" points={orderSeries} stroke="#7ef0b3" subtitle="已结束订单 grossAmount（日汇总）" />
+        <LineGraphCard title="每日总抽成收益" points={commissionSeries} stroke="#ff8b8b" subtitle="Commission.feeAmount（日汇总）" />
       </div>
     </div>
   );
