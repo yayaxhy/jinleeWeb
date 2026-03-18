@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ReferralManager } from '@/components/admin/ReferralManager';
+import { ReferralPolicyManager } from '@/components/admin/ReferralPolicyManager';
 import { getServerSession } from '@/lib/session';
 import { canViewReferrals, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
@@ -33,6 +34,7 @@ export default async function AdminReferralsPage() {
         </div>
 
         <ReferralManager readOnly={readOnly} />
+        <ReferralPolicyManager readOnly={readOnly} />
       </div>
     </section>
   );

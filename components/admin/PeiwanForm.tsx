@@ -54,6 +54,8 @@ const QUOTATION_LABEL_MAP: Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], stri
   narakaPrice: '永劫单价',
   apexPrice: 'Apex单价',
   owPrice: 'OW单价',
+  tftPrice: 'TFT单价',
+  steamPrice: 'Steam单价',
 };
 
 type PeiwanFormProps = {

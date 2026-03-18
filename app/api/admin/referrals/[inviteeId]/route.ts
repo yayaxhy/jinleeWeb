@@ -2,6 +2,7 @@ import { ReferralType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminDiscordId, isHowardDiscordId, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
+import { getReferralSnapshotForBinding } from '@/lib/referralPolicy';
 import { getServerSession } from '@/lib/session';
 
 const ensureReferralWriteSession = async () => {
@@ -48,7 +49,7 @@ export async function PATCH(
 
   const existingReferral = await prisma.referral.findUnique({
     where: { inviteeId },
-    select: { type: true },
+    select: { type: true, inviterId: true },
   });
   if (!existingReferral) {
     return NextResponse.json({ error: '记录不存在' }, { status: 404 });
@@ -69,12 +70,21 @@ export async function PATCH(
     }
   }
 
+  const nextInviterId = inviterId || existingReferral.inviterId;
+  const nextType = type || existingReferral.type;
+  const snapshot = await getReferralSnapshotForBinding(nextInviterId, nextType);
+
   try {
     const updated = await prisma.referral.update({
       where: { inviteeId },
       data: {
         ...(type ? { type } : {}),
         ...(inviterId ? { inviterId } : {}),
+        payoutRate: snapshot.payoutRate,
+        payoutCap: snapshot.payoutCap,
+        policyApplied: snapshot.policyApplied,
+        policyRuleId: snapshot.policyRuleId,
+        policyBoundAt: snapshot.policyBoundAt,
       },
     });
     return NextResponse.json({ referral: updated }, { status: 200 });

@@ -2,6 +2,7 @@ import { ReferralType } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { canViewReferrals, isAdminDiscordId, isHowardDiscordId, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
+import { getReferralSnapshotForBinding } from '@/lib/referralPolicy';
 import { getServerSession } from '@/lib/session';
 
 const ensureReferralReadSession = async () => {
@@ -64,6 +65,11 @@ export async function GET(request: NextRequest) {
     inviteeId: row.inviteeId,
     inviterId: row.inviterId,
     type: row.type,
+    payoutRate: row.payoutRate,
+    payoutCap: row.payoutCap,
+    policyApplied: row.policyApplied,
+    policyRuleId: row.policyRuleId,
+    policyBoundAt: row.policyBoundAt,
     createdAt: row.createdAt,
     inviteeDisplayName: row.invitee?.serverDisplayName ?? null,
     inviterDisplayName: row.inviter?.serverDisplayName ?? null,
@@ -106,11 +112,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '邀请人不存在，请先创建成员' }, { status: 404 });
   }
 
+  const snapshot = await getReferralSnapshotForBinding(inviterId, type);
   const created = await prisma.referral.create({
     data: {
       inviteeId,
       inviterId,
       type,
+      payoutRate: snapshot.payoutRate,
+      payoutCap: snapshot.payoutCap,
+      policyApplied: snapshot.policyApplied,
+      policyRuleId: snapshot.policyRuleId,
+      policyBoundAt: snapshot.policyBoundAt,
     },
   });
 
