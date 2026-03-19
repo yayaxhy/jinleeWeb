@@ -23,7 +23,7 @@ const TRANSACTIONS_PER_PAGE = 10;
 const ROME_TIMEZONE = 'Europe/Rome';
 const AUTO_COMMISSION_THRESHOLD = 12000;
 const AUTO_COMMISSION_WINDOW_DAYS = 30;
-const AUTO_COMMISSION_POSITIVE_TYPES = ['点单', '打赏', '红包收入'] as const;
+const AUTO_COMMISSION_POSITIVE_TYPES = ['点单', '打赏', '客服代打赏', '红包收入'] as const;
 const AUTO_COMMISSION_REVERT_TYPES = ['订单撤销', '打赏撤销'] as const;
 const AUTO_COMMISSION_INCOME_TYPES = [
   ...AUTO_COMMISSION_POSITIVE_TYPES,

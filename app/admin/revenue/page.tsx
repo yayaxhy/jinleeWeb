@@ -222,18 +222,55 @@ export default async function AdminRevenuePage(props: PageProps) {
         AND ga."createdAt" < ${end}
     `,
   );
+  const revertedGiftAggRows = await prisma.$queryRaw<
+    {
+      reverted_gross: Prisma.Decimal | null;
+      reverted_payable: Prisma.Decimal | null;
+      reverted_fee: Prisma.Decimal | null;
+      reverted_boss_referral: Prisma.Decimal | null;
+      reverted_worker_referral: Prisma.Decimal | null;
+    }[]
+  >(
+    Prisma.sql`
+      SELECT
+        COALESCE(SUM(ga."gross"), 0) AS reverted_gross,
+        COALESCE(SUM(ga."payable"), 0) AS reverted_payable,
+        COALESCE(SUM(ga."feeAmount"), 0) AS reverted_fee,
+        COALESCE(SUM(ga."bossReferralAmount"), 0) AS reverted_boss_referral,
+        COALESCE(SUM(ga."workerReferralAmount"), 0) AS reverted_worker_referral
+      FROM "gift_audit" ga
+      JOIN "revert" r
+        ON r."originalTransactionId" = ga."individualTransactionId"
+      WHERE r."status" = 'SUCCESS'
+        AND ga."createdAt" >= ${start}
+        AND ga."createdAt" < ${end}
+    `,
+  );
   const revertedGiftSubsidy = dec(revertedGiftRows[0]?.reverted_subsidy);
+  const revertedGiftAgg = revertedGiftAggRows[0] ?? {};
+  const revertedGiftGross = dec(revertedGiftAgg.reverted_gross);
+  const revertedGiftPaid = dec(revertedGiftAgg.reverted_payable);
+  const revertedGiftFee = dec(revertedGiftAgg.reverted_fee);
+  const revertedGiftReferral = dec(revertedGiftAgg.reverted_boss_referral).add(
+    dec(revertedGiftAgg.reverted_worker_referral),
+  );
+  const giftGrossNet = giftGross.sub(revertedGiftGross);
+  const giftPaidNet = giftPaid.sub(revertedGiftPaid);
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = dec(giftAgg._sum.feeAmount);
+  const giftFeeNet = giftFee.sub(revertedGiftFee);
   const giftReferral = dec(giftAgg._sum.bossReferralAmount).add(dec(giftAgg._sum.workerReferralAmount));
+  const giftReferralNet = giftReferral.sub(revertedGiftReferral);
   const orderReferral = dec(orderReferralRows[0]?.order_referral);
   const orderGross = dec(orderAgg._sum.grossAmount);
   const orderNet = dec(orderAgg._sum.netAmount);
   const orderFee = orderGross.sub(orderNet);
-  const totalPaidFlow = giftPaid.add(orderGross);
-  const totalFaceFlow = giftGross.add(orderGross);
-  const feeFromOrderAndGiftModel = giftFee.add(orderFee);
-  const commissionOtherSources = commissionTotal.sub(feeFromOrderAndGiftModel);
+  const totalPaidFlow = giftPaidNet.add(orderGross);
+  const totalFaceFlow = giftGrossNet.add(orderGross);
+  const rawFeeFromOrderAndGiftModel = giftFee.add(orderFee);
+  const commissionOtherSources = commissionTotal.sub(rawFeeFromOrderAndGiftModel);
+  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee);
+  const commissionTotalNet = feeFromOrderAndGiftModel.add(commissionOtherSources);
   const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
     typeOfTransaction: '优惠返利',
     timeCreatedAt: { gte: start, lt: end },
@@ -521,10 +558,10 @@ export default async function AdminRevenuePage(props: PageProps) {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">抽成详情</h3>
           <div className="space-y-1 text-sm text-white/70">
-            <p>打赏面值流水：¥{formatNumber(giftGross, 4)}</p>
-            <p>打赏实付流水：¥{formatNumber(giftPaid, 4)}</p>
-            <p>打赏抽成：¥{formatNumber(giftFee, 4)}</p>
-            <p>打赏返利：¥{formatNumber(giftReferral, 4)}</p>
+            <p>打赏面值流水：¥{formatNumber(giftGrossNet, 4)}</p>
+            <p>打赏实付流水：¥{formatNumber(giftPaidNet, 4)}</p>
+            <p>打赏抽成：¥{formatNumber(giftFeeNet, 4)}</p>
+            <p>打赏返利：¥{formatNumber(giftReferralNet, 4)}</p>
             <p>订单返利：¥{formatNumber(orderReferral, 4)}</p>
             <p>打赏补贴(代金券原始)：¥{formatNumber(giftSubsidy, 4)}</p>
             <p>打赏补贴回退(打赏撤销)：¥{formatNumber(revertedGiftSubsidy, 4)}</p>
@@ -534,7 +571,7 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>订单流水：¥{formatNumber(orderGross, 4)}</p>
             <p>订单结算：¥{formatNumber(orderNet, 4)}</p>
             <p>订单抽成：¥{formatNumber(orderFee, 4)}</p>
-            <p>总抽成：¥{formatNumber(commissionTotal, 4)}</p>
+            <p>总抽成：¥{formatNumber(commissionTotalNet, 4)}</p>
             <p>总面值原价流水：¥{formatNumber(totalFaceFlow, 4)}</p>
             <p>总实付流水：¥{formatNumber(totalPaidFlow, 4)}</p>
             <p>模型抽成合计（订单+打赏）：¥{formatNumber(feeFromOrderAndGiftModel, 4)}</p>

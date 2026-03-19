@@ -91,6 +91,14 @@ const buildDailySeries = <T extends Record<string, unknown>>(
   return allDays.map((day) => ({ day, value: sumMap.get(day) ?? 0 }));
 };
 
+const subtractDailySeries = (base: DailyPoint[], deduction: DailyPoint[]): DailyPoint[] => {
+  const deductionMap = new Map(deduction.map((point) => [point.day, point.value]));
+  return base.map((point) => ({
+    day: point.day,
+    value: point.value - (deductionMap.get(point.day) ?? 0),
+  }));
+};
+
 const buildSearchHref = (pathname: string, params: Record<string, string>) => {
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -341,7 +349,7 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
   const excludeMemberInput = (excludeMemberParam ?? '').trim();
   const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
 
-  const [rechargeRows, giftRows, orderRows, commissionRows] = await Promise.all([
+  const [rechargeRows, giftRows, revertedGiftRows, orderRows, commissionRows] = await Promise.all([
     prisma.recharge.findMany({
       where: {
         createdAt: { gte: start, lt: end },
@@ -355,6 +363,19 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
       select: { createdAt: true, gross: true },
       orderBy: { createdAt: 'asc' },
     }),
+    prisma.$queryRaw<{ createdAt: Date; gross: unknown; feeAmount: unknown }[]>`
+      SELECT
+        ga."createdAt" AS "createdAt",
+        ga."gross" AS "gross",
+        ga."feeAmount" AS "feeAmount"
+      FROM "gift_audit" ga
+      JOIN "revert" r
+        ON r."originalTransactionId" = ga."individualTransactionId"
+      WHERE r."status" = 'SUCCESS'
+        AND ga."createdAt" >= ${start}
+        AND ga."createdAt" < ${end}
+      ORDER BY ga."createdAt" ASC
+    `,
     prisma.order.findMany({
       where: { status: 'ENDED', endedAt: { gte: start, lt: end } },
       select: { endedAt: true, grossAmount: true },
@@ -369,9 +390,13 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
 
   const allDays = buildDayKeys(start, end);
   const rechargeSeries = buildDailySeries(rechargeRows, 'createdAt', 'amount', allDays);
-  const giftSeries = buildDailySeries(giftRows, 'createdAt', 'gross', allDays);
+  const rawGiftSeries = buildDailySeries(giftRows, 'createdAt', 'gross', allDays);
+  const revertedGiftSeries = buildDailySeries(revertedGiftRows, 'createdAt', 'gross', allDays);
+  const giftSeries = subtractDailySeries(rawGiftSeries, revertedGiftSeries);
   const orderSeries = buildDailySeries(orderRows, 'endedAt', 'grossAmount', allDays);
-  const commissionSeries = buildDailySeries(commissionRows, 'createdAt', 'feeAmount', allDays);
+  const rawCommissionSeries = buildDailySeries(commissionRows, 'createdAt', 'feeAmount', allDays);
+  const revertedGiftFeeSeries = buildDailySeries(revertedGiftRows, 'createdAt', 'feeAmount', allDays);
+  const commissionSeries = subtractDailySeries(rawCommissionSeries, revertedGiftFeeSeries);
 
   const revenueHref = buildSearchHref('/admin/revenue', {
     startDate: startValue,
@@ -408,9 +433,9 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
 
       <div className="space-y-5">
         <LineGraphCard title="每日总充值" points={rechargeSeries} stroke="#f5c542" subtitle="Recharge.amount（日汇总）" />
-        <LineGraphCard title="每日总打赏" points={giftSeries} stroke="#55d4ff" subtitle="GiftAudit.gross（日汇总）" />
-        <LineGraphCard title="每日总单子金额" points={orderSeries} stroke="#7ef0b3" subtitle="已结束订单 grossAmount（日汇总）" />
-        <LineGraphCard title="每日总抽成收益" points={commissionSeries} stroke="#ff8b8b" subtitle="Commission.feeAmount（日汇总）" />
+        <LineGraphCard title="每日总打赏" points={giftSeries} stroke="#55d4ff" subtitle="GiftAudit.gross - 打赏撤销（日净值）" />
+        <LineGraphCard title="每日总单子金额" points={orderSeries} stroke="#7ef0b3" subtitle="已结束订单 grossAmount（日净值）" />
+        <LineGraphCard title="每日总抽成收益" points={commissionSeries} stroke="#ff8b8b" subtitle="Commission.feeAmount - 打赏撤销抽成（日净值）" />
       </div>
     </div>
   );
