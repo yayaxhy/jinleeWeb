@@ -246,6 +246,19 @@ export default async function AdminRevenuePage(props: PageProps) {
         AND ga."createdAt" < ${end}
     `,
   );
+  const revertedOrderRows = await prisma.$queryRaw<{ reverted_order_gross: Prisma.Decimal | null }[]>(
+    Prisma.sql`
+      SELECT COALESCE(SUM(oa."gross"), 0) AS reverted_order_gross
+      FROM "order_audit" oa
+      JOIN "Order" o
+        ON o."id" = oa."orderId"
+      JOIN "revert" r
+        ON r."originalTransactionId" = CONCAT('ORDER:', oa."orderId")
+      WHERE r."status" = 'SUCCESS'
+        AND o."endedAt" >= ${start}
+        AND o."endedAt" < ${end}
+    `,
+  );
   const revertedGiftSubsidy = dec(revertedGiftRows[0]?.reverted_subsidy);
   const revertedGiftAgg = revertedGiftAggRows[0] ?? {};
   const revertedGiftGross = dec(revertedGiftAgg.reverted_gross);
@@ -254,6 +267,7 @@ export default async function AdminRevenuePage(props: PageProps) {
   const revertedGiftReferral = dec(revertedGiftAgg.reverted_boss_referral).add(
     dec(revertedGiftAgg.reverted_worker_referral),
   );
+  const revertedOrderGross = dec(revertedOrderRows[0]?.reverted_order_gross);
   const giftGrossNet = giftGross.sub(revertedGiftGross);
   const giftPaidNet = giftPaid.sub(revertedGiftPaid);
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
@@ -320,6 +334,10 @@ export default async function AdminRevenuePage(props: PageProps) {
     _sum: { amount: true },
     _count: { id: true },
     where: expenseWhere,
+  });
+  const pureProfitAgg = await prisma.pureProfit.aggregate({
+    _sum: { amount: true },
+    where: { createdAt: { gte: start, lt: end } },
   });
   const expenseByReason = await prisma.expense.groupBy({
     by: ['reason'],
@@ -483,7 +501,7 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>Member.recharge 合计：¥{formatNumber(memberAgg._sum.recharge)}</p>
             <p>Member.income 合计：¥{formatNumber(memberAgg._sum.income)}</p>
             <p>Member.totalBalance 合计：¥{formatNumber(memberAgg._sum.totalBalance)}</p>
-            <p>当月 Commission 合计：¥{formatNumber(commissionTotal)}</p>
+            <p>当月 Commission 合计：¥{formatNumber(commissionTotalNet)}</p>
           </div>
         </div>
 
@@ -540,6 +558,7 @@ export default async function AdminRevenuePage(props: PageProps) {
           <div className="space-y-1 text-sm text-white/70">
             <p>笔数：{expenseAgg._count.id}</p>
             <p>总额：¥{formatNumber(expenseAgg._sum.amount, 4)}</p>
+            <p>总扣款金额：¥{formatNumber(pureProfitAgg._sum.amount, 4)}</p>
           </div>
           <div className="space-y-1 text-sm text-white/70">
             <p className="text-white/90">按原因分类：</p>
@@ -562,6 +581,8 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>打赏实付流水：¥{formatNumber(giftPaidNet, 4)}</p>
             <p>打赏抽成：¥{formatNumber(giftFeeNet, 4)}</p>
             <p>打赏返利：¥{formatNumber(giftReferralNet, 4)}</p>
+            <p>总撤回打赏金额：¥{formatNumber(revertedGiftGross, 4)}</p>
+            <p>总撤回单子金额：¥{formatNumber(revertedOrderGross, 4)}</p>
             <p>订单返利：¥{formatNumber(orderReferral, 4)}</p>
             <p>打赏补贴(代金券原始)：¥{formatNumber(giftSubsidy, 4)}</p>
             <p>打赏补贴回退(打赏撤销)：¥{formatNumber(revertedGiftSubsidy, 4)}</p>
