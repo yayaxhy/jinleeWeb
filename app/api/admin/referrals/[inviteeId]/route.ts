@@ -110,6 +110,16 @@ export async function DELETE(
   const inviteeId = decodeURIComponent(rawInviteeId);
 
   try {
+    const payoutCount = await prisma.referralPayout.count({
+      where: { referralId: inviteeId },
+    });
+    if (payoutCount > 0) {
+      return NextResponse.json(
+        { error: '该绑定关系已产生邀请返利，禁止删除' },
+        { status: 400 },
+      );
+    }
+
     await prisma.referral.delete({ where: { inviteeId } });
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {
