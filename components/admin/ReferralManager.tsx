@@ -184,10 +184,13 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         const backendMessage = typeof data?.error === 'string' ? data.error : '';
-        const message =
-          backendMessage === '该绑定关系已产生邀请返利，禁止删除'
-            ? '该邀请关系已有返利产生，数据库拦截无法删除。'
-            : backendMessage || '删除失败，请稍后重试';
+        if (backendMessage === '该绑定关系已产生邀请返利，禁止删除') {
+          const message = '该邀请关系已有返利产生，数据库拦截无法删除。';
+          window.alert(message);
+          setGlobalMessage({ type: 'error', text: message });
+          return;
+        }
+        const message = backendMessage || '删除失败，请稍后重试';
         setGlobalMessage({ type: 'error', text: message });
       } else {
         setGlobalMessage({ type: 'success', text: '记录已删除' });
