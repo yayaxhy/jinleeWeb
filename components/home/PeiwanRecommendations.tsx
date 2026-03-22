@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { PEIWAN_GAME_TAG_FIELDS } from '@/constants/peiwan';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 
 type PeiwanItem = {
@@ -10,9 +9,8 @@ type PeiwanItem = {
   serverDisplayName: string | null;
   level: string;
   sex: string;
-  techTag: boolean;
   price: number | string | bigint | null;
-  gameTags: Record<string, boolean>;
+  gameLabels: string[];
 };
 
 type ApiResponse = {
@@ -25,12 +23,12 @@ type ImageEntry = { id: number; src: string };
 const buildFallbackItem = (id: number): PeiwanItem => ({
   id,
   serverDisplayName: `陪玩 #${id}`,
-  level: '未知' as PeiwanItem['level'],
-  sex: '推荐' as PeiwanItem['sex'],
-  techTag: false,
+  level: '未知',
+  sex: '推荐',
   price: null,
-  gameTags: {},
+  gameLabels: [],
 });
+
 const formatPrice = (value: PeiwanItem['price']) => {
   if (value === null || value === undefined) return '价格待定';
   const formatted = formatAmountDown2(value);
@@ -53,7 +51,7 @@ const CardImage = ({ item, src }: { item: PeiwanItem; src: string }) => {
 };
 
 const RecommendationCard = ({ item, src }: { item: PeiwanItem; src: string }) => {
-  const tags = PEIWAN_GAME_TAG_FIELDS.filter((tag) => item.gameTags?.[tag]).slice(0, 2);
+  const tags = item.gameLabels.slice(0, 2);
 
   return (
     <article className="flex flex-col items-center gap-4 text-center">
@@ -92,7 +90,6 @@ export function PeiwanRecommendations() {
       setAvailable([]);
 
       try {
-        // 1) 读取本地名片列表
         const imgRes = await fetch('/api/peiwanRecommend', { signal: controller.signal, cache: 'no-store' });
         if (!imgRes.ok) throw new Error('图片列表加载失败');
         const imgJson = (await imgRes.json()) as { data?: ImageEntry[] };
@@ -102,8 +99,7 @@ export function PeiwanRecommendations() {
           return;
         }
 
-        // 2) 拉取陪玩数据（尽量覆盖更多）
-        const res = await fetch(`/api/peiwan?page=1&pageSize=500&seed=home`, {
+        const res = await fetch('/api/peiwan?page=1&pageSize=500&seed=home', {
           signal: controller.signal,
           cache: 'no-store',
         });
@@ -126,7 +122,6 @@ export function PeiwanRecommendations() {
           }
         });
 
-        // 3) 对于未命中的 id，单独请求一次
         for (const miss of missing) {
           if (found.length >= MAX_DISPLAY) break;
           try {
@@ -145,7 +140,6 @@ export function PeiwanRecommendations() {
           } catch (err) {
             if (err instanceof DOMException && err.name === 'AbortError') return;
           }
-          // 如果没查到数据库，也展示本地名片，使用占位信息
           found.push({ item: buildFallbackItem(miss.id), src: miss.src });
         }
 

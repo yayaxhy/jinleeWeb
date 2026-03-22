@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
     await registerPeiwanProfile(discordUserId);
 
-    return NextResponse.json({ peiwanId: created.PEIWANID }, { status: 201 });
+    return NextResponse.json({ peiwanId: created.PEIWANID, type: created.type }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }

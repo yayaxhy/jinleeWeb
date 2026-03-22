@@ -1,27 +1,44 @@
-export const PEIWAN_GAME_TAG_FIELDS = [
-  'LOL',
-  'CSGO',
-  'Valorant',
-  'Naraka',
-  'OW2',
-  'APEX',
-  'deltaForce',
-  'marvel',
-  'singer',
-  'PUBG',
-  'TFT',
-  'R6',
-  'tarkov',
-  'chat',
-  'steam',
-  'DOTA',
-  'COD',
+export const PEIWAN_GAME_OPTIONS = [
+  { code: 'LOL', label: 'LoL' },
+  { code: 'CSGO', label: 'CSGO' },
+  { code: 'VAL', label: 'Valorant' },
+  { code: 'NARAKA', label: 'Naraka' },
+  { code: 'OW', label: 'OW' },
+  { code: 'APEX', label: 'Apex' },
+  { code: 'DELTA', label: '三角洲' },
+  { code: 'MARVEL', label: '漫威争锋' },
+  { code: 'TFT', label: 'TFT' },
+  { code: 'TARKOV', label: '塔可夫' },
+  { code: 'DOTA', label: 'Dota' },
+  { code: 'COD', label: 'COD' },
+  { code: 'CHAT', label: '哄睡语聊' },
+  { code: 'SINGER', label: '歌手' },
 ] as const;
 
-export type PeiwanGameTag = (typeof PEIWAN_GAME_TAG_FIELDS)[number];
+export type PeiwanGameCodeValue = (typeof PEIWAN_GAME_OPTIONS)[number]['code'];
 
-export const PEIWAN_FILTER_TAG_FIELDS = [...PEIWAN_GAME_TAG_FIELDS, 'techTag'] as const;
-export type PeiwanFilterTag = (typeof PEIWAN_FILTER_TAG_FIELDS)[number];
+export const PEIWAN_GAME_CODES = PEIWAN_GAME_OPTIONS.map((item) => item.code) as [
+  PeiwanGameCodeValue,
+  ...PeiwanGameCodeValue[],
+];
+
+export const PEIWAN_GAME_CODE_LABEL = Object.fromEntries(
+  PEIWAN_GAME_OPTIONS.map((item) => [item.code, item.label]),
+) as Record<PeiwanGameCodeValue, string>;
+
+export const PEIWAN_GAME_TIERS = [
+  { code: 'ENTERTAINMENT', label: '娱乐陪玩' },
+  { code: 'TRAINEE', label: '见习技术陪玩' },
+  { code: 'TECH', label: '技术陪玩' },
+  { code: 'MASTER', label: '大神陪玩' },
+  { code: 'DEMON_GUARD', label: '魔王护' },
+] as const;
+
+export type PeiwanGameTierValue = (typeof PEIWAN_GAME_TIERS)[number]['code'];
+
+export const PEIWAN_GAME_TIER_LABEL = Object.fromEntries(
+  PEIWAN_GAME_TIERS.map((item) => [item.code, item.label]),
+) as Record<PeiwanGameTierValue, string>;
 
 export const QUOTATION_CODES = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7', 'Q8', 'Q9', 'Q10'] as const;
 export type QuotationCodeValue = (typeof QUOTATION_CODES)[number];

@@ -69,7 +69,7 @@ export async function PATCH(
       return updatedPeiwan;
     });
 
-    return NextResponse.json({ peiwanId: updated.PEIWANID }, { status: 200 });
+    return NextResponse.json({ peiwanId: updated.PEIWANID, type: updated.type }, { status: 200 });
   } catch (error) {
     const message = (error as Error).message;
     if (message.includes('Record to update not found')) {

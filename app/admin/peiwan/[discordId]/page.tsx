@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import {
-  PEIWAN_GAME_TAG_FIELDS,
   PEIWAN_LEVEL_OPTIONS,
   PEIWAN_QUOTATION_FIELDS,
   PEIWAN_SEX_OPTIONS,
@@ -9,6 +8,7 @@ import {
 } from '@/constants/peiwan';
 import { PeiwanForm } from '@/components/admin/PeiwanForm';
 import { RestorePeiwanButton } from '@/components/admin/RestorePeiwanButton';
+import { sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/session';
@@ -39,9 +39,17 @@ const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.find
     }),
   ) as Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], string>;
 
-  const gameTags = Object.fromEntries(
-    PEIWAN_GAME_TAG_FIELDS.map((tag) => [tag, Boolean(plain[tag])]),
-  ) as Record<(typeof PEIWAN_GAME_TAG_FIELDS)[number], boolean>;
+  const gameProfiles = Array.isArray(plain.gameProfiles)
+    ? sortPeiwanGameProfiles(
+        plain.gameProfiles.filter(
+          (item): item is { gameCode: string; tier: string; sourceRoleId?: string | null } =>
+            !!item &&
+            typeof item === 'object' &&
+            typeof (item as Record<string, unknown>).gameCode === 'string' &&
+            typeof (item as Record<string, unknown>).tier === 'string',
+        ) as Array<{ gameCode: any; tier: any; sourceRoleId?: string | null }>,
+      )
+    : [];
 
   return {
     peiwanId: String(plain.PEIWANID ?? ''),
@@ -53,10 +61,9 @@ const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.find
     type: typeValue,
     level: levelValue,
     sex: sexValue,
-    techTag: Boolean(plain.techTag),
     exclusive: Boolean(plain.exclusive),
     quotations,
-    gameTags,
+    gameProfiles,
   };
 };
 
@@ -97,11 +104,23 @@ export default async function EditPeiwanPage(props: EditPageProps) {
     Number.isSafeInteger(numericId) && numericId > 0 && numericId <= MAX_PEIWAN_ID;
   const peiwan =
     (searchByPeiwanId
-      ? await prisma.pEIWAN.findUnique({ where: { PEIWANID: numericId } })
+      ? await prisma.pEIWAN.findUnique({
+          where: { PEIWANID: numericId },
+          include: { gameProfiles: { orderBy: { gameCode: 'asc' } } },
+        })
       : null) || (await prisma.pEIWAN.findUnique({ where: { discordUserId: searchToken } }));
-  const discordId = peiwan?.discordUserId ?? searchToken;
-  const deletionRecord = peiwan
-    ? await prisma.peiwanDeletion.findUnique({ where: { peiwanId: peiwan.PEIWANID } })
+  const peiwanWithProfiles =
+    peiwan && 'gameProfiles' in peiwan
+      ? peiwan
+      : peiwan
+        ? await prisma.pEIWAN.findUnique({
+            where: { discordUserId: peiwan.discordUserId },
+            include: { gameProfiles: { orderBy: { gameCode: 'asc' } } },
+          })
+        : null;
+  const discordId = peiwanWithProfiles?.discordUserId ?? searchToken;
+  const deletionRecord = peiwanWithProfiles
+    ? await prisma.peiwanDeletion.findUnique({ where: { peiwanId: peiwanWithProfiles.PEIWANID } })
     : null;
   const member = discordId
     ? await prisma.member.findUnique({
@@ -110,7 +129,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
       })
     : null;
 
-  if (!peiwan) {
+  if (!peiwanWithProfiles) {
     return (
       <div className="space-y-6 text-white">
         <div className="space-y-2">
@@ -135,7 +154,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
       </div>
     );
   }
-  const initialValues = buildInitialValues(peiwan);
+  const initialValues = buildInitialValues(peiwanWithProfiles);
   if (!initialValues) {
     return (
       <div className="space-y-6 text-white">
@@ -163,7 +182,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
             当前用户：{member?.serverDisplayName?.trim() || '未知用户'}
           </p>
           <p className="text-sm text-white/60 font-mono">Discord ID：{discordId}</p>
-          <p className="text-sm text-white/60">陪玩 ID：{peiwan.PEIWANID}</p>
+          <p className="text-sm text-white/60">陪玩 ID：{peiwanWithProfiles.PEIWANID}</p>
         </div>
         <Link
           href="/admin"
@@ -187,7 +206,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
           )}
         </div>
         <RestorePeiwanButton
-          restoreToken={String(peiwan.PEIWANID ?? discordId)}
+          restoreToken={String(peiwanWithProfiles.PEIWANID ?? discordId)}
           isDeleted={Boolean(deletionRecord)}
           readOnly={readOnly}
         />

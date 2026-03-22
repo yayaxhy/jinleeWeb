@@ -1,9 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { PEIWAN_GAME_TAG_FIELDS } from '@/constants/peiwan';
 import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
@@ -202,12 +202,18 @@ export default async function Profile(props: ProfilePageProps) {
     redirect('/');
   }
 
-  const member = await prisma.member.findUnique({
-    where: { discordUserId: discordId },
-    include: {
-      peiwan: true,
-    },
-  });
+    const member = await prisma.member.findUnique({
+      where: { discordUserId: discordId },
+      include: {
+        peiwan: {
+          include: {
+            gameProfiles: {
+              orderBy: { gameCode: 'asc' },
+            },
+          },
+        },
+      },
+    });
 
   if (!member) {
     return (
@@ -768,23 +774,24 @@ export default async function Profile(props: ProfilePageProps) {
                     {isPeiwanMember && peiwan && (
                       <div className="border-t border-dashed border-black/10 pt-5 space-y-3">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-sm uppercase tracking-[0.4em] text-gray-400">Game Tags</h3>
+                          <h3 className="text-sm uppercase tracking-[0.4em] text-gray-400">游戏档位</h3>
                           <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PEIWAN</span>
                         </div>
                         <div className="flex flex-wrap gap-3">
-                          {PEIWAN_GAME_TAG_FIELDS.map((tag) => {
-                            const active = peiwan[tag];
-                            return (
+                          {sortPeiwanGameProfiles(peiwan.gameProfiles ?? []).length > 0 ? (
+                            sortPeiwanGameProfiles(peiwan.gameProfiles ?? []).map((profile) => (
                               <span
-                                key={tag}
-                                className={`px-4 py-1 rounded-full border text-sm tracking-wide ${
-                                  active ? 'border-[#5c43a3] text-[#5c43a3]' : 'border-black/5 text-gray-300'
-                                }`}
+                                key={`${profile.gameCode}-${profile.tier}`}
+                                className="px-4 py-1 rounded-full border border-[#5c43a3] text-[#5c43a3] text-sm tracking-wide"
                               >
-                                {tag}
+                                {formatPeiwanGameProfile(profile)}
                               </span>
-                            );
-                          })}
+                            ))
+                          ) : (
+                            <span className="px-4 py-1 rounded-full border border-black/5 text-sm tracking-wide text-gray-300">
+                              暂无游戏档位
+                            </span>
+                          )}
                         </div>
                       </div>
                     )}

@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import {
-  PEIWAN_GAME_TAG_FIELDS,
+  PEIWAN_GAME_CODES,
   PEIWAN_LEVEL_OPTIONS,
   PEIWAN_SEX_OPTIONS,
+  PEIWAN_TYPE_OPTIONS,
   QUOTATION_CODE_TO_FIELD,
 } from '@/constants/peiwan';
+import { getPeiwanGameLabel, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
@@ -35,8 +37,8 @@ const parseGames = (value: string | null) => {
   if (!value) return [];
   return value
     .split(',')
-    .map((item) => item.trim())
-    .filter((item) => PEIWAN_GAME_TAG_FIELDS.includes(item as (typeof PEIWAN_GAME_TAG_FIELDS)[number]));
+    .map((item) => item.trim().toUpperCase())
+    .filter((item): item is (typeof PEIWAN_GAME_CODES)[number] => PEIWAN_GAME_CODES.includes(item as (typeof PEIWAN_GAME_CODES)[number]));
 };
 
 const parseBoolean = (value: string | null) => value === 'true' || value === '1';
@@ -91,7 +93,7 @@ export async function GET(request: Request) {
         : null;
 
   const games = parseGames(searchParams.get('games'));
-  const techTag = parseBoolean(searchParams.get('techTag'));
+  const technicalOnly = parseBoolean(searchParams.get('techTag'));
 
   const deletedPeiwanIds = (
     await prisma.peiwanDeletion.findMany({ select: { peiwanId: true } })
@@ -117,11 +119,15 @@ export async function GET(request: Request) {
   if (sex) {
     where.sex = sex;
   }
-  if (techTag) {
-    where.techTag = true;
+  if (technicalOnly) {
+    where.type = { in: ['技术陪玩', '大神陪玩'] };
   }
   if (games.length > 0) {
-    where.OR = games.map((game) => ({ [game]: true }));
+    where.gameProfiles = {
+      some: {
+        gameCode: { in: games },
+      },
+    };
   }
   if (deletedPeiwanIds.length > 0) {
     const existingAnd = where.AND;
@@ -139,7 +145,13 @@ export async function GET(request: Request) {
     prisma.pEIWAN.count({ where }),
     prisma.pEIWAN.findMany({
       where,
-      include: { member: { select: { serverDisplayName: true, discordUserId: true } } },
+      include: {
+        member: { select: { serverDisplayName: true, discordUserId: true } },
+        gameProfiles: {
+          select: { gameCode: true, tier: true },
+          orderBy: { gameCode: 'asc' },
+        },
+      },
       orderBy: { PEIWANID: 'asc' },
     }),
   ]);
@@ -158,10 +170,10 @@ export async function GET(request: Request) {
       const num = Number(rawPrice);
       normalizedPrice = Number.isNaN(num) ? rawPrice : num;
     }
-    const gameTags: Record<string, boolean> = {};
-    for (const tag of PEIWAN_GAME_TAG_FIELDS) {
-      gameTags[tag] = Boolean((row as Record<string, unknown>)[tag]);
-    }
+
+    const sortedProfiles = sortPeiwanGameProfiles(row.gameProfiles as any);
+    const gameCodes = sortedProfiles.map((profile) => profile.gameCode);
+    const gameLabels = gameCodes.map((gameCode) => getPeiwanGameLabel(gameCode));
     const displayName =
       row.serverDisplayName ?? row.member?.serverDisplayName ?? row.discordUserId;
 
@@ -173,9 +185,10 @@ export async function GET(request: Request) {
       price: normalizedPrice,
       level: row.level,
       sex: row.sex,
-      techTag: row.techTag,
+      type: PEIWAN_TYPE_OPTIONS.includes(row.type as any) ? row.type : PEIWAN_TYPE_OPTIONS[0],
       mpUrl: row.MP_url,
-      gameTags,
+      gameCodes,
+      gameLabels,
     };
   });
 

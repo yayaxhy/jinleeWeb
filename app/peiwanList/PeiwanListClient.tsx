@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  PEIWAN_GAME_TAG_FIELDS,
+  PEIWAN_GAME_OPTIONS,
   PEIWAN_LEVEL_OPTIONS,
   PEIWAN_SEX_OPTIONS,
+  PEIWAN_TYPE_OPTIONS,
+  type PeiwanGameCodeValue,
 } from '@/constants/peiwan';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 
@@ -17,9 +19,10 @@ type PeiwanItem = {
   price: string | number | bigint | null;
   level: (typeof PEIWAN_LEVEL_OPTIONS)[number];
   sex: (typeof PEIWAN_SEX_OPTIONS)[number];
-  techTag: boolean;
+  type: (typeof PEIWAN_TYPE_OPTIONS)[number];
   mpUrl?: string | null;
-  gameTags: Record<string, boolean>;
+  gameCodes: PeiwanGameCodeValue[];
+  gameLabels: string[];
 };
 
 type ApiResponse = {
@@ -92,8 +95,8 @@ const FilterChip = ({
 );
 
 export function PeiwanListClient() {
-  const [games, setGames] = useState<Set<string>>(new Set());
-  const [techTag, setTechTag] = useState(false);
+  const [games, setGames] = useState<Set<PeiwanGameCodeValue>>(new Set());
+  const [technicalOnly, setTechnicalOnly] = useState(false);
   const [level, setLevel] = useState<string>('');
   const [gender, setGender] = useState<string>('');
   const [idFilter, setIdFilter] = useState<string>('');
@@ -108,14 +111,14 @@ export function PeiwanListClient() {
     const params = new URLSearchParams();
     params.set('seed', seed);
     if (games.size > 0) params.set('games', Array.from(games).join(','));
-    if (techTag) params.set('techTag', 'true');
+    if (technicalOnly) params.set('techTag', 'true');
     if (level) params.set('level', level);
     if (gender) params.set('gender', gender);
     if (idFilter.trim()) params.set('id', idFilter.trim());
     params.set('page', String(page));
     params.set('pageSize', String(PAGE_SIZE));
     return params.toString();
-  }, [games, techTag, level, gender, idFilter, page, seed]);
+  }, [games, technicalOnly, level, gender, idFilter, page, seed]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -141,7 +144,7 @@ export function PeiwanListClient() {
     return () => controller.abort();
   }, [queryString]);
 
-  const toggleGame = (tag: string) => {
+  const toggleGame = (tag: PeiwanGameCodeValue) => {
     setPage(1);
     setGames((prev) => {
       const next = new Set(prev);
@@ -156,7 +159,7 @@ export function PeiwanListClient() {
 
   const resetFilters = () => {
     setGames(new Set());
-    setTechTag(false);
+    setTechnicalOnly(false);
     setLevel('');
     setGender('');
     setIdFilter('');
@@ -171,27 +174,32 @@ export function PeiwanListClient() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-3">
           <Link
-          href="/"
-          className="inline-flex items-center justify-center rounded-full border border-black/20 px-4 py-2 text-sm text-gray-700 hover:border-black hover:text-black transition"
-        >
-          返回主页
-        </Link>
+            href="/"
+            className="inline-flex items-center justify-center rounded-full border border-black/20 px-4 py-2 text-sm text-gray-700 hover:border-black hover:text-black transition"
+          >
+            返回主页
+          </Link>
           <h1 className="text-3xl font-bold tracking-wide text-[#2800ff]">陪玩列表</h1>
         </div>
-        
       </header>
 
       <section className="rounded-3xl bg-white border border-black/5 shadow-sm p-5 space-y-4">
         <div className="flex flex-wrap gap-3 items-center">
           <span className="text-sm text-gray-500 min-w-[72px]">游戏：</span>
           <div className="flex flex-wrap gap-2">
-            {PEIWAN_GAME_TAG_FIELDS.map((tag) => (
-              <FilterChip key={tag} active={games.has(tag)} onClick={() => toggleGame(tag)}>
-                {tag}
+            {PEIWAN_GAME_OPTIONS.map((tag) => (
+              <FilterChip key={tag.code} active={games.has(tag.code)} onClick={() => toggleGame(tag.code)}>
+                {tag.label}
               </FilterChip>
             ))}
-            <FilterChip active={techTag} onClick={() => { setTechTag((v) => !v); setPage(1); }}>
-              技术陪玩
+            <FilterChip
+              active={technicalOnly}
+              onClick={() => {
+                setTechnicalOnly((v) => !v);
+                setPage(1);
+              }}
+            >
+              技术/大神
             </FilterChip>
           </div>
         </div>
@@ -283,9 +291,7 @@ export function PeiwanListClient() {
               <div className="p-4 space-y-2 flex-1">
                 <div className="flex items-center justify-between">
                   <div className="font-semibold text-lg">{item.serverDisplayName ?? '未设置昵称'}</div>
-                  {item.techTag && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-black text-white">技术陪玩</span>
-                  )}
+                  <span className="text-xs px-2 py-1 rounded-full bg-black text-white">{item.type}</span>
                 </div>
                 <div className="text-sm text-gray-600">ID: {item.id}</div>
                 <div className="flex flex-wrap gap-2 text-xs text-gray-600">
@@ -296,7 +302,7 @@ export function PeiwanListClient() {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-2">
-                  {PEIWAN_GAME_TAG_FIELDS.filter((tag) => item.gameTags?.[tag]).map((tag) => (
+                  {item.gameLabels.map((tag) => (
                     <span
                       key={tag}
                       className="text-xs px-2 py-1 rounded-full border border-black/10 bg-[#f5f0ff] text-[#4b3b9a]"

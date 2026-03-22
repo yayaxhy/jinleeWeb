@@ -1,10 +1,8 @@
 import {
-  PEIWAN_GAME_TAG_FIELDS,
   PEIWAN_LEVEL_OPTIONS,
   PEIWAN_QUOTATION_FIELDS,
   PEIWAN_SEX_OPTIONS,
   PEIWAN_STATUS_OPTIONS,
-  PEIWAN_TYPE_OPTIONS,
   QUOTATION_CODES,
 } from '@/constants/peiwan';
 
@@ -16,13 +14,10 @@ type NormalizedPeiwanPayload = {
   mpUrl?: string | null;
   totalEarn?: number;
   status?: (typeof PEIWAN_STATUS_OPTIONS)[number];
-  type: (typeof PEIWAN_TYPE_OPTIONS)[number];
   level: (typeof PEIWAN_LEVEL_OPTIONS)[number];
   sex: (typeof PEIWAN_SEX_OPTIONS)[number];
-  techTag: boolean;
   exclusive: boolean;
   quotationValues: Partial<Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], number | null>>;
-  gameTags: Partial<Record<(typeof PEIWAN_GAME_TAG_FIELDS)[number], boolean>>;
 };
 
 const ensureObject = (value: unknown): Record<string, unknown> => {
@@ -63,7 +58,7 @@ function optionalNumber(value: unknown, options: { allowNull?: boolean } = {}) {
     throw new Error('报价必须为数字');
   }
   return numeric;
-};
+}
 
 export const normalizePeiwanPayload = (
   input: unknown,
@@ -82,24 +77,20 @@ export const normalizePeiwanPayload = (
     throw new Error('抽成比例需在 0-1 之间');
   }
 
-  const totalEarnRaw = optionalNumber((data as Record<string, unknown>).totalEarn);
+  const totalEarnRaw = optionalNumber(data.totalEarn);
   if (totalEarnRaw !== undefined && totalEarnRaw < 0) {
     throw new Error('累计流水必须为非负数字');
   }
 
   const mpUrlValue = typeof data.MP_url === 'string' ? data.MP_url.trim() : undefined;
-
   const status = optionalEnum(data.status, PEIWAN_STATUS_OPTIONS);
-  const type = ensureEnum(data.type, PEIWAN_TYPE_OPTIONS, '类型');
   const level = ensureEnum(data.level, PEIWAN_LEVEL_OPTIONS, '等级');
   const sex = ensureEnum(data.sex, PEIWAN_SEX_OPTIONS, '性别');
-
-  const techTag = typeof data.techTag === 'boolean' ? data.techTag : false;
   const exclusive = typeof data.exclusive === 'boolean' ? data.exclusive : false;
 
   let peiwanId: number | undefined;
   if (options.allowPeiwanId) {
-    const rawId = (data as Record<string, unknown>).peiwanId;
+    const rawId = data.peiwanId;
     if (rawId !== undefined && rawId !== null && rawId !== '') {
       const numeric = Number(rawId);
       if (!Number.isInteger(numeric) || numeric <= 0) {
@@ -111,20 +102,10 @@ export const normalizePeiwanPayload = (
 
   const quotationValues: NormalizedPeiwanPayload['quotationValues'] = {};
   for (const field of PEIWAN_QUOTATION_FIELDS) {
-    if (!(field in data)) {
-      continue;
-    }
-    const numeric = optionalNumber((data as Record<string, unknown>)[field], { allowNull: true });
+    if (!(field in data)) continue;
+    const numeric = optionalNumber(data[field], { allowNull: true });
     if (numeric !== undefined) {
       quotationValues[field] = numeric;
-    }
-  }
-
-  const gameTags: NormalizedPeiwanPayload['gameTags'] = {};
-  const tagsInput = ensureObject(data.gameTags);
-  for (const tag of PEIWAN_GAME_TAG_FIELDS) {
-    if (typeof tagsInput[tag] === 'boolean') {
-      gameTags[tag] = tagsInput[tag] as boolean;
     }
   }
 
@@ -136,13 +117,10 @@ export const normalizePeiwanPayload = (
     totalEarn: totalEarnRaw,
     mpUrl: mpUrlValue || undefined,
     status,
-    type,
     level,
     sex,
-    techTag,
     exclusive,
     quotationValues,
-    gameTags,
   };
 };
 
@@ -153,26 +131,16 @@ export const buildPeiwanDataObject = (payload: NormalizedPeiwanPayload) => {
     quotationData[field] = value === null ? null : value.toString();
   }
 
-  const tagData: Record<string, boolean> = {};
-  for (const tag of PEIWAN_GAME_TAG_FIELDS) {
-    if (payload.gameTags[tag] !== undefined) {
-      tagData[tag] = payload.gameTags[tag] as boolean;
-    }
-  }
-
   return {
     defaultQuotationCode: payload.defaultQuotationCode,
     commissionRate: payload.commissionRate.toString(),
     MP_url: payload.mpUrl ?? null,
     ...(payload.status ? { status: payload.status } : {}),
-    type: payload.type,
     level: payload.level,
     sex: payload.sex,
-    techTag: payload.techTag,
     exclusive: payload.exclusive,
     ...(payload.totalEarn !== undefined ? { totalEarn: payload.totalEarn.toString() } : {}),
     ...quotationData,
-    ...tagData,
   };
 };
 
