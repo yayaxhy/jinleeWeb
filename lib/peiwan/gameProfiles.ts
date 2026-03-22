@@ -78,5 +78,8 @@ export function formatPeiwanGameProfile(profile: PeiwanGameProfileView) {
   if (sourceRoleId && TAG_LABEL_BY_ID[sourceRoleId]) {
     return TAG_LABEL_BY_ID[sourceRoleId];
   }
+  if (profile.gameCode === 'CHAT' || profile.gameCode === 'SINGER') {
+    return getPeiwanGameLabel(profile.gameCode);
+  }
   return `${getPeiwanGameLabel(profile.gameCode)} · ${getPeiwanTierLabel(profile.tier)}`;
 }
