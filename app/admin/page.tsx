@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AdminPeiwanActions } from '@/components/admin/AdminPeiwanActions';
 import { DeletePeiwanCard } from '@/components/admin/DeletePeiwanCard';
+import { SyncAllPeiwanTagsCard } from '@/components/admin/SyncAllPeiwanTagsCard';
 import { getServerSession } from '@/lib/session';
 import { isAdminDiscordId } from '@/lib/admin';
 
@@ -185,7 +186,10 @@ export default async function AdminHomePage() {
       </div>
 
       <AdminPeiwanActions />
-      <DeletePeiwanCard />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SyncAllPeiwanTagsCard />
+        <DeletePeiwanCard />
+      </div>
       <p className="text-xs text-white/60">
         如需更多菜单，可手动访问 <code className="bg-white/10 px-1">/admin/peiwan/new</code> 或 <code className="bg-white/10 px-1">/admin/peiwan/&lt;DiscordID&gt;</code>。
       </p>

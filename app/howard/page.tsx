@@ -1,6 +1,7 @@
 ﻿import Link from 'next/link';
 import { AdminPeiwanActions } from '@/components/admin/AdminPeiwanActions';
 import { DeletePeiwanCard } from '@/components/admin/DeletePeiwanCard';
+import { SyncAllPeiwanTagsCard } from '@/components/admin/SyncAllPeiwanTagsCard';
 import { getServerSession } from '@/lib/session';
 import { isHowardReadOnlyDiscordId } from '@/lib/admin';
 
@@ -103,7 +104,10 @@ export default async function HowardPage() {
 
       <div className="space-y-6">
         <AdminPeiwanActions readOnly={readOnly} />
-        <DeletePeiwanCard readOnly={readOnly} />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <SyncAllPeiwanTagsCard readOnly={readOnly} />
+          <DeletePeiwanCard readOnly={readOnly} />
+        </div>
       </div>
     </div>
   );
