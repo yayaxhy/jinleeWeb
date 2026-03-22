@@ -241,7 +241,7 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
         initialPeiwanIdRef.current = nextId;
         setStatusMessage({
           type: 'success',
-          text: mode === 'create' ? '新增成功，可继续同步 Discord 角色。' : '修改已保存',
+          text: mode === 'create' ? '新增成功，可继续同步 Discord tag。' : '修改已保存',
         });
       }
     } catch (error) {
@@ -253,7 +253,7 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
 
   const handleSyncRoles = async () => {
     if (!persistedTarget?.discordUserId) {
-      setStatusMessage({ type: 'error', text: '请先保存陪玩资料，再同步 Discord 角色。' });
+      setStatusMessage({ type: 'error', text: '请先保存陪玩资料，再同步 Discord tag。' });
       return;
     }
     setStatusMessage(null);
@@ -293,8 +293,8 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
         type: 'success',
         text:
           result?.changed === false
-            ? 'Discord 角色已检查，无需更新。'
-            : '已从 Discord 拉取角色并更新数据库。',
+            ? 'Discord tag 已检查，无需更新。'
+            : '已从 Discord 拉取 tag 并更新数据库。',
       });
     } catch (error) {
       setStatusMessage({ type: 'error', text: (error as Error).message });
@@ -385,7 +385,7 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm text-gray-500">陪玩类型（由 Discord 角色同步）</span>
+            <span className="text-sm text-gray-500">陪玩类型（由 Discord tag 同步）</span>
             <div className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white">
               {formState.type}
             </div>
@@ -430,15 +430,15 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
         </div>
 
         <div className="space-y-4">
-          <SectionTitle title="游戏档位配置" subtitle="只读，点击按钮从 Discord 角色同步" />
+          <SectionTitle title="游戏档位配置" subtitle="只读，点击按钮从 Discord tag 同步" />
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <p className="text-sm text-white/80">当前类型：{formState.type}</p>
                 <p className="text-xs text-gray-400">
                   {syncReady
-                    ? '同步会以 Discord 角色为准，直接覆盖当前游戏档位。'
-                    : '请先保存陪玩资料，再同步 Discord 角色。'}
+                    ? '同步会以 Discord tag 为准，直接覆盖当前游戏档位。'
+                    : '请先保存陪玩资料，再同步 Discord tag。'}
                 </p>
               </div>
               <button
@@ -447,25 +447,25 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
                 disabled={!syncReady || isSyncing}
                 className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSyncing ? '同步中…' : '同步 Discord 角色'}
+                {isSyncing ? '同步中…' : '同步 Discord tag'}
               </button>
             </div>
             {formState.gameProfiles.length > 0 ? (
               <div className="grid gap-3 md:grid-cols-2">
                 {formState.gameProfiles.map((profile) => (
                   <div
-                    key={`${profile.gameCode}-${profile.tier}`}
+                    key={`${profile.gameCode}-${profile.tier}-${profile.sourceRoleId ?? 'tagless'}`}
                     className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3"
                   >
                     <p className="text-sm text-white">{formatPeiwanGameProfile(profile)}</p>
                     <p className="mt-1 text-xs text-gray-400">
-                      来源角色：{profile.sourceRoleId ?? '未记录'}
+                      tag ID：{profile.sourceRoleId ?? '未记录'}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400">当前没有同步到任何 Discord 游戏角色。</p>
+              <p className="text-sm text-gray-400">当前没有同步到任何 Discord tag。</p>
             )}
           </div>
         </div>

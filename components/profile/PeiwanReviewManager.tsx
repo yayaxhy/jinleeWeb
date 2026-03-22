@@ -69,14 +69,14 @@ export function PeiwanReviewManager({ reviews }: Props) {
         return (
           <div
             key={review.id}
-            className="rounded-2xl border border-dashed border-black/10 bg-gradient-to-br from-[#fdfbff] to-[#f6f1ff] p-4 space-y-3"
+            className="rounded-2xl border border-dashed border-[#d4b24c]/25 bg-gradient-to-br from-[#fff9e8] to-[#fff1c6] p-4 space-y-3"
           >
             <div className="space-y-1">
               <p className="text-sm font-semibold text-[#171717]">{review.content}</p>
               <p className="text-xs text-gray-500">
                 来自：{reviewerName} · 时间：{review.createdAtLabel}
               </p>
-              <p className="text-xs text-[#5c43a3]">名片预览：{previewText}</p>
+              <p className="text-xs text-[#8a6000]">名片预览：{previewText}</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -98,7 +98,7 @@ export function PeiwanReviewManager({ reviews }: Props) {
                 disabled={pendingId === review.id}
                 className={`${actionBtn} ${
                   review.displayMode === 'REALNAME'
-                    ? 'border-[#5c43a3] bg-[#f1edff] text-[#5c43a3]'
+                    ? 'border-[#b07d00] bg-[#fff4d6] text-[#8a6000]'
                     : 'text-gray-600 hover:bg-black/5'
                 }`}
               >
@@ -112,4 +112,3 @@ export function PeiwanReviewManager({ reviews }: Props) {
     </div>
   );
 }
-

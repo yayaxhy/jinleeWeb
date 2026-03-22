@@ -480,7 +480,7 @@ export default async function Profile(props: ProfilePageProps) {
           <div className="space-y-4">
             <p className="text-xs uppercase tracking-[0.6em] text-gray-400">My Profile</p>
             <div className="flex items-center gap-4">
-              <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-black/10 bg-gradient-to-br from-[#f6f1ff] to-[#e1d5ff] text-3xl font-semibold text-[#5c43a3] flex items-center justify-center">
+              <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-[#d4b24c]/40 bg-gradient-to-br from-[#fff3cf] to-[#ead08a] text-3xl font-semibold text-[#8a6000] flex items-center justify-center">
                 {avatarUrl ? (
                   <Image
                     src={avatarUrl}
@@ -595,7 +595,7 @@ export default async function Profile(props: ProfilePageProps) {
                 {activeTab === 'profile-level' && (isLaobanMember || isPeiwanMember) && (
                   <div id="profile-level" className="space-y-5">
                     <div>
-                      <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">升级进度</h2>
+                      <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">升级进度</h2>
                       <p className="text-sm text-gray-500">累计消费越多，等级越高</p>
                     </div>
                     <div className="space-y-3">
@@ -672,12 +672,12 @@ export default async function Profile(props: ProfilePageProps) {
                   <div id="profile-heart" className="space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">心动值</h2>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">心动值</h2>
                       </div>
                       <div className="flex items-center gap-3">
                         <Link
                           href="/profile/heart"
-                          className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] text-[#5c43a3] hover:bg-black/5 transition"
+                          className="px-4 py-2 rounded-full border border-[#d4b24c]/40 text-xs uppercase tracking-[0.4em] text-[#8a6000] hover:bg-[#f8c84a]/12 transition"
                         >
                           查看心动值
                         </Link>
@@ -691,7 +691,7 @@ export default async function Profile(props: ProfilePageProps) {
                   <div id="profile-buff" className="space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">Buff 状态</h2>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">Buff 状态</h2>
                         <p className="text-sm text-gray-500">查看额度与到期时间</p>
                       </div>
                       <span className="text-xs uppercase tracking-[0.4em] text-gray-400">实时同步</span>
@@ -704,7 +704,7 @@ export default async function Profile(props: ProfilePageProps) {
                           return (
                             <div
                               key={buff.key}
-                              className="rounded-2xl border border-black/5 bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
+                              className="rounded-2xl border border-[#d4b24c]/25 bg-gradient-to-br from-[#fff9e8] to-[#fff1c6] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
                             >
                               <div className="space-y-1">
                                 <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.subtitle}</p>
@@ -718,7 +718,7 @@ export default async function Profile(props: ProfilePageProps) {
                               <div className="space-y-1 text-sm text-gray-600">
                                 <p className="flex flex-wrap items-center gap-2">
                                   <span className="text-gray-500">{buff.valueLabel}</span>
-                                  <span className="text-2xl font-semibold text-[#5c43a3] leading-none">{valueDisplay}</span>
+                                  <span className="text-2xl font-semibold text-[#8a6000] leading-none">{valueDisplay}</span>
                                 </p>
                                 <p>到期：{formatDate(buff.expiresAt)}</p>
                               </div>
@@ -736,7 +736,7 @@ export default async function Profile(props: ProfilePageProps) {
                   <div id="profile-personalisation" className="space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">老板评语</h2>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">老板评语</h2>
                         <p className="text-sm text-gray-500">选择是否展示到你的名片中</p>
                       </div>
                       <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {peiwanReviews.length} 条</span>
@@ -781,8 +781,8 @@ export default async function Profile(props: ProfilePageProps) {
                           {sortPeiwanGameProfiles(peiwan.gameProfiles ?? []).length > 0 ? (
                             sortPeiwanGameProfiles(peiwan.gameProfiles ?? []).map((profile) => (
                               <span
-                                key={`${profile.gameCode}-${profile.tier}`}
-                                className="px-4 py-1 rounded-full border border-[#5c43a3] text-[#5c43a3] text-sm tracking-wide"
+                                key={`${profile.gameCode}-${profile.tier}-${profile.sourceRoleId ?? 'tagless'}`}
+                                className="px-4 py-1 rounded-full border border-[#b07d00] text-[#8a6000] text-sm tracking-wide"
                               >
                                 {formatPeiwanGameProfile(profile)}
                               </span>
@@ -816,11 +816,11 @@ export default async function Profile(props: ProfilePageProps) {
                               className={`rounded-2xl border border-dashed p-5 space-y-3 ${
                                 isUsed
                                   ? 'bg-gray-200 border-gray-200 text-gray-500'
-                                  : 'bg-gradient-to-br from-[#fdfbff] to-[#f2f1ff] border-black/10'
+                                  : 'bg-gradient-to-br from-[#fff9e8] to-[#fff1c6] border-[#d4b24c]/25'
                               }`}
                             >
                               <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em]">
-                                <span className={isUsed ? 'text-gray-500' : 'text-[#5c43a3]'}>{statusLabel}</span>
+                                <span className={isUsed ? 'text-gray-500' : 'text-[#8a6000]'}>{statusLabel}</span>
                               </div>
                               <p className="text-3xl font-semibold text-[#171717]">{typeLabel}</p>
                               <div className="text-xs text-gray-500 space-y-1">
@@ -840,7 +840,7 @@ export default async function Profile(props: ProfilePageProps) {
                   <div id="profile-tx" className="space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <h2 className="text-2xl font-semibold tracking-wide text-[#5c43a3]">流水记录</h2>
+                        <h2 className="text-2xl font-semibold tracking-wide text-[#8a6000]">流水记录</h2>
                         <p className="text-sm text-gray-500">与账户关联的收支流水</p>
                       </div>
                     </div>

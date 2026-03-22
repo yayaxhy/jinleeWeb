@@ -29,7 +29,7 @@ async function callInternalSync(discordId: string) {
       'Content-Type': 'application/json',
       'X-Internal-Token': INTERNAL_TOKEN,
     },
-    body: JSON.stringify({ discordId }),
+    body: JSON.stringify({ discordId, notify: true }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
