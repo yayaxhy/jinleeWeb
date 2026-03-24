@@ -6,8 +6,10 @@ export const FARM_ASSET_PROMPTS = {
     prompt: [
       'Create an original browser-game farm background in a 2.5D isometric style.',
       'Theme: koi manor, Chinese courtyard, red lacquer bridge, koi pond, warm golden light, spring garden.',
-      'Composition: central terraced farm area reserved for interactive crop plots, koi pond on the left, manor house on the right, courtyard paths and fences, soft clouds, elegant playful social-game mood.',
-      'Style: polished casual game art, painterly, colorful, readable, friendly, high cohesion, not realistic, not flat icon style.',
+      'Composition: a single coherent manor scene with koi pond on the left, manor house on the right, courtyard paths and fences, soft clouds, elegant playful social-game mood.',
+      'The center must be a large clean expandable terrace for UI overlays: do not draw any crop blocks, plot frames, farm squares, repeated beds, furrows, or visible tile grid.',
+      'The open terrace should be flat, readable, and visually consistent in scale so the frontend can place many equal interactive plots on top of it later.',
+      'Style: polished casual game art, painterly, colorful, readable, friendly, high cohesion, not realistic, not flat icon style, not a collage, not sticker-like.',
       'Colors: lacquer red, warm gold, jade green, pond blue, cream highlights.',
       'No text, no UI, no characters, no watermark.',
     ].join(' '),

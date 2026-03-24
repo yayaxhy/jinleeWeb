@@ -1,10 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import dotenv from 'dotenv';
 import { FARM_ASSET_PROMPTS, FARM_CORE_ASSET_KEYS } from './farm-asset-prompts.mjs';
 
 const OPENAI_URL = 'https://api.openai.com/v1/images/generations';
 const OUTPUT_DIR = path.resolve(process.cwd(), 'public', 'farm', 'generated');
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 function parseArgs(argv) {
   const args = {
