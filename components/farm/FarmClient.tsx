@@ -160,12 +160,19 @@ function OverlayDrawer({ title, open, onClose, children }: { title: string; open
   );
 }
 
-function MetricChip({ label, value }: { label: string; value: string }) {
+function MetricChip({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
     <div className="relative rounded-[22px] border border-[#f3d59b]/28 bg-[linear-gradient(180deg,_rgba(141,88,33,0.9),_rgba(78,44,15,0.9))] px-4 py-3 text-[#fff5dc] shadow-[0_12px_22px_rgba(0,0,0,0.16)] backdrop-blur-sm">
       <div className="pointer-events-none absolute inset-[3px] hidden rounded-[18px] border border-[#f8e7be]/12 lg:block" />
-      <p className="relative text-[10px] uppercase tracking-[0.3em] text-[#f2d797]">{label}</p>
-      <p className="relative mt-1 text-lg font-semibold tracking-[0.03em]">{value}</p>
+      <div className="relative flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[#f2d797]">{label}</p>
+          <p className="mt-1 text-lg font-semibold tracking-[0.03em]">{value}</p>
+        </div>
+        <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f7ddb0]/28 bg-[linear-gradient(180deg,_rgba(255,246,221,0.22),_rgba(255,214,120,0.12))] text-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]">
+          {icon}
+        </span>
+      </div>
     </div>
   );
 }
@@ -417,6 +424,20 @@ export function FarmClient({ initialDashboard }: Props) {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-2px); }
         }
+        @keyframes farmCloudDrift {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(16px); }
+        }
+        @keyframes farmWindmillSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes farmButterflyFloat {
+          0%, 100% { transform: translate3d(0, 0, 0) rotate(-4deg); }
+          25% { transform: translate3d(12px, -10px, 0) rotate(6deg); }
+          50% { transform: translate3d(22px, 2px, 0) rotate(-2deg); }
+          75% { transform: translate3d(8px, 10px, 0) rotate(4deg); }
+        }
       `}</style>
 
       <div className="mx-auto max-w-[1540px] px-3 py-3 sm:px-4 lg:px-6 lg:py-4">
@@ -425,17 +446,19 @@ export function FarmClient({ initialDashboard }: Props) {
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[42%] bg-[radial-gradient(circle_at_50%_10%,_rgba(255,251,229,0.92),_rgba(255,251,229,0.15)_45%,_transparent_60%)]" />
           <div className="pointer-events-none absolute inset-x-[9%] bottom-[7%] h-[34%] rounded-[50%] bg-[radial-gradient(circle,_rgba(76,108,41,0.46),_rgba(76,108,41,0.06)_68%,_transparent_74%)] blur-sm" />
           <div className="pointer-events-none absolute inset-x-[18%] bottom-[12%] h-[18%] rounded-[50%] border border-white/8 bg-[radial-gradient(circle,_rgba(251,234,186,0.18),_rgba(251,234,186,0.02)_72%,_transparent_76%)]" />
-          <Image src="/farm/cloud.svg" alt="" width={260} height={120} className="pointer-events-none absolute left-[8%] top-[5%] w-[18vw] min-w-[120px] max-w-[250px] opacity-95" />
-          <Image src="/farm/cloud.svg" alt="" width={220} height={110} className="pointer-events-none absolute right-[14%] top-[9%] w-[14vw] min-w-[100px] max-w-[210px] opacity-90" />
-          <Image src="/farm/cloud.svg" alt="" width={200} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[12vw] min-w-[90px] max-w-[180px] opacity-80" />
+          <Image src="/farm/cloud.svg" alt="" width={260} height={120} className="pointer-events-none absolute left-[8%] top-[5%] w-[18vw] min-w-[120px] max-w-[250px] opacity-95 [animation:farmCloudDrift_18s_ease-in-out_infinite]" />
+          <Image src="/farm/cloud.svg" alt="" width={220} height={110} className="pointer-events-none absolute right-[14%] top-[9%] w-[14vw] min-w-[100px] max-w-[210px] opacity-90 [animation:farmCloudDrift_21s_ease-in-out_infinite_reverse]" />
+          <Image src="/farm/cloud.svg" alt="" width={200} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[12vw] min-w-[90px] max-w-[180px] opacity-80 [animation:farmCloudDrift_24s_ease-in-out_infinite]" />
           <Image src="/farm/pond.svg" alt="pond" width={260} height={180} className="pointer-events-none absolute left-[5%] top-[18%] w-[20vw] min-w-[110px] max-w-[250px] opacity-85" />
           <Image src="/farm/tree.svg" alt="tree" width={170} height={220} className="pointer-events-none absolute left-[2%] bottom-[18%] w-[11vw] min-w-[90px] max-w-[150px] opacity-95" />
           <Image src="/farm/tree.svg" alt="tree" width={180} height={230} className="pointer-events-none absolute right-[8%] top-[17%] w-[11vw] min-w-[88px] max-w-[150px] scale-x-[-1] opacity-95" />
           <Image src="/farm/barn.svg" alt="barn" width={260} height={220} className="pointer-events-none absolute right-[5%] bottom-[16%] w-[18vw] min-w-[130px] max-w-[250px] opacity-95" />
           <Image src="/farm/mailbox.svg" alt="" width={140} height={180} className="pointer-events-none absolute left-[14%] bottom-[18%] w-[8vw] min-w-[70px] max-w-[120px] opacity-95" />
-          <Image src="/farm/windmill.svg" alt="" width={180} height={230} className="pointer-events-none absolute right-[18%] top-[19%] w-[10vw] min-w-[90px] max-w-[150px] opacity-90" />
+          <Image src="/farm/windmill.svg" alt="" width={180} height={230} className="pointer-events-none absolute right-[18%] top-[19%] w-[10vw] min-w-[90px] max-w-[150px] opacity-90 [animation:farmWindmillSpin_18s_linear_infinite]" />
           <Image src="/farm/fence.svg" alt="" width={420} height={110} className="pointer-events-none absolute bottom-[6%] left-[8%] w-[32vw] min-w-[240px] max-w-[460px] opacity-85" />
           <Image src="/farm/fence.svg" alt="" width={420} height={110} className="pointer-events-none absolute bottom-[6%] right-[8%] w-[32vw] min-w-[240px] max-w-[460px] scale-x-[-1] opacity-85" />
+          <Image src="/farm/butterfly.svg" alt="" width={72} height={72} className="pointer-events-none absolute left-[34%] top-[26%] w-[4vw] min-w-[36px] max-w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
+          <Image src="/farm/butterfly.svg" alt="" width={72} height={72} className="pointer-events-none absolute left-[62%] top-[34%] w-[3.8vw] min-w-[32px] max-w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
           <div className="pointer-events-none absolute inset-x-[14%] bottom-[4.5%] h-[2px] bg-[linear-gradient(90deg,_transparent,_rgba(255,235,183,0.65),_transparent)]" />
 
           <div className="relative z-10 flex h-full min-h-[calc(100vh-2rem)] flex-col p-4 sm:p-5 lg:p-6">
@@ -457,21 +480,24 @@ export function FarmClient({ initialDashboard }: Props) {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                <MetricChip label="等级" value={`Lv.${homeDashboard.summary.level}`} />
-                <MetricChip label="金币" value={formatAmount(homeDashboard.summary.coins)} />
-                <MetricChip label="积分" value={formatAmount(homeDashboard.summary.loyaltyPoints)} />
-                <MetricChip label="余额" value={`¥ ${formatAmount(homeDashboard.summary.totalBalance)}`} />
-                <MetricChip label="地块" value={`${viewDashboard.summary.unlockedPlots}/${MAX_PLOTS}`} />
+                <MetricChip label="等级" value={`Lv.${homeDashboard.summary.level}`} icon="⭐" />
+                <MetricChip label="金币" value={formatAmount(homeDashboard.summary.coins)} icon="🪙" />
+                <MetricChip label="积分" value={formatAmount(homeDashboard.summary.loyaltyPoints)} icon="🎟️" />
+                <MetricChip label="余额" value={`¥ ${formatAmount(homeDashboard.summary.totalBalance)}`} icon="💰" />
+                <MetricChip label="地块" value={`${viewDashboard.summary.unlockedPlots}/${MAX_PLOTS}`} icon="🌾" />
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <div className="flex-1 rounded-full border border-white/22 bg-[linear-gradient(180deg,_rgba(255,247,228,0.18),_rgba(56,30,9,0.22))] px-4 py-3 text-[#fff4d4] backdrop-blur-sm">
+              <div className="relative flex-1 overflow-hidden rounded-[22px] border border-[#f5d9a3]/25 bg-[linear-gradient(180deg,_rgba(128,76,27,0.82),_rgba(72,39,12,0.82))] px-4 py-3 text-[#fff4d4] backdrop-blur-sm">
+                <div className="pointer-events-none absolute inset-[4px] rounded-[18px] border border-[#f8e6bb]/12" />
                 <div className="flex items-center justify-between gap-3 text-xs uppercase tracking-[0.24em] text-[#f5d388]">
                   <span>升级进度</span>
                   <span>{homeDashboard.summary.nextLevelExperience ? `${homeDashboard.summary.experience}/${homeDashboard.summary.nextLevelExperience}` : 'MAX'}</span>
                 </div>
-                <div className="mt-2 h-3 overflow-hidden rounded-full bg-black/18"><div className="h-full rounded-full bg-[linear-gradient(90deg,_#b67510,_#eabf4d,_#ffe8b6)] transition-all duration-500" style={{ width: `${nextLevelProgress}%` }} /></div>
+                <div className="mt-2 h-4 overflow-hidden rounded-full bg-black/18 p-[2px]">
+                  <div className="h-full rounded-full bg-[linear-gradient(90deg,_#b67510,_#eabf4d,_#ffe8b6)] transition-all duration-500" style={{ width: `${nextLevelProgress}%` }} />
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {isVisiting ? (
@@ -724,11 +750,18 @@ export function FarmClient({ initialDashboard }: Props) {
             <button type="button" onClick={() => setActivePlotIndex(null)} className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-[#d8bc83]/45 bg-white/55 text-xl text-[#734d17] transition hover:bg-white/75">×</button>
             <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[0.9fr_1.1fr]">
               <div className={`relative overflow-hidden rounded-[30px] border p-5 ${activePlot.highlight === 'ready' ? 'border-[#efc861]/65 bg-[linear-gradient(180deg,_rgba(255,241,190,0.96),_rgba(224,179,70,0.94))]' : activePlot.highlight === 'growing' ? 'border-[#d4b06b]/55 bg-[linear-gradient(180deg,_rgba(255,244,215,0.96),_rgba(232,205,138,0.94))]' : activePlot.highlight === 'idle' ? 'border-[#d4b06b]/42 bg-[linear-gradient(180deg,_rgba(255,250,237,0.96),_rgba(245,231,194,0.94))]' : 'border-[#cdb486]/36 bg-[linear-gradient(180deg,_rgba(234,223,197,0.96),_rgba(208,188,145,0.94))]'}`}>
+                <div className="absolute left-5 top-5 rounded-full border border-white/32 bg-white/18 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-[#8d6509] shadow-[0_10px_18px_rgba(0,0,0,0.08)]">庄园操作台</div>
                 <div className="absolute inset-x-10 bottom-5 h-8 rounded-[50%] bg-[radial-gradient(circle,_rgba(75,48,14,0.36),_rgba(75,48,14,0.05)_72%)] blur-sm" />
                 <div className="relative flex h-full min-h-[300px] flex-col items-center justify-center text-center">
                   <div className="rounded-full border border-white/35 bg-white/18 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8d6509]">地块 {activePlot.plotIndex}</div>
-                  <div className="relative mt-5 flex h-56 w-56 items-center justify-center"><Image src={getPlotAsset(activePlot).asset} alt={activePlot.title} fill className={`object-contain ${getPlotAsset(activePlot).className}`} /></div>
-                  <div className="mt-4 rounded-full border border-white/38 bg-white/24 px-4 py-2 text-sm font-semibold tracking-[0.16em] text-[#5f3b0d]">{activePlot.status === 'READY' ? '成熟完成' : activePlot.status === 'GROWING' && activePlot.plot ? stageLabelMap[activePlot.plot.growthStage] : activePlot.status === 'EMPTY' ? '等待播种' : '待解锁'}</div>
+                  <div className="relative mt-5 flex h-56 w-56 items-center justify-center">
+                    <Image src="/farm/plot-frame.svg" alt="" fill className="object-contain opacity-95" />
+                    <Image src={getPlotAsset(activePlot).asset} alt={activePlot.title} fill className={`object-contain ${getPlotAsset(activePlot).className}`} />
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    <span className="rounded-full border border-white/38 bg-white/24 px-4 py-2 text-sm font-semibold tracking-[0.16em] text-[#5f3b0d]">{activePlot.status === 'READY' ? '成熟完成' : activePlot.status === 'GROWING' && activePlot.plot ? stageLabelMap[activePlot.plot.growthStage] : activePlot.status === 'EMPTY' ? '等待播种' : '待解锁'}</span>
+                    {activePlot.seedMeta ? <span className="rounded-full border border-white/34 bg-white/18 px-4 py-2 text-sm font-semibold tracking-[0.12em] text-[#6d4a16]">经验 +{activePlot.seedMeta.experience}</span> : null}
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col justify-between gap-5">
@@ -736,15 +769,22 @@ export function FarmClient({ initialDashboard }: Props) {
                   <p className="text-[11px] uppercase tracking-[0.34em] text-[#a17615]">Plot Detail</p>
                   <h2 className="mt-2 text-3xl font-semibold tracking-[0.05em] text-[#38230b]">{activePlot.title}</h2>
                   <p className="mt-3 text-sm leading-7 text-[#6d5122]">{activePlot.subtitle}</p>
-                  <div className="mt-5 space-y-2 rounded-[26px] border border-[#d7bc83]/35 bg-white/62 p-4 text-sm text-[#6b4f21]">
+                  <div className="mt-5 rounded-[26px] border border-[#d7bc83]/35 bg-white/62 p-4 text-sm text-[#6b4f21]">
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-2 text-xs font-semibold tracking-[0.16em] text-[#895f19]">{plotActionLabel(activePlot)}</span>
+                      {activePlot.seedMeta ? <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-2 text-xs font-semibold tracking-[0.16em] text-[#895f19]">{getFarmSeedDurationLabel(activePlot.seedMeta.durationMinutes)}</span> : null}
+                    </div>
+                    <div className="space-y-2">
                     {activePlot.tooltipLines.map((line) => <p key={line}>{line}</p>)}
-                    {activePlot.plot?.status === 'GROWING' ? (<div className="pt-2"><div className="h-2 overflow-hidden rounded-full bg-[#ebdfbe]"><div className="h-full rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)]" style={{ width: `${Math.round((activePlot.plot.progressRatio ?? 0) * 100)}%` }} /></div><p className="mt-2 text-xs text-[#8b6a2c]">成长进度 {Math.round((activePlot.plot.progressRatio ?? 0) * 100)}%</p></div>) : null}
+                    {activePlot.plot?.status === 'GROWING' ? (<div className="pt-2"><div className="h-3 overflow-hidden rounded-full bg-[#ebdfbe] p-[2px]"><div className="h-full rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)]" style={{ width: `${Math.round((activePlot.plot.progressRatio ?? 0) * 100)}%` }} /></div><p className="mt-2 text-xs text-[#8b6a2c]">成长进度 {Math.round((activePlot.plot.progressRatio ?? 0) * 100)}%</p></div>) : null}
                     {activePlot.plot?.status === 'READY' && activePlot.plot.stolenCoins !== '0.00' ? <p>本轮已被偷：{formatAmount(activePlot.plot.stolenCoins)} 金币</p> : null}
+                    </div>
                   </div>
                   {activePlot.seedMeta ? (
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
                       <div className="rounded-2xl border border-[#d7bc83]/30 bg-white/58 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.24em] text-[#9d7518]">成熟时间</p><p className="mt-2 text-lg font-semibold text-[#34210b]">{getFarmSeedDurationLabel(activePlot.seedMeta.durationMinutes)}</p></div>
                       <div className="rounded-2xl border border-[#d7bc83]/30 bg-white/58 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.24em] text-[#9d7518]">收益区间</p><p className="mt-2 text-lg font-semibold text-[#34210b]">{formatAmount(activePlot.seedMeta.minYieldCoins)} ~ {formatAmount(activePlot.seedMeta.maxYieldCoins)}</p></div>
+                      <div className="rounded-2xl border border-[#d7bc83]/30 bg-white/58 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.24em] text-[#9d7518]">成长奖励</p><p className="mt-2 text-lg font-semibold text-[#34210b]">+{activePlot.seedMeta.experience} EXP</p></div>
                     </div>
                   ) : null}
                 </div>
