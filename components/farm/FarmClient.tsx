@@ -27,15 +27,29 @@ const formatRemaining = (remainingSeconds: number) => {
   return `${seconds}秒`;
 };
 
-type Props = {
-  initialDashboard: FarmDashboard;
+type Props = { initialDashboard: FarmDashboard };
+type PlotStatus = 'LOCKED' | 'EMPTY' | 'GROWING' | 'READY';
+
+const cropVisualMap: Partial<Record<FarmSeedTypeValue, { crop: string; sprout: string }>> = {
+  WHEAT: { crop: '🌾', sprout: '🌱' },
+  ROSE: { crop: '🌹', sprout: '🌿' },
+  KOI_FLOWER: { crop: '🪷', sprout: '🍃' },
+  MYSTERY_FRUIT: { crop: '🍑', sprout: '✨' },
 };
+
+function SectionCard({ eyebrow, title, children, className = '' }: { eyebrow: string; title: string; children: React.ReactNode; className?: string }) {
+  return (
+    <section className={`rounded-[28px] border border-[#d6bc83]/40 bg-[linear-gradient(180deg,_rgba(255,251,240,0.94),_rgba(252,242,214,0.9))] p-5 shadow-[0_22px_45px_rgba(73,50,18,0.08)] ${className}`}>
+      <p className="text-[11px] uppercase tracking-[0.42em] text-[#9b7413]">{eyebrow}</p>
+      <h2 className="mt-2 text-2xl font-semibold tracking-[0.06em] text-[#3e2a12]">{title}</h2>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
 
 export function FarmClient({ initialDashboard }: Props) {
   const [dashboard, setDashboard] = useState(initialDashboard);
-  const [selectedSeed, setSelectedSeed] = useState<FarmSeedTypeValue | null>(
-    initialDashboard.seeds.find((seed) => seed.unlocked)?.code ?? null,
-  );
+  const [selectedSeed, setSelectedSeed] = useState<FarmSeedTypeValue | null>(initialDashboard.seeds.find((seed) => seed.unlocked)?.code ?? null);
   const [balanceAmount, setBalanceAmount] = useState('1');
   const [pointAmount, setPointAmount] = useState('100');
   const [coinAmount, setCoinAmount] = useState('100');
@@ -44,9 +58,7 @@ export function FarmClient({ initialDashboard }: Props) {
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selectedSeed && dashboard.seeds.some((seed) => seed.code === selectedSeed && seed.unlocked)) {
-      return;
-    }
+    if (selectedSeed && dashboard.seeds.some((seed) => seed.code === selectedSeed && seed.unlocked)) return;
     setSelectedSeed(dashboard.seeds.find((seed) => seed.unlocked)?.code ?? null);
   }, [dashboard.seeds, selectedSeed]);
 
@@ -54,11 +66,7 @@ export function FarmClient({ initialDashboard }: Props) {
     const map = new Map(dashboard.plots.map((plot) => [plot.plotIndex, plot]));
     return Array.from({ length: MAX_PLOTS }, (_, idx) => {
       const plotIndex = idx + 1;
-      return {
-        plotIndex,
-        unlocked: plotIndex <= dashboard.summary.unlockedPlots,
-        plot: map.get(plotIndex) ?? null,
-      };
+      return { plotIndex, unlocked: plotIndex <= dashboard.summary.unlockedPlots, plot: map.get(plotIndex) ?? null };
     });
   }, [dashboard.plots, dashboard.summary.unlockedPlots]);
 
@@ -73,12 +81,8 @@ export function FarmClient({ initialDashboard }: Props) {
         body: JSON.stringify({ action, ...payload }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(typeof data?.error === 'string' ? data.error : '操作失败');
-      }
-      if (data?.dashboard) {
-        setDashboard(data.dashboard as FarmDashboard);
-      }
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '操作失败');
+      if (data?.dashboard) setDashboard(data.dashboard as FarmDashboard);
       setMessage(typeof data?.message === 'string' ? data.message : '操作成功');
     } catch (err) {
       setError((err as Error).message);
@@ -88,324 +92,226 @@ export function FarmClient({ initialDashboard }: Props) {
   };
 
   const currentSeed = dashboard.seeds.find((seed) => seed.code === selectedSeed) ?? null;
-  const currentSeedName = currentSeed?.name ?? null;
+  const nextLevelProgress = dashboard.summary.nextLevelExperience && dashboard.summary.nextLevelExperience > 0
+    ? Math.min(100, (dashboard.summary.experience / dashboard.summary.nextLevelExperience) * 100)
+    : 100;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#fff7e0,_#f7f3ef_55%,_#efe6d0)] px-6 py-12 text-[#24190a]">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <section className="overflow-hidden rounded-[36px] border border-[#d8bf77]/40 bg-[linear-gradient(135deg,_rgba(255,249,232,0.96),_rgba(255,239,196,0.92))] p-8 shadow-[0_20px_60px_rgba(62,42,12,0.08)]">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.5em] text-[#9e7c22]">Koi Farm</p>
-              <div className="space-y-2">
-                <h1 className="text-4xl font-semibold tracking-[0.08em]">锦鲤庄园</h1>
-                <p className="max-w-2xl text-sm leading-7 text-[#6f5732]">
-                  用金币买种子，在固定地块上慢慢生长，再把收获兑换成锦鲤积分。第一版只做网页，不接机器人提醒。
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.28em] text-[#9e7c22]">
-                <span className="rounded-full border border-[#d8bf77]/60 bg-white/50 px-4 py-2">1 余额 = 100 金币</span>
-                <span className="rounded-full border border-[#d8bf77]/60 bg-white/50 px-4 py-2">1 积分 = 10 金币</span>
-                <span className="rounded-full border border-[#d8bf77]/60 bg-white/50 px-4 py-2">100 金币 = 1 积分</span>
-              </div>
-            </div>
-            <Link
-              href="/profile"
-              className="inline-flex items-center justify-center rounded-full border border-[#d8bf77]/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#8a6000] transition hover:bg-[#f7e0a0]/35"
-            >
-              返回个人主页
-            </Link>
-          </div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            {[
-              { label: '庄园金币', value: `${formatAmount(dashboard.summary.coins)} 金币` },
-              { label: '庄园经验', value: dashboard.summary.experience.toString() },
-              { label: '庄园等级', value: `Lv.${dashboard.summary.level}` },
-              { label: '可用余额', value: `¥ ${formatAmount(dashboard.summary.totalBalance)}` },
-              { label: '锦鲤积分', value: formatAmount(dashboard.summary.loyaltyPoints) },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-3xl border border-[#d8bf77]/30 bg-white/70 p-5 shadow-[0_12px_30px_rgba(62,42,12,0.05)]"
-              >
-                <p className="text-xs uppercase tracking-[0.38em] text-[#9e7c22]">{item.label}</p>
-                <p className="mt-3 text-2xl font-semibold tracking-[0.06em]">{item.value}</p>
-              </div>
-            ))}
-          </div>
-
-          {(message || error) && (
-            <div
-              className={`mt-6 rounded-2xl border px-4 py-3 text-sm ${
-                error
-                  ? 'border-rose-200 bg-rose-50 text-rose-700'
-                  : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              }`}
-            >
-              {error ?? message}
-            </div>
-          )}
-        </section>
-
-        <div className="grid gap-8 xl:grid-cols-[1.2fr_0.8fr]">
-          <section className="space-y-6 rounded-[32px] border border-[#d8bf77]/30 bg-white/80 p-6 shadow-[0_16px_40px_rgba(62,42,12,0.06)]">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-[#9e7c22]">Plots</p>
-                <h2 className="mt-1 text-2xl font-semibold">我的地块</h2>
-              </div>
-              <div className="rounded-full border border-[#d8bf77]/40 bg-[#fff7e4] px-4 py-2 text-sm text-[#6f5732]">
-                当前已解锁 {dashboard.summary.unlockedPlots} / {MAX_PLOTS} 块地
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {plotsByIndex.map(({ plotIndex, unlocked, plot }) => {
-                const status = unlocked ? plot?.status ?? 'EMPTY' : 'LOCKED';
-                return (
-                  <div
-                    key={plotIndex}
-                    className={`rounded-[28px] border p-5 transition ${
-                      status === 'READY'
-                        ? 'border-[#d49c17] bg-[linear-gradient(135deg,_#fff8d8,_#ffe9a8)] shadow-[0_12px_30px_rgba(212,156,23,0.18)]'
-                        : status === 'GROWING'
-                          ? 'border-[#d8bf77]/40 bg-[linear-gradient(135deg,_#fffdf2,_#f6edd2)]'
-                          : unlocked
-                            ? 'border-[#d8bf77]/30 bg-[#fffdf7]'
-                            : 'border-dashed border-[#d8bf77]/25 bg-[#f8f2e3] text-[#8c7a5a]'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.35em] text-[#9e7c22]">Plot {plotIndex}</p>
-                        <h3 className="mt-2 text-xl font-semibold">
-                          {!unlocked
-                            ? '待解锁'
-                            : plot?.seedType
-                              ? `${dashboard.seeds.find((seed) => seed.code === plot.seedType)?.emoji ?? '🌱'} ${
-                                  dashboard.seeds.find((seed) => seed.code === plot.seedType)?.name ?? plot.seedType
-                                }`
-                              : '空地'}
-                        </h3>
-                      </div>
-                      <span className="rounded-full border border-[#d8bf77]/40 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8a6000]">
-                        {status === 'LOCKED'
-                          ? 'LOCKED'
-                          : status === 'EMPTY'
-                            ? 'EMPTY'
-                            : status === 'GROWING'
-                              ? 'GROWING'
-                              : 'READY'}
-                      </span>
-                    </div>
-
-                    <div className="mt-4 space-y-2 text-sm text-[#6f5732]">
-                      {!unlocked ? (
-                        <p>解锁更多地块后，这里就能继续种植。</p>
-                      ) : status === 'EMPTY' ? (
-                        <>
-                          <p>选择右侧种子后，直接把它种在这块地里。</p>
-                          <button
-                            type="button"
-                            disabled={!currentSeed || loadingKey === `plant:${plotIndex}`}
-                            onClick={() =>
-                              currentSeed &&
-                              runAction('plant', { plotIndex, seedType: currentSeed }, `plant:${plotIndex}`)
-                            }
-                            className="mt-3 w-full rounded-full bg-[#8a6000] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#724d00] disabled:opacity-50"
-                          >
-                            {loadingKey === `plant:${plotIndex}`
-                              ? '种植中…'
-                              : currentSeedName
-                                ? `种植 ${currentSeedName}`
-                                : '请选择种子'}
-                          </button>
-                        </>
-                      ) : status === 'GROWING' ? (
-                        <>
-                          <p>成熟倒计时：{formatRemaining(plot?.remainingSeconds ?? 0)}</p>
-                          <p>预计成熟时间：{plot?.readyAt ? new Date(plot.readyAt).toLocaleString('zh-CN') : '-'}</p>
-                        </>
-                      ) : (
-                        <>
-                          <p>作物已成熟，可以立即收获。</p>
-                          <button
-                            type="button"
-                            disabled={loadingKey === `harvest:${plotIndex}`}
-                            onClick={() => runAction('harvest', { plotIndex }, `harvest:${plotIndex}`)}
-                            className="mt-3 w-full rounded-full bg-[#d49c17] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b87f00] disabled:opacity-50"
-                          >
-                            {loadingKey === `harvest:${plotIndex}` ? '收获中…' : '立即收获'}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="rounded-[28px] border border-[#d8bf77]/30 bg-[#fff9ec] p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.38em] text-[#9e7c22]">Expand</p>
-                  <h3 className="mt-1 text-xl font-semibold">扩地</h3>
+    <div className="min-h-screen overflow-hidden bg-[linear-gradient(180deg,_#fff6df_0%,_#f4ead0_20%,_#dde2bb_55%,_#d6c58f_100%)] text-[#2f1d09]">
+      <div className="relative px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[340px] bg-[radial-gradient(circle_at_top,_rgba(255,248,217,0.92),_transparent_66%)]" />
+        <div className="pointer-events-none absolute right-[6%] top-12 h-32 w-32 rounded-full bg-[radial-gradient(circle,_rgba(255,219,111,0.62),_rgba(255,219,111,0.08)_70%,_transparent_72%)] blur-sm" />
+        <div className="pointer-events-none absolute left-[8%] top-16 h-14 w-36 rounded-full bg-white/45 blur-2xl" />
+        <div className="relative mx-auto flex max-w-7xl flex-col gap-8">
+          <section className="relative overflow-hidden rounded-[36px] border border-[#d9bf84]/60 bg-[linear-gradient(140deg,_rgba(255,251,237,0.96),_rgba(255,241,202,0.95)_45%,_rgba(255,226,159,0.92)_100%)] px-6 py-7 shadow-[0_32px_70px_rgba(93,67,25,0.13)] sm:px-8 lg:px-10 lg:py-9">
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-[34%] bg-[radial-gradient(circle_at_center,_rgba(178,120,22,0.1),_transparent_68%)]" />
+            <div className="relative flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+              <div className="space-y-5">
+                <p className="text-[11px] uppercase tracking-[0.52em] text-[#a07611]">Koi Manor</p>
+                <div className="space-y-3">
+                  <h1 className="text-4xl font-semibold tracking-[0.08em] text-[#38230b] sm:text-5xl">锦鲤庄园</h1>
+                  <p className="max-w-3xl text-sm leading-7 text-[#6c5126] sm:text-base">把总余额和积分换成金币，种进庄园里，再用收获慢慢扩地。先把种植、收获、扩地和兑换跑通。</p>
                 </div>
-                {dashboard.summary.nextPlotCost ? (
-                  <button
-                    type="button"
-                    disabled={loadingKey === 'expand'}
-                    onClick={() => runAction('expand', {}, 'expand')}
-                    className="rounded-full bg-[#8a6000] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#724d00] disabled:opacity-50"
-                  >
-                    {loadingKey === 'expand' ? '扩地中…' : `解锁下一块地（${formatAmount(dashboard.summary.nextPlotCost)} 金币）`}
-                  </button>
-                ) : (
-                  <span className="rounded-full border border-[#d8bf77]/40 px-4 py-2 text-sm text-[#8a6000]">已达到最大地块数</span>
-                )}
+                <div className="flex flex-wrap gap-3 text-[11px] uppercase tracking-[0.3em] text-[#8f6806]">
+                  <span className="rounded-full border border-[#ddb967]/50 bg-white/55 px-4 py-2">1 余额 = 100 金币</span>
+                  <span className="rounded-full border border-[#ddb967]/50 bg-white/55 px-4 py-2">1 积分 = 10 金币</span>
+                  <span className="rounded-full border border-[#ddb967]/50 bg-white/55 px-4 py-2">100 金币 = 1 积分</span>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:w-[360px]">
+                <div className="rounded-[26px] border border-white/45 bg-white/55 p-4 backdrop-blur">
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-[#9a741d]">等级进度</p>
+                  <p className="mt-3 text-3xl font-semibold tracking-[0.06em]">Lv.{dashboard.summary.level}</p>
+                  <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/60"><div className="h-full rounded-full bg-[linear-gradient(90deg,_#b77511,_#f2c84f,_#ffe39f)] transition-all duration-500" style={{ width: `${nextLevelProgress}%` }} /></div>
+                  <p className="mt-2 text-xs text-[#755724]">{dashboard.summary.nextLevelExperience ? `${dashboard.summary.experience} / ${dashboard.summary.nextLevelExperience} 经验` : '已达到当前配置的最高等级'}</p>
+                </div>
+                <div className="rounded-[26px] border border-white/45 bg-[#42290f] p-4 text-[#fff5dc]">
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-[#f2cc79]">庄园状态</p>
+                  <p className="mt-3 text-xl font-semibold tracking-[0.06em]">已解锁 {dashboard.summary.unlockedPlots} / {MAX_PLOTS} 块地</p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs text-[#f6deae]"><span className="rounded-full border border-[#c89b45]/40 px-3 py-1">稳步产出</span><span className="rounded-full border border-[#c89b45]/40 px-3 py-1">无日限</span></div>
+                </div>
               </div>
             </div>
+            <div className="relative mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              {[
+                { label: '庄园金币', value: `${formatAmount(dashboard.summary.coins)} 金币`, accent: 'bg-[linear-gradient(90deg,_#fff1ba,_#f0bb38)]' },
+                { label: '庄园经验', value: dashboard.summary.experience.toString(), accent: 'bg-[linear-gradient(90deg,_#f6d19d,_#dc8b3d)]' },
+                { label: '可用余额', value: `¥ ${formatAmount(dashboard.summary.totalBalance)}`, accent: 'bg-[linear-gradient(90deg,_#ffe6c1,_#d29c4d)]' },
+                { label: '锦鲤积分', value: formatAmount(dashboard.summary.loyaltyPoints), accent: 'bg-[linear-gradient(90deg,_#fde5af,_#d8a62f)]' },
+                { label: '下一块地', value: dashboard.summary.nextPlotCost ? `${formatAmount(dashboard.summary.nextPlotCost)} 金币` : '已满', accent: 'bg-[linear-gradient(90deg,_#fff5d8,_#e1be72)]' },
+              ].map((item) => (
+                <div key={item.label} className="relative overflow-hidden rounded-[28px] border border-white/55 bg-white/62 p-4 backdrop-blur">
+                  <div className={`absolute inset-x-4 top-0 h-1 rounded-b-full ${item.accent}`} />
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-[#8f690d]">{item.label}</p>
+                  <p className="mt-3 text-xl font-semibold tracking-[0.05em] text-[#34210c]">{item.value}</p>
+                </div>
+              ))}
+            </div>
+            {(message || error) && (
+              <div className={`mt-6 rounded-2xl border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50/90 text-rose-700' : 'border-emerald-200 bg-emerald-50/90 text-emerald-700'}`}>
+                {error ?? message}
+              </div>
+            )}
           </section>
 
-          <div className="space-y-8">
-            <section className="rounded-[32px] border border-[#d8bf77]/30 bg-white/80 p-6 shadow-[0_16px_40px_rgba(62,42,12,0.06)]">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-[#9e7c22]">Exchange</p>
-                <h2 className="mt-1 text-2xl font-semibold">金币兑换</h2>
-              </div>
+          <div className="grid gap-8 xl:grid-cols-[1.35fr_0.95fr]">
+            <SectionCard eyebrow="Garden" title="庄园场景" className="overflow-hidden">
+              <div className="relative overflow-hidden rounded-[28px] border border-[#d4bf90]/45 bg-[linear-gradient(180deg,_rgba(209,229,176,0.92)_0%,_rgba(182,213,135,0.96)_30%,_rgba(148,187,100,0.98)_100%)] p-4 sm:p-5 lg:p-6">
+                <div className="pointer-events-none absolute left-6 top-5 h-16 w-40 rounded-full bg-white/35 blur-2xl" />
+                <div className="pointer-events-none absolute right-10 top-7 h-20 w-20 rounded-full bg-[radial-gradient(circle,_rgba(255,244,185,0.55),_transparent_70%)]" />
+                <div className="pointer-events-none absolute bottom-[-48px] left-[-18px] h-48 w-48 rounded-full bg-[radial-gradient(circle,_rgba(75,129,117,0.28),_rgba(75,129,117,0))]" />
+                <div className="pointer-events-none absolute left-6 top-6 flex items-center gap-4 rounded-full border border-white/35 bg-white/25 px-4 py-2 text-[11px] uppercase tracking-[0.32em] text-[#4f5620] backdrop-blur"><span>暖田</span><span>金币成长</span><span>可扩地</span></div>
+                <div className="pointer-events-none absolute bottom-5 left-5 flex h-20 w-20 items-center justify-center rounded-full border border-[#a3c6b8]/35 bg-[radial-gradient(circle,_rgba(129,176,164,0.82),_rgba(62,118,112,0.96))] text-3xl">🐟</div>
+                <div className="pointer-events-none absolute bottom-14 right-8 rounded-full border border-[#d7bf84]/45 bg-[#fff7dd]/80 px-4 py-2 text-xs text-[#7a5d25]">当前已解锁 {dashboard.summary.unlockedPlots} 块地</div>
 
-              <div className="mt-5 space-y-4">
-                {[
-                  {
-                    title: '余额 -> 金币',
-                    value: balanceAmount,
-                    onChange: setBalanceAmount,
-                    suffix: '余额',
-                    action: () => runAction('exchange_balance', { amount: balanceAmount }, 'exchange_balance'),
-                    loading: 'exchange_balance',
-                  },
-                  {
-                    title: '积分 -> 金币',
-                    value: pointAmount,
-                    onChange: setPointAmount,
-                    suffix: '积分',
-                    action: () => runAction('exchange_points', { amount: pointAmount }, 'exchange_points'),
-                    loading: 'exchange_points',
-                  },
-                  {
-                    title: '金币 -> 积分',
-                    value: coinAmount,
-                    onChange: setCoinAmount,
-                    suffix: '金币',
-                    action: () =>
-                      runAction('exchange_coins_to_points', { amount: coinAmount }, 'exchange_coins_to_points'),
-                    loading: 'exchange_coins_to_points',
-                  },
-                ].map((item) => (
-                  <div key={item.title} className="rounded-2xl border border-[#d8bf77]/25 bg-[#fffaf0] p-4">
-                    <p className="text-sm font-semibold">{item.title}</p>
-                    <div className="mt-3 flex gap-3">
-                      <input
-                        value={item.value}
-                        onChange={(event) => item.onChange(event.target.value)}
-                        className="flex-1 rounded-2xl border border-[#d8bf77]/30 bg-white px-4 py-2 text-sm outline-none ring-0 focus:border-[#d49c17]"
-                        placeholder={`输入${item.suffix}数量`}
-                      />
-                      <button
-                        type="button"
-                        disabled={loadingKey === item.loading}
-                        onClick={item.action}
-                        className="rounded-full bg-[#d49c17] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b87f00] disabled:opacity-50"
-                      >
-                        {loadingKey === item.loading ? '处理中…' : '兑换'}
-                      </button>
+                <div className="relative mt-16 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
+                  {plotsByIndex.map(({ plotIndex, unlocked, plot }) => {
+                    const status: PlotStatus = unlocked ? plot?.status ?? 'EMPTY' : 'LOCKED';
+                    const cropVisual = plot?.seedType ? cropVisualMap[plot.seedType] : null;
+                    const seedMeta = plot?.seedType ? dashboard.seeds.find((seed) => seed.code === plot.seedType) : null;
+                    const statusLabel = status === 'LOCKED' ? '待解锁' : status === 'EMPTY' ? '空地' : status === 'GROWING' ? '生长中' : '可收获';
+                    const soilClass = status === 'LOCKED' ? 'bg-[linear-gradient(180deg,_#b9a47b,_#927047)] opacity-60' : status === 'EMPTY' ? 'bg-[linear-gradient(180deg,_#8f6237,_#5e3818)]' : status === 'GROWING' ? 'bg-[linear-gradient(180deg,_#94683d,_#613916)]' : 'bg-[linear-gradient(180deg,_#9c6c3e,_#6b3f17)]';
+                    const panelClass = status === 'LOCKED' ? 'border-dashed border-[#cdb27b]/45 bg-[linear-gradient(180deg,_rgba(245,235,212,0.95),_rgba(227,211,180,0.95))]' : status === 'EMPTY' ? 'border-[#d9bf8d]/45 bg-[linear-gradient(180deg,_rgba(255,252,244,0.96),_rgba(248,236,204,0.95))]' : status === 'GROWING' ? 'border-[#d0b777]/55 bg-[linear-gradient(180deg,_rgba(255,249,225,0.98),_rgba(240,225,176,0.96))]' : 'border-[#f0bf36]/70 bg-[linear-gradient(180deg,_rgba(255,248,215,1),_rgba(255,228,141,0.98))]';
+                    return (
+                      <article key={plotIndex} className={`relative rounded-[30px] border px-4 pb-4 pt-5 text-[#34210c] shadow-[0_20px_40px_rgba(86,55,20,0.10)] ${panelClass}`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.35em] text-[#8d690e]">地块 {plotIndex}</p>
+                            <p className="mt-2 text-lg font-semibold tracking-[0.04em]">{!unlocked ? '待解锁地块' : seedMeta?.name ?? '空地'}</p>
+                          </div>
+                          <span className="rounded-full border border-[#d0b27c]/50 bg-white/75 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-[#946c10]">{statusLabel}</span>
+                        </div>
+                        <div className="mt-5 rounded-[26px] border border-black/5 bg-[linear-gradient(180deg,_rgba(255,255,255,0.34),_rgba(255,255,255,0.08))] p-4">
+                          <div className={`relative overflow-hidden rounded-[26px] ${soilClass} px-4 pb-5 pt-6 text-center`}>
+                            {!unlocked ? (
+                              <div className="flex h-36 flex-col items-center justify-center text-[#f5e4b8]"><div className="text-4xl">🔒</div><p className="mt-4 text-sm tracking-[0.2em] text-[#f8edcf]">解锁后启用</p></div>
+                            ) : status === 'EMPTY' ? (
+                              <div className="flex h-36 flex-col items-center justify-center text-[#f5e4b8]"><div className="text-4xl">🪵</div><p className="mt-4 text-sm tracking-[0.18em] text-[#f6e8c2]">等待播种</p></div>
+                            ) : (
+                              <div className="flex h-36 flex-col items-center justify-center">
+                                <div className="inline-flex h-24 w-24 items-center justify-center rounded-full border border-white/30 bg-white/25 text-5xl shadow-[0_18px_28px_rgba(0,0,0,0.12)]">{status === 'READY' ? cropVisual?.crop ?? '🌾' : cropVisual?.sprout ?? '🌱'}</div>
+                                <div className="mt-4 rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] px-4 py-1 text-xs font-semibold text-white">{status === 'READY' ? '成熟完成' : '生长中'}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-4 space-y-2 text-sm text-[#6d5122]">
+                          {!unlocked ? (
+                            <p>解锁更多地块后，这里会加入新的作物位置。</p>
+                          ) : status === 'EMPTY' ? (
+                            <><p>当前已选种子：{currentSeed?.name ?? '未选择'}</p><p>选好右侧种子后，就能直接播种在这里。</p></>
+                          ) : status === 'GROWING' ? (
+                            <><p>成熟倒计时：{formatRemaining(plot?.remainingSeconds ?? 0)}</p><p>预计成熟时间：{plot?.readyAt ? new Date(plot.readyAt).toLocaleString('zh-CN') : '—'}</p></>
+                          ) : (
+                            <><p>作物已成熟，直接收获即可回收金币和经验。</p><p>预计收获区间：{seedMeta ? `${formatAmount(seedMeta.minYieldCoins)} ~ ${formatAmount(seedMeta.maxYieldCoins)} 金币` : '—'}</p></>
+                          )}
+                        </div>
+                        {unlocked && status === 'EMPTY' && (
+                          <button type="button" disabled={!currentSeed || loadingKey === `plant:${plotIndex}`} onClick={() => currentSeed && runAction('plant', { plotIndex, seedType: currentSeed.code }, `plant:${plotIndex}`)} className="mt-4 w-full rounded-full bg-[linear-gradient(90deg,_#8e5c11,_#bb7d10)] px-4 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">
+                            {loadingKey === `plant:${plotIndex}` ? '种植中…' : currentSeed?.name ? `种植 ${currentSeed.name}` : '请选择种子'}
+                          </button>
+                        )}
+                        {unlocked && status === 'READY' && (
+                          <button type="button" disabled={loadingKey === `harvest:${plotIndex}`} onClick={() => runAction('harvest', { plotIndex }, `harvest:${plotIndex}`)} className="mt-4 w-full rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] px-4 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">
+                            {loadingKey === `harvest:${plotIndex}` ? '收获中…' : '立即收获'}
+                          </button>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            </SectionCard>
+
+            <div className="space-y-8">
+              <SectionCard eyebrow="Selection" title="当前种子">
+                {currentSeed ? (
+                  <div className="rounded-[28px] border border-[#d7bc83]/45 bg-[linear-gradient(145deg,_rgba(255,250,236,0.95),_rgba(255,235,193,0.95))] p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-4xl">{currentSeed.emoji}</p>
+                        <h3 className="mt-3 text-2xl font-semibold tracking-[0.04em] text-[#35210a]">{currentSeed.name}</h3>
+                        <p className="mt-2 text-sm leading-7 text-[#6f5428]">{currentSeed.description}</p>
+                      </div>
+                      <span className="rounded-full border border-[#d2ad54]/45 bg-white/65 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8d6508]">Lv.{currentSeed.unlockLevel}</span>
+                    </div>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-white/60 bg-white/65 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.28em] text-[#9d7518]">播种成本</p><p className="mt-2 text-lg font-semibold text-[#34210b]">{formatAmount(currentSeed.costCoins)} 金币</p></div>
+                      <div className="rounded-2xl border border-white/60 bg-white/65 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.28em] text-[#9d7518]">成熟时间</p><p className="mt-2 text-lg font-semibold text-[#34210b]">{getFarmSeedDurationLabel(currentSeed.durationMinutes)}</p></div>
+                      <div className="rounded-2xl border border-white/60 bg-white/65 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.28em] text-[#9d7518]">收益区间</p><p className="mt-2 text-lg font-semibold text-[#34210b]">{formatAmount(currentSeed.minYieldCoins)} ~ {formatAmount(currentSeed.maxYieldCoins)}</p></div>
+                      <div className="rounded-2xl border border-white/60 bg-white/65 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.28em] text-[#9d7518]">收获经验</p><p className="mt-2 text-lg font-semibold text-[#34210b]">+{currentSeed.experience}</p></div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-[32px] border border-[#d8bf77]/30 bg-white/80 p-6 shadow-[0_16px_40px_rgba(62,42,12,0.06)]">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-[#9e7c22]">Seeds</p>
-                  <h2 className="mt-1 text-2xl font-semibold">种子商店</h2>
-                </div>
-                {currentSeed ? (
-                  <span className="rounded-full border border-[#d8bf77]/40 bg-[#fff7e4] px-4 py-2 text-sm text-[#8a6000]">
-                    当前选择：{currentSeed.name}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {dashboard.seeds.map((seed) => {
-                  const selected = seed.code === selectedSeed;
-                  return (
-                    <button
-                      key={seed.code}
-                      type="button"
-                      disabled={!seed.unlocked}
-                      onClick={() => setSelectedSeed(seed.code)}
-                      className={`w-full rounded-[24px] border p-4 text-left transition ${
-                        selected
-                          ? 'border-[#d49c17] bg-[#fff2c6] shadow-[0_12px_24px_rgba(212,156,23,0.12)]'
-                          : seed.unlocked
-                            ? 'border-[#d8bf77]/25 bg-[#fffaf0] hover:border-[#d49c17]/60'
-                            : 'border-dashed border-black/10 bg-[#f6f0e3] text-gray-400'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-xl">{seed.emoji}</p>
-                          <p className="mt-2 text-lg font-semibold">{seed.name}</p>
-                          <p className="mt-1 text-sm text-[#6f5732]">{seed.description}</p>
-                        </div>
-                        <span className="rounded-full border border-[#d8bf77]/40 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8a6000]">
-                          Lv.{seed.unlockLevel}
-                        </span>
-                      </div>
-                      <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-[#6f5732] md:grid-cols-4">
-                        <div>成本：{formatAmount(seed.costCoins)} 金币</div>
-                        <div>收益：{formatAmount(seed.minYieldCoins)} ~ {formatAmount(seed.maxYieldCoins)}</div>
-                        <div>经验：+{seed.experience}</div>
-                        <div>成熟：{getFarmSeedDurationLabel(seed.durationMinutes)}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="rounded-[32px] border border-[#d8bf77]/30 bg-white/80 p-6 shadow-[0_16px_40px_rgba(62,42,12,0.06)]">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-[#9e7c22]">Recent</p>
-                <h2 className="mt-1 text-2xl font-semibold">最近记录</h2>
-              </div>
-              <div className="mt-5 space-y-3">
-                {dashboard.recentLogs.length > 0 ? (
-                  dashboard.recentLogs.map((log) => (
-                    <div key={log.id} className="rounded-2xl border border-[#d8bf77]/20 bg-[#fffaf0] p-4 text-sm text-[#6f5732]">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-semibold text-[#24190a]">{actionLabelMap[log.actionType] ?? log.actionType}</p>
-                        <span className="text-xs text-[#9e7c22]">{new Date(log.createdAt).toLocaleString('zh-CN')}</span>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-4 text-xs">
-                        <span>金币 {formatAmount(log.coinDelta)}</span>
-                        <span>积分 {formatAmount(log.pointDelta)}</span>
-                        <span>余额 {formatAmount(log.balanceDelta)}</span>
-                        <span>经验 +{log.expDelta}</span>
-                        {log.plotIndex ? <span>地块 {log.plotIndex}</span> : null}
-                      </div>
-                      {log.note ? <p className="mt-2 text-xs text-[#8c6a2f]">{log.note}</p> : null}
-                    </div>
-                  ))
                 ) : (
-                  <p className="text-sm text-gray-400">暂时还没有庄园记录。</p>
+                  <p className="rounded-2xl border border-dashed border-[#d7bc83]/45 bg-[#fff8e8] p-5 text-sm text-[#816032]">当前没有可选种子，请先提升庄园等级。</p>
                 )}
-              </div>
-            </section>
+              </SectionCard>
+
+              <SectionCard eyebrow="Seeds" title="种子背包">
+                <div className="space-y-3">
+                  {dashboard.seeds.map((seed) => {
+                    const selected = seed.code === selectedSeed;
+                    return (
+                      <button key={seed.code} type="button" disabled={!seed.unlocked} onClick={() => setSelectedSeed(seed.code)} className={`w-full rounded-[24px] border p-4 text-left transition ${selected ? 'border-[#d39916] bg-[linear-gradient(145deg,_#fff3c7,_#ffe19a)] shadow-[0_16px_32px_rgba(211,153,22,0.12)]' : seed.unlocked ? 'border-[#d7bc83]/35 bg-white/72 hover:border-[#d39916]/50 hover:bg-[#fff8e7]' : 'border-dashed border-[#cbb68d]/35 bg-[#efe8d7] text-[#9d8e71]'}`}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0"><div className="flex items-center gap-3"><span className="text-2xl">{seed.emoji}</span><div><p className="text-lg font-semibold tracking-[0.04em]">{seed.name}</p><p className="mt-1 text-sm text-[#6f5428]">{seed.description}</p></div></div></div>
+                          <span className="shrink-0 rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.26em] text-[#8f6806]">Lv.{seed.unlockLevel}</span>
+                        </div>
+                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-[#6a4d1d]"><div>成本：{formatAmount(seed.costCoins)} 金币</div><div>经验：+{seed.experience}</div><div>收益：{formatAmount(seed.minYieldCoins)} ~ {formatAmount(seed.maxYieldCoins)}</div><div>成熟：{getFarmSeedDurationLabel(seed.durationMinutes)}</div></div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </SectionCard>
+              <SectionCard eyebrow="Exchange" title="庄园兑换所">
+                <div className="space-y-4">
+                  {[
+                    { title: '余额 → 金币', hint: '把 totalBalance 直接投进庄园。', value: balanceAmount, onChange: setBalanceAmount, action: () => runAction('exchange_balance', { amount: balanceAmount }, 'exchange_balance'), loading: 'exchange_balance', button: '兑换金币' },
+                    { title: '积分 → 金币', hint: '已有积分也能补仓继续种。', value: pointAmount, onChange: setPointAmount, action: () => runAction('exchange_points', { amount: pointAmount }, 'exchange_points'), loading: 'exchange_points', button: '转成金币' },
+                    { title: '金币 → 积分', hint: '收菜后的金币可以继续换回锦鲤积分。', value: coinAmount, onChange: setCoinAmount, action: () => runAction('exchange_coins_to_points', { amount: coinAmount }, 'exchange_coins_to_points'), loading: 'exchange_coins_to_points', button: '兑换积分' },
+                  ].map((item) => (
+                    <div key={item.title} className="rounded-[24px] border border-[#d7bc83]/35 bg-white/72 p-4">
+                      <div className="flex flex-col gap-1"><p className="text-base font-semibold tracking-[0.04em] text-[#38240d]">{item.title}</p><p className="text-sm text-[#7b6131]">{item.hint}</p></div>
+                      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                        <input value={item.value} onChange={(event) => item.onChange(event.target.value)} className="flex-1 rounded-full border border-[#d9bf88]/40 bg-[#fffdf7] px-4 py-3 text-sm text-[#38240d] outline-none transition focus:border-[#c98b12]" placeholder="输入数量" />
+                        <button type="button" disabled={loadingKey === item.loading} onClick={item.action} className="rounded-full bg-[linear-gradient(90deg,_#8d5b11,_#bf8113)] px-5 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === item.loading ? '处理中…' : item.button}</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+
+              <SectionCard eyebrow="Estate" title="扩建庄园">
+                <div className="rounded-[26px] border border-[#d8bf87]/35 bg-[linear-gradient(145deg,_rgba(255,250,238,0.95),_rgba(252,235,194,0.95))] p-5">
+                  <p className="text-sm leading-7 text-[#6f5428]">地块越多，庄园的自然产能越高。当前解锁 {dashboard.summary.unlockedPlots} / {MAX_PLOTS} 块地。</p>
+                  {dashboard.summary.nextPlotCost ? (
+                    <button type="button" disabled={loadingKey === 'expand'} onClick={() => runAction('expand', {}, 'expand')} className="mt-5 w-full rounded-full bg-[linear-gradient(90deg,_#503015,_#8d5b11,_#c78a18)] px-5 py-3 text-sm font-semibold tracking-[0.16em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === 'expand' ? '扩地中…' : `花费 ${formatAmount(dashboard.summary.nextPlotCost)} 金币解锁下一块地`}</button>
+                  ) : (
+                    <div className="mt-5 rounded-full border border-[#d3b36a]/45 bg-white/65 px-4 py-3 text-center text-sm font-semibold text-[#8c650a]">已达到当前最大地块数量</div>
+                  )}
+                </div>
+              </SectionCard>
+
+              <SectionCard eyebrow="Ledger" title="最近记录">
+                <div className="space-y-3">
+                  {dashboard.recentLogs.length > 0 ? (
+                    dashboard.recentLogs.map((log) => (
+                      <div key={log.id} className="rounded-[22px] border border-[#d8bf87]/28 bg-[linear-gradient(180deg,_rgba(255,252,245,0.94),_rgba(249,239,214,0.94))] p-4 text-sm text-[#6b4f21]">
+                        <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold tracking-[0.04em] text-[#31200d]">{actionLabelMap[log.actionType] ?? log.actionType}</p><span className="text-xs text-[#98731a]">{new Date(log.createdAt).toLocaleString('zh-CN')}</span></div>
+                        <div className="mt-3 flex flex-wrap gap-4 text-xs"><span>金币 {formatAmount(log.coinDelta)}</span><span>积分 {formatAmount(log.pointDelta)}</span><span>余额 {formatAmount(log.balanceDelta)}</span><span>经验 +{log.expDelta}</span>{log.plotIndex ? <span>地块 {log.plotIndex}</span> : null}</div>
+                        {log.note ? <p className="mt-2 text-xs text-[#8b6a2c]">{log.note}</p> : null}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">暂时还没有庄园记录。</p>
+                  )}
+                </div>
+              </SectionCard>
+            </div>
+          </div>
+
+          <div className="flex justify-center pb-3 pt-1 sm:justify-end">
+            <Link href="/profile" className="inline-flex items-center justify-center rounded-full border border-[#d8bf77]/70 bg-white/55 px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#8a6000] transition hover:bg-[#f7e0a0]/35">返回个人主页</Link>
           </div>
         </div>
       </div>
