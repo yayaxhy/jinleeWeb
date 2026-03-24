@@ -272,7 +272,7 @@ export function FarmClient({ initialDashboard }: Props) {
     const syncSceneScale = () => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      const scale = Math.max(viewportWidth / SCENE_BASE_WIDTH, viewportHeight / SCENE_BASE_HEIGHT);
+      const scale = Math.min(viewportWidth / SCENE_BASE_WIDTH, viewportHeight / SCENE_BASE_HEIGHT);
       setSceneScale(scale);
     };
 
