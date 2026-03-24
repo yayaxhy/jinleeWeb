@@ -33,9 +33,19 @@ type Props = { initialDashboard: FarmDashboard };
 type PlotStatus = 'LOCKED' | 'EMPTY' | 'GROWING' | 'READY';
 type DrawerKey = 'none' | 'seeds' | 'exchange' | 'visit' | 'logs';
 type FarmSearchResult = { id: number; discordUserId: string; serverDisplayName: string };
-type FloatingReward = { id: number; text: string; variant: 'gold' | 'steal' };
-type SceneBurst = { id: number; plotIndex: number; variant: 'harvest' | 'steal' };
+type FloatingReward = { id: number; text: string; variant: 'gold' | 'steal' | 'plant' };
+type SceneBurst = { id: number; plotIndex: number; variant: 'harvest' | 'steal' | 'plant' };
 type HarvestTransition = { id: number; plotIndex: number; previousAsset: string; previousClassName: string };
+type PlantTransition = { id: number; plotIndex: number; asset: string };
+type RecentVisit = { discordUserId: string; displayName: string };
+type ActionResultModal = {
+  title: string;
+  description: string;
+  accent: 'gold' | 'green' | 'orange';
+  asset: string;
+  detailLines: string[];
+  badge: string;
+};
 
 type PlotCard = {
   plotIndex: number;
@@ -196,6 +206,9 @@ export function FarmClient({ initialDashboard }: Props) {
   const [floatingRewards, setFloatingRewards] = useState<FloatingReward[]>([]);
   const [sceneBursts, setSceneBursts] = useState<SceneBurst[]>([]);
   const [harvestTransitions, setHarvestTransitions] = useState<HarvestTransition[]>([]);
+  const [plantTransitions, setPlantTransitions] = useState<PlantTransition[]>([]);
+  const [actionResult, setActionResult] = useState<ActionResultModal | null>(null);
+  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>([]);
 
   const isVisiting = viewDashboard.owner.discordUserId !== homeDashboard.owner.discordUserId;
   const currentSeed = homeDashboard.seeds.find((seed) => seed.code === selectedSeed) ?? null;
@@ -204,6 +217,23 @@ export function FarmClient({ initialDashboard }: Props) {
     if (selectedSeed && homeDashboard.seeds.some((seed) => seed.code === selectedSeed && seed.unlocked)) return;
     setSelectedSeed(homeDashboard.seeds.find((seed) => seed.unlocked)?.code ?? null);
   }, [homeDashboard.seeds, selectedSeed]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('farmRecentVisits');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentVisits(
+          parsed.filter((item): item is RecentVisit =>
+            Boolean(item && typeof item.discordUserId === 'string' && typeof item.displayName === 'string'),
+          ).slice(0, 6),
+        );
+      }
+    } catch {
+      // ignore invalid local cache
+    }
+  }, []);
 
   useEffect(() => {
     const keyword = farmSearch.trim();
@@ -300,6 +330,33 @@ export function FarmClient({ initialDashboard }: Props) {
     }, 850);
   };
 
+  const pushPlantTransition = (plotIndex: number, asset: string) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setPlantTransitions((current) => [
+      ...current.filter((item) => item.plotIndex !== plotIndex),
+      { id, plotIndex, asset },
+    ]);
+    window.setTimeout(() => {
+      setPlantTransitions((current) => current.filter((item) => item.id !== id));
+    }, 900);
+  };
+
+  const rememberVisit = (dashboard: FarmDashboard) => {
+    if (dashboard.owner.isSelf) return;
+    setRecentVisits((current) => {
+      const next = [
+        { discordUserId: dashboard.owner.discordUserId, displayName: dashboard.owner.displayName },
+        ...current.filter((item) => item.discordUserId !== dashboard.owner.discordUserId),
+      ].slice(0, 6);
+      try {
+        window.localStorage.setItem('farmRecentVisits', JSON.stringify(next));
+      } catch {
+        // ignore storage failures
+      }
+      return next;
+    });
+  };
+
   const loadTargetFarm = async (targetDiscordId?: string) => {
     setLoadingKey(targetDiscordId ? 'visit-farm' : 'visit-home');
     setError(null);
@@ -313,6 +370,7 @@ export function FarmClient({ initialDashboard }: Props) {
       setViewDashboard(dashboard);
       setActivePlotIndex(null);
       if (!targetDiscordId) setHomeDashboard(dashboard);
+      if (targetDiscordId) rememberVisit(dashboard);
       setActiveDrawer('none');
     } catch (err) {
       setError((err as Error).message);
@@ -321,7 +379,12 @@ export function FarmClient({ initialDashboard }: Props) {
     }
   };
 
-  const runAction = async (action: string, payload: Record<string, unknown>, key: string, entry?: PlotCard) => {
+  const runAction = async (
+    action: string,
+    payload: Record<string, unknown>,
+    key: string,
+    options?: { entry?: PlotCard; seed?: FarmDashboard['seeds'][number] | null },
+  ) => {
     setLoadingKey(key);
     setError(null);
     setMessage(null);
@@ -341,14 +404,57 @@ export function FarmClient({ initialDashboard }: Props) {
           setHomeDashboard(dashboard);
         }
       }
+      if (action === 'plant' && options?.seed && typeof payload.plotIndex === 'number') {
+        pushFloatingReward(`已播种 ${options.seed.name}`, 'plant');
+        pushSceneBurst(payload.plotIndex, 'plant');
+        pushPlantTransition(payload.plotIndex, cropStageAssetMap[options.seed.code].SPROUT);
+        setActionResult({
+          title: '播种完成',
+          description: `${options.seed.name} 已种进 ${payload.plotIndex} 号地块。`,
+          accent: 'green',
+          asset: cropStageAssetMap[options.seed.code].SPROUT,
+          badge: '播种成功',
+          detailLines: [
+            `成熟时间：${getFarmSeedDurationLabel(options.seed.durationMinutes)}`,
+            `预计收益：${formatAmount(options.seed.minYieldCoins)} ~ ${formatAmount(options.seed.maxYieldCoins)} 金币`,
+            `成长奖励：+${options.seed.experience} EXP`,
+          ],
+        });
+      }
       if (action === 'harvest' && data?.result?.harvestCoins) {
         pushFloatingReward(`+${formatAmount(data.result.harvestCoins)} 金币`, 'gold');
-        if (entry) pushHarvestTransition(entry);
+        if (options?.entry) pushHarvestTransition(options.entry);
         if (typeof payload.plotIndex === 'number') pushSceneBurst(payload.plotIndex, 'harvest');
+        setActionResult({
+          title: '收获完成',
+          description: data.result.stolenCoins !== '0.00'
+            ? `本轮净收 ${formatAmount(data.result.harvestCoins)} 金币，被偷走 ${formatAmount(data.result.stolenCoins)}。`
+            : `本轮收获 ${formatAmount(data.result.harvestCoins)} 金币。`,
+          accent: 'gold',
+          asset: options?.entry?.seedMeta ? cropStageAssetMap[options.entry.seedMeta.code].READY : '/farm/plot-harvested.svg',
+          badge: '收获结算',
+          detailLines: [
+            `地块：${payload.plotIndex} 号`,
+            data.result.stolenCoins !== '0.00' ? `被偷：${formatAmount(data.result.stolenCoins)} 金币` : '本轮未被偷菜',
+            `当前金币：${formatAmount((data?.viewerDashboard ?? data?.dashboard)?.summary?.coins ?? homeDashboard.summary.coins)}`,
+          ],
+        });
       }
       if (action === 'steal' && data?.result?.stolenCoins) {
         pushFloatingReward(`偷到 +${formatAmount(data.result.stolenCoins)} 金币`, 'steal');
         if (typeof payload.plotIndex === 'number') pushSceneBurst(payload.plotIndex, 'steal');
+        setActionResult({
+          title: '偷菜成功',
+          description: `你从 ${viewDashboard.owner.displayName} 的 ${payload.plotIndex} 号地块带走了 ${formatAmount(data.result.stolenCoins)} 金币。`,
+          accent: 'orange',
+          asset: options?.entry?.seedMeta ? cropStageAssetMap[options.entry.seedMeta.code].READY : '/farm/plot-harvested.svg',
+          badge: '拜访战利品',
+          detailLines: [
+            `目标地块：${payload.plotIndex} 号`,
+            `到手金币：${formatAmount(data.result.stolenCoins)}`,
+            `你的金币：${formatAmount(data?.viewerDashboard?.summary?.coins ?? homeDashboard.summary.coins)}`,
+          ],
+        });
       }
       setMessage(typeof data?.message === 'string' ? data.message : '操作成功');
     } catch (err) {
@@ -372,15 +478,15 @@ export function FarmClient({ initialDashboard }: Props) {
       return;
     }
     if (entry.status === 'EMPTY' && viewDashboard.owner.isSelf && currentSeed) {
-      runAction('plant', { plotIndex: entry.plotIndex, seedType: currentSeed.code }, `plant:${entry.plotIndex}`, entry);
+      runAction('plant', { plotIndex: entry.plotIndex, seedType: currentSeed.code }, `plant:${entry.plotIndex}`, { entry, seed: currentSeed });
       return;
     }
     if (entry.status === 'READY' && viewDashboard.owner.isSelf) {
-      runAction('harvest', { plotIndex: entry.plotIndex }, `harvest:${entry.plotIndex}`, entry);
+      runAction('harvest', { plotIndex: entry.plotIndex }, `harvest:${entry.plotIndex}`, { entry });
       return;
     }
     if (entry.status === 'READY' && !viewDashboard.owner.isSelf && entry.plot?.canSteal) {
-      runAction('steal', { targetDiscordId: viewDashboard.owner.discordUserId, plotIndex: entry.plotIndex }, `steal:${entry.plotIndex}`, entry);
+      runAction('steal', { targetDiscordId: viewDashboard.owner.discordUserId, plotIndex: entry.plotIndex }, `steal:${entry.plotIndex}`, { entry });
     }
   };
 
@@ -437,6 +543,14 @@ export function FarmClient({ initialDashboard }: Props) {
           25% { transform: translate3d(12px, -10px, 0) rotate(6deg); }
           50% { transform: translate3d(22px, 2px, 0) rotate(-2deg); }
           75% { transform: translate3d(8px, 10px, 0) rotate(4deg); }
+        }
+        @keyframes farmPlantBurst {
+          0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.55); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.38); }
+        }
+        @keyframes farmResultCardIn {
+          0% { opacity: 0; transform: translateY(18px) scale(0.94); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
 
@@ -525,6 +639,7 @@ export function FarmClient({ initialDashboard }: Props) {
                   const scene = plotScenePositions[entry.plotIndex];
                   const preview = getPlotAsset(entry);
                   const harvestTransition = harvestTransitions.find((item) => item.plotIndex === entry.plotIndex) ?? null;
+                  const plantTransition = plantTransitions.find((item) => item.plotIndex === entry.plotIndex) ?? null;
                   const actionKey = entry.status === 'EMPTY' ? `plant:${entry.plotIndex}` : entry.status === 'READY' && viewDashboard.owner.isSelf ? `harvest:${entry.plotIndex}` : `steal:${entry.plotIndex}`;
                   const loading = loadingKey === actionKey || (!entry.unlocked && loadingKey === 'expand');
                   const tooltipVisible = hoveredPlotIndex === entry.plotIndex;
@@ -572,6 +687,14 @@ export function FarmClient({ initialDashboard }: Props) {
                                 </div>
                               </>
                             ) : null}
+                            {plantTransition ? (
+                              <>
+                                <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,_rgba(188,255,165,0.38),_rgba(188,255,165,0.02)_72%)] opacity-0" style={{ animation: 'farmPlantBurst 0.9s ease-out forwards' }} />
+                                <div className="absolute inset-0">
+                                  <Image src={plantTransition.asset} alt="" fill className="object-contain opacity-0 scale-[0.45]" style={{ animation: 'farmHarvestFieldReset 0.75s ease-out forwards' }} />
+                                </div>
+                              </>
+                            ) : null}
                             <Image src={preview.asset} alt={entry.title} fill className={`object-contain ${preview.className}`} />
                           </div>
                         </button>
@@ -598,11 +721,18 @@ export function FarmClient({ initialDashboard }: Props) {
                           <span className="absolute left-[26%] top-[36%] text-xl text-[#ffe08b]" style={{ animation: 'farmSpark 0.95s ease-out 0.08s forwards' }}>✦</span>
                           <span className="absolute right-[22%] top-[38%] text-2xl text-[#ffe08b]" style={{ animation: 'farmSpark 1s ease-out 0.12s forwards' }}>✦</span>
                         </div>
-                      ) : (
+                      ) : burst.variant === 'steal' ? (
                         <div className="relative h-32 w-32">
                           <div className="absolute left-1/2 top-1/2 h-2 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,_rgba(255,220,180,0.1),_rgba(255,220,180,0.95),_rgba(255,220,180,0.1))]" style={{ animation: 'farmStealBurst 0.9s ease-out forwards' }} />
                           <div className="absolute left-1/2 top-1/2 h-2 w-20 rounded-full bg-[linear-gradient(90deg,_rgba(255,171,112,0.1),_rgba(255,171,112,0.95),_rgba(255,171,112,0.1))]" style={{ animation: 'farmStealBurst 0.9s ease-out 0.08s forwards', transform: 'translate(-50%, -50%) rotate(-40deg)' }} />
                           <span className="absolute left-1/2 top-[18%] -translate-x-1/2 text-2xl text-[#ffd3b0]" style={{ animation: 'farmSpark 0.9s ease-out forwards' }}>✦</span>
+                        </div>
+                      ) : (
+                        <div className="relative h-32 w-32">
+                          <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#d8ffb4]/65 opacity-0" style={{ animation: 'farmPlantBurst 0.9s ease-out forwards' }} />
+                          <span className="absolute left-[28%] top-[26%] text-2xl text-[#b6ef83]" style={{ animation: 'farmSpark 0.95s ease-out forwards' }}>✦</span>
+                          <span className="absolute right-[22%] top-[34%] text-xl text-[#d4ffb1]" style={{ animation: 'farmSpark 0.95s ease-out 0.08s forwards' }}>✦</span>
+                          <span className="absolute left-1/2 top-[18%] -translate-x-1/2 text-3xl text-[#f1ffca]" style={{ animation: 'farmSpark 0.95s ease-out 0.12s forwards' }}>✦</span>
                         </div>
                       )}
                     </div>
@@ -612,29 +742,36 @@ export function FarmClient({ initialDashboard }: Props) {
               </div>
 
               <div className="absolute inset-x-4 bottom-4 z-20 flex items-center justify-center">
-                <div className="w-full max-w-3xl rounded-[28px] border border-white/22 bg-[linear-gradient(180deg,_rgba(57,31,9,0.74),_rgba(33,17,5,0.72))] px-4 py-3 shadow-[0_18px_36px_rgba(14,8,3,0.22)] backdrop-blur-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="hidden text-xs uppercase tracking-[0.34em] text-[#f4d38a] sm:block">种子栏</div>
-                    <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
+                <div className="w-full max-w-4xl rounded-[30px] border border-[#f1d59f]/28 bg-[linear-gradient(180deg,_rgba(89,50,17,0.92),_rgba(46,24,7,0.9))] px-4 py-4 shadow-[0_18px_36px_rgba(14,8,3,0.24)] backdrop-blur-sm">
+                  <div className="rounded-[24px] border border-[#f8e5bc]/12 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="hidden sm:block">
+                        <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]">庄园背包</p>
+                        <p className="mt-1 text-sm text-[#fff2c7]/82">点击物品栏切换当前种子，再对地块执行播种。</p>
+                      </div>
+                      <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
                       {homeDashboard.seeds.map((seed) => {
                         const selected = seed.code === selectedSeed;
                         return (
-                          <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-16 w-16 items-center justify-center rounded-[22px] border transition sm:h-[72px] sm:w-[72px] ${selected ? 'border-[#f6cf77]/80 bg-[linear-gradient(180deg,_rgba(255,239,192,0.95),_rgba(235,190,79,0.95))] shadow-[0_16px_26px_rgba(53,30,9,0.22)]' : seed.unlocked ? 'border-white/20 bg-white/10 hover:border-[#f2cb74]/55 hover:bg-white/16' : 'border-dashed border-white/10 bg-black/12 opacity-45'}`}>
+                          <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[78px] w-[78px] items-center justify-center rounded-[24px] border transition sm:h-[84px] sm:w-[84px] ${selected ? 'border-[#f6cf77]/80 bg-[linear-gradient(180deg,_rgba(255,239,192,0.95),_rgba(235,190,79,0.95))] shadow-[0_18px_28px_rgba(53,30,9,0.26)]' : seed.unlocked ? 'border-[#f4deac]/16 bg-[linear-gradient(180deg,_rgba(255,248,227,0.15),_rgba(255,230,162,0.08))] hover:border-[#f2cb74]/55 hover:bg-white/16' : 'border-dashed border-white/10 bg-black/12 opacity-45'}`}>
+                            <span className="absolute inset-[4px] rounded-[20px] border border-[#f8e7bf]/12" />
                             <div className="relative h-11 w-11 sm:h-12 sm:w-12"><Image src={cropStageAssetMap[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
-                            {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[22px] bg-black/24 text-xs font-semibold text-[#ffe2a5]">Lv.{seed.unlockLevel}</span> : null}
+                            <span className="absolute left-2 top-2 rounded-full bg-black/24 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.18em] text-[#ffe4a5]">{seed.unlockLevel}</span>
+                            {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[24px] bg-black/24 text-xs font-semibold text-[#ffe2a5]">Lv.{seed.unlockLevel}</span> : null}
                             {selected ? <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#fff2ae] shadow-[0_0_12px_rgba(255,242,174,0.9)]" /> : null}
                             <span className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-full border border-[#e4ca8f]/35 bg-[#2a1606]/94 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffe4a5] lg:group-hover:block">{seed.name}</span>
                           </button>
                         );
                       })}
+                      </div>
+                      <button type="button" onClick={() => setActiveDrawer('seeds')} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18">打开种子袋</button>
                     </div>
-                    <button type="button" onClick={() => setActiveDrawer('seeds')} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18">打开种子袋</button>
                   </div>
                 </div>
               </div>
 
               <div className="pointer-events-none absolute inset-0 z-30">
-                {floatingRewards.map((item) => <div key={item.id} className={`absolute left-1/2 top-[45%] text-center text-lg font-semibold tracking-[0.08em] ${item.variant === 'gold' ? 'text-[#fff0a1]' : 'text-[#ffd9ae]'}`} style={{ animation: 'farmFloatUp 1.6s ease forwards' }}>{item.text}</div>)}
+                {floatingRewards.map((item) => <div key={item.id} className={`absolute left-1/2 top-[45%] text-center text-lg font-semibold tracking-[0.08em] ${item.variant === 'gold' ? 'text-[#fff0a1]' : item.variant === 'plant' ? 'text-[#d8ffb4]' : 'text-[#ffd9ae]'}`} style={{ animation: 'farmFloatUp 1.6s ease forwards' }}>{item.text}</div>)}
               </div>
             </div>
           </div>
@@ -711,19 +848,60 @@ export function FarmClient({ initialDashboard }: Props) {
         {activeDrawer === 'visit' ? (
           <div className="space-y-4">
             <div className="rounded-[24px] border border-[#d7bc83]/35 bg-white/72 p-4">
-              <p className="text-base font-semibold tracking-[0.04em] text-[#38240d]">搜索别人的庄园</p>
-              <p className="mt-1 text-sm text-[#7b6131]">输入陪玩 ID、Discord ID 或展示名，找到后直接切到对方庄园。</p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-base font-semibold tracking-[0.04em] text-[#38240d]">庄园地图册</p>
+                  <p className="mt-1 text-sm text-[#7b6131]">输入陪玩 ID、Discord ID 或展示名，找到后直接切到对方庄园。</p>
+                </div>
+                <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">拜访模式</span>
+              </div>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <input value={farmSearch} onChange={(event) => setFarmSearch(event.target.value)} className="flex-1 rounded-full border border-[#d9bf88]/40 bg-[#fffdf7] px-4 py-3 text-sm text-[#38240d] outline-none transition focus:border-[#c98b12]" placeholder="搜索陪玩 ID / Discord ID / 名字" />
                 {isVisiting ? <button type="button" disabled={loadingKey === 'visit-home'} onClick={() => loadTargetFarm()} className="rounded-full border border-[#d7bc83]/40 bg-white/70 px-5 py-3 text-sm font-semibold tracking-[0.12em] text-[#825f1a] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === 'visit-home' ? '返回中…' : '回到我的庄园'}</button> : null}
+              </div>
+            </div>
+            <div className="rounded-[24px] border border-[#d7bc83]/35 bg-white/72 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-base font-semibold tracking-[0.04em] text-[#38240d]">最近拜访</p>
+                  <p className="mt-1 text-sm text-[#7b6131]">保留最近打开过的庄园，方便快速返回。</p>
+                </div>
+                <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{recentVisits.length} 个庄园</span>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {recentVisits.length > 0 ? recentVisits.map((visit) => (
+                  <button
+                    key={visit.discordUserId}
+                    type="button"
+                    disabled={loadingKey === 'visit-farm'}
+                    onClick={() => loadTargetFarm(visit.discordUserId)}
+                    className="flex items-center justify-between rounded-[22px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.94),_rgba(249,239,214,0.94))] px-4 py-4 text-left transition hover:border-[#d39a24]/50 hover:bg-[#fff8e8]"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{visit.displayName}</p>
+                      <p className="mt-1 truncate text-xs text-[#8b6a2c]">{visit.discordUserId}</p>
+                    </div>
+                    <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">进入</span>
+                  </button>
+                )) : (
+                  <div className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032] sm:col-span-2">
+                    你还没有拜访记录。先搜索一个庄园，后续就会显示在这里。
+                  </div>
+                )}
               </div>
             </div>
             <div className="space-y-3">
               {searching ? <p className="text-sm text-[#7b6131]">搜索中…</p> : null}
               {!searching && farmSearch.trim() && searchResults.length === 0 ? <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">没有找到可访问的庄园。</p> : null}
               {searchResults.map((result) => (
-                <button key={result.id} type="button" disabled={loadingKey === 'visit-farm'} onClick={() => loadTargetFarm(result.discordUserId)} className="flex w-full items-center justify-between rounded-[22px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.94),_rgba(249,239,214,0.94))] px-4 py-4 text-left transition hover:border-[#d39a24]/50 hover:bg-[#fff8e8]">
-                  <div><p className="text-base font-semibold tracking-[0.04em] text-[#35210a]">{result.serverDisplayName}</p><p className="mt-1 text-xs text-[#8b6a2c]">{result.discordUserId}</p></div>
+                <button key={result.id} type="button" disabled={loadingKey === 'visit-farm'} onClick={() => loadTargetFarm(result.discordUserId)} className="flex w-full items-center justify-between rounded-[24px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.94),_rgba(249,239,214,0.94))] px-4 py-4 text-left transition hover:border-[#d39a24]/50 hover:bg-[#fff8e8]">
+                  <div className="flex min-w-0 items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-[18px] border border-[#eccd8f]/40 bg-[linear-gradient(180deg,_#fff8e4,_#f4ddb0)] text-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">🏡</div>
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{result.serverDisplayName}</p>
+                      <p className="mt-1 truncate text-xs text-[#8b6a2c]">{result.discordUserId}</p>
+                    </div>
+                  </div>
                   <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
                 </button>
               ))}
@@ -795,6 +973,64 @@ export function FarmClient({ initialDashboard }: Props) {
                   {activePlot.status === 'EMPTY' && viewDashboard.owner.isSelf && !currentSeed ? <button type="button" onClick={() => { setActivePlotIndex(null); setActiveDrawer('seeds'); }} className="w-full rounded-full border border-[#d7bc83]/45 bg-white/75 px-4 py-4 text-sm font-semibold tracking-[0.14em] text-[#835e19] transition hover:bg-white">打开种子袋选择种子</button> : null}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {actionResult ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#1d0f03]/42 px-3 py-6" onClick={() => setActionResult(null)}>
+          <div
+            className={`relative w-full max-w-[420px] rounded-[34px] border p-5 shadow-[0_24px_60px_rgba(21,11,3,0.28)] [animation:farmResultCardIn_0.24s_ease-out_forwards] ${
+              actionResult.accent === 'gold'
+                ? 'border-[#efc861]/60 bg-[linear-gradient(180deg,_rgba(255,249,227,0.98),_rgba(255,228,166,0.98))]'
+                : actionResult.accent === 'green'
+                  ? 'border-[#b7df83]/60 bg-[linear-gradient(180deg,_rgba(246,255,232,0.98),_rgba(220,244,180,0.98))]'
+                  : 'border-[#f0c19b]/60 bg-[linear-gradient(180deg,_rgba(255,245,236,0.98),_rgba(255,221,192,0.98))]'
+            }`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button type="button" onClick={() => setActionResult(null)} className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-white/55 text-xl text-[#734d17] transition hover:bg-white/80">×</button>
+            <div className="rounded-[26px] border border-white/28 px-4 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] uppercase tracking-[0.34em] text-[#996d11]">Koi Manor</p>
+                <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                  actionResult.accent === 'gold'
+                    ? 'border-[#e9ca6a]/42 bg-[#fff4c9] text-[#8b6408]'
+                    : actionResult.accent === 'green'
+                      ? 'border-[#b7df83]/52 bg-[#eefad8] text-[#537718]'
+                      : 'border-[#e7bd9b]/52 bg-[#fff0e3] text-[#9a5e2f]'
+                }`}>
+                  {actionResult.badge}
+                </span>
+              </div>
+              <h3 className="mt-2 text-3xl font-semibold tracking-[0.06em] text-[#3b250c]">{actionResult.title}</h3>
+              <p className="mt-2 text-sm leading-7 text-[#6c4f21]">{actionResult.description}</p>
+              <div className="mt-4 rounded-[24px] border border-white/26 bg-white/42 p-4">
+                <div className="flex justify-center">
+                  <div className="relative h-40 w-40">
+                    <div className={`absolute inset-4 rounded-full ${
+                      actionResult.accent === 'gold'
+                        ? 'bg-[radial-gradient(circle,_rgba(255,224,138,0.48),_rgba(255,224,138,0.04)_70%)]'
+                        : actionResult.accent === 'green'
+                          ? 'bg-[radial-gradient(circle,_rgba(197,255,172,0.42),_rgba(197,255,172,0.04)_70%)]'
+                          : 'bg-[radial-gradient(circle,_rgba(255,191,140,0.4),_rgba(255,191,140,0.04)_70%)]'
+                    }`} />
+                    <span className="absolute left-[14%] top-[18%] text-2xl text-white/80">✦</span>
+                    <span className="absolute right-[14%] top-[26%] text-xl text-white/70">✦</span>
+                    <span className="absolute left-1/2 bottom-[8%] -translate-x-1/2 text-2xl text-white/80">✦</span>
+                  <Image src={actionResult.asset} alt={actionResult.title} fill className="object-contain drop-shadow-[0_16px_24px_rgba(0,0,0,0.15)]" />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2 rounded-[22px] border border-white/32 bg-white/52 p-4 text-sm text-[#6b4f21]">
+                {actionResult.detailLines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+              <button type="button" onClick={() => setActionResult(null)} className="mt-5 w-full rounded-full bg-[linear-gradient(90deg,_#8d5b11,_#bf8113)] px-4 py-3 text-sm font-semibold tracking-[0.16em] text-white transition hover:brightness-105">
+                确认
+              </button>
             </div>
           </div>
         </div>
