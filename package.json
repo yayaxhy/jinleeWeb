@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "node -e \"require('fs').rmSync('.next/dev',{ recursive: true, force: true });\" && next build",
+    "dev": "next dev --webpack",
+    "build": "node -e \"require('fs').rmSync('.next/dev',{ recursive: true, force: true });\" && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "farm:generate": "node scripts/generate-farm-asset.mjs",
