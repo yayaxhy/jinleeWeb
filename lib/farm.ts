@@ -87,6 +87,20 @@ export type FarmDashboard = {
   }>;
 };
 
+export type FarmCompanionEntry = {
+  discordUserId: string;
+  displayName: string;
+  peiwanId: number | null;
+  label: string;
+  count: number;
+  lastTouchedAt: string;
+};
+
+export type FarmCompanionLists = {
+  friends: FarmCompanionEntry[];
+  frequentVisits: FarmCompanionEntry[];
+};
+
 type FarmProfileWithRelations = Awaited<ReturnType<typeof ensureFarmProfileTx>> & {
   logs?: Array<{
     id: string;
@@ -331,6 +345,191 @@ async function loadFarmDashboardTx(
 
 export async function getFarmDashboard(ownerDiscordId: string, viewerDiscordId = ownerDiscordId) {
   return prisma.$transaction((tx) => loadFarmDashboardTx(tx, ownerDiscordId, viewerDiscordId));
+}
+
+export async function recordFarmVisit(viewerDiscordId: string, targetDiscordId: string) {
+  if (!viewerDiscordId || !targetDiscordId || viewerDiscordId === targetDiscordId) {
+    return;
+  }
+
+  await prisma.farmVisit.upsert({
+    where: {
+      viewerDiscordId_targetDiscordId: {
+        viewerDiscordId,
+        targetDiscordId,
+      },
+    },
+    create: {
+      viewerDiscordId,
+      targetDiscordId,
+      visitCount: 1,
+      lastVisitedAt: new Date(),
+    },
+    update: {
+      visitCount: { increment: 1 },
+      lastVisitedAt: new Date(),
+    },
+  });
+}
+
+type InteractionStats = {
+  count: number;
+  lastTouchedAt: Date;
+  orderCount: number;
+  giftCount: number;
+};
+
+async function loadVisitablePeiwans(discordUserIds: string[]) {
+  if (discordUserIds.length === 0) {
+    return new Map<string, { peiwanId: number; displayName: string }>();
+  }
+
+  const rows = await prisma.pEIWAN.findMany({
+    where: {
+      discordUserId: {
+        in: discordUserIds,
+      },
+    },
+    select: {
+      discordUserId: true,
+      PEIWANID: true,
+      serverDisplayName: true,
+      member: {
+        select: {
+          serverDisplayName: true,
+        },
+      },
+    },
+  });
+
+  return new Map(
+    rows.map((row) => [
+      row.discordUserId,
+      {
+        peiwanId: row.PEIWANID,
+        displayName: row.serverDisplayName ?? row.member?.serverDisplayName ?? row.discordUserId,
+      },
+    ]),
+  );
+}
+
+export async function getFarmCompanionLists(viewerDiscordId: string): Promise<FarmCompanionLists> {
+  const [orderRows, giftRows, visitRows] = await Promise.all([
+    prisma.orderAudit.findMany({
+      where: {
+        OR: [{ hostId: viewerDiscordId }, { workerId: viewerDiscordId }],
+      },
+      select: {
+        hostId: true,
+        workerId: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 80,
+    }),
+    prisma.giftAudit.findMany({
+      where: {
+        OR: [{ giverId: viewerDiscordId }, { receiverId: viewerDiscordId }],
+      },
+      select: {
+        giverId: true,
+        receiverId: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 80,
+    }),
+    prisma.farmVisit.findMany({
+      where: {
+        viewerDiscordId,
+      },
+      orderBy: [{ visitCount: 'desc' }, { lastVisitedAt: 'desc' }],
+      take: 12,
+    }),
+  ]);
+
+  const interactions = new Map<string, InteractionStats>();
+  const touch = (counterpartId: string, createdAt: Date, kind: 'order' | 'gift') => {
+    if (!counterpartId || counterpartId === viewerDiscordId) return;
+    const current = interactions.get(counterpartId);
+    if (current) {
+      current.count += 1;
+      current.lastTouchedAt = current.lastTouchedAt > createdAt ? current.lastTouchedAt : createdAt;
+      if (kind === 'order') current.orderCount += 1;
+      else current.giftCount += 1;
+      return;
+    }
+    interactions.set(counterpartId, {
+      count: 1,
+      lastTouchedAt: createdAt,
+      orderCount: kind === 'order' ? 1 : 0,
+      giftCount: kind === 'gift' ? 1 : 0,
+    });
+  };
+
+  for (const row of orderRows) {
+    touch(row.hostId === viewerDiscordId ? row.workerId : row.hostId, row.createdAt, 'order');
+  }
+  for (const row of giftRows) {
+    touch(row.giverId === viewerDiscordId ? row.receiverId : row.giverId, row.createdAt, 'gift');
+  }
+
+  const candidateIds = Array.from(
+    new Set([
+      ...interactions.keys(),
+      ...visitRows.map((item) => item.targetDiscordId),
+    ]),
+  );
+
+  const peiwanMap = await loadVisitablePeiwans(candidateIds);
+
+  const friends = Array.from(interactions.entries())
+    .filter(([discordUserId]) => peiwanMap.has(discordUserId))
+    .sort((a, b) => {
+      const countDiff = b[1].count - a[1].count;
+      if (countDiff !== 0) return countDiff;
+      return b[1].lastTouchedAt.getTime() - a[1].lastTouchedAt.getTime();
+    })
+    .slice(0, 8)
+    .map(([discordUserId, stats]) => {
+      const peiwan = peiwanMap.get(discordUserId)!;
+      const detailParts = [
+        stats.orderCount > 0 ? `订单 ${stats.orderCount}` : null,
+        stats.giftCount > 0 ? `打赏 ${stats.giftCount}` : null,
+      ].filter(Boolean);
+      return {
+        discordUserId,
+        displayName: peiwan.displayName,
+        peiwanId: peiwan.peiwanId,
+        label: detailParts.length > 0 ? detailParts.join(' · ') : `互动 ${stats.count} 次`,
+        count: stats.count,
+        lastTouchedAt: stats.lastTouchedAt.toISOString(),
+      };
+    });
+
+  const frequentVisits = visitRows
+    .filter((row) => peiwanMap.has(row.targetDiscordId))
+    .slice(0, 8)
+    .map((row) => {
+      const peiwan = peiwanMap.get(row.targetDiscordId)!;
+      return {
+        discordUserId: row.targetDiscordId,
+        displayName: peiwan.displayName,
+        peiwanId: peiwan.peiwanId,
+        label: `拜访 ${row.visitCount} 次`,
+        count: row.visitCount,
+        lastTouchedAt: row.lastVisitedAt.toISOString(),
+      };
+    });
+
+  return {
+    friends,
+    frequentVisits,
+  };
 }
 
 export async function exchangeBalanceToCoins(discordUserId: string, amount: string | number) {

@@ -300,6 +300,19 @@ model FarmActionLog {
   @@index([discordUserId, actionType, createdAt])
 }
 
+model FarmVisit {
+  id              String   @id @default(cuid())
+  viewerDiscordId String
+  targetDiscordId String
+  visitCount      Int      @default(1)
+  createdAt       DateTime @default(now())
+  lastVisitedAt   DateTime @default(now())
+
+  @@unique([viewerDiscordId, targetDiscordId])
+  @@index([viewerDiscordId, lastVisitedAt])
+  @@index([viewerDiscordId, visitCount])
+}
+
 model VoicePointSession {
   id              String   @id @default(cuid())
   discordUserId   String

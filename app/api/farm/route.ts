@@ -7,9 +7,11 @@ import {
   exchangeCoinsToPoints,
   exchangePointsToCoins,
   expandFarm,
+  getFarmCompanionLists,
   getFarmDashboard,
   harvestFarmPlot,
   plantFarmSeed,
+  recordFarmVisit,
   stealFarmPlot,
 } from '@/lib/farm';
 
@@ -26,6 +28,12 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const search = (url.searchParams.get('search') ?? '').trim();
     const targetDiscordId = (url.searchParams.get('targetDiscordId') ?? '').trim();
+    const companions = url.searchParams.get('companions') === '1';
+
+    if (companions) {
+      const data = await getFarmCompanionLists(session.discordId);
+      return NextResponse.json({ ok: true, data });
+    }
 
     if (search) {
       const keyword = search.slice(0, 64);
@@ -55,6 +63,10 @@ export async function GET(request: NextRequest) {
           serverDisplayName: row.serverDisplayName ?? row.member?.serverDisplayName ?? row.discordUserId,
         })),
       });
+    }
+
+    if (targetDiscordId && targetDiscordId !== session.discordId) {
+      await recordFarmVisit(session.discordId, targetDiscordId);
     }
 
     const dashboard = await getFarmDashboard(targetDiscordId || session.discordId, session.discordId);

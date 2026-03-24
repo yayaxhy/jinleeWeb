@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MAX_PLOTS, getFarmSeedDurationLabel, type FarmSeedTypeValue } from '@/lib/farmConfig';
-import type { FarmDashboard } from '@/lib/farm';
+import type { FarmCompanionEntry, FarmCompanionLists, FarmDashboard } from '@/lib/farm';
 
 const actionLabelMap: Record<string, string> = {
   BALANCE_TO_COINS: '余额兑换金币',
@@ -29,15 +29,23 @@ const formatRemaining = (remainingSeconds: number) => {
   return `${seconds}秒`;
 };
 
+const formatVisitTime = (value: string) =>
+  new Date(value).toLocaleString('zh-CN', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
 type Props = { initialDashboard: FarmDashboard };
 type PlotStatus = 'LOCKED' | 'EMPTY' | 'GROWING' | 'READY';
-type DrawerKey = 'none' | 'seeds' | 'exchange' | 'visit' | 'logs';
+type DrawerKey = 'none' | 'seeds' | 'exchange' | 'logs';
+type CompanionTab = 'friends' | 'frequent' | 'search';
 type FarmSearchResult = { id: number; discordUserId: string; serverDisplayName: string };
 type FloatingReward = { id: number; text: string; variant: 'gold' | 'steal' | 'plant' };
 type SceneBurst = { id: number; plotIndex: number; variant: 'harvest' | 'steal' | 'plant' };
 type HarvestTransition = { id: number; plotIndex: number; previousAsset: string; previousClassName: string };
 type PlantTransition = { id: number; plotIndex: number; asset: string };
-type RecentVisit = { discordUserId: string; displayName: string };
 type ActionResultModal = {
   title: string;
   description: string;
@@ -100,7 +108,6 @@ const cropStageAssetMap: Record<FarmSeedTypeValue, Record<'SPROUT' | 'YOUNG' | '
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
   seeds: { icon: '🌱', label: '种子袋' },
   exchange: { icon: '💰', label: '兑换所' },
-  visit: { icon: '🧭', label: '拜访庄园' },
   logs: { icon: '📜', label: '庄园日志' },
 };
 
@@ -110,6 +117,41 @@ const stageLabelMap = {
   MATURE: '丰产前夕',
   READY: '成熟完成',
 } as const;
+
+const seedPageSize = 2;
+
+function getSeedRarity(seed: FarmDashboard['seeds'][number]) {
+  switch (seed.code) {
+    case 'MYSTERY_FRUIT':
+      return {
+        label: '史诗',
+        border: 'border-[#be8bff]/55',
+        glow: 'shadow-[0_16px_28px_rgba(126,80,198,0.18)]',
+        badge: 'text-[#7a46be] border-[#d6b8ff]/60 bg-[#f3eaff]',
+      };
+    case 'KOI_FLOWER':
+      return {
+        label: '稀有',
+        border: 'border-[#f0b44d]/55',
+        glow: 'shadow-[0_16px_28px_rgba(180,113,24,0.16)]',
+        badge: 'text-[#9a6510] border-[#f2cf8f]/60 bg-[#fff3da]',
+      };
+    case 'ROSE':
+      return {
+        label: '进阶',
+        border: 'border-[#7fc67d]/55',
+        glow: 'shadow-[0_16px_28px_rgba(73,133,70,0.14)]',
+        badge: 'text-[#4b7f2f] border-[#b8ddb2]/60 bg-[#eefae7]',
+      };
+    default:
+      return {
+        label: '基础',
+        border: 'border-[#94c4e9]/55',
+        glow: 'shadow-[0_16px_28px_rgba(89,137,189,0.14)]',
+        badge: 'text-[#4d6f97] border-[#c7ddf0]/60 bg-[#edf6fd]',
+      };
+  }
+}
 
 function getPlotAsset(entry: PlotCard) {
   if (!entry.unlocked) {
@@ -208,10 +250,17 @@ export function FarmClient({ initialDashboard }: Props) {
   const [harvestTransitions, setHarvestTransitions] = useState<HarvestTransition[]>([]);
   const [plantTransitions, setPlantTransitions] = useState<PlantTransition[]>([]);
   const [actionResult, setActionResult] = useState<ActionResultModal | null>(null);
-  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>([]);
+  const [friendModalOpen, setFriendModalOpen] = useState(false);
+  const [companionTab, setCompanionTab] = useState<CompanionTab>('friends');
+  const [companions, setCompanions] = useState<FarmCompanionLists>({ friends: [], frequentVisits: [] });
+  const [companionsLoading, setCompanionsLoading] = useState(false);
+  const [seedPage, setSeedPage] = useState(0);
 
   const isVisiting = viewDashboard.owner.discordUserId !== homeDashboard.owner.discordUserId;
   const currentSeed = homeDashboard.seeds.find((seed) => seed.code === selectedSeed) ?? null;
+  const totalSeedPages = Math.max(1, Math.ceil(homeDashboard.seeds.length / seedPageSize));
+  const visibleSeedPage = Math.min(seedPage, totalSeedPages - 1);
+  const pagedSeeds = homeDashboard.seeds.slice(visibleSeedPage * seedPageSize, (visibleSeedPage + 1) * seedPageSize);
 
   useEffect(() => {
     if (selectedSeed && homeDashboard.seeds.some((seed) => seed.code === selectedSeed && seed.unlocked)) return;
@@ -219,23 +268,45 @@ export function FarmClient({ initialDashboard }: Props) {
   }, [homeDashboard.seeds, selectedSeed]);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem('farmRecentVisits');
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        setRecentVisits(
-          parsed.filter((item): item is RecentVisit =>
-            Boolean(item && typeof item.discordUserId === 'string' && typeof item.displayName === 'string'),
-          ).slice(0, 6),
-        );
-      }
-    } catch {
-      // ignore invalid local cache
-    }
-  }, []);
+    setSeedPage((current) => Math.min(current, Math.max(0, totalSeedPages - 1)));
+  }, [totalSeedPages]);
 
   useEffect(() => {
+    if (!friendModalOpen) return;
+    let cancelled = false;
+    const loadCompanions = async () => {
+      setCompanionsLoading(true);
+      try {
+        const res = await fetch('/api/farm?companions=1');
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '好友列表加载失败');
+        if (!cancelled) {
+          setCompanions(
+            data?.data && typeof data.data === 'object'
+              ? (data.data as FarmCompanionLists)
+              : { friends: [], frequentVisits: [] },
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setCompanions({ friends: [], frequentVisits: [] });
+        }
+      } finally {
+        if (!cancelled) {
+          setCompanionsLoading(false);
+        }
+      }
+    };
+    void loadCompanions();
+    return () => {
+      cancelled = true;
+    };
+  }, [friendModalOpen]);
+
+  useEffect(() => {
+    if (!friendModalOpen || companionTab !== 'search') {
+      return;
+    }
     const keyword = farmSearch.trim();
     if (!keyword) {
       setSearchResults([]);
@@ -255,7 +326,7 @@ export function FarmClient({ initialDashboard }: Props) {
       }
     }, 260);
     return () => window.clearTimeout(timer);
-  }, [farmSearch]);
+  }, [farmSearch, friendModalOpen, companionTab]);
 
   const plotsByIndex = useMemo(() => {
     const map = new Map(viewDashboard.plots.map((plot) => [plot.plotIndex, plot]));
@@ -301,7 +372,6 @@ export function FarmClient({ initialDashboard }: Props) {
   const nextLevelProgress = homeDashboard.summary.nextLevelExperience && homeDashboard.summary.nextLevelExperience > 0
     ? Math.min(100, (homeDashboard.summary.experience / homeDashboard.summary.nextLevelExperience) * 100)
     : 100;
-
   const pushFloatingReward = (text: string, variant: FloatingReward['variant']) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setFloatingRewards((current) => [...current, { id, text, variant }]);
@@ -341,22 +411,6 @@ export function FarmClient({ initialDashboard }: Props) {
     }, 900);
   };
 
-  const rememberVisit = (dashboard: FarmDashboard) => {
-    if (dashboard.owner.isSelf) return;
-    setRecentVisits((current) => {
-      const next = [
-        { discordUserId: dashboard.owner.discordUserId, displayName: dashboard.owner.displayName },
-        ...current.filter((item) => item.discordUserId !== dashboard.owner.discordUserId),
-      ].slice(0, 6);
-      try {
-        window.localStorage.setItem('farmRecentVisits', JSON.stringify(next));
-      } catch {
-        // ignore storage failures
-      }
-      return next;
-    });
-  };
-
   const loadTargetFarm = async (targetDiscordId?: string) => {
     setLoadingKey(targetDiscordId ? 'visit-farm' : 'visit-home');
     setError(null);
@@ -370,8 +424,8 @@ export function FarmClient({ initialDashboard }: Props) {
       setViewDashboard(dashboard);
       setActivePlotIndex(null);
       if (!targetDiscordId) setHomeDashboard(dashboard);
-      if (targetDiscordId) rememberVisit(dashboard);
       setActiveDrawer('none');
+      setFriendModalOpen(false);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -488,6 +542,42 @@ export function FarmClient({ initialDashboard }: Props) {
     if (entry.status === 'READY' && !viewDashboard.owner.isSelf && entry.plot?.canSteal) {
       runAction('steal', { targetDiscordId: viewDashboard.owner.discordUserId, plotIndex: entry.plotIndex }, `steal:${entry.plotIndex}`, { entry });
     }
+  };
+
+  const renderCompanionCards = (items: FarmCompanionEntry[], emptyMessage: string) => {
+    if (companionsLoading) {
+      return <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">加载中…</p>;
+    }
+    if (items.length === 0) {
+      return <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">{emptyMessage}</p>;
+    }
+
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        {items.map((item) => (
+          <button
+            key={item.discordUserId}
+            type="button"
+            disabled={loadingKey === 'visit-farm'}
+            onClick={() => loadTargetFarm(item.discordUserId)}
+            className="flex items-center justify-between rounded-[22px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.96),_rgba(249,239,214,0.96))] px-4 py-4 text-left transition hover:border-[#d39a24]/50 hover:bg-[#fff8e8] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{item.displayName}</p>
+                {item.peiwanId ? <span className="rounded-full border border-[#d2ad54]/35 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-[#8f6806]">#{item.peiwanId}</span> : null}
+              </div>
+              <p className="mt-1 truncate text-xs text-[#8b6a2c]">{item.discordUserId}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#7e6134]">
+                <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-2 py-1 tracking-[0.14em]">{item.label}</span>
+                <span>最近：{formatVisitTime(item.lastTouchedAt)}</span>
+              </div>
+            </div>
+            <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
+          </button>
+        ))}
+      </div>
+    );
   };
 
   const drawerTitle = activeDrawer === 'none' ? '' : drawerMeta[activeDrawer].label;
@@ -628,9 +718,11 @@ export function FarmClient({ initialDashboard }: Props) {
             <div className="relative mt-4 flex-1 overflow-hidden rounded-[38px] border border-white/22 bg-[linear-gradient(180deg,_rgba(210,231,255,0.22),_rgba(65,90,28,0.1))] shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]">
               <div className="absolute left-4 top-4 z-20 rounded-[22px] border border-white/20 bg-[linear-gradient(180deg,_rgba(56,31,9,0.74),_rgba(35,18,5,0.62))] px-4 py-3 text-xs tracking-[0.18em] text-[#fbe5b0] backdrop-blur-sm">{currentSeed ? `已选种子 · ${currentSeed.name}` : '点击下方图标先选种子'}</div>
               <div className="absolute right-4 top-4 z-20 flex flex-col gap-2 lg:hidden">
+                <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
                 {(Object.keys(drawerMeta) as Array<Exclude<DrawerKey, 'none'>>).map((key) => <ToolButton key={key} icon={drawerMeta[key].icon} label={drawerMeta[key].label} active={activeDrawer === key} onClick={() => setActiveDrawer((current) => (current === key ? 'none' : key))} />)}
               </div>
               <div className="absolute right-5 top-5 z-20 hidden flex-col gap-3 lg:flex">
+                <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
                 {(Object.keys(drawerMeta) as Array<Exclude<DrawerKey, 'none'>>).map((key) => <ToolButton key={key} icon={drawerMeta[key].icon} label={drawerMeta[key].label} active={activeDrawer === key} onClick={() => setActiveDrawer((current) => (current === key ? 'none' : key))} />)}
               </div>
 
@@ -750,11 +842,13 @@ export function FarmClient({ initialDashboard }: Props) {
                         <p className="mt-1 text-sm text-[#fff2c7]/82">点击物品栏切换当前种子，再对地块执行播种。</p>
                       </div>
                       <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
-                      {homeDashboard.seeds.map((seed) => {
+                      {pagedSeeds.map((seed) => {
+                        const rarity = getSeedRarity(seed);
                         const selected = seed.code === selectedSeed;
                         return (
-                          <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[78px] w-[78px] items-center justify-center rounded-[24px] border transition sm:h-[84px] sm:w-[84px] ${selected ? 'border-[#f6cf77]/80 bg-[linear-gradient(180deg,_rgba(255,239,192,0.95),_rgba(235,190,79,0.95))] shadow-[0_18px_28px_rgba(53,30,9,0.26)]' : seed.unlocked ? 'border-[#f4deac]/16 bg-[linear-gradient(180deg,_rgba(255,248,227,0.15),_rgba(255,230,162,0.08))] hover:border-[#f2cb74]/55 hover:bg-white/16' : 'border-dashed border-white/10 bg-black/12 opacity-45'}`}>
+                          <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[78px] w-[78px] items-center justify-center rounded-[24px] border transition sm:h-[84px] sm:w-[84px] ${selected ? 'border-[#f6cf77]/80 bg-[linear-gradient(180deg,_rgba(255,239,192,0.95),_rgba(235,190,79,0.95))] shadow-[0_18px_28px_rgba(53,30,9,0.26)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-[linear-gradient(180deg,_rgba(255,248,227,0.15),_rgba(255,230,162,0.08))] hover:border-[#f2cb74]/55 hover:bg-white/16` : 'border-dashed border-white/10 bg-black/12 opacity-45'}`}>
                             <span className="absolute inset-[4px] rounded-[20px] border border-[#f8e7bf]/12" />
+                            {seed.unlocked ? <span className={`absolute right-2 top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.14em] ${rarity.badge}`}>{rarity.label}</span> : null}
                             <div className="relative h-11 w-11 sm:h-12 sm:w-12"><Image src={cropStageAssetMap[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
                             <span className="absolute left-2 top-2 rounded-full bg-black/24 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.18em] text-[#ffe4a5]">{seed.unlockLevel}</span>
                             {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[24px] bg-black/24 text-xs font-semibold text-[#ffe2a5]">Lv.{seed.unlockLevel}</span> : null}
@@ -764,7 +858,12 @@ export function FarmClient({ initialDashboard }: Props) {
                         );
                       })}
                       </div>
-                      <button type="button" onClick={() => setActiveDrawer('seeds')} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18">打开种子袋</button>
+                      <div className="flex items-center gap-2">
+                        <button type="button" disabled={visibleSeedPage === 0} onClick={() => setSeedPage((current) => Math.max(0, current - 1))} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18 disabled:opacity-40">‹</button>
+                        <span className="text-[11px] uppercase tracking-[0.24em] text-[#f4d38a]">{visibleSeedPage + 1}/{totalSeedPages}</span>
+                        <button type="button" disabled={visibleSeedPage >= totalSeedPages - 1} onClick={() => setSeedPage((current) => Math.min(totalSeedPages - 1, current + 1))} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18 disabled:opacity-40">›</button>
+                        <button type="button" onClick={() => setActiveDrawer('seeds')} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18">打开种子袋</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -799,17 +898,35 @@ export function FarmClient({ initialDashboard }: Props) {
                 </div>
               </div>
             ) : null}
-            <div className="space-y-3">
-              {homeDashboard.seeds.map((seed) => {
+            <div className="rounded-[26px] border border-[#d8bf87]/38 bg-[linear-gradient(145deg,_rgba(255,250,236,0.95),_rgba(252,235,194,0.95))] p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">种子分页背包</p>
+                  <p className="mt-1 text-sm text-[#705529]">每页展示 2 个物品格，边框颜色表示稀有度。</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" disabled={visibleSeedPage === 0} onClick={() => setSeedPage((current) => Math.max(0, current - 1))} className="rounded-full border border-[#d5b778]/45 bg-white/70 px-3 py-2 text-xs font-semibold tracking-[0.18em] text-[#8e670f] transition hover:bg-white disabled:opacity-40">上一页</button>
+                  <span className="text-xs font-semibold tracking-[0.22em] text-[#8f6806]">{visibleSeedPage + 1}/{totalSeedPages}</span>
+                  <button type="button" disabled={visibleSeedPage >= totalSeedPages - 1} onClick={() => setSeedPage((current) => Math.min(totalSeedPages - 1, current + 1))} className="rounded-full border border-[#d5b778]/45 bg-white/70 px-3 py-2 text-xs font-semibold tracking-[0.18em] text-[#8e670f] transition hover:bg-white disabled:opacity-40">下一页</button>
+                </div>
+              </div>
+              <div className="mt-4 space-y-3">
+              {pagedSeeds.map((seed) => {
+                const rarity = getSeedRarity(seed);
                 const selected = seed.code === selectedSeed;
                 return (
-                  <button key={seed.code} type="button" disabled={!seed.unlocked} onClick={() => setSelectedSeed(seed.code)} className={`w-full rounded-[24px] border p-4 text-left transition ${selected ? 'border-[#d39916] bg-[linear-gradient(145deg,_#fff3c7,_#ffe19a)] shadow-[0_16px_32px_rgba(211,153,22,0.12)]' : seed.unlocked ? 'border-[#d7bc83]/35 bg-white/72 hover:border-[#d39916]/50 hover:bg-[#fff8e7]' : 'border-dashed border-[#cbb68d]/35 bg-[#efe8d7] text-[#9d8e71]'}`}>
+                  <button key={seed.code} type="button" disabled={!seed.unlocked} onClick={() => setSelectedSeed(seed.code)} className={`w-full rounded-[26px] border p-4 text-left transition ${selected ? 'border-[#d39916] bg-[linear-gradient(145deg,_#fff3c7,_#ffe19a)] shadow-[0_16px_32px_rgba(211,153,22,0.12)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-white/72 hover:border-[#d39916]/50 hover:bg-[#fff8e7]` : 'border-dashed border-[#cbb68d]/35 bg-[#efe8d7] text-[#9d8e71]'}`}>
                     <div className="flex items-start gap-4">
-                      <div className="relative h-14 w-14 shrink-0"><Image src={cropStageAssetMap[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
+                      <div className="relative h-16 w-16 shrink-0 rounded-[20px] border border-white/40 bg-[linear-gradient(180deg,_rgba(255,248,234,0.95),_rgba(249,233,194,0.95))] p-2">
+                        <Image src={cropStageAssetMap[seed.code].READY} alt={seed.name} fill className="object-contain p-2" />
+                      </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-3">
                           <p className="text-lg font-semibold tracking-[0.04em]">{seed.name}</p>
-                          <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">Lv.{seed.unlockLevel}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.24em] ${rarity.badge}`}>{rarity.label}</span>
+                            <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">Lv.{seed.unlockLevel}</span>
+                          </div>
                         </div>
                         <p className="mt-1 text-sm text-[#6f5428]">{seed.description}</p>
                         <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-[#654a1c]">
@@ -823,6 +940,7 @@ export function FarmClient({ initialDashboard }: Props) {
                   </button>
                 );
               })}
+              </div>
             </div>
           </div>
         ) : null}
@@ -845,70 +963,6 @@ export function FarmClient({ initialDashboard }: Props) {
           </div>
         ) : null}
 
-        {activeDrawer === 'visit' ? (
-          <div className="space-y-4">
-            <div className="rounded-[24px] border border-[#d7bc83]/35 bg-white/72 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-base font-semibold tracking-[0.04em] text-[#38240d]">庄园地图册</p>
-                  <p className="mt-1 text-sm text-[#7b6131]">输入陪玩 ID、Discord ID 或展示名，找到后直接切到对方庄园。</p>
-                </div>
-                <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">拜访模式</span>
-              </div>
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                <input value={farmSearch} onChange={(event) => setFarmSearch(event.target.value)} className="flex-1 rounded-full border border-[#d9bf88]/40 bg-[#fffdf7] px-4 py-3 text-sm text-[#38240d] outline-none transition focus:border-[#c98b12]" placeholder="搜索陪玩 ID / Discord ID / 名字" />
-                {isVisiting ? <button type="button" disabled={loadingKey === 'visit-home'} onClick={() => loadTargetFarm()} className="rounded-full border border-[#d7bc83]/40 bg-white/70 px-5 py-3 text-sm font-semibold tracking-[0.12em] text-[#825f1a] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === 'visit-home' ? '返回中…' : '回到我的庄园'}</button> : null}
-              </div>
-            </div>
-            <div className="rounded-[24px] border border-[#d7bc83]/35 bg-white/72 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-base font-semibold tracking-[0.04em] text-[#38240d]">最近拜访</p>
-                  <p className="mt-1 text-sm text-[#7b6131]">保留最近打开过的庄园，方便快速返回。</p>
-                </div>
-                <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{recentVisits.length} 个庄园</span>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {recentVisits.length > 0 ? recentVisits.map((visit) => (
-                  <button
-                    key={visit.discordUserId}
-                    type="button"
-                    disabled={loadingKey === 'visit-farm'}
-                    onClick={() => loadTargetFarm(visit.discordUserId)}
-                    className="flex items-center justify-between rounded-[22px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.94),_rgba(249,239,214,0.94))] px-4 py-4 text-left transition hover:border-[#d39a24]/50 hover:bg-[#fff8e8]"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{visit.displayName}</p>
-                      <p className="mt-1 truncate text-xs text-[#8b6a2c]">{visit.discordUserId}</p>
-                    </div>
-                    <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">进入</span>
-                  </button>
-                )) : (
-                  <div className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032] sm:col-span-2">
-                    你还没有拜访记录。先搜索一个庄园，后续就会显示在这里。
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="space-y-3">
-              {searching ? <p className="text-sm text-[#7b6131]">搜索中…</p> : null}
-              {!searching && farmSearch.trim() && searchResults.length === 0 ? <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">没有找到可访问的庄园。</p> : null}
-              {searchResults.map((result) => (
-                <button key={result.id} type="button" disabled={loadingKey === 'visit-farm'} onClick={() => loadTargetFarm(result.discordUserId)} className="flex w-full items-center justify-between rounded-[24px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.94),_rgba(249,239,214,0.94))] px-4 py-4 text-left transition hover:border-[#d39a24]/50 hover:bg-[#fff8e8]">
-                  <div className="flex min-w-0 items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-[18px] border border-[#eccd8f]/40 bg-[linear-gradient(180deg,_#fff8e4,_#f4ddb0)] text-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">🏡</div>
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{result.serverDisplayName}</p>
-                      <p className="mt-1 truncate text-xs text-[#8b6a2c]">{result.discordUserId}</p>
-                    </div>
-                  </div>
-                  <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
         {activeDrawer === 'logs' ? (
           <div className="space-y-3">
             {viewDashboard.recentLogs.length > 0 ? viewDashboard.recentLogs.map((log) => (
@@ -921,6 +975,95 @@ export function FarmClient({ initialDashboard }: Props) {
           </div>
         ) : null}
       </OverlayDrawer>
+
+      {friendModalOpen ? (
+        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-[#1d0f03]/58 px-3 py-6" onClick={() => setFriendModalOpen(false)}>
+          <div
+            className="relative w-full max-w-[980px] rounded-[38px] border border-[#e4ca8f]/55 bg-[linear-gradient(180deg,_rgba(255,249,232,0.98),_rgba(246,228,186,0.98))] shadow-[0_28px_70px_rgba(25,14,4,0.3)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button type="button" onClick={() => setFriendModalOpen(false)} className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-[#d8bc83]/45 bg-white/55 text-xl text-[#734d17] transition hover:bg-white/75">×</button>
+            <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[260px_1fr]">
+              <div className="rounded-[30px] border border-[#d7bc83]/35 bg-[linear-gradient(180deg,_rgba(83,47,16,0.95),_rgba(46,24,7,0.95))] p-5 text-[#fff5da] shadow-[0_18px_40px_rgba(23,12,3,0.18)]">
+                <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]">Koi Manor</p>
+                <h2 className="mt-2 text-3xl font-semibold tracking-[0.06em]">好友庄园</h2>
+                <p className="mt-3 text-sm leading-7 text-[#fcebc2]/86">把常互动的陪玩和真实拜访记录收进一个独立弹窗。搜索只负责补充入口，不再混进右侧抽屉。</p>
+                <div className="mt-5 space-y-2">
+                  <button type="button" onClick={() => setCompanionTab('friends')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'friends' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>我的好友</button>
+                  <button type="button" onClick={() => setCompanionTab('frequent')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'frequent' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>常访名单</button>
+                  <button type="button" onClick={() => setCompanionTab('search')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'search' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>搜索庄园</button>
+                </div>
+                {isVisiting ? (
+                  <button type="button" disabled={loadingKey === 'visit-home'} onClick={() => loadTargetFarm()} className="mt-6 w-full rounded-full border border-[#f5d8a0]/35 bg-white/10 px-4 py-3 text-sm font-semibold tracking-[0.12em] text-[#ffe3a4] transition hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-50">
+                    {loadingKey === 'visit-home' ? '返回中…' : '回到我的庄园'}
+                  </button>
+                ) : null}
+              </div>
+              <div className="space-y-4">
+                {companionTab === 'friends' ? (
+                  <div className="rounded-[28px] border border-[#d7bc83]/35 bg-white/72 p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">真实好友</p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]">我的好友</h3>
+                        <p className="mt-1 text-sm text-[#7b6131]">根据真实订单和打赏互动生成，可直接拜访对方庄园。</p>
+                      </div>
+                      <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{companions.friends.length} 位好友</span>
+                    </div>
+                    <div className="mt-4">{renderCompanionCards(companions.friends, '还没有形成好友庄园名单。先和陪玩互动几次，再回来这里。')}</div>
+                  </div>
+                ) : null}
+
+                {companionTab === 'frequent' ? (
+                  <div className="rounded-[28px] border border-[#d7bc83]/35 bg-white/72 p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">访问记录</p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]">常访名单</h3>
+                        <p className="mt-1 text-sm text-[#7b6131]">改成服务器真实拜访记录，不再依赖本地缓存。</p>
+                      </div>
+                      <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{companions.frequentVisits.length} 个庄园</span>
+                    </div>
+                    <div className="mt-4">{renderCompanionCards(companions.frequentVisits, '还没有常访庄园。先拜访一次别人的庄园，记录就会出现在这里。')}</div>
+                  </div>
+                ) : null}
+
+                {companionTab === 'search' ? (
+                  <div className="rounded-[28px] border border-[#d7bc83]/35 bg-white/72 p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">地图册</p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]">搜索庄园</h3>
+                        <p className="mt-1 text-sm text-[#7b6131]">输入陪玩 ID、Discord ID 或展示名，找到后直接进入对方庄园。</p>
+                      </div>
+                      <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">拜访模式</span>
+                    </div>
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      <input value={farmSearch} onChange={(event) => setFarmSearch(event.target.value)} className="flex-1 rounded-full border border-[#d9bf88]/40 bg-[#fffdf7] px-4 py-3 text-sm text-[#38240d] outline-none transition focus:border-[#c98b12]" placeholder="搜索陪玩 ID / Discord ID / 名字" />
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      {searching ? <p className="text-sm text-[#7b6131]">搜索中…</p> : null}
+                      {!searching && farmSearch.trim() && searchResults.length === 0 ? <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">没有找到可访问的庄园。</p> : null}
+                      {searchResults.map((result) => (
+                        <button key={result.id} type="button" disabled={loadingKey === 'visit-farm'} onClick={() => loadTargetFarm(result.discordUserId)} className="flex w-full items-center justify-between rounded-[24px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.94),_rgba(249,239,214,0.94))] px-4 py-4 text-left transition hover:border-[#d39a24]/50 hover:bg-[#fff8e8]">
+                          <div className="flex min-w-0 items-center gap-4">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-[18px] border border-[#eccd8f]/40 bg-[linear-gradient(180deg,_#fff8e4,_#f4ddb0)] text-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">🏡</div>
+                            <div className="min-w-0">
+                              <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{result.serverDisplayName}</p>
+                              <p className="mt-1 truncate text-xs text-[#8b6a2c]">{result.discordUserId}</p>
+                            </div>
+                          </div>
+                          <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {activePlot ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#1d0f03]/58 px-3 py-6" onClick={() => setActivePlotIndex(null)}>
