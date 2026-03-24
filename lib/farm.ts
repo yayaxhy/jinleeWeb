@@ -340,7 +340,7 @@ export async function exchangeBalanceToCoins(discordUserId: string, amount: stri
   return prisma.$transaction(async (tx) => {
     const member = await tx.member.findUnique({
       where: { discordUserId },
-      select: { totalBalance: true },
+      select: { totalBalance: true, income: true, recharge: true },
     });
     if (!member) throw new Error('未找到成员资料');
     const totalBalance = DEC(member.totalBalance ?? 0);
@@ -348,11 +348,18 @@ export async function exchangeBalanceToCoins(discordUserId: string, amount: stri
       throw new Error('总余额不足');
     }
 
+    const currentIncome = DEC(member.income ?? 0);
+    const incomeDeduction = currentIncome.lessThan(balanceAmount) ? currentIncome : balanceAmount;
+    const rechargeDeduction = balanceAmount.sub(incomeDeduction);
+
     const coinDelta = balanceAmount.mul(BALANCE_TO_COINS_RATE);
     const balanceAfter = totalBalance.sub(balanceAmount);
     await tx.member.update({
       where: { discordUserId },
-      data: { totalBalance: { decrement: balanceAmount } },
+      data: {
+        income: { decrement: incomeDeduction },
+        recharge: { decrement: rechargeDeduction },
+      },
     });
 
     await ensureFarmProfileTx(tx, discordUserId);
@@ -378,7 +385,7 @@ export async function exchangeBalanceToCoins(discordUserId: string, amount: stri
         actionType: FarmActionType.BALANCE_TO_COINS,
         balanceDelta: balanceAmount.negated(),
         coinDelta,
-        note: `余额兑换金币 ${balanceAmount.toFixed(2)} -> ${coinDelta.toFixed(2)}`,
+        note: `余额兑换金币 ${balanceAmount.toFixed(2)} -> ${coinDelta.toFixed(2)}（income ${incomeDeduction.toFixed(2)} / recharge ${rechargeDeduction.toFixed(2)}）`,
       },
     });
 

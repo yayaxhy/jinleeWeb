@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none">
+  <defs>
+    <linearGradient id="soil" x1="80" y1="104" x2="80" y2="148" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A16A33"/>
+      <stop offset="1" stop-color="#6A3D16"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="160" height="160" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="rgba(0,0,0,0.18)"/>
+    </filter>
+    
+<filter id="glow" x="0" y="0" width="160" height="160" filterUnits="userSpaceOnUse">
+  <feGaussianBlur stdDeviation="6" result="blur"/>
+  <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.98  0 1 0 0 0.83  0 0 1 0 0.41  0 0 0 0.65 0"/>
+</filter>
+  </defs>
+  <ellipse cx="80" cy="128" rx="46" ry="18" fill="url(#soil)"/>
+  
+  <ellipse cx="80" cy="52" rx="30" ry="22" fill="#FFE6A4" filter="url(#glow)"/>
+  <g filter="url(#shadow)">
+    <path d="M80 120C80 97 80 79 80 36" stroke="#5f8f3b" stroke-width="8" stroke-linecap="round"/>
+    <path d="M78 85C56 81 40 66 37 44C59 48 75 63 78 85Z" fill="#5f8f3b"/>
+    <path d="M82 74C102 70 116 54 119 32C99 35 85 51 82 74Z" fill="#5f8f3b"/>
+    <circle cx="80" cy="40" r="22" fill="#d33b59"/>
+    <circle cx="64" cy="45" r="10" fill="#a81d39" fill-opacity="0.65"/>
+    <circle cx="96" cy="45" r="10" fill="#a81d39" fill-opacity="0.65"/>
+    <circle cx="80" cy="28" r="9" fill="#a81d39" fill-opacity="0.65"/>
+    <circle cx="80" cy="40" r="6" fill="#fff8df" fill-opacity="0.6"/>
+  </g>
+</svg>

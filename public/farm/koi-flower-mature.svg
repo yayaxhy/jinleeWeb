@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none">
+  <defs>
+    <linearGradient id="soil" x1="80" y1="104" x2="80" y2="148" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A16A33"/>
+      <stop offset="1" stop-color="#6A3D16"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="160" height="160" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="rgba(0,0,0,0.18)"/>
+    </filter>
+    
+  </defs>
+  <ellipse cx="80" cy="128" rx="46" ry="18" fill="url(#soil)"/>
+  
+  <g filter="url(#shadow)">
+    <path d="M80 120C80 99 80 81 80 40" stroke="#5f8f3b" stroke-width="8" stroke-linecap="round"/>
+    <path d="M78 87C57 83 43 69 40 49C61 53 75 67 78 87Z" fill="#5f8f3b"/>
+    <path d="M82 76C100 72 113 58 116 39C98 42 85 57 82 76Z" fill="#5f8f3b"/>
+    <circle cx="80" cy="42" r="18" fill="#f39f2a"/>
+    <circle cx="67" cy="46" r="8" fill="#d65d19" fill-opacity="0.55"/>
+    <circle cx="92" cy="46" r="8" fill="#d65d19" fill-opacity="0.55"/>
+    <circle cx="80" cy="32" r="7" fill="#d65d19" fill-opacity="0.55"/>
+  </g>
+</svg>

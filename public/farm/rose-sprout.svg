@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none">
+  <defs>
+    <linearGradient id="soil" x1="80" y1="104" x2="80" y2="148" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A16A33"/>
+      <stop offset="1" stop-color="#6A3D16"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="160" height="160" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="rgba(0,0,0,0.18)"/>
+    </filter>
+    
+  </defs>
+  <ellipse cx="80" cy="128" rx="46" ry="18" fill="url(#soil)"/>
+  
+  <g filter="url(#shadow)">
+    <path d="M80 120C80 104 78 95 73 84" stroke="#5f8f3b" stroke-width="7" stroke-linecap="round"/>
+    <path d="M80 120C80 104 82 95 87 84" stroke="#5f8f3b" stroke-width="7" stroke-linecap="round"/>
+    <path d="M78 90C67 87 61 79 60 67C71 70 77 78 78 90Z" fill="#5f8f3b"/>
+    <path d="M82 90C93 87 99 79 100 67C89 70 83 78 82 90Z" fill="#5f8f3b"/>
+  </g>
+</svg>
