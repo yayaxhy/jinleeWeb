@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { parseUtcDateRange } from '@/lib/utcDateRange';
 
@@ -58,7 +58,7 @@ const dec = (value: unknown) => {
 
 export default async function AdminRevenuePage(props: PageProps) {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canViewRevenue(session.discordId)) {
     redirect('/');
   }
 

@@ -79,3 +79,6 @@ export const canManagePeiwan = (discordId?: string | null) =>
 
 export const canManageOrderChannelBindings = (discordId?: string | null) =>
   isAdminDiscordId(discordId);
+
+export const canViewRevenue = (discordId?: string | null) =>
+  isAdminDiscordId(discordId) || discordId === '308164614846414851';

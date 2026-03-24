@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canViewRevenue } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { formatDateTimeTextUtc, formatFileTimestampUtc, parseUtcDateRange } from '@/lib/utcDateRange';
@@ -140,7 +140,7 @@ const toFileName = (prefix: string, date = new Date()) => `${prefix}_${formatFil
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canViewRevenue(session.discordId)) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }
 
