@@ -35,6 +35,7 @@ type DrawerKey = 'none' | 'seeds' | 'exchange' | 'visit' | 'logs';
 type FarmSearchResult = { id: number; discordUserId: string; serverDisplayName: string };
 type FloatingReward = { id: number; text: string; variant: 'gold' | 'steal' };
 type SceneBurst = { id: number; plotIndex: number; variant: 'harvest' | 'steal' };
+type HarvestTransition = { id: number; plotIndex: number; previousAsset: string; previousClassName: string };
 
 type PlotCard = {
   plotIndex: number;
@@ -105,7 +106,7 @@ function getPlotAsset(entry: PlotCard) {
     return { asset: '/farm/locked-plot.svg', className: 'scale-[0.98] opacity-85 drop-shadow-[0_18px_24px_rgba(0,0,0,0.18)]' };
   }
   if (!entry.plot || entry.status === 'EMPTY' || !entry.plot.seedType) {
-    return { asset: '/farm/sprout-generic.svg', className: 'scale-[0.86] opacity-45 saturate-75' };
+    return { asset: '/farm/plot-empty.svg', className: 'scale-[0.84] opacity-90 drop-shadow-[0_12px_16px_rgba(0,0,0,0.12)]' };
   }
   const asset = cropStageAssetMap[entry.plot.seedType][entry.plot.growthStage];
   const className =
@@ -126,13 +127,14 @@ function ToolButton({ icon, label, active, onClick }: { icon: string; label: str
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={`group relative flex h-14 w-14 items-center justify-center rounded-[22px] border transition ${
+      className={`group relative flex h-16 w-16 items-center justify-center rounded-[26px] border transition ${
         active
-          ? 'border-[#f4d17a] bg-[linear-gradient(180deg,_rgba(91,55,17,0.96),_rgba(56,31,9,0.96))] text-white shadow-[0_18px_28px_rgba(53,30,9,0.28)]'
-          : 'border-white/30 bg-[linear-gradient(180deg,_rgba(255,250,238,0.22),_rgba(84,49,18,0.38))] text-[#fff1d0] hover:border-[#f0ca72]/55 hover:bg-[linear-gradient(180deg,_rgba(98,59,19,0.92),_rgba(60,34,11,0.95))]'
+          ? 'border-[#f4d17a] bg-[linear-gradient(180deg,_#a66d28,_#6a3b12)] text-white shadow-[0_18px_28px_rgba(53,30,9,0.3)]'
+          : 'border-[#f0d7a0]/35 bg-[linear-gradient(180deg,_rgba(176,117,51,0.92),_rgba(94,53,18,0.94))] text-[#fff1d0] hover:border-[#f0ca72]/7 hover:brightness-105'
       }`}
     >
-      <span className="text-2xl">{icon}</span>
+      <span className="absolute inset-[5px] rounded-[20px] border border-[#f9e5b6]/25" />
+      <span className="text-[28px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.22)]">{icon}</span>
       <span className="pointer-events-none absolute right-[calc(100%+12px)] top-1/2 hidden -translate-y-1/2 whitespace-nowrap rounded-full border border-[#e5cb8d]/45 bg-[#2f1908]/92 px-3 py-1 text-xs tracking-[0.18em] text-[#ffe3a5] shadow-[0_10px_20px_rgba(19,10,2,0.25)] lg:group-hover:block">
         {label}
       </span>
@@ -160,9 +162,10 @@ function OverlayDrawer({ title, open, onClose, children }: { title: string; open
 
 function MetricChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[20px] border border-white/25 bg-[linear-gradient(180deg,_rgba(255,251,242,0.18),_rgba(62,34,10,0.34))] px-4 py-3 text-[#fff5dc] shadow-[0_12px_22px_rgba(0,0,0,0.12)] backdrop-blur-sm">
-      <p className="text-[10px] uppercase tracking-[0.3em] text-[#f2d797]">{label}</p>
-      <p className="mt-1 text-lg font-semibold tracking-[0.03em]">{value}</p>
+    <div className="relative rounded-[22px] border border-[#f3d59b]/28 bg-[linear-gradient(180deg,_rgba(141,88,33,0.9),_rgba(78,44,15,0.9))] px-4 py-3 text-[#fff5dc] shadow-[0_12px_22px_rgba(0,0,0,0.16)] backdrop-blur-sm">
+      <div className="pointer-events-none absolute inset-[3px] hidden rounded-[18px] border border-[#f8e7be]/12 lg:block" />
+      <p className="relative text-[10px] uppercase tracking-[0.3em] text-[#f2d797]">{label}</p>
+      <p className="relative mt-1 text-lg font-semibold tracking-[0.03em]">{value}</p>
     </div>
   );
 }
@@ -185,6 +188,7 @@ export function FarmClient({ initialDashboard }: Props) {
   const [searching, setSearching] = useState(false);
   const [floatingRewards, setFloatingRewards] = useState<FloatingReward[]>([]);
   const [sceneBursts, setSceneBursts] = useState<SceneBurst[]>([]);
+  const [harvestTransitions, setHarvestTransitions] = useState<HarvestTransition[]>([]);
 
   const isVisiting = viewDashboard.owner.discordUserId !== homeDashboard.owner.discordUserId;
   const currentSeed = homeDashboard.seeds.find((seed) => seed.code === selectedSeed) ?? null;
@@ -277,6 +281,18 @@ export function FarmClient({ initialDashboard }: Props) {
     }, 1200);
   };
 
+  const pushHarvestTransition = (entry: PlotCard) => {
+    const preview = getPlotAsset(entry);
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setHarvestTransitions((current) => [
+      ...current.filter((item) => item.plotIndex !== entry.plotIndex),
+      { id, plotIndex: entry.plotIndex, previousAsset: preview.asset, previousClassName: preview.className },
+    ]);
+    window.setTimeout(() => {
+      setHarvestTransitions((current) => current.filter((item) => item.id !== id));
+    }, 850);
+  };
+
   const loadTargetFarm = async (targetDiscordId?: string) => {
     setLoadingKey(targetDiscordId ? 'visit-farm' : 'visit-home');
     setError(null);
@@ -298,7 +314,7 @@ export function FarmClient({ initialDashboard }: Props) {
     }
   };
 
-  const runAction = async (action: string, payload: Record<string, unknown>, key: string) => {
+  const runAction = async (action: string, payload: Record<string, unknown>, key: string, entry?: PlotCard) => {
     setLoadingKey(key);
     setError(null);
     setMessage(null);
@@ -320,6 +336,7 @@ export function FarmClient({ initialDashboard }: Props) {
       }
       if (action === 'harvest' && data?.result?.harvestCoins) {
         pushFloatingReward(`+${formatAmount(data.result.harvestCoins)} 金币`, 'gold');
+        if (entry) pushHarvestTransition(entry);
         if (typeof payload.plotIndex === 'number') pushSceneBurst(payload.plotIndex, 'harvest');
       }
       if (action === 'steal' && data?.result?.stolenCoins) {
@@ -348,15 +365,15 @@ export function FarmClient({ initialDashboard }: Props) {
       return;
     }
     if (entry.status === 'EMPTY' && viewDashboard.owner.isSelf && currentSeed) {
-      runAction('plant', { plotIndex: entry.plotIndex, seedType: currentSeed.code }, `plant:${entry.plotIndex}`);
+      runAction('plant', { plotIndex: entry.plotIndex, seedType: currentSeed.code }, `plant:${entry.plotIndex}`, entry);
       return;
     }
     if (entry.status === 'READY' && viewDashboard.owner.isSelf) {
-      runAction('harvest', { plotIndex: entry.plotIndex }, `harvest:${entry.plotIndex}`);
+      runAction('harvest', { plotIndex: entry.plotIndex }, `harvest:${entry.plotIndex}`, entry);
       return;
     }
     if (entry.status === 'READY' && !viewDashboard.owner.isSelf && entry.plot?.canSteal) {
-      runAction('steal', { targetDiscordId: viewDashboard.owner.discordUserId, plotIndex: entry.plotIndex }, `steal:${entry.plotIndex}`);
+      runAction('steal', { targetDiscordId: viewDashboard.owner.discordUserId, plotIndex: entry.plotIndex }, `steal:${entry.plotIndex}`, entry);
     }
   };
 
@@ -387,38 +404,55 @@ export function FarmClient({ initialDashboard }: Props) {
           0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.7) rotate(-18deg); }
           100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3) rotate(18deg); }
         }
+        @keyframes farmHarvestCropOut {
+          0% { opacity: 1; transform: translateY(0) scale(1); }
+          100% { opacity: 0; transform: translateY(-20px) scale(1.08); }
+        }
+        @keyframes farmHarvestFieldReset {
+          0% { opacity: 0; transform: scale(0.82); }
+          35% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.06); }
+        }
+        @keyframes farmPlotBob {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-2px); }
+        }
       `}</style>
 
       <div className="mx-auto max-w-[1540px] px-3 py-3 sm:px-4 lg:px-6 lg:py-4">
         <section className="relative min-h-[calc(100vh-2rem)] overflow-hidden rounded-[42px] border border-[#e4ca8f]/60 bg-[linear-gradient(180deg,_#dff2ff_0%,_#d2e9ff_18%,_#86b46b_46%,_#71874f_100%)] shadow-[0_28px_80px_rgba(48,28,9,0.24)]">
+          <Image src="/farm/manor-base.svg" alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[42%] bg-[radial-gradient(circle_at_50%_10%,_rgba(255,251,229,0.92),_rgba(255,251,229,0.15)_45%,_transparent_60%)]" />
-          <div className="pointer-events-none absolute inset-x-[7%] top-[20%] h-[9%] rounded-[50%] border border-[#e8d3a5]/25 bg-[linear-gradient(90deg,_rgba(194,160,98,0.18),_rgba(126,92,36,0.24),_rgba(194,160,98,0.18))]" />
-          <div className="pointer-events-none absolute inset-x-[12%] top-[43%] h-[10%] rounded-[50%] border border-[#e8d3a5]/25 bg-[linear-gradient(90deg,_rgba(194,160,98,0.18),_rgba(126,92,36,0.24),_rgba(194,160,98,0.18))]" />
-          <div className="pointer-events-none absolute inset-x-[17%] top-[66%] h-[10%] rounded-[50%] border border-[#e8d3a5]/22 bg-[linear-gradient(90deg,_rgba(194,160,98,0.16),_rgba(126,92,36,0.22),_rgba(194,160,98,0.16))]" />
-          <div className="pointer-events-none absolute inset-x-[8%] bottom-[9%] h-[30%] rounded-[50%] bg-[radial-gradient(circle,_rgba(77,118,42,0.72),_rgba(76,104,43,0.12)_68%,_transparent_74%)]" />
-          <div className="pointer-events-none absolute inset-x-[16%] bottom-[13%] h-[26%] rounded-[50%] border border-white/10 bg-[radial-gradient(circle,_rgba(171,198,116,0.38),_rgba(171,198,116,0.08)_65%,_transparent_72%)] blur-sm" />
-          <div className="pointer-events-none absolute left-[11%] top-[24%] h-[54%] w-[74%] rotate-[-6deg] rounded-[48%] border border-white/8 bg-[repeating-linear-gradient(135deg,_rgba(255,255,255,0.06)_0px,_rgba(255,255,255,0.06)_1px,_transparent_1px,_transparent_28px)] opacity-60" />
-          <div className="pointer-events-none absolute left-[9%] top-[18%] h-[58%] w-[78%] rounded-[48%] border border-[#6f8747]/20 bg-[radial-gradient(circle,_rgba(103,140,58,0.06),_transparent_70%)]" />
-          <div className="pointer-events-none absolute right-[14%] top-[26%] h-[2px] w-[16%] bg-[linear-gradient(90deg,_transparent,_rgba(255,239,198,0.56),_transparent)]" />
-          <div className="pointer-events-none absolute left-[16%] top-[53%] h-[2px] w-[22%] bg-[linear-gradient(90deg,_transparent,_rgba(255,239,198,0.46),_transparent)]" />
+          <div className="pointer-events-none absolute inset-x-[9%] bottom-[7%] h-[34%] rounded-[50%] bg-[radial-gradient(circle,_rgba(76,108,41,0.46),_rgba(76,108,41,0.06)_68%,_transparent_74%)] blur-sm" />
+          <div className="pointer-events-none absolute inset-x-[18%] bottom-[12%] h-[18%] rounded-[50%] border border-white/8 bg-[radial-gradient(circle,_rgba(251,234,186,0.18),_rgba(251,234,186,0.02)_72%,_transparent_76%)]" />
+          <Image src="/farm/cloud.svg" alt="" width={260} height={120} className="pointer-events-none absolute left-[8%] top-[5%] w-[18vw] min-w-[120px] max-w-[250px] opacity-95" />
+          <Image src="/farm/cloud.svg" alt="" width={220} height={110} className="pointer-events-none absolute right-[14%] top-[9%] w-[14vw] min-w-[100px] max-w-[210px] opacity-90" />
+          <Image src="/farm/cloud.svg" alt="" width={200} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[12vw] min-w-[90px] max-w-[180px] opacity-80" />
           <Image src="/farm/pond.svg" alt="pond" width={260} height={180} className="pointer-events-none absolute left-[5%] top-[18%] w-[20vw] min-w-[110px] max-w-[250px] opacity-85" />
           <Image src="/farm/tree.svg" alt="tree" width={170} height={220} className="pointer-events-none absolute left-[2%] bottom-[18%] w-[11vw] min-w-[90px] max-w-[150px] opacity-95" />
           <Image src="/farm/tree.svg" alt="tree" width={180} height={230} className="pointer-events-none absolute right-[8%] top-[17%] w-[11vw] min-w-[88px] max-w-[150px] scale-x-[-1] opacity-95" />
           <Image src="/farm/barn.svg" alt="barn" width={260} height={220} className="pointer-events-none absolute right-[5%] bottom-[16%] w-[18vw] min-w-[130px] max-w-[250px] opacity-95" />
+          <Image src="/farm/mailbox.svg" alt="" width={140} height={180} className="pointer-events-none absolute left-[14%] bottom-[18%] w-[8vw] min-w-[70px] max-w-[120px] opacity-95" />
+          <Image src="/farm/windmill.svg" alt="" width={180} height={230} className="pointer-events-none absolute right-[18%] top-[19%] w-[10vw] min-w-[90px] max-w-[150px] opacity-90" />
+          <Image src="/farm/fence.svg" alt="" width={420} height={110} className="pointer-events-none absolute bottom-[6%] left-[8%] w-[32vw] min-w-[240px] max-w-[460px] opacity-85" />
+          <Image src="/farm/fence.svg" alt="" width={420} height={110} className="pointer-events-none absolute bottom-[6%] right-[8%] w-[32vw] min-w-[240px] max-w-[460px] scale-x-[-1] opacity-85" />
+          <div className="pointer-events-none absolute inset-x-[14%] bottom-[4.5%] h-[2px] bg-[linear-gradient(90deg,_transparent,_rgba(255,235,183,0.65),_transparent)]" />
 
           <div className="relative z-10 flex h-full min-h-[calc(100vh-2rem)] flex-col p-4 sm:p-5 lg:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-xl rounded-[28px] border border-white/22 bg-[linear-gradient(180deg,_rgba(52,28,7,0.38),_rgba(40,22,6,0.24))] px-5 py-4 text-[#fff6df] shadow-[0_14px_30px_rgba(0,0,0,0.14)] backdrop-blur-sm">
-                <p className="text-[11px] uppercase tracking-[0.44em] text-[#f7d58c]">Koi Manor</p>
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <h1 className="text-3xl font-semibold tracking-[0.1em] sm:text-4xl">锦鲤庄园</h1>
-                  <span className="rounded-full border border-white/22 bg-white/12 px-3 py-1 text-xs tracking-[0.22em] text-[#ffe6af]">{isVisiting ? `拜访 ${viewDashboard.owner.displayName}` : '我的庄园'}</span>
-                </div>
-                <p className="mt-3 text-sm leading-7 text-[#fff0cb]/90">主视图只保留农场场景、地块、作物和操作。种子袋、兑换所、拜访和日志全部收进抽屉。</p>
-                <div className="mt-4 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.26em] text-[#ffe4a8]">
-                  <span className="rounded-full border border-white/20 bg-white/12 px-3 py-2">1 余额 = 100 金币</span>
-                  <span className="rounded-full border border-white/20 bg-white/12 px-3 py-2">1 积分 = 10 金币</span>
-                  <span className="rounded-full border border-white/20 bg-white/12 px-3 py-2">100 金币 = 1 积分</span>
+              <div className="max-w-xl rounded-[32px] border border-[#f7dcaa]/28 bg-[linear-gradient(180deg,_rgba(132,81,29,0.94),_rgba(79,45,15,0.9))] px-5 py-4 text-[#fff6df] shadow-[0_18px_36px_rgba(0,0,0,0.18)] backdrop-blur-sm">
+                <div className="rounded-[24px] border border-[#f8e3ba]/14 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.44em] text-[#f7d58c]">Koi Manor</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <h1 className="text-3xl font-semibold tracking-[0.1em] sm:text-4xl">锦鲤庄园</h1>
+                    <span className="rounded-full border border-white/22 bg-white/12 px-3 py-1 text-xs tracking-[0.22em] text-[#ffe6af]">{isVisiting ? `拜访 ${viewDashboard.owner.displayName}` : '我的庄园'}</span>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-[#fff0cb]/90">主视图优先保留场景、地块、作物和动作。说明面板统一收进抽屉，布局更接近农场游戏。</p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.26em] text-[#ffe4a8]">
+                    <span className="rounded-full border border-white/20 bg-white/12 px-3 py-2">1 余额 = 100 金币</span>
+                    <span className="rounded-full border border-white/20 bg-white/12 px-3 py-2">1 积分 = 10 金币</span>
+                    <span className="rounded-full border border-white/20 bg-white/12 px-3 py-2">100 金币 = 1 积分</span>
+                  </div>
                 </div>
               </div>
 
@@ -464,6 +498,7 @@ export function FarmClient({ initialDashboard }: Props) {
                 {plotCards.map((entry) => {
                   const scene = plotScenePositions[entry.plotIndex];
                   const preview = getPlotAsset(entry);
+                  const harvestTransition = harvestTransitions.find((item) => item.plotIndex === entry.plotIndex) ?? null;
                   const actionKey = entry.status === 'EMPTY' ? `plant:${entry.plotIndex}` : entry.status === 'READY' && viewDashboard.owner.isSelf ? `harvest:${entry.plotIndex}` : `steal:${entry.plotIndex}`;
                   const loading = loadingKey === actionKey || (!entry.unlocked && loadingKey === 'expand');
                   const tooltipVisible = hoveredPlotIndex === entry.plotIndex;
@@ -477,14 +512,40 @@ export function FarmClient({ initialDashboard }: Props) {
                           onFocus={() => setHoveredPlotIndex(entry.plotIndex)}
                           onBlur={() => setHoveredPlotIndex((current) => (current === entry.plotIndex ? null : current))}
                           onClick={() => setActivePlotIndex(entry.plotIndex)}
-                          className={`relative flex h-[122px] w-[142px] items-end justify-center rounded-[34px] border px-3 pb-3 transition duration-200 sm:h-[136px] sm:w-[156px] ${entry.highlight === 'ready' ? 'border-[#f5ce70]/80 bg-[linear-gradient(180deg,_rgba(169,122,39,0.96),_rgba(110,66,19,0.96))] shadow-[0_20px_30px_rgba(69,40,12,0.28)] hover:brightness-105' : entry.highlight === 'growing' ? 'border-[#d7ba7b]/55 bg-[linear-gradient(180deg,_rgba(154,108,42,0.94),_rgba(102,64,22,0.94))] shadow-[0_18px_28px_rgba(53,31,9,0.24)] hover:brightness-105' : entry.highlight === 'idle' ? 'border-[#d2b27a]/42 bg-[linear-gradient(180deg,_rgba(136,87,44,0.9),_rgba(91,56,23,0.92))] shadow-[0_18px_28px_rgba(53,31,9,0.18)] hover:brightness-105' : 'border-[#ccb487]/35 bg-[linear-gradient(180deg,_rgba(146,117,77,0.72),_rgba(88,65,40,0.8))] shadow-[0_18px_28px_rgba(53,31,9,0.16)] hover:brightness-105'}`}
+                          className={`relative flex h-[132px] w-[150px] items-end justify-center rounded-[34px] px-3 pb-3 transition duration-200 hover:-translate-y-1 hover:scale-[1.02] sm:h-[146px] sm:w-[168px] ${entry.highlight === 'ready' ? 'animate-[farmPlotBob_2.2s_ease-in-out_infinite] hover:brightness-105' : 'hover:brightness-105'} ${entry.highlight === 'locked' ? 'opacity-90' : ''}`}
                         >
-                          <div className="pointer-events-none absolute inset-x-3 bottom-4 h-6 rounded-[50%] bg-[radial-gradient(circle,_rgba(73,48,16,0.55),_rgba(73,48,16,0.04)_72%)] blur-sm" />
-                          <span className="absolute left-3 top-3 rounded-full border border-white/15 bg-black/14 px-2 py-1 text-[10px] uppercase tracking-[0.22em] text-[#ffe5ad]">{entry.plotIndex}</span>
+                          <div className={`pointer-events-none absolute inset-0 rounded-[34px] ${entry.highlight === 'ready' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(255,224,138,0.24),_rgba(255,224,138,0.02)_70%,_transparent_78%)]' : entry.highlight === 'growing' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(245,215,140,0.18),_rgba(245,215,140,0.01)_72%,_transparent_78%)]' : 'bg-transparent'}`} />
+                          <div className="pointer-events-none absolute inset-x-2 bottom-3 h-7 rounded-[50%] bg-[radial-gradient(circle,_rgba(73,48,16,0.55),_rgba(73,48,16,0.04)_72%)] blur-sm" />
+                          <div className="pointer-events-none absolute inset-x-[6%] top-[16%] flex justify-center">
+                            <div className="relative h-14 w-14 sm:h-16 sm:w-16">
+                              <Image src="/farm/wood-sign.svg" alt="" fill className="object-contain drop-shadow-[0_6px_8px_rgba(0,0,0,0.18)]" />
+                              <span className="absolute inset-x-0 top-[28%] text-center text-[12px] font-black tracking-[0.18em] text-[#583514] sm:text-[13px]">{String(entry.plotIndex).padStart(2, '0')}</span>
+                            </div>
+                          </div>
+                          <div className={`pointer-events-none absolute inset-[4%] rounded-[32px] border ${entry.highlight === 'ready' ? 'border-[#f6d07f]/55' : entry.highlight === 'growing' ? 'border-[#ebca85]/42' : entry.highlight === 'idle' ? 'border-[#e0bf82]/26' : 'border-[#d5c5a3]/20'}`} />
                           {entry.status === 'READY' ? <span className="absolute right-3 top-3 rounded-full border border-[#ffe8b6]/45 bg-[linear-gradient(180deg,_rgba(255,227,153,0.96),_rgba(243,186,62,0.96))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#684108]">READY</span> : null}
                           {entry.status === 'READY' && !viewDashboard.owner.isSelf && !entry.plot?.canSteal ? <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[#ffd9b3]/35 bg-[linear-gradient(180deg,_rgba(131,63,23,0.95),_rgba(89,38,12,0.95))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ffe6c9]">已偷</span> : null}
-                          <div className="relative flex h-[92px] w-[92px] items-end justify-center sm:h-[104px] sm:w-[104px]">
+                          <div className="pointer-events-none absolute inset-0">
+                            <Image src="/farm/plot-frame.svg" alt="" fill className={`object-contain drop-shadow-[0_22px_28px_rgba(0,0,0,0.24)] ${entry.highlight === 'ready' ? 'brightness-[1.06]' : entry.highlight === 'growing' ? 'brightness-[1.02]' : ''}`} />
+                          </div>
+                          <div className="relative flex h-[96px] w-[96px] items-end justify-center sm:h-[108px] sm:w-[108px]">
                             {entry.status === 'READY' ? <div className={`absolute inset-1 rounded-full ${viewDashboard.owner.isSelf ? 'bg-[radial-gradient(circle,_rgba(255,224,138,0.56),_rgba(255,224,138,0.06)_70%)]' : 'bg-[radial-gradient(circle,_rgba(255,174,120,0.42),_rgba(255,174,120,0.05)_70%)]'} animate-pulse`} /> : null}
+                            {harvestTransition ? (
+                              <>
+                                <div className="absolute inset-0">
+                                  <Image src="/farm/plot-harvested.svg" alt="" fill className="object-contain opacity-0" style={{ animation: 'farmHarvestFieldReset 0.8s ease-out forwards' }} />
+                                </div>
+                                <div className="absolute inset-0">
+                                  <Image
+                                    src={harvestTransition.previousAsset}
+                                    alt={entry.title}
+                                    fill
+                                    className={`object-contain ${harvestTransition.previousClassName}`}
+                                    style={{ animation: 'farmHarvestCropOut 0.78s ease-out forwards' }}
+                                  />
+                                </div>
+                              </>
+                            ) : null}
                             <Image src={preview.asset} alt={entry.title} fill className={`object-contain ${preview.className}`} />
                           </div>
                         </button>

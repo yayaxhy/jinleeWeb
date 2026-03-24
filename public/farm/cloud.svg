@@ -1,0 +1,11 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 120" fill="none">
+  <g filter="url(#shadow)">
+    <path d="M66 84c-24 0-42-14-42-34 0-16 13-29 31-33 8-22 28-36 53-36 29 0 53 19 59 46 4-1 8-2 12-2 27 0 49 16 49 37s-22 38-49 38H66Z" fill="#FFF8E6"/>
+    <path d="M77 73c-18 0-31-10-31-24 0-12 10-21 24-24 6-16 21-26 40-26 22 0 40 14 45 34 3-1 6-1 9-1 19 0 34 11 34 27s-15 27-34 27H77Z" fill="#FFFFFF" fill-opacity=".86"/>
+  </g>
+  <defs>
+    <filter id="shadow" x="0" y="0" width="260" height="120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#7FA5C2" flood-opacity=".25"/>
+    </filter>
+  </defs>
+</svg>

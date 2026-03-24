@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 180" fill="none">
+  <defs>
+    <linearGradient id="ridgeOuter" x1="110" y1="24" x2="110" y2="164" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5B2A"/>
+      <stop offset="1" stop-color="#5A3412"/>
+    </linearGradient>
+    <linearGradient id="ridgeInner" x1="110" y1="40" x2="110" y2="154" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B77B3B"/>
+      <stop offset="1" stop-color="#7A4C1D"/>
+    </linearGradient>
+    <linearGradient id="soil" x1="110" y1="56" x2="110" y2="152" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8C5E26"/>
+      <stop offset="0.58" stop-color="#6E431B"/>
+      <stop offset="1" stop-color="#4D2D12"/>
+    </linearGradient>
+  </defs>
+  <path d="M25 84 110 26l85 58-85 58z" fill="url(#ridgeOuter)"/>
+  <path d="M35 86 110 34l75 52-75 52z" fill="url(#ridgeInner)"/>
+  <path d="M46 88 110 44l64 44-64 44z" fill="url(#soil)"/>
+  <path d="M52 90 110 50l58 40-58 40z" stroke="#EFC97C" stroke-opacity=".45" stroke-width="2"/>
+  <g stroke="#D6A35E" stroke-opacity=".38" stroke-width="5" stroke-linecap="round">
+    <path d="M76 102 110 79 144 102"/>
+    <path d="M72 117 110 94 148 117"/>
+    <path d="M68 132 110 109 152 132"/>
+  </g>
+  <path d="M35 86 110 34l75 52" stroke="#F5D79C" stroke-opacity=".45" stroke-width="4" stroke-linecap="round"/>
+  <path d="M35 86v10l75 52 75-52V86" stroke="#4D2C11" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>
+</svg>

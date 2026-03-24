@@ -1,0 +1,19 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 280" fill="none">
+  <defs>
+    <linearGradient id="tower" x1="110" y1="56" x2="110" y2="268" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C7A16B"/>
+      <stop offset="1" stop-color="#8A5C2B"/>
+    </linearGradient>
+  </defs>
+  <rect x="86" y="66" width="48" height="190" rx="18" fill="url(#tower)"/>
+  <rect x="70" y="30" width="80" height="54" rx="18" fill="#A56E37"/>
+  <rect x="80" y="40" width="60" height="34" rx="12" stroke="#F3D49B" stroke-opacity=".48" stroke-width="4"/>
+  <path d="M110 12 148 46H72L110 12Z" fill="#D95040"/>
+  <circle cx="110" cy="57" r="9" fill="#FFE2A2"/>
+  <path d="M110 84v-42" stroke="#5C3412" stroke-width="6" stroke-linecap="round"/>
+  <path d="M110 84 74 132" stroke="#5C3412" stroke-width="6" stroke-linecap="round"/>
+  <path d="M110 84l36 56" stroke="#5C3412" stroke-width="6" stroke-linecap="round"/>
+  <path d="M110 84 62 104" stroke="#5C3412" stroke-width="6" stroke-linecap="round"/>
+  <path d="M110 84l48 20" stroke="#5C3412" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="110" cy="84" r="11" fill="#FFDA7D"/>
+</svg>

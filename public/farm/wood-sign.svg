@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 82" fill="none">
+  <defs>
+    <linearGradient id="woodBody" x1="46" y1="8" x2="46" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A56C31"/>
+      <stop offset="1" stop-color="#714215"/>
+    </linearGradient>
+    <linearGradient id="woodPost" x1="46" y1="52" x2="46" y2="82" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#875325"/>
+      <stop offset="1" stop-color="#5C3412"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="8" width="68" height="42" rx="12" fill="url(#woodBody)"/>
+  <rect x="18" y="14" width="56" height="30" rx="9" stroke="#E9C98B" stroke-opacity=".45" stroke-width="3"/>
+  <rect x="40" y="50" width="12" height="28" rx="6" fill="url(#woodPost)"/>
+  <circle cx="25" cy="19" r="3" fill="#F6E1B7" fill-opacity=".5"/>
+  <circle cx="67" cy="39" r="3" fill="#F6E1B7" fill-opacity=".5"/>
+  <path d="M27 25c7-4 19-4 28 1" stroke="#D6A35E" stroke-opacity=".4" stroke-width="2" stroke-linecap="round"/>
+</svg>

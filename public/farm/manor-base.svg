@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 980" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="800" y1="0" x2="800" y2="980" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D8F1FF"/>
+      <stop offset="0.22" stop-color="#BDE4FF"/>
+      <stop offset="0.55" stop-color="#8CB866"/>
+      <stop offset="1" stop-color="#657943"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(800 120) rotate(90) scale(220 520)">
+      <stop stop-color="#FFF7CC" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#FFF7CC" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="path" x1="800" y1="240" x2="800" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B58546" stop-opacity=".8"/>
+      <stop offset="1" stop-color="#7E5525" stop-opacity=".78"/>
+    </linearGradient>
+    <linearGradient id="fieldEdge" x1="800" y1="320" x2="800" y2="780" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9E6B30" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#6A4317" stop-opacity=".52"/>
+    </linearGradient>
+    <radialGradient id="groundFade" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(800 760) rotate(90) scale(170 520)">
+      <stop stop-color="#9BC36C" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#9BC36C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="980" fill="url(#sky)"/>
+  <rect width="1600" height="980" fill="url(#sunGlow)"/>
+  <path d="M90 540C280 430 430 420 580 500c98 52 167 58 254 8 111-64 240-71 405 9 111 55 212 56 281 24v302H90V540Z" fill="#6F8A48" fill-opacity=".46"/>
+  <ellipse cx="800" cy="790" rx="510" ry="170" fill="url(#groundFade)"/>
+  <path d="M330 332 800 220l470 112-470 112z" fill="#B7864B" fill-opacity=".52"/>
+  <path d="M345 340 800 240l455 100-455 100z" stroke="#F4D99C" stroke-opacity=".42" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M420 470 800 372l380 98-380 98z" fill="#AE7A3C" fill-opacity=".48"/>
+  <path d="M434 476 800 386l366 90-366 90z" stroke="#EFCF8A" stroke-opacity=".34" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M494 606 800 524l306 82-306 82z" fill="#9A662F" fill-opacity=".44"/>
+  <path d="M507 610 800 538l293 72-293 72z" stroke="#E4C77C" stroke-opacity=".3" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M690 262 800 236l110 26-110 28z" fill="#F3DFB4" fill-opacity=".2"/>
+  <path d="M648 416 800 381l152 35-152 38z" fill="#F3DFB4" fill-opacity=".15"/>
+  <path d="M640 562 800 526l160 36-160 40z" fill="#F3DFB4" fill-opacity=".12"/>
+  <path d="M742 182 800 150l58 32-58 34z" fill="#D5EEFA" fill-opacity=".65"/>
+  <path d="M186 602c52-49 115-67 189-55 44 7 92 30 125 64-76 22-132 59-175 108-76-14-125-49-149-117Z" fill="#7B9955" fill-opacity=".5"/>
+  <path d="M1122 602c52-49 115-67 189-55 44 7 92 30 125 64-76 22-132 59-175 108-76-14-125-49-149-117Z" fill="#7B9955" fill-opacity=".5"/>
+  <path d="M785 690c24-32 56-52 96-58 60-10 124 14 181 70-57 44-92 89-109 138H672c16-55 54-104 113-150Z" fill="#6A8441" fill-opacity=".42"/>
+  <path d="M320 706c124-32 279-22 415 24" stroke="url(#path)" stroke-width="42" stroke-linecap="round" opacity=".52"/>
+  <path d="M1268 710c-122-30-256-26-378 12" stroke="url(#path)" stroke-width="40" stroke-linecap="round" opacity=".46"/>
+  <path d="M338 332 800 220l462 112" stroke="url(#fieldEdge)" stroke-width="18" stroke-linecap="round" opacity=".42"/>
+  <path d="M430 470 800 372l370 98" stroke="url(#fieldEdge)" stroke-width="16" stroke-linecap="round" opacity=".35"/>
+  <path d="M506 606 800 524l294 82" stroke="url(#fieldEdge)" stroke-width="14" stroke-linecap="round" opacity=".3"/>
+</svg>
