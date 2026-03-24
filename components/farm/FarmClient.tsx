@@ -68,18 +68,23 @@ const cropVisualMap: Partial<Record<FarmSeedTypeValue, { cropAsset: string; spro
 };
 
 function SectionCard({
+  id,
   eyebrow,
   title,
   children,
   className = '',
 }: {
+  id?: string;
   eyebrow: string;
   title: string;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
-    <section className={`rounded-[28px] border border-[#d6bc83]/40 bg-[linear-gradient(180deg,_rgba(255,251,240,0.94),_rgba(252,242,214,0.9))] p-5 shadow-[0_22px_45px_rgba(73,50,18,0.08)] ${className}`}>
+    <section
+      id={id}
+      className={`rounded-[28px] border border-[#d6bc83]/40 bg-[linear-gradient(180deg,_rgba(255,251,240,0.94),_rgba(252,242,214,0.9))] p-5 shadow-[0_22px_45px_rgba(73,50,18,0.08)] ${className}`}
+    >
       <p className="text-[11px] uppercase tracking-[0.42em] text-[#9b7413]">{eyebrow}</p>
       <h2 className="mt-2 text-2xl font-semibold tracking-[0.06em] text-[#3e2a12]">{title}</h2>
       <div className="mt-5">{children}</div>
@@ -179,6 +184,11 @@ export function FarmClient({ initialDashboard }: Props) {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setFloatingRewards((current) => [...current, { id, text, variant }]);
     window.setTimeout(() => setFloatingRewards((current) => current.filter((item) => item.id !== id)), 1600);
+  };
+
+  const scrollToSection = (id: string) => {
+    if (typeof window === 'undefined') return;
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const loadTargetFarm = async (targetDiscordId?: string) => {
@@ -335,18 +345,22 @@ export function FarmClient({ initialDashboard }: Props) {
                     />
                     {searching ? <span className="text-sm text-[#8e6812]">搜索中…</span> : null}
                   </div>
-                  {farmSearch.trim() && searchResults.length > 0 ? (
+                  {farmSearch.trim() ? (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {searchResults.map((item) => (
-                        <button
-                          key={item.discordUserId}
-                          type="button"
-                          onClick={() => loadTargetFarm(item.discordUserId)}
-                          className="rounded-full border border-[#d7bc83]/35 bg-[linear-gradient(145deg,_#fff6da,_#ffe6aa)] px-4 py-2 text-sm text-[#7f5a14] transition hover:brightness-105"
-                        >
-                          {item.serverDisplayName} · {item.id}
-                        </button>
-                      ))}
+                      {searchResults.length > 0 ? (
+                        searchResults.map((item) => (
+                          <button
+                            key={item.discordUserId}
+                            type="button"
+                            onClick={() => loadTargetFarm(item.discordUserId)}
+                            className="rounded-full border border-[#d7bc83]/35 bg-[linear-gradient(145deg,_#fff6da,_#ffe6aa)] px-4 py-2 text-sm text-[#7f5a14] transition hover:brightness-105"
+                          >
+                            {item.serverDisplayName} · {item.id}
+                          </button>
+                        ))
+                      ) : !searching ? (
+                        <span className="text-sm text-[#7b6131]">没有找到可访问的庄园。</span>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -371,6 +385,25 @@ export function FarmClient({ initialDashboard }: Props) {
                   </div>
                   <div className="pointer-events-none absolute bottom-14 right-8 rounded-full border border-[#d7bf84]/45 bg-[#fff7dd]/80 px-4 py-2 text-xs text-[#7a5d25]">
                     当前已解锁 {viewDashboard.summary.unlockedPlots} 块地
+                  </div>
+                  <div className="absolute right-4 top-24 z-20 hidden gap-3 lg:flex lg:flex-col">
+                    {[
+                      { label: '种子袋', target: 'farm-current-seed' },
+                      { label: '兑换所', target: 'farm-exchange' },
+                      { label: '庄园日志', target: 'farm-ledger' },
+                    ].map((item) => (
+                      <button
+                        key={item.target}
+                        type="button"
+                        onClick={() => scrollToSection(item.target)}
+                        className="rounded-full border border-white/35 bg-[#4f3213]/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-[#fde7af] backdrop-blur transition hover:bg-[#654218]"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="absolute bottom-4 left-1/2 z-10 hidden -translate-x-1/2 rounded-full border border-white/35 bg-[#4a2e11]/70 px-5 py-2 text-xs tracking-[0.24em] text-[#f7ddb0] backdrop-blur lg:block">
+                    先在下方选种子，再点击地块操作
                   </div>
 
                   <div className="relative mt-16 hidden xl:block">
@@ -568,7 +601,7 @@ export function FarmClient({ initialDashboard }: Props) {
               </div>
             </SectionCard>
             <div className="space-y-8">
-              <SectionCard eyebrow="Selection" title="当前种子">
+              <SectionCard id="farm-current-seed" eyebrow="Selection" title="种子袋">
                 {currentSeed ? (
                   <div className="rounded-[28px] border border-[#d7bc83]/45 bg-[linear-gradient(145deg,_rgba(255,250,236,0.95),_rgba(255,235,193,0.95))] p-5">
                     <div className="flex items-start justify-between gap-4">
@@ -620,7 +653,7 @@ export function FarmClient({ initialDashboard }: Props) {
                 </div>
               </SectionCard>
 
-              <SectionCard eyebrow="Exchange" title="庄园兑换所">
+              <SectionCard id="farm-exchange" eyebrow="Exchange" title="兑换所">
                 <div className="space-y-4">
                   {[
                     { title: '余额 → 金币', hint: '把 totalBalance 直接投进庄园。', value: balanceAmount, onChange: setBalanceAmount, action: () => runAction('exchange_balance', { amount: balanceAmount }, 'exchange_balance'), loading: 'exchange_balance', button: '兑换金币' },
@@ -653,7 +686,7 @@ export function FarmClient({ initialDashboard }: Props) {
                 </div>
               </SectionCard>
 
-              <SectionCard eyebrow="Ledger" title={isVisiting ? `${viewDashboard.owner.displayName} 的庄园动态` : '最近记录'}>
+              <SectionCard id="farm-ledger" eyebrow="Ledger" title={isVisiting ? `${viewDashboard.owner.displayName} 的庄园日志` : '庄园日志'}>
                 <div className="space-y-3">
                   {viewDashboard.recentLogs.length > 0 ? (
                     viewDashboard.recentLogs.map((log) => (
