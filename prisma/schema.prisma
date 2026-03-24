@@ -111,6 +111,7 @@ enum FarmActionType {
   PLANT
   HARVEST
   EXPAND
+  STEAL
 }
 
 enum PeiwanLevel {
@@ -267,6 +268,9 @@ model FarmPlot {
   seedType      FarmSeedType?
   plantedAt     DateTime?
   readyAt       DateTime?
+  lastStolenAt  DateTime?
+  lastStolenBy  String?
+  stolenCoins   Decimal       @default(0) @db.Decimal(19, 4)
   lastHarvestAt DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

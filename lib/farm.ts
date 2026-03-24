@@ -1,4 +1,4 @@
-import { FarmActionType, FarmSeedType, Prisma } from '@prisma/client';
+﻿import { FarmActionType, FarmSeedType, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
   BALANCE_TO_COINS_RATE,
@@ -17,6 +17,10 @@ import {
 const DEC = (value: Prisma.Decimal | number | string) => new Prisma.Decimal(value);
 const ZERO = DEC(0);
 const FARM_COUNTERPART_ID = 'farm-system';
+const FARM_STEAL_RATE = 0.05;
+
+type FarmPlotStatus = 'EMPTY' | 'GROWING' | 'READY';
+type FarmGrowthStage = 'SPROUT' | 'YOUNG' | 'MATURE' | 'READY';
 
 const positiveDecimal = (value: string | number | Prisma.Decimal) => {
   const decimal = DEC(value);
@@ -26,9 +30,13 @@ const positiveDecimal = (value: string | number | Prisma.Decimal) => {
   return decimal;
 };
 
-type FarmPlotStatus = 'EMPTY' | 'GROWING' | 'READY';
-
 export type FarmDashboard = {
+  owner: {
+    discordUserId: string;
+    displayName: string;
+    peiwanId: number | null;
+    isSelf: boolean;
+  };
   summary: {
     coins: string;
     experience: number;
@@ -46,6 +54,11 @@ export type FarmDashboard = {
     plantedAt: string | null;
     readyAt: string | null;
     remainingSeconds: number;
+    progressRatio: number;
+    growthStage: FarmGrowthStage;
+    stolenCoins: string;
+    stolenBy: string | null;
+    canSteal: boolean;
   }>;
   seeds: Array<{
     code: FarmSeedTypeValue;
@@ -71,6 +84,21 @@ export type FarmDashboard = {
     expDelta: number;
     note: string | null;
     createdAt: string;
+  }>;
+};
+
+type FarmProfileWithRelations = Awaited<ReturnType<typeof ensureFarmProfileTx>> & {
+  logs?: Array<{
+    id: string;
+    actionType: FarmActionType;
+    plotIndex: number | null;
+    seedType: FarmSeedType | null;
+    balanceDelta: Prisma.Decimal;
+    pointDelta: Prisma.Decimal;
+    coinDelta: Prisma.Decimal;
+    expDelta: number;
+    note: string | null;
+    createdAt: Date;
   }>;
 };
 
@@ -124,41 +152,70 @@ async function ensureFarmProfileTx(tx: Prisma.TransactionClient, discordUserId: 
   });
 }
 
-function serializeDashboard(params: {
-  profile: {
-    coins: Prisma.Decimal;
-    experience: number;
-    unlockedPlots: number;
-    plots: Array<{
-      plotIndex: number;
-      seedType: FarmSeedType | null;
-      plantedAt: Date | null;
-      readyAt: Date | null;
-    }>;
-    logs: Array<{
-      id: string;
-      actionType: FarmActionType;
-      plotIndex: number | null;
-      seedType: FarmSeedType | null;
-      balanceDelta: Prisma.Decimal;
-      pointDelta: Prisma.Decimal;
-      coinDelta: Prisma.Decimal;
-      expDelta: number;
-      note: string | null;
-      createdAt: Date;
-    }>;
-  };
-  member: { totalBalance: Prisma.Decimal; loyaltyPoints: Prisma.Decimal };
+function getOwnerDisplayName(owner: {
+  discordUserId: string;
+  serverDisplayName: string | null;
+  peiwan: { PEIWANID: number; serverDisplayName: string | null } | null;
 }) {
-  const { profile, member } = params;
+  return owner.peiwan?.serverDisplayName ?? owner.serverDisplayName ?? owner.discordUserId;
+}
+
+function getGrowthStage(plot: {
+  seedType: FarmSeedType | null;
+  plantedAt: Date | null;
+  readyAt: Date | null;
+}, nowMs: number): { progressRatio: number; growthStage: FarmGrowthStage; status: FarmPlotStatus; remainingSeconds: number } {
+  if (!plot.seedType || !plot.plantedAt || !plot.readyAt) {
+    return { progressRatio: 0, growthStage: 'SPROUT', status: 'EMPTY', remainingSeconds: 0 };
+  }
+
+  const plantedAtMs = plot.plantedAt.getTime();
+  const readyAtMs = plot.readyAt.getTime();
+  const totalMs = Math.max(1, readyAtMs - plantedAtMs);
+  const elapsedMs = Math.max(0, Math.min(totalMs, nowMs - plantedAtMs));
+  const progressRatio = Math.max(0, Math.min(1, elapsedMs / totalMs));
+  const isReady = readyAtMs <= nowMs;
+  const remainingSeconds = isReady ? 0 : Math.max(0, Math.ceil((readyAtMs - nowMs) / 1000));
+
+  if (isReady) {
+    return { progressRatio: 1, growthStage: 'READY', status: 'READY', remainingSeconds };
+  }
+  if (progressRatio < 0.34) {
+    return { progressRatio, growthStage: 'SPROUT', status: 'GROWING', remainingSeconds };
+  }
+  if (progressRatio < 0.68) {
+    return { progressRatio, growthStage: 'YOUNG', status: 'GROWING', remainingSeconds };
+  }
+  return { progressRatio, growthStage: 'MATURE', status: 'GROWING', remainingSeconds };
+}
+
+function serializeDashboard(params: {
+  profile: FarmProfileWithRelations;
+  owner: {
+    discordUserId: string;
+    totalBalance: Prisma.Decimal;
+    loyaltyPoints: Prisma.Decimal;
+    serverDisplayName: string | null;
+    peiwan: { PEIWANID: number; serverDisplayName: string | null } | null;
+  };
+  viewerDiscordId: string;
+}) {
+  const { profile, owner, viewerDiscordId } = params;
   const experience = Number(profile.experience ?? 0);
   const level = getFarmLevel(experience);
   const nextLevelExperience = getNextFarmLevelExperience(experience);
   const nextPlotCost =
     profile.unlockedPlots < MAX_PLOTS ? DEC(PLOT_UNLOCK_COSTS[profile.unlockedPlots + 1] ?? 0).toFixed(2) : null;
   const now = Date.now();
+  const ownerDisplayName = getOwnerDisplayName(owner);
 
   return {
+    owner: {
+      discordUserId: owner.discordUserId,
+      displayName: ownerDisplayName,
+      peiwanId: owner.peiwan?.PEIWANID ?? null,
+      isSelf: owner.discordUserId === viewerDiscordId,
+    },
     summary: {
       coins: DEC(profile.coins ?? 0).toFixed(2),
       experience,
@@ -166,25 +223,27 @@ function serializeDashboard(params: {
       nextLevelExperience,
       unlockedPlots: profile.unlockedPlots,
       nextPlotCost,
-      totalBalance: DEC(member.totalBalance ?? 0).toFixed(2),
-      loyaltyPoints: DEC(member.loyaltyPoints ?? 0).toFixed(2),
+      totalBalance: DEC(owner.totalBalance ?? 0).toFixed(2),
+      loyaltyPoints: DEC(owner.loyaltyPoints ?? 0).toFixed(2),
     },
     plots: profile.plots.map((plot) => {
-      const readyAtMs = plot.readyAt?.getTime() ?? null;
-      const status: FarmPlotStatus = !plot.seedType
-        ? 'EMPTY'
-        : readyAtMs != null && readyAtMs <= now
-          ? 'READY'
-          : 'GROWING';
-      const remainingSeconds =
-        status === 'GROWING' && readyAtMs != null ? Math.max(0, Math.ceil((readyAtMs - now) / 1000)) : 0;
+      const growth = getGrowthStage(plot, now);
       return {
         plotIndex: plot.plotIndex,
-        status,
+        status: growth.status,
         seedType: plot.seedType as FarmSeedTypeValue | null,
         plantedAt: plot.plantedAt?.toISOString() ?? null,
         readyAt: plot.readyAt?.toISOString() ?? null,
-        remainingSeconds,
+        remainingSeconds: growth.remainingSeconds,
+        progressRatio: growth.progressRatio,
+        growthStage: growth.growthStage,
+        stolenCoins: DEC(plot.stolenCoins ?? 0).toFixed(2),
+        stolenBy: plot.lastStolenBy ?? null,
+        canSteal:
+          owner.discordUserId !== viewerDiscordId &&
+          growth.status === 'READY' &&
+          DEC(plot.stolenCoins ?? 0).eq(ZERO) &&
+          !plot.lastStolenAt,
       };
     }),
     seeds: FARM_SEED_ORDER.map((seedCode) => {
@@ -203,7 +262,7 @@ function serializeDashboard(params: {
         unlocked: level >= seed.unlockLevel,
       };
     }),
-    recentLogs: profile.logs.map((log) => ({
+    recentLogs: (profile.logs ?? []).map((log) => ({
       id: log.id,
       actionType: log.actionType,
       plotIndex: log.plotIndex,
@@ -218,24 +277,36 @@ function serializeDashboard(params: {
   } satisfies FarmDashboard;
 }
 
-async function loadFarmDashboardTx(tx: Prisma.TransactionClient, discordUserId: string) {
-  const member = await tx.member.findUnique({
-    where: { discordUserId },
+async function loadFarmDashboardTx(
+  tx: Prisma.TransactionClient,
+  ownerDiscordId: string,
+  viewerDiscordId = ownerDiscordId,
+) {
+  const owner = await tx.member.findUnique({
+    where: { discordUserId: ownerDiscordId },
     select: {
+      discordUserId: true,
       totalBalance: true,
+      serverDisplayName: true,
+      peiwan: {
+        select: {
+          PEIWANID: true,
+          serverDisplayName: true,
+        },
+      },
       loyaltyPoint: {
         select: { points: true },
       },
     },
   });
 
-  if (!member) {
+  if (!owner) {
     throw new Error('未找到成员资料');
   }
 
-  const profile = await ensureFarmProfileTx(tx, discordUserId);
+  await ensureFarmProfileTx(tx, ownerDiscordId);
   const fullProfile = await tx.farmProfile.findUniqueOrThrow({
-    where: { discordUserId },
+    where: { discordUserId: ownerDiscordId },
     include: {
       plots: { orderBy: { plotIndex: 'asc' } },
       logs: {
@@ -247,15 +318,19 @@ async function loadFarmDashboardTx(tx: Prisma.TransactionClient, discordUserId: 
 
   return serializeDashboard({
     profile: fullProfile,
-    member: {
-      totalBalance: DEC(member.totalBalance ?? 0),
-      loyaltyPoints: DEC(member.loyaltyPoint?.points ?? 0),
+    owner: {
+      discordUserId: owner.discordUserId,
+      totalBalance: DEC(owner.totalBalance ?? 0),
+      loyaltyPoints: DEC(owner.loyaltyPoint?.points ?? 0),
+      serverDisplayName: owner.serverDisplayName ?? null,
+      peiwan: owner.peiwan,
     },
+    viewerDiscordId,
   });
 }
 
-export async function getFarmDashboard(discordUserId: string) {
-  return prisma.$transaction((tx) => loadFarmDashboardTx(tx, discordUserId));
+export async function getFarmDashboard(ownerDiscordId: string, viewerDiscordId = ownerDiscordId) {
+  return prisma.$transaction((tx) => loadFarmDashboardTx(tx, ownerDiscordId, viewerDiscordId));
 }
 
 export async function exchangeBalanceToCoins(discordUserId: string, amount: string | number) {
@@ -280,9 +355,9 @@ export async function exchangeBalanceToCoins(discordUserId: string, amount: stri
       data: { totalBalance: { decrement: balanceAmount } },
     });
 
-    const profile = await ensureFarmProfileTx(tx, discordUserId);
+    await ensureFarmProfileTx(tx, discordUserId);
     await tx.farmProfile.update({
-      where: { discordUserId: profile.discordUserId },
+      where: { discordUserId },
       data: { coins: { increment: coinDelta } },
     });
 
@@ -307,7 +382,7 @@ export async function exchangeBalanceToCoins(discordUserId: string, amount: stri
       },
     });
 
-    return loadFarmDashboardTx(tx, discordUserId);
+    return loadFarmDashboardTx(tx, discordUserId, discordUserId);
   });
 }
 
@@ -333,9 +408,9 @@ export async function exchangePointsToCoins(discordUserId: string, amount: strin
       data: { points: { decrement: pointAmount } },
     });
 
-    const profile = await ensureFarmProfileTx(tx, discordUserId);
+    await ensureFarmProfileTx(tx, discordUserId);
     await tx.farmProfile.update({
-      where: { discordUserId: profile.discordUserId },
+      where: { discordUserId },
       data: { coins: { increment: coinDelta } },
     });
 
@@ -349,7 +424,7 @@ export async function exchangePointsToCoins(discordUserId: string, amount: strin
       },
     });
 
-    return loadFarmDashboardTx(tx, discordUserId);
+    return loadFarmDashboardTx(tx, discordUserId, discordUserId);
   });
 }
 
@@ -389,7 +464,7 @@ export async function exchangeCoinsToPoints(discordUserId: string, amount: strin
       },
     });
 
-    return loadFarmDashboardTx(tx, discordUserId);
+    return loadFarmDashboardTx(tx, discordUserId, discordUserId);
   });
 }
 
@@ -438,6 +513,9 @@ export async function plantFarmSeed(
         seedType: seedType as FarmSeedType,
         plantedAt: now,
         readyAt,
+        lastStolenAt: null,
+        lastStolenBy: null,
+        stolenCoins: ZERO,
       },
     });
     await tx.farmActionLog.create({
@@ -451,7 +529,7 @@ export async function plantFarmSeed(
       },
     });
 
-    return loadFarmDashboardTx(tx, discordUserId);
+    return loadFarmDashboardTx(tx, discordUserId, discordUserId);
   });
 }
 
@@ -471,14 +549,17 @@ export async function harvestFarmPlot(discordUserId: string, plotIndex: number) 
     }
 
     const seed = FARM_SEEDS[plot.seedType as FarmSeedTypeValue];
-    const yieldCoins =
+    const rawYield =
       seed.minYieldCoins +
       Math.floor(Math.random() * (seed.maxYieldCoins - seed.minYieldCoins + 1));
+    const stolenCoins = DEC(plot.stolenCoins ?? 0);
+    const netYieldRaw = DEC(rawYield).sub(stolenCoins);
+    const netYield = netYieldRaw.lessThan(ZERO) ? ZERO : netYieldRaw;
 
     await tx.farmProfile.update({
       where: { discordUserId },
       data: {
-        coins: { increment: DEC(yieldCoins) },
+        coins: { increment: netYield },
         experience: { increment: seed.experience },
       },
     });
@@ -488,6 +569,9 @@ export async function harvestFarmPlot(discordUserId: string, plotIndex: number) 
         seedType: null,
         plantedAt: null,
         readyAt: null,
+        lastStolenAt: null,
+        lastStolenBy: null,
+        stolenCoins: ZERO,
         lastHarvestAt: now,
       },
     });
@@ -497,13 +581,21 @@ export async function harvestFarmPlot(discordUserId: string, plotIndex: number) 
         actionType: FarmActionType.HARVEST,
         plotIndex,
         seedType: plot.seedType,
-        coinDelta: DEC(yieldCoins),
+        coinDelta: netYield,
         expDelta: seed.experience,
-        note: `收获 ${seed.name}`,
+        note: stolenCoins.gt(ZERO)
+          ? `收获 ${seed.name}（被偷 ${stolenCoins.toFixed(2)} 金币）`
+          : `收获 ${seed.name}`,
       },
     });
 
-    return loadFarmDashboardTx(tx, discordUserId);
+    return {
+      dashboard: await loadFarmDashboardTx(tx, discordUserId, discordUserId),
+      harvestCoins: netYield.toFixed(2),
+      stolenCoins: stolenCoins.toFixed(2),
+      experience: seed.experience,
+      seedName: seed.name,
+    };
   });
 }
 
@@ -544,6 +636,94 @@ export async function expandFarm(discordUserId: string) {
       },
     });
 
-    return loadFarmDashboardTx(tx, discordUserId);
+    return loadFarmDashboardTx(tx, discordUserId, discordUserId);
   });
 }
+
+export async function stealFarmPlot(viewerDiscordId: string, targetDiscordId: string, plotIndex: number) {
+  if (!Number.isInteger(plotIndex) || plotIndex < 1) throw new Error('地块编号无效');
+  if (viewerDiscordId === targetDiscordId) throw new Error('不能偷自己的地');
+
+  return prisma.$transaction(async (tx) => {
+    const viewerProfile = await ensureFarmProfileTx(tx, viewerDiscordId);
+    const viewerMember = await tx.member.findUnique({
+      where: { discordUserId: viewerDiscordId },
+      select: { discordUserId: true, serverDisplayName: true },
+    });
+    const targetMember = await tx.member.findUnique({
+      where: { discordUserId: targetDiscordId },
+      select: {
+        discordUserId: true,
+        serverDisplayName: true,
+        peiwan: {
+          select: { serverDisplayName: true },
+        },
+      },
+    });
+
+    if (!viewerMember || !targetMember) {
+      throw new Error('未找到庄园主人');
+    }
+
+    const targetProfile = await ensureFarmProfileTx(tx, targetDiscordId);
+    const plot = targetProfile.plots.find((item) => item.plotIndex === plotIndex);
+    if (!plot || !plot.seedType || !plot.readyAt) {
+      throw new Error('该地块没有可偷的作物');
+    }
+    if (plot.readyAt.getTime() > Date.now()) {
+      throw new Error('作物尚未成熟');
+    }
+    if (plot.lastStolenAt || DEC(plot.stolenCoins ?? 0).gt(ZERO)) {
+      throw new Error('这块地已经被偷过一次');
+    }
+
+    const seed = FARM_SEEDS[plot.seedType as FarmSeedTypeValue];
+    const expectedYield = (seed.minYieldCoins + seed.maxYieldCoins) / 2;
+    const stolenCoins = DEC(Math.max(1, Math.floor(expectedYield * FARM_STEAL_RATE)));
+    const now = new Date();
+    const viewerName = viewerMember.serverDisplayName ?? viewerMember.discordUserId;
+    const targetName = targetMember.peiwan?.serverDisplayName ?? targetMember.serverDisplayName ?? targetMember.discordUserId;
+
+    await tx.farmProfile.update({
+      where: { discordUserId: viewerProfile.discordUserId },
+      data: { coins: { increment: stolenCoins } },
+    });
+    await tx.farmPlot.update({
+      where: { discordUserId_plotIndex: { discordUserId: targetDiscordId, plotIndex } },
+      data: {
+        lastStolenAt: now,
+        lastStolenBy: viewerDiscordId,
+        stolenCoins,
+      },
+    });
+    await tx.farmActionLog.createMany({
+      data: [
+        {
+          discordUserId: viewerDiscordId,
+          actionType: FarmActionType.STEAL,
+          plotIndex,
+          seedType: plot.seedType,
+          coinDelta: stolenCoins,
+          note: `从 ${targetName} 的第 ${plotIndex} 块地偷到 ${stolenCoins.toFixed(2)} 金币`,
+        },
+        {
+          discordUserId: targetDiscordId,
+          actionType: FarmActionType.STEAL,
+          plotIndex,
+          seedType: plot.seedType,
+          coinDelta: stolenCoins.negated(),
+          note: `${viewerName} 从第 ${plotIndex} 块地偷走 ${stolenCoins.toFixed(2)} 金币`,
+        },
+      ],
+    });
+
+    return {
+      viewerDashboard: await loadFarmDashboardTx(tx, viewerDiscordId, viewerDiscordId),
+      targetDashboard: await loadFarmDashboardTx(tx, targetDiscordId, viewerDiscordId),
+      stolenCoins: stolenCoins.toFixed(2),
+      targetName,
+      seedName: seed.name,
+    };
+  });
+}
+
