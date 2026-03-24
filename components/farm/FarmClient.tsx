@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { MAX_PLOTS, getFarmSeedDurationLabel, type FarmSeedTypeValue } from '@/lib/farmConfig';
 import type { FarmDashboard } from '@/lib/farm';
@@ -30,11 +31,33 @@ const formatRemaining = (remainingSeconds: number) => {
 type Props = { initialDashboard: FarmDashboard };
 type PlotStatus = 'LOCKED' | 'EMPTY' | 'GROWING' | 'READY';
 
-const cropVisualMap: Partial<Record<FarmSeedTypeValue, { crop: string; sprout: string }>> = {
-  WHEAT: { crop: '🌾', sprout: '🌱' },
-  ROSE: { crop: '🌹', sprout: '🌿' },
-  KOI_FLOWER: { crop: '🪷', sprout: '🍃' },
-  MYSTERY_FRUIT: { crop: '🍑', sprout: '✨' },
+const cropVisualMap: Partial<
+  Record<FarmSeedTypeValue, { cropEmoji: string; seedEmoji: string; cropAsset: string; sproutAsset: string }>
+> = {
+  WHEAT: {
+    cropEmoji: '🌾',
+    seedEmoji: '🌱',
+    cropAsset: '/farm/crop-wheat.svg',
+    sproutAsset: '/farm/sprout-generic.svg',
+  },
+  ROSE: {
+    cropEmoji: '🌹',
+    seedEmoji: '🌿',
+    cropAsset: '/farm/crop-rose.svg',
+    sproutAsset: '/farm/sprout-generic.svg',
+  },
+  KOI_FLOWER: {
+    cropEmoji: '🪷',
+    seedEmoji: '🍃',
+    cropAsset: '/farm/crop-koi-flower.svg',
+    sproutAsset: '/farm/sprout-generic.svg',
+  },
+  MYSTERY_FRUIT: {
+    cropEmoji: '🍑',
+    seedEmoji: '✨',
+    cropAsset: '/farm/crop-mystery-fruit.svg',
+    sproutAsset: '/farm/sprout-generic.svg',
+  },
 };
 
 function SectionCard({ eyebrow, title, children, className = '' }: { eyebrow: string; title: string; children: React.ReactNode; className?: string }) {
@@ -184,12 +207,26 @@ export function FarmClient({ initialDashboard }: Props) {
                         <div className="mt-5 rounded-[26px] border border-black/5 bg-[linear-gradient(180deg,_rgba(255,255,255,0.34),_rgba(255,255,255,0.08))] p-4">
                           <div className={`relative overflow-hidden rounded-[26px] ${soilClass} px-4 pb-5 pt-6 text-center`}>
                             {!unlocked ? (
-                              <div className="flex h-36 flex-col items-center justify-center text-[#f5e4b8]"><div className="text-4xl">🔒</div><p className="mt-4 text-sm tracking-[0.2em] text-[#f8edcf]">解锁后启用</p></div>
+                              <div className="flex h-36 flex-col items-center justify-center text-[#f5e4b8]">
+                                <Image src="/farm/locked-plot.svg" alt="locked plot" width={108} height={108} className="drop-shadow-[0_14px_18px_rgba(0,0,0,0.14)]" />
+                                <p className="mt-4 text-sm tracking-[0.2em] text-[#f8edcf]">解锁后启用</p>
+                              </div>
                             ) : status === 'EMPTY' ? (
-                              <div className="flex h-36 flex-col items-center justify-center text-[#f5e4b8]"><div className="text-4xl">🪵</div><p className="mt-4 text-sm tracking-[0.18em] text-[#f6e8c2]">等待播种</p></div>
+                              <div className="flex h-36 flex-col items-center justify-center text-[#f5e4b8]">
+                                <Image src="/farm/sprout-generic.svg" alt="empty plot" width={118} height={118} className="opacity-45 saturate-50" />
+                                <p className="mt-2 text-sm tracking-[0.18em] text-[#f6e8c2]">等待播种</p>
+                              </div>
                             ) : (
                               <div className="flex h-36 flex-col items-center justify-center">
-                                <div className="inline-flex h-24 w-24 items-center justify-center rounded-full border border-white/30 bg-white/25 text-5xl shadow-[0_18px_28px_rgba(0,0,0,0.12)]">{status === 'READY' ? cropVisual?.crop ?? '🌾' : cropVisual?.sprout ?? '🌱'}</div>
+                                <div className="relative flex h-28 w-28 items-center justify-center rounded-full border border-white/30 bg-white/20 shadow-[0_18px_28px_rgba(0,0,0,0.12)]">
+                                  <Image
+                                    src={status === 'READY' ? cropVisual?.cropAsset ?? '/farm/crop-wheat.svg' : cropVisual?.sproutAsset ?? '/farm/sprout-generic.svg'}
+                                    alt={seedMeta?.name ?? 'crop'}
+                                    width={96}
+                                    height={96}
+                                    className={status === 'READY' ? 'drop-shadow-[0_12px_18px_rgba(0,0,0,0.16)]' : 'scale-90 opacity-95'}
+                                  />
+                                </div>
                                 <div className="mt-4 rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] px-4 py-1 text-xs font-semibold text-white">{status === 'READY' ? '成熟完成' : '生长中'}</div>
                               </div>
                             )}
@@ -229,7 +266,9 @@ export function FarmClient({ initialDashboard }: Props) {
                   <div className="rounded-[28px] border border-[#d7bc83]/45 bg-[linear-gradient(145deg,_rgba(255,250,236,0.95),_rgba(255,235,193,0.95))] p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-4xl">{currentSeed.emoji}</p>
+                        <div className="relative h-16 w-16">
+                          <Image src={cropVisualMap[currentSeed.code]?.cropAsset ?? '/farm/crop-wheat.svg'} alt={currentSeed.name} fill className="object-contain drop-shadow-[0_8px_12px_rgba(0,0,0,0.12)]" />
+                        </div>
                         <h3 className="mt-3 text-2xl font-semibold tracking-[0.04em] text-[#35210a]">{currentSeed.name}</h3>
                         <p className="mt-2 text-sm leading-7 text-[#6f5428]">{currentSeed.description}</p>
                       </div>
@@ -254,7 +293,7 @@ export function FarmClient({ initialDashboard }: Props) {
                     return (
                       <button key={seed.code} type="button" disabled={!seed.unlocked} onClick={() => setSelectedSeed(seed.code)} className={`w-full rounded-[24px] border p-4 text-left transition ${selected ? 'border-[#d39916] bg-[linear-gradient(145deg,_#fff3c7,_#ffe19a)] shadow-[0_16px_32px_rgba(211,153,22,0.12)]' : seed.unlocked ? 'border-[#d7bc83]/35 bg-white/72 hover:border-[#d39916]/50 hover:bg-[#fff8e7]' : 'border-dashed border-[#cbb68d]/35 bg-[#efe8d7] text-[#9d8e71]'}`}>
                         <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0"><div className="flex items-center gap-3"><span className="text-2xl">{seed.emoji}</span><div><p className="text-lg font-semibold tracking-[0.04em]">{seed.name}</p><p className="mt-1 text-sm text-[#6f5428]">{seed.description}</p></div></div></div>
+                          <div className="min-w-0"><div className="flex items-center gap-3"><div className="relative h-11 w-11 shrink-0"><Image src={cropVisualMap[seed.code]?.cropAsset ?? '/farm/crop-wheat.svg'} alt={seed.name} fill className="object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.12)]" /></div><div><p className="text-lg font-semibold tracking-[0.04em]">{seed.name}</p><p className="mt-1 text-sm text-[#6f5428]">{seed.description}</p></div></div></div>
                           <span className="shrink-0 rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.26em] text-[#8f6806]">Lv.{seed.unlockLevel}</span>
                         </div>
                         <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-[#6a4d1d]"><div>成本：{formatAmount(seed.costCoins)} 金币</div><div>经验：+{seed.experience}</div><div>收益：{formatAmount(seed.minYieldCoins)} ~ {formatAmount(seed.maxYieldCoins)}</div><div>成熟：{getFarmSeedDurationLabel(seed.durationMinutes)}</div></div>

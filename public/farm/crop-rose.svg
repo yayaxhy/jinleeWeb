@@ -1,0 +1,20 @@
+<svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="petal" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#ffe2df"/>
+      <stop offset="55%" stop-color="#e46d67"/>
+      <stop offset="100%" stop-color="#a72828"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="110" cy="178" rx="58" ry="16" fill="#8f5f2d" opacity="0.18"/>
+  <path d="M111 186V110" stroke="#356f34" stroke-width="8" stroke-linecap="round"/>
+  <path d="M111 138c-20-3-30 6-38 19 17 3 30-1 38-10" fill="#4f983f"/>
+  <path d="M111 124c18-10 31-8 44 4-14 8-27 8-38 5" fill="#5aa64b"/>
+  <circle cx="110" cy="84" r="20" fill="#f8d8b4"/>
+  <ellipse cx="110" cy="58" rx="26" ry="34" fill="url(#petal)"/>
+  <ellipse cx="136" cy="84" rx="30" ry="24" transform="rotate(30 136 84)" fill="url(#petal)"/>
+  <ellipse cx="84" cy="84" rx="30" ry="24" transform="rotate(-30 84 84)" fill="url(#petal)"/>
+  <ellipse cx="132" cy="112" rx="24" ry="30" transform="rotate(20 132 112)" fill="url(#petal)"/>
+  <ellipse cx="88" cy="112" rx="24" ry="30" transform="rotate(-20 88 112)" fill="url(#petal)"/>
+  <circle cx="110" cy="86" r="12" fill="#f7cf68"/>
+</svg>

@@ -1,0 +1,14 @@
+<svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="soil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b9986a"/>
+      <stop offset="100%" stop-color="#7b5a32"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="110" cy="124" rx="74" ry="56" fill="url(#soil)"/>
+  <ellipse cx="110" cy="106" rx="74" ry="24" fill="#d8c09f" opacity="0.4"/>
+  <rect x="88" y="64" width="44" height="54" rx="12" fill="#f2e2bc" stroke="#8f7347" stroke-width="6"/>
+  <rect x="98" y="74" width="24" height="34" rx="8" fill="#b69d6d"/>
+  <path d="M92 74 79 87l18 18" fill="none" stroke="#8f7347" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M128 74 141 87l-18 18" fill="none" stroke="#8f7347" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
