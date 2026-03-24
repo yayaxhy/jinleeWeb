@@ -51,7 +51,23 @@ export async function GET(request: NextRequest) {
         orderBy: [{ PEIWANID: 'asc' }],
         take: 8,
         include: {
-          member: { select: { serverDisplayName: true } },
+          member: {
+            select: {
+              serverDisplayName: true,
+              farmProfile: {
+                select: {
+                  plots: {
+                    select: {
+                      readyAt: true,
+                      seedType: true,
+                      lastStolenAt: true,
+                      stolenCoins: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       });
 
@@ -59,8 +75,17 @@ export async function GET(request: NextRequest) {
         ok: true,
         data: rows.map((row) => ({
           id: row.PEIWANID,
+          peiwanId: row.PEIWANID,
           discordUserId: row.discordUserId,
           serverDisplayName: row.serverDisplayName ?? row.member?.serverDisplayName ?? row.discordUserId,
+          mpUrl: row.MP_url ?? null,
+          isOnline: row.status === 'free',
+          stealablePlots: (row.member?.farmProfile?.plots ?? []).filter((plot) => {
+            if (!plot.seedType || !plot.readyAt) return false;
+            if (plot.readyAt.getTime() > Date.now()) return false;
+            if (plot.lastStolenAt) return false;
+            return Number(plot.stolenCoins ?? 0) <= 0;
+          }).length,
         })),
       });
     }
@@ -149,3 +174,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
 }
+
+

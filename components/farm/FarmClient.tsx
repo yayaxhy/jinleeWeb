@@ -37,11 +37,25 @@ const formatVisitTime = (value: string) =>
     minute: '2-digit',
   });
 
+const getCompanionStatusTone = (isOnline: boolean) =>
+  isOnline
+    ? 'border-emerald-200/70 bg-emerald-50/95 text-emerald-700'
+    : 'border-slate-300/70 bg-slate-100/95 text-slate-600';
+
 type Props = { initialDashboard: FarmDashboard };
 type PlotStatus = 'LOCKED' | 'EMPTY' | 'GROWING' | 'READY';
 type DrawerKey = 'none' | 'seeds' | 'exchange' | 'logs';
 type CompanionTab = 'friends' | 'frequent' | 'search';
-type FarmSearchResult = { id: number; discordUserId: string; serverDisplayName: string };
+type FrequentVisitSort = 'count' | 'recent';
+type FarmSearchResult = {
+  id: number;
+  peiwanId: number;
+  discordUserId: string;
+  serverDisplayName: string;
+  mpUrl: string | null;
+  isOnline: boolean;
+  stealablePlots: number;
+};
 type FloatingReward = { id: number; text: string; variant: 'gold' | 'steal' | 'plant' };
 type SceneBurst = { id: number; plotIndex: number; variant: 'harvest' | 'steal' | 'plant' };
 type HarvestTransition = { id: number; plotIndex: number; previousAsset: string; previousClassName: string };
@@ -254,6 +268,7 @@ export function FarmClient({ initialDashboard }: Props) {
   const [companionTab, setCompanionTab] = useState<CompanionTab>('friends');
   const [companions, setCompanions] = useState<FarmCompanionLists>({ friends: [], frequentVisits: [] });
   const [companionsLoading, setCompanionsLoading] = useState(false);
+  const [frequentVisitSort, setFrequentVisitSort] = useState<FrequentVisitSort>('count');
   const [seedPage, setSeedPage] = useState(0);
 
   const isVisiting = viewDashboard.owner.discordUserId !== homeDashboard.owner.discordUserId;
@@ -261,6 +276,18 @@ export function FarmClient({ initialDashboard }: Props) {
   const totalSeedPages = Math.max(1, Math.ceil(homeDashboard.seeds.length / seedPageSize));
   const visibleSeedPage = Math.min(seedPage, totalSeedPages - 1);
   const pagedSeeds = homeDashboard.seeds.slice(visibleSeedPage * seedPageSize, (visibleSeedPage + 1) * seedPageSize);
+  const sortedFrequentVisits = useMemo(() => {
+    const items = [...companions.frequentVisits];
+    items.sort((a, b) => {
+      if (frequentVisitSort === 'recent') {
+        return new Date(b.lastTouchedAt).getTime() - new Date(a.lastTouchedAt).getTime();
+      }
+      const countDiff = b.count - a.count;
+      if (countDiff !== 0) return countDiff;
+      return new Date(b.lastTouchedAt).getTime() - new Date(a.lastTouchedAt).getTime();
+    });
+    return items;
+  }, [companions.frequentVisits, frequentVisitSort]);
 
   useEffect(() => {
     if (selectedSeed && homeDashboard.seeds.some((seed) => seed.code === selectedSeed && seed.unlocked)) return;
@@ -560,20 +587,46 @@ export function FarmClient({ initialDashboard }: Props) {
             type="button"
             disabled={loadingKey === 'visit-farm'}
             onClick={() => loadTargetFarm(item.discordUserId)}
-            className="flex items-center justify-between rounded-[22px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.96),_rgba(249,239,214,0.96))] px-4 py-4 text-left transition hover:border-[#d39a24]/50 hover:bg-[#fff8e8] disabled:cursor-not-allowed disabled:opacity-60"
+            className="group overflow-hidden rounded-[26px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.98),_rgba(249,239,214,0.98))] text-left transition hover:-translate-y-0.5 hover:border-[#d39a24]/50 hover:shadow-[0_18px_34px_rgba(101,66,20,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{item.displayName}</p>
-                {item.peiwanId ? <span className="rounded-full border border-[#d2ad54]/35 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-[#8f6806]">#{item.peiwanId}</span> : null}
+            <div className="relative h-28 overflow-hidden border-b border-[#e7d4ab]/55 bg-[linear-gradient(180deg,_rgba(250,233,182,0.68),_rgba(214,183,109,0.18))]">
+              {item.mpUrl ? (
+                <Image src={item.mpUrl} alt={item.displayName} fill className="object-cover transition duration-300 group-hover:scale-[1.04]" />
+              ) : (
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_#fff3c7,_#dfbf78_58%,_#a67a2f_100%)]" />
+              )}
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(131,33,22,0.02),_rgba(59,20,13,0.66))]" />
+              <div className="absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,_rgba(255,243,202,0.55),_transparent)]" />
+              <div className="absolute left-4 top-4 flex h-12 w-12 items-center justify-center rounded-full border border-white/40 bg-[linear-gradient(180deg,_rgba(255,248,228,0.92),_rgba(248,224,161,0.9))] text-lg font-semibold text-[#7d5716] shadow-[0_10px_18px_rgba(31,17,5,0.16)]">
+                {item.displayName.trim().charAt(0) || '庄'}
               </div>
-              <p className="mt-1 truncate text-xs text-[#8b6a2c]">{item.discordUserId}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#7e6134]">
-                <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-2 py-1 tracking-[0.14em]">{item.label}</span>
-                <span>最近：{formatVisitTime(item.lastTouchedAt)}</span>
+              <span className="absolute right-4 top-4 rounded-full border border-white/36 bg-[rgba(86,21,13,0.62)] px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-[#ffe3a6]">
+                {item.peiwanId ? `#${item.peiwanId}` : '庄园'}
+              </span>
+              <div className="absolute bottom-3 left-4 flex flex-wrap gap-2">
+                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getCompanionStatusTone(item.isOnline)}`}>
+                  {item.isOnline ? '在线' : '离线'}
+                </span>
+                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                  item.stealablePlots > 0
+                    ? 'border-amber-200/70 bg-amber-50/95 text-amber-700'
+                    : 'border-stone-300/70 bg-stone-100/95 text-stone-500'
+                }`}>
+                  {item.stealablePlots > 0 ? `可偷 ${item.stealablePlots}` : '不可偷'}
+                </span>
               </div>
             </div>
-            <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
+            <div className="flex items-center justify-between gap-3 px-4 py-4">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{item.displayName}</p>
+                <p className="mt-1 truncate text-xs text-[#8b6a2c]">{item.discordUserId}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#7e6134]">
+                  <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-2 py-1 tracking-[0.14em]">{item.label}</span>
+                  <span>最近：{formatVisitTime(item.lastTouchedAt)}</span>
+                </div>
+              </div>
+              <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
+            </div>
           </button>
         ))}
       </div>
@@ -645,8 +698,9 @@ export function FarmClient({ initialDashboard }: Props) {
       `}</style>
 
       <div className="mx-auto max-w-[1540px] px-3 py-3 sm:px-4 lg:px-6 lg:py-4">
-        <section className="relative min-h-[calc(100vh-2rem)] overflow-hidden rounded-[42px] border border-[#e4ca8f]/60 bg-[linear-gradient(180deg,_#dff2ff_0%,_#d2e9ff_18%,_#86b46b_46%,_#71874f_100%)] shadow-[0_28px_80px_rgba(48,28,9,0.24)]">
+        <section className="relative min-h-[calc(100vh-2rem)] overflow-hidden rounded-[42px] border border-[#e9c978]/70 bg-[linear-gradient(180deg,_#f8e0d1_0%,_#f6d7b1_18%,_#8aa95f_48%,_#6f8148_100%)] shadow-[0_28px_80px_rgba(72,23,16,0.28)]">
           <Image src="/farm/manor-base.svg" alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,_rgba(127,20,17,0.48),_rgba(127,20,17,0.08),_transparent)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[42%] bg-[radial-gradient(circle_at_50%_10%,_rgba(255,251,229,0.92),_rgba(255,251,229,0.15)_45%,_transparent_60%)]" />
           <div className="pointer-events-none absolute inset-x-[9%] bottom-[7%] h-[34%] rounded-[50%] bg-[radial-gradient(circle,_rgba(76,108,41,0.46),_rgba(76,108,41,0.06)_68%,_transparent_74%)] blur-sm" />
           <div className="pointer-events-none absolute inset-x-[18%] bottom-[12%] h-[18%] rounded-[50%] border border-white/8 bg-[radial-gradient(circle,_rgba(251,234,186,0.18),_rgba(251,234,186,0.02)_72%,_transparent_76%)]" />
@@ -667,18 +721,18 @@ export function FarmClient({ initialDashboard }: Props) {
 
           <div className="relative z-10 flex h-full min-h-[calc(100vh-2rem)] flex-col p-4 sm:p-5 lg:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-xl rounded-[32px] border border-[#f7dcaa]/28 bg-[linear-gradient(180deg,_rgba(132,81,29,0.94),_rgba(79,45,15,0.9))] px-5 py-4 text-[#fff6df] shadow-[0_18px_36px_rgba(0,0,0,0.18)] backdrop-blur-sm">
-                <div className="rounded-[24px] border border-[#f8e3ba]/14 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.44em] text-[#f7d58c]">Koi Manor</p>
+              <div className="max-w-xl rounded-[32px] border border-[#f4d18b]/42 bg-[linear-gradient(180deg,_rgba(126,24,20,0.95),_rgba(79,18,15,0.93))] px-5 py-4 text-[#fff6df] shadow-[0_20px_42px_rgba(69,18,15,0.24)] backdrop-blur-sm">
+                <div className="rounded-[24px] border border-[#ffd9a7]/18 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.44em] text-[#f7d58c]">Jinli Manor</p>
                   <div className="mt-2 flex flex-wrap items-center gap-3">
                     <h1 className="text-3xl font-semibold tracking-[0.1em] sm:text-4xl">锦鲤庄园</h1>
-                    <span className="rounded-full border border-white/22 bg-white/12 px-3 py-1 text-xs tracking-[0.22em] text-[#ffe6af]">{isVisiting ? `拜访 ${viewDashboard.owner.displayName}` : '我的庄园'}</span>
+                    <span className="rounded-full border border-[#f7e3b2]/30 bg-[rgba(255,243,216,0.12)] px-3 py-1 text-xs tracking-[0.22em] text-[#ffe6af]">{isVisiting ? `拜访 ${viewDashboard.owner.displayName}` : '我的庄园'}</span>
                   </div>
-                  <p className="mt-3 text-sm leading-7 text-[#fff0cb]/90">主视图优先保留场景、地块、作物和动作。说明面板统一收进抽屉，布局更接近农场游戏。</p>
+                  <p className="mt-3 text-sm leading-7 text-[#fff0cb]/90">整体改成更偏锦鲤红、鎏金边和水庭院的配色，弱化普通后台面板感，保持庄园主场景为主。</p>
                   <div className="mt-4 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.26em] text-[#ffe4a8]">
-                    <span className="rounded-full border border-white/20 bg-white/12 px-3 py-2">1 余额 = 100 金币</span>
-                    <span className="rounded-full border border-white/20 bg-white/12 px-3 py-2">1 积分 = 10 金币</span>
-                    <span className="rounded-full border border-white/20 bg-white/12 px-3 py-2">100 金币 = 1 积分</span>
+                    <span className="rounded-full border border-[#f7e3b2]/28 bg-[rgba(255,243,216,0.12)] px-3 py-2">1 余额 = 100 金币</span>
+                    <span className="rounded-full border border-[#f7e3b2]/28 bg-[rgba(255,243,216,0.12)] px-3 py-2">1 积分 = 10 金币</span>
+                    <span className="rounded-full border border-[#f7e3b2]/28 bg-[rgba(255,243,216,0.12)] px-3 py-2">100 金币 = 1 积分</span>
                   </div>
                 </div>
               </div>
@@ -693,7 +747,7 @@ export function FarmClient({ initialDashboard }: Props) {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <div className="relative flex-1 overflow-hidden rounded-[22px] border border-[#f5d9a3]/25 bg-[linear-gradient(180deg,_rgba(128,76,27,0.82),_rgba(72,39,12,0.82))] px-4 py-3 text-[#fff4d4] backdrop-blur-sm">
+              <div className="relative flex-1 overflow-hidden rounded-[22px] border border-[#f5d9a3]/25 bg-[linear-gradient(180deg,_rgba(122,25,18,0.84),_rgba(81,21,15,0.82))] px-4 py-3 text-[#fff4d4] backdrop-blur-sm">
                 <div className="pointer-events-none absolute inset-[4px] rounded-[18px] border border-[#f8e6bb]/12" />
                 <div className="flex items-center justify-between gap-3 text-xs uppercase tracking-[0.24em] text-[#f5d388]">
                   <span>升级进度</span>
@@ -715,8 +769,15 @@ export function FarmClient({ initialDashboard }: Props) {
               <div className={`mt-4 rounded-[22px] border px-4 py-3 text-sm shadow-[0_12px_24px_rgba(0,0,0,0.12)] ${error ? 'border-rose-200/80 bg-rose-50/92 text-rose-700' : 'border-emerald-200/80 bg-emerald-50/92 text-emerald-700'}`}>{error ?? message}</div>
             )}
 
-            <div className="relative mt-4 flex-1 overflow-hidden rounded-[38px] border border-white/22 bg-[linear-gradient(180deg,_rgba(210,231,255,0.22),_rgba(65,90,28,0.1))] shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]">
-              <div className="absolute left-4 top-4 z-20 rounded-[22px] border border-white/20 bg-[linear-gradient(180deg,_rgba(56,31,9,0.74),_rgba(35,18,5,0.62))] px-4 py-3 text-xs tracking-[0.18em] text-[#fbe5b0] backdrop-blur-sm">{currentSeed ? `已选种子 · ${currentSeed.name}` : '点击下方图标先选种子'}</div>
+            <div className="relative mt-4 flex-1 overflow-hidden rounded-[38px] border border-[#f5dcaa]/35 bg-[linear-gradient(180deg,_rgba(210,231,255,0.18),_rgba(65,90,28,0.08))] shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]">
+              <div className="absolute left-4 top-4 z-20 rounded-[22px] border border-[#f6ddb0]/28 bg-[linear-gradient(180deg,_rgba(87,20,14,0.82),_rgba(54,17,12,0.72))] px-4 py-3 text-xs tracking-[0.18em] text-[#fbe5b0] backdrop-blur-sm">{currentSeed ? `已选种子 · ${currentSeed.name}` : '点击下方图标先选种子'}</div>
+              {isVisiting ? (
+                <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-[24px] border border-[#f6ddb0]/38 bg-[linear-gradient(180deg,_rgba(125,24,18,0.92),_rgba(86,18,14,0.88))] px-5 py-3 text-center text-[#fff4d3] shadow-[0_18px_34px_rgba(69,18,15,0.22)] backdrop-blur-sm">
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-[#f7d58c]">Visitor Mode</p>
+                  <p className="mt-1 text-sm font-semibold tracking-[0.12em]">正在拜访 {viewDashboard.owner.displayName}</p>
+                  <p className="mt-1 text-xs text-[#ffe7b3]/80">当前只能偷成熟地块，所有操作不会改动你的庄园布局。</p>
+                </div>
+              ) : null}
               <div className="absolute right-4 top-4 z-20 flex flex-col gap-2 lg:hidden">
                 <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
                 {(Object.keys(drawerMeta) as Array<Exclude<DrawerKey, 'none'>>).map((key) => <ToolButton key={key} icon={drawerMeta[key].icon} label={drawerMeta[key].label} active={activeDrawer === key} onClick={() => setActiveDrawer((current) => (current === key ? 'none' : key))} />)}
@@ -979,15 +1040,15 @@ export function FarmClient({ initialDashboard }: Props) {
       {friendModalOpen ? (
         <div className="fixed inset-0 z-[55] flex items-center justify-center bg-[#1d0f03]/58 px-3 py-6" onClick={() => setFriendModalOpen(false)}>
           <div
-            className="relative w-full max-w-[980px] rounded-[38px] border border-[#e4ca8f]/55 bg-[linear-gradient(180deg,_rgba(255,249,232,0.98),_rgba(246,228,186,0.98))] shadow-[0_28px_70px_rgba(25,14,4,0.3)]"
+            className="relative w-full max-w-[980px] rounded-[38px] border border-[#e8c777]/60 bg-[linear-gradient(180deg,_rgba(255,250,236,0.98),_rgba(245,225,182,0.98))] shadow-[0_28px_70px_rgba(69,18,15,0.28)]"
             onClick={(event) => event.stopPropagation()}
           >
             <button type="button" onClick={() => setFriendModalOpen(false)} className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-[#d8bc83]/45 bg-white/55 text-xl text-[#734d17] transition hover:bg-white/75">×</button>
             <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[260px_1fr]">
-              <div className="rounded-[30px] border border-[#d7bc83]/35 bg-[linear-gradient(180deg,_rgba(83,47,16,0.95),_rgba(46,24,7,0.95))] p-5 text-[#fff5da] shadow-[0_18px_40px_rgba(23,12,3,0.18)]">
+              <div className="rounded-[30px] border border-[#efcf88]/38 bg-[linear-gradient(180deg,_rgba(122,24,20,0.96),_rgba(74,17,14,0.95))] p-5 text-[#fff5da] shadow-[0_18px_40px_rgba(69,18,15,0.24)]">
                 <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]">Koi Manor</p>
                 <h2 className="mt-2 text-3xl font-semibold tracking-[0.06em]">好友庄园</h2>
-                <p className="mt-3 text-sm leading-7 text-[#fcebc2]/86">把常互动的陪玩和真实拜访记录收进一个独立弹窗。搜索只负责补充入口，不再混进右侧抽屉。</p>
+                <p className="mt-3 text-sm leading-7 text-[#fcebc2]/86">好友、常访和搜索都收进独立拜访台，强调锦鲤红和鎏金木牌风格，不再像普通后台列表。</p>
                 <div className="mt-5 space-y-2">
                   <button type="button" onClick={() => setCompanionTab('friends')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'friends' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>我的好友</button>
                   <button type="button" onClick={() => setCompanionTab('frequent')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'frequent' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>常访名单</button>
@@ -1022,9 +1083,13 @@ export function FarmClient({ initialDashboard }: Props) {
                         <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]">常访名单</h3>
                         <p className="mt-1 text-sm text-[#7b6131]">改成服务器真实拜访记录，不再依赖本地缓存。</p>
                       </div>
-                      <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{companions.frequentVisits.length} 个庄园</span>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => setFrequentVisitSort('count')} className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${frequentVisitSort === 'count' ? 'border-[#d39a24]/45 bg-[#fff0c8] text-[#8f6806]' : 'border-[#dfc48b]/45 bg-[#fff6e2] text-[#8f6806]'}`}>按次数</button>
+                        <button type="button" onClick={() => setFrequentVisitSort('recent')} className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${frequentVisitSort === 'recent' ? 'border-[#d39a24]/45 bg-[#fff0c8] text-[#8f6806]' : 'border-[#dfc48b]/45 bg-[#fff6e2] text-[#8f6806]'}`}>按最近</button>
+                        <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{companions.frequentVisits.length} 个庄园</span>
+                      </div>
                     </div>
-                    <div className="mt-4">{renderCompanionCards(companions.frequentVisits, '还没有常访庄园。先拜访一次别人的庄园，记录就会出现在这里。')}</div>
+                    <div className="mt-4">{renderCompanionCards(sortedFrequentVisits, '还没有常访庄园。先拜访一次别人的庄园，记录就会出现在这里。')}</div>
                   </div>
                 ) : null}
 
@@ -1044,18 +1109,47 @@ export function FarmClient({ initialDashboard }: Props) {
                     <div className="mt-4 space-y-3">
                       {searching ? <p className="text-sm text-[#7b6131]">搜索中…</p> : null}
                       {!searching && farmSearch.trim() && searchResults.length === 0 ? <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">没有找到可访问的庄园。</p> : null}
-                      {searchResults.map((result) => (
-                        <button key={result.id} type="button" disabled={loadingKey === 'visit-farm'} onClick={() => loadTargetFarm(result.discordUserId)} className="flex w-full items-center justify-between rounded-[24px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.94),_rgba(249,239,214,0.94))] px-4 py-4 text-left transition hover:border-[#d39a24]/50 hover:bg-[#fff8e8]">
-                          <div className="flex min-w-0 items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-[18px] border border-[#eccd8f]/40 bg-[linear-gradient(180deg,_#fff8e4,_#f4ddb0)] text-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">🏡</div>
-                            <div className="min-w-0">
-                              <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{result.serverDisplayName}</p>
-                              <p className="mt-1 truncate text-xs text-[#8b6a2c]">{result.discordUserId}</p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {searchResults.map((result) => (
+                          <button key={result.id} type="button" disabled={loadingKey === 'visit-farm'} onClick={() => loadTargetFarm(result.discordUserId)} className="group overflow-hidden rounded-[26px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.98),_rgba(249,239,214,0.98))] text-left transition hover:-translate-y-0.5 hover:border-[#d39a24]/50 hover:shadow-[0_18px_34px_rgba(101,66,20,0.14)] disabled:cursor-not-allowed disabled:opacity-60">
+                            <div className="relative h-28 overflow-hidden border-b border-[#e7d4ab]/55 bg-[linear-gradient(180deg,_rgba(250,233,182,0.68),_rgba(214,183,109,0.18))]">
+                              {result.mpUrl ? (
+                                <Image src={result.mpUrl} alt={result.serverDisplayName} fill className="object-cover transition duration-300 group-hover:scale-[1.04]" />
+                              ) : (
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_#fff3c7,_#dfbf78_58%,_#a67a2f_100%)]" />
+                              )}
+                              <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(131,33,22,0.02),_rgba(59,20,13,0.66))]" />
+                              <div className="absolute left-4 top-4 flex h-12 w-12 items-center justify-center rounded-full border border-white/40 bg-[linear-gradient(180deg,_rgba(255,248,228,0.92),_rgba(248,224,161,0.9))] text-lg font-semibold text-[#7d5716] shadow-[0_10px_18px_rgba(31,17,5,0.16)]">
+                                {result.serverDisplayName.trim().charAt(0) || '庄'}
+                              </div>
+                              <span className="absolute right-4 top-4 rounded-full border border-white/36 bg-[rgba(86,21,13,0.62)] px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-[#ffe3a6]">#{result.peiwanId}</span>
+                              <div className="absolute bottom-3 left-4 flex flex-wrap gap-2">
+                                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getCompanionStatusTone(result.isOnline)}`}>
+                                  {result.isOnline ? '在线' : '离线'}
+                                </span>
+                                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                                  result.stealablePlots > 0
+                                    ? 'border-amber-200/70 bg-amber-50/95 text-amber-700'
+                                    : 'border-stone-300/70 bg-stone-100/95 text-stone-500'
+                                }`}>
+                                  {result.stealablePlots > 0 ? `可偷 ${result.stealablePlots}` : '不可偷'}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                          <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
-                        </button>
-                      ))}
+                            <div className="flex items-center justify-between gap-3 px-4 py-4">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{result.serverDisplayName}</p>
+                                <p className="mt-1 truncate text-xs text-[#8b6a2c]">{result.discordUserId}</p>
+                                <div className="mt-2 flex items-center gap-2 text-[11px] text-[#7e6134]">
+                                  <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-2 py-1 tracking-[0.14em]">搜索结果</span>
+                                  <span>直接进入对方庄园</span>
+                                </div>
+                              </div>
+                              <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : null}

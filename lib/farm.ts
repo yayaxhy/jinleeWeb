@@ -1,4 +1,4 @@
-﻿import { FarmActionType, FarmSeedType, Prisma } from '@prisma/client';
+import { FarmActionType, FarmSeedType, PeiwanStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
   BALANCE_TO_COINS_RATE,
@@ -91,6 +91,9 @@ export type FarmCompanionEntry = {
   discordUserId: string;
   displayName: string;
   peiwanId: number | null;
+  mpUrl: string | null;
+  isOnline: boolean;
+  stealablePlots: number;
   label: string;
   count: number;
   lastTouchedAt: string;
@@ -379,9 +382,11 @@ type InteractionStats = {
   giftCount: number;
 };
 
-async function loadVisitablePeiwans(discordUserIds: string[]) {
+async function loadVisitablePeiwans(
+  discordUserIds: string[],
+): Promise<Map<string, { peiwanId: number; displayName: string; mpUrl: string | null; isOnline: boolean; stealablePlots: number }>> {
   if (discordUserIds.length === 0) {
-    return new Map<string, { peiwanId: number; displayName: string }>();
+    return new Map<string, { peiwanId: number; displayName: string; mpUrl: string | null; isOnline: boolean; stealablePlots: number }>();
   }
 
   const rows = await prisma.pEIWAN.findMany({
@@ -394,9 +399,23 @@ async function loadVisitablePeiwans(discordUserIds: string[]) {
       discordUserId: true,
       PEIWANID: true,
       serverDisplayName: true,
+      MP_url: true,
+      status: true,
       member: {
         select: {
           serverDisplayName: true,
+          farmProfile: {
+            select: {
+              plots: {
+                select: {
+                  readyAt: true,
+                  stolenCoins: true,
+                  lastStolenAt: true,
+                  seedType: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -408,6 +427,14 @@ async function loadVisitablePeiwans(discordUserIds: string[]) {
       {
         peiwanId: row.PEIWANID,
         displayName: row.serverDisplayName ?? row.member?.serverDisplayName ?? row.discordUserId,
+        mpUrl: row.MP_url ?? null,
+        isOnline: row.status === PeiwanStatus.free,
+        stealablePlots: (row.member?.farmProfile?.plots ?? []).filter((plot) => {
+          if (!plot.seedType || !plot.readyAt) return false;
+          if (plot.readyAt.getTime() > Date.now()) return false;
+          if (plot.lastStolenAt) return false;
+          return DEC(plot.stolenCoins ?? 0).eq(ZERO);
+        }).length,
       },
     ]),
   );
@@ -415,7 +442,7 @@ async function loadVisitablePeiwans(discordUserIds: string[]) {
 
 export async function getFarmCompanionLists(viewerDiscordId: string): Promise<FarmCompanionLists> {
   const [orderRows, giftRows, visitRows] = await Promise.all([
-    prisma.orderAudit.findMany({
+    prisma.order.findMany({
       where: {
         OR: [{ hostId: viewerDiscordId }, { workerId: viewerDiscordId }],
       },
@@ -505,6 +532,9 @@ export async function getFarmCompanionLists(viewerDiscordId: string): Promise<Fa
         discordUserId,
         displayName: peiwan.displayName,
         peiwanId: peiwan.peiwanId,
+        mpUrl: peiwan.mpUrl,
+        isOnline: peiwan.isOnline,
+        stealablePlots: peiwan.stealablePlots,
         label: detailParts.length > 0 ? detailParts.join(' · ') : `互动 ${stats.count} 次`,
         count: stats.count,
         lastTouchedAt: stats.lastTouchedAt.toISOString(),
@@ -520,6 +550,9 @@ export async function getFarmCompanionLists(viewerDiscordId: string): Promise<Fa
         discordUserId: row.targetDiscordId,
         displayName: peiwan.displayName,
         peiwanId: peiwan.peiwanId,
+        mpUrl: peiwan.mpUrl,
+        isOnline: peiwan.isOnline,
+        stealablePlots: peiwan.stealablePlots,
         label: `拜访 ${row.visitCount} 次`,
         count: row.visitCount,
         lastTouchedAt: row.lastVisitedAt.toISOString(),
@@ -932,4 +965,9 @@ export async function stealFarmPlot(viewerDiscordId: string, targetDiscordId: st
     };
   });
 }
+
+
+
+
+
 
