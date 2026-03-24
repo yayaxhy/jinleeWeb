@@ -107,6 +107,8 @@ const stageLabelMap = {
 } as const;
 
 const seedPageSize = 2;
+const SCENE_BASE_WIDTH = 1536;
+const SCENE_BASE_HEIGHT = 1024;
 
 function getSeedRarity(seed: FarmDashboard['seeds'][number]) {
   switch (seed.code) {
@@ -246,6 +248,7 @@ export function FarmClient({ initialDashboard }: Props) {
   const [companionsLoading, setCompanionsLoading] = useState(false);
   const [frequentVisitSort, setFrequentVisitSort] = useState<FrequentVisitSort>('count');
   const [seedPage, setSeedPage] = useState(0);
+  const [sceneCanvas, setSceneCanvas] = useState({ width: SCENE_BASE_WIDTH, height: SCENE_BASE_HEIGHT });
 
   const isVisiting = viewDashboard.owner.discordUserId !== homeDashboard.owner.discordUserId;
   const currentSeed = homeDashboard.seeds.find((seed) => seed.code === selectedSeed) ?? null;
@@ -264,6 +267,22 @@ export function FarmClient({ initialDashboard }: Props) {
     });
     return items;
   }, [companions.frequentVisits, frequentVisitSort]);
+
+  useEffect(() => {
+    const syncSceneCanvas = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const scale = Math.max(viewportWidth / SCENE_BASE_WIDTH, viewportHeight / SCENE_BASE_HEIGHT);
+      setSceneCanvas({
+        width: Math.ceil(SCENE_BASE_WIDTH * scale),
+        height: Math.ceil(SCENE_BASE_HEIGHT * scale),
+      });
+    };
+
+    syncSceneCanvas();
+    window.addEventListener('resize', syncSceneCanvas);
+    return () => window.removeEventListener('resize', syncSceneCanvas);
+  }, []);
 
   useEffect(() => {
     if (selectedSeed && homeDashboard.seeds.some((seed) => seed.code === selectedSeed && seed.unlocked)) return;
@@ -695,8 +714,11 @@ export function FarmClient({ initialDashboard }: Props) {
         }
       `}</style>
 
-      <div className="mx-auto max-w-[1540px] px-3 py-3 sm:px-4 lg:px-6 lg:py-4">
-        <section className="relative min-h-[calc(100vh-2rem)] overflow-hidden rounded-[42px] border border-[#e9c978]/70 bg-[linear-gradient(180deg,_#f4dfd1_0%,_#eed0b6_20%,_#8aa15d_48%,_#66773d_100%)] shadow-[0_28px_80px_rgba(72,23,16,0.28)] md:min-h-0 md:aspect-[3/2]">
+      <div className="relative h-dvh w-screen overflow-hidden bg-[#2b1408]">
+        <section
+          className="absolute left-1/2 top-1/2 overflow-hidden bg-[linear-gradient(180deg,_#f4dfd1_0%,_#eed0b6_20%,_#8aa15d_48%,_#66773d_100%)]"
+          style={{ width: `${sceneCanvas.width}px`, height: `${sceneCanvas.height}px`, transform: 'translate(-50%, -50%)' }}
+        >
           <Image src={FARM_SCENE_ASSETS.manorBase} alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(127,20,17,0.38),_rgba(127,20,17,0.06),_transparent)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[44%] bg-[radial-gradient(circle_at_50%_8%,_rgba(255,248,224,0.88),_rgba(255,248,224,0.12)_46%,_transparent_62%)]" />
@@ -717,7 +739,7 @@ export function FarmClient({ initialDashboard }: Props) {
           </div>
           <div className="pointer-events-none absolute inset-x-[14%] bottom-[4.5%] h-[2px] bg-[linear-gradient(90deg,_transparent,_rgba(255,235,183,0.45),_transparent)]" />
 
-          <div className="relative z-10 flex h-full min-h-[calc(100vh-2rem)] flex-col p-4 sm:p-5 lg:p-6 md:min-h-full">
+          <div className="relative z-10 flex h-full min-h-full flex-col p-4 sm:p-5 lg:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-xl rounded-[32px] border border-[#f4d18b]/42 bg-[linear-gradient(180deg,_rgba(126,24,20,0.95),_rgba(79,18,15,0.93))] px-5 py-4 text-[#fff6df] shadow-[0_20px_42px_rgba(69,18,15,0.24)] backdrop-blur-sm">
                 <div className="rounded-[24px] border border-[#ffd9a7]/18 px-4 py-3">
