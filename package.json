@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "node -e \"require('fs').rmSync('.next/dev',{ recursive: true, force: true });\" && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "farm:generate": "node scripts/generate-farm-asset.mjs",
+    "farm:generate:all-core": "node scripts/generate-farm-asset.mjs --all-core"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
