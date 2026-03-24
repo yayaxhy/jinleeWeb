@@ -248,7 +248,7 @@ export function FarmClient({ initialDashboard }: Props) {
   const [companionsLoading, setCompanionsLoading] = useState(false);
   const [frequentVisitSort, setFrequentVisitSort] = useState<FrequentVisitSort>('count');
   const [seedPage, setSeedPage] = useState(0);
-  const [sceneCanvas, setSceneCanvas] = useState({ width: SCENE_BASE_WIDTH, height: SCENE_BASE_HEIGHT });
+  const [sceneScale, setSceneScale] = useState(1);
 
   const isVisiting = viewDashboard.owner.discordUserId !== homeDashboard.owner.discordUserId;
   const currentSeed = homeDashboard.seeds.find((seed) => seed.code === selectedSeed) ?? null;
@@ -269,19 +269,16 @@ export function FarmClient({ initialDashboard }: Props) {
   }, [companions.frequentVisits, frequentVisitSort]);
 
   useEffect(() => {
-    const syncSceneCanvas = () => {
+    const syncSceneScale = () => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const scale = Math.max(viewportWidth / SCENE_BASE_WIDTH, viewportHeight / SCENE_BASE_HEIGHT);
-      setSceneCanvas({
-        width: Math.ceil(SCENE_BASE_WIDTH * scale),
-        height: Math.ceil(SCENE_BASE_HEIGHT * scale),
-      });
+      setSceneScale(scale);
     };
 
-    syncSceneCanvas();
-    window.addEventListener('resize', syncSceneCanvas);
-    return () => window.removeEventListener('resize', syncSceneCanvas);
+    syncSceneScale();
+    window.addEventListener('resize', syncSceneScale);
+    return () => window.removeEventListener('resize', syncSceneScale);
   }, []);
 
   useEffect(() => {
@@ -717,17 +714,22 @@ export function FarmClient({ initialDashboard }: Props) {
       <div className="relative h-dvh w-screen overflow-hidden bg-[#2b1408]">
         <section
           className="absolute left-1/2 top-1/2 overflow-hidden bg-[linear-gradient(180deg,_#f4dfd1_0%,_#eed0b6_20%,_#8aa15d_48%,_#66773d_100%)]"
-          style={{ width: `${sceneCanvas.width}px`, height: `${sceneCanvas.height}px`, transform: 'translate(-50%, -50%)' }}
+          style={{
+            width: `${SCENE_BASE_WIDTH}px`,
+            height: `${SCENE_BASE_HEIGHT}px`,
+            transform: `translate(-50%, -50%) scale(${sceneScale})`,
+            transformOrigin: 'center center',
+          }}
         >
           <Image src={FARM_SCENE_ASSETS.manorBase} alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(127,20,17,0.38),_rgba(127,20,17,0.06),_transparent)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[44%] bg-[radial-gradient(circle_at_50%_8%,_rgba(255,248,224,0.88),_rgba(255,248,224,0.12)_46%,_transparent_62%)]" />
           <div className="pointer-events-none absolute inset-x-[12%] bottom-[5%] h-[26%] rounded-[50%] bg-[radial-gradient(circle,_rgba(245,223,159,0.14),_rgba(245,223,159,0.01)_72%,_transparent_76%)]" />
-          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={260} height={120} className="pointer-events-none absolute left-[8%] top-[5%] w-[18vw] min-w-[120px] max-w-[250px] opacity-95 [animation:farmCloudDrift_18s_ease-in-out_infinite]" />
-          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={220} height={110} className="pointer-events-none absolute right-[14%] top-[9%] w-[14vw] min-w-[100px] max-w-[210px] opacity-90 [animation:farmCloudDrift_21s_ease-in-out_infinite_reverse]" />
-          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={200} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[12vw] min-w-[90px] max-w-[180px] opacity-80 [animation:farmCloudDrift_24s_ease-in-out_infinite]" />
-          <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={72} height={72} className="pointer-events-none absolute left-[34%] top-[26%] w-[4vw] min-w-[36px] max-w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
-          <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={72} height={72} className="pointer-events-none absolute left-[62%] top-[34%] w-[3.8vw] min-w-[32px] max-w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
+          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={250} height={120} className="pointer-events-none absolute left-[8%] top-[5%] w-[250px] opacity-95 [animation:farmCloudDrift_18s_ease-in-out_infinite]" />
+          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={210} height={110} className="pointer-events-none absolute right-[14%] top-[9%] w-[210px] opacity-90 [animation:farmCloudDrift_21s_ease-in-out_infinite_reverse]" />
+          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={180} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[180px] opacity-80 [animation:farmCloudDrift_24s_ease-in-out_infinite]" />
+          <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={58} height={58} className="pointer-events-none absolute left-[34%] top-[26%] w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
+          <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={52} height={52} className="pointer-events-none absolute left-[62%] top-[34%] w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute left-[17%] top-[31%] h-16 w-24 rounded-full border border-[#d8f8ff]/45 [animation:farmRippleFloat_6.5s_ease-in-out_infinite]" />
             <div className="absolute left-[21%] top-[33%] h-12 w-20 rounded-full border border-[#e7fbff]/42 [animation:farmRippleFloat_7.2s_ease-in-out_infinite_reverse]" />

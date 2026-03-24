@@ -6,7 +6,7 @@ export const FARM_SCENE_ASSETS = {
   manorBase: '/farm/generated/manor-base.webp',
   cloud: '/farm/cloud.svg',
   butterfly: '/farm/butterfly.svg',
-  woodSign: '/farm/wood-sign.svg',
+  woodSign: '/farm/generated/wood-sign.webp',
   plotFrame: '/farm/plot-frame.svg',
   plotEmpty: '/farm/plot-empty.svg',
   plotHarvested: '/farm/plot-harvested.svg',

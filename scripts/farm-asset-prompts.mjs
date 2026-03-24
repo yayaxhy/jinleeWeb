@@ -19,9 +19,11 @@ export const FARM_ASSET_PROMPTS = {
     size: '1024x1024',
     quality: 'medium',
     prompt: [
-      'Create an original isometric farm plot tile for a casual web game.',
-      'Theme: koi manor terrace farmland, lacquer red trim, warm gold edge, rich brown soil, elegant courtyard material language.',
-      'Readable from top-down isometric angle, clean silhouette, game-ready, no text, transparent background.',
+      'Create a single reusable isometric farm plot tile for a casual web game.',
+      'It must be one isolated plot asset only, centered, with transparent background.',
+      'Theme: koi manor terrace farmland, warm gold trim, elegant courtyard material language, rich brown soil.',
+      'Do not include pond, bridge, fence, stairs, platform base, courtyard floor, walls, house, sky, multiple plots, or any full scene composition.',
+      'Readable from top-down isometric angle, clean silhouette, game-ready, no text, no scene, no environment.',
     ].join(' '),
   },
   'plot-empty': {
@@ -29,9 +31,11 @@ export const FARM_ASSET_PROMPTS = {
     size: '1024x1024',
     quality: 'medium',
     prompt: [
-      'Create an original isometric empty farm plot state for a casual web game.',
-      'Theme: koi manor terrace soil, decorative lacquer-red accent, warm gold highlights, no crop planted yet.',
-      'Transparent background, game-ready, centered composition.',
+      'Create a single reusable isometric empty farm plot state for a casual web game.',
+      'It must be one isolated plot asset only, centered, with transparent background.',
+      'Theme: koi manor terrace soil, warm gold highlights, no crop planted yet.',
+      'Do not include pond, bridge, fence, stairs, platform base, courtyard floor, walls, house, sky, multiple plots, or any full scene composition.',
+      'Game-ready, centered composition, no text, no scene, no environment.',
     ].join(' '),
   },
   'plot-harvested': {
@@ -39,9 +43,11 @@ export const FARM_ASSET_PROMPTS = {
     size: '1024x1024',
     quality: 'medium',
     prompt: [
-      'Create an original isometric harvested farm plot state for a casual web game.',
-      'Theme: koi manor terrace soil after harvest, slightly disturbed soil rows, warm gold highlights, coherent with a lacquer-red koi manor theme.',
-      'Transparent background, game-ready, centered composition.',
+      'Create a single reusable isometric harvested farm plot state for a casual web game.',
+      'It must be one isolated plot asset only, centered, with transparent background.',
+      'Theme: koi manor terrace soil after harvest, slightly disturbed soil rows, warm gold highlights.',
+      'Do not include pond, bridge, fence, stairs, platform base, courtyard floor, walls, house, sky, multiple plots, or any full scene composition.',
+      'Game-ready, centered composition, no text, no scene, no environment.',
     ].join(' '),
   },
   'wood-sign': {
