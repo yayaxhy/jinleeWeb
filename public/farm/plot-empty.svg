@@ -1,19 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none">
   <defs>
-    <radialGradient id="emptyShadow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(80 110) rotate(90) scale(46 60)">
-      <stop stop-color="#6B3F18" stop-opacity=".48"/>
-      <stop offset="1" stop-color="#6B3F18" stop-opacity="0"/>
+    <radialGradient id="shadow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(80 112) rotate(90) scale(44 58)">
+      <stop stop-color="#613913" stop-opacity=".44"/>
+      <stop offset="1" stop-color="#613913" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="soil" x1="80" y1="64" x2="80" y2="122" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#905B27"/>
+      <stop offset="1" stop-color="#5D3413"/>
+    </linearGradient>
   </defs>
-  <ellipse cx="80" cy="110" rx="52" ry="32" fill="url(#emptyShadow)"/>
-  <g stroke="#E9C26E" stroke-opacity=".48" stroke-linecap="round" stroke-width="3">
-    <path d="M53 86c14-9 41-12 55-2"/>
-    <path d="M48 99c22-10 52-9 67 2"/>
-    <path d="M46 112c20-9 55-8 70 3"/>
+  <ellipse cx="80" cy="112" rx="52" ry="30" fill="url(#shadow)"/>
+  <path d="M36 96 80 70l44 26-44 26z" fill="url(#soil)"/>
+  <path d="M42 96 80 74l38 22-38 22z" stroke="#F0CD87" stroke-opacity=".48" stroke-width="2"/>
+  <g stroke="#D6A35E" stroke-opacity=".44" stroke-linecap="round" stroke-width="3">
+    <path d="M56 91c11-7 29-8 41-1"/>
+    <path d="M50 102c18-8 43-7 55 1"/>
+    <path d="M48 112c18-7 45-6 58 2"/>
   </g>
-  <g fill="#A77032">
-    <ellipse cx="52" cy="103" rx="6" ry="4"/>
-    <ellipse cx="86" cy="94" rx="7" ry="5"/>
-    <ellipse cx="111" cy="108" rx="5" ry="3.5"/>
-  </g>
+  <path d="M70 58c4-8 11-13 21-13 9 0 17 4 22 13-8 2-15 6-20 11-7-5-15-9-23-11Z" fill="#A11F1E" fill-opacity=".86"/>
+  <circle cx="81" cy="53" r="3" fill="#FCE4A7"/>
+  <circle cx="89" cy="58" r="2" fill="#FCE4A7" opacity=".9"/>
 </svg>

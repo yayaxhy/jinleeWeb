@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MAX_PLOTS, getFarmSeedDurationLabel, type FarmSeedTypeValue } from '@/lib/farmConfig';
+import { FARM_CROP_ASSETS, FARM_SCENE_ASSETS } from '@/lib/farmArt';
 import type { FarmCompanionEntry, FarmCompanionLists, FarmDashboard } from '@/lib/farm';
 
 const actionLabelMap: Record<string, string> = {
@@ -92,33 +93,6 @@ const plotScenePositions: Record<number, { left: string; top: string; depth: num
   8: { left: '84%', top: '36%', depth: 4 },
 };
 
-const cropStageAssetMap: Record<FarmSeedTypeValue, Record<'SPROUT' | 'YOUNG' | 'MATURE' | 'READY', string>> = {
-  WHEAT: {
-    SPROUT: '/farm/wheat-sprout.svg',
-    YOUNG: '/farm/wheat-young.svg',
-    MATURE: '/farm/wheat-mature.svg',
-    READY: '/farm/wheat-ready.svg',
-  },
-  ROSE: {
-    SPROUT: '/farm/rose-sprout.svg',
-    YOUNG: '/farm/rose-young.svg',
-    MATURE: '/farm/rose-mature.svg',
-    READY: '/farm/rose-ready.svg',
-  },
-  KOI_FLOWER: {
-    SPROUT: '/farm/koi-flower-sprout.svg',
-    YOUNG: '/farm/koi-flower-young.svg',
-    MATURE: '/farm/koi-flower-mature.svg',
-    READY: '/farm/koi-flower-ready.svg',
-  },
-  MYSTERY_FRUIT: {
-    SPROUT: '/farm/mystery-fruit-sprout.svg',
-    YOUNG: '/farm/mystery-fruit-young.svg',
-    MATURE: '/farm/mystery-fruit-mature.svg',
-    READY: '/farm/mystery-fruit-ready.svg',
-  },
-};
-
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
   seeds: { icon: '🌱', label: '种子袋' },
   exchange: { icon: '💰', label: '兑换所' },
@@ -139,9 +113,9 @@ function getSeedRarity(seed: FarmDashboard['seeds'][number]) {
     case 'MYSTERY_FRUIT':
       return {
         label: '史诗',
-        border: 'border-[#be8bff]/55',
-        glow: 'shadow-[0_16px_28px_rgba(126,80,198,0.18)]',
-        badge: 'text-[#7a46be] border-[#d6b8ff]/60 bg-[#f3eaff]',
+        border: 'border-[#d69c42]/60',
+        glow: 'shadow-[0_18px_30px_rgba(151,72,22,0.22)]',
+        badge: 'text-[#8f4a13] border-[#f0cd8a]/60 bg-[#fff0d0]',
       };
     case 'KOI_FLOWER':
       return {
@@ -160,21 +134,21 @@ function getSeedRarity(seed: FarmDashboard['seeds'][number]) {
     default:
       return {
         label: '基础',
-        border: 'border-[#94c4e9]/55',
-        glow: 'shadow-[0_16px_28px_rgba(89,137,189,0.14)]',
-        badge: 'text-[#4d6f97] border-[#c7ddf0]/60 bg-[#edf6fd]',
+        border: 'border-[#d2b57a]/50',
+        glow: 'shadow-[0_16px_28px_rgba(112,84,34,0.12)]',
+        badge: 'text-[#7b6131] border-[#ead7ad]/60 bg-[#fbf3dd]',
       };
   }
 }
 
 function getPlotAsset(entry: PlotCard) {
   if (!entry.unlocked) {
-    return { asset: '/farm/locked-plot.svg', className: 'scale-[0.98] opacity-85 drop-shadow-[0_18px_24px_rgba(0,0,0,0.18)]' };
+    return { asset: FARM_SCENE_ASSETS.plotLocked, className: 'scale-[0.98] opacity-85 drop-shadow-[0_18px_24px_rgba(0,0,0,0.18)]' };
   }
   if (!entry.plot || entry.status === 'EMPTY' || !entry.plot.seedType) {
-    return { asset: '/farm/plot-empty.svg', className: 'scale-[0.84] opacity-90 drop-shadow-[0_12px_16px_rgba(0,0,0,0.12)]' };
+    return { asset: FARM_SCENE_ASSETS.plotEmpty, className: 'scale-[0.84] opacity-90 drop-shadow-[0_12px_16px_rgba(0,0,0,0.12)]' };
   }
-  const asset = cropStageAssetMap[entry.plot.seedType][entry.plot.growthStage];
+  const asset = FARM_CROP_ASSETS[entry.plot.seedType][entry.plot.growthStage];
   const className =
     entry.plot.growthStage === 'READY'
       ? 'scale-[1.02] animate-[farmGlow_2.2s_ease-in-out_infinite] drop-shadow-[0_16px_24px_rgba(0,0,0,0.18)]'
@@ -498,12 +472,12 @@ export function FarmClient({ initialDashboard }: Props) {
       if (action === 'plant' && options?.seed && typeof payload.plotIndex === 'number') {
         pushFloatingReward(`已播种 ${options.seed.name}`, 'plant');
         pushSceneBurst(payload.plotIndex, 'plant');
-        pushPlantTransition(payload.plotIndex, cropStageAssetMap[options.seed.code].SPROUT);
+        pushPlantTransition(payload.plotIndex, FARM_CROP_ASSETS[options.seed.code].SPROUT);
         setActionResult({
           title: '播种完成',
           description: `${options.seed.name} 已种进 ${payload.plotIndex} 号地块。`,
           accent: 'green',
-          asset: cropStageAssetMap[options.seed.code].SPROUT,
+          asset: FARM_CROP_ASSETS[options.seed.code].SPROUT,
           badge: '播种成功',
           detailLines: [
             `成熟时间：${getFarmSeedDurationLabel(options.seed.durationMinutes)}`,
@@ -522,7 +496,7 @@ export function FarmClient({ initialDashboard }: Props) {
             ? `本轮净收 ${formatAmount(data.result.harvestCoins)} 金币，被偷走 ${formatAmount(data.result.stolenCoins)}。`
             : `本轮收获 ${formatAmount(data.result.harvestCoins)} 金币。`,
           accent: 'gold',
-          asset: options?.entry?.seedMeta ? cropStageAssetMap[options.entry.seedMeta.code].READY : '/farm/plot-harvested.svg',
+          asset: options?.entry?.seedMeta ? FARM_CROP_ASSETS[options.entry.seedMeta.code].READY : FARM_SCENE_ASSETS.plotHarvested,
           badge: '收获结算',
           detailLines: [
             `地块：${payload.plotIndex} 号`,
@@ -538,7 +512,7 @@ export function FarmClient({ initialDashboard }: Props) {
           title: '偷菜成功',
           description: `你从 ${viewDashboard.owner.displayName} 的 ${payload.plotIndex} 号地块带走了 ${formatAmount(data.result.stolenCoins)} 金币。`,
           accent: 'orange',
-          asset: options?.entry?.seedMeta ? cropStageAssetMap[options.entry.seedMeta.code].READY : '/farm/plot-harvested.svg',
+          asset: options?.entry?.seedMeta ? FARM_CROP_ASSETS[options.entry.seedMeta.code].READY : FARM_SCENE_ASSETS.plotHarvested,
           badge: '拜访战利品',
           detailLines: [
             `目标地块：${payload.plotIndex} 号`,
@@ -723,15 +697,15 @@ export function FarmClient({ initialDashboard }: Props) {
 
       <div className="mx-auto max-w-[1540px] px-3 py-3 sm:px-4 lg:px-6 lg:py-4">
         <section className="relative min-h-[calc(100vh-2rem)] overflow-hidden rounded-[42px] border border-[#e9c978]/70 bg-[linear-gradient(180deg,_#f4dfd1_0%,_#eed0b6_20%,_#8aa15d_48%,_#66773d_100%)] shadow-[0_28px_80px_rgba(72,23,16,0.28)]">
-          <Image src="/farm/manor-base.svg" alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+          <Image src={FARM_SCENE_ASSETS.manorBase} alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(127,20,17,0.38),_rgba(127,20,17,0.06),_transparent)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[44%] bg-[radial-gradient(circle_at_50%_8%,_rgba(255,248,224,0.88),_rgba(255,248,224,0.12)_46%,_transparent_62%)]" />
           <div className="pointer-events-none absolute inset-x-[12%] bottom-[5%] h-[26%] rounded-[50%] bg-[radial-gradient(circle,_rgba(245,223,159,0.14),_rgba(245,223,159,0.01)_72%,_transparent_76%)]" />
-          <Image src="/farm/cloud.svg" alt="" width={260} height={120} className="pointer-events-none absolute left-[8%] top-[5%] w-[18vw] min-w-[120px] max-w-[250px] opacity-95 [animation:farmCloudDrift_18s_ease-in-out_infinite]" />
-          <Image src="/farm/cloud.svg" alt="" width={220} height={110} className="pointer-events-none absolute right-[14%] top-[9%] w-[14vw] min-w-[100px] max-w-[210px] opacity-90 [animation:farmCloudDrift_21s_ease-in-out_infinite_reverse]" />
-          <Image src="/farm/cloud.svg" alt="" width={200} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[12vw] min-w-[90px] max-w-[180px] opacity-80 [animation:farmCloudDrift_24s_ease-in-out_infinite]" />
-          <Image src="/farm/butterfly.svg" alt="" width={72} height={72} className="pointer-events-none absolute left-[34%] top-[26%] w-[4vw] min-w-[36px] max-w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
-          <Image src="/farm/butterfly.svg" alt="" width={72} height={72} className="pointer-events-none absolute left-[62%] top-[34%] w-[3.8vw] min-w-[32px] max-w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
+          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={260} height={120} className="pointer-events-none absolute left-[8%] top-[5%] w-[18vw] min-w-[120px] max-w-[250px] opacity-95 [animation:farmCloudDrift_18s_ease-in-out_infinite]" />
+          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={220} height={110} className="pointer-events-none absolute right-[14%] top-[9%] w-[14vw] min-w-[100px] max-w-[210px] opacity-90 [animation:farmCloudDrift_21s_ease-in-out_infinite_reverse]" />
+          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={200} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[12vw] min-w-[90px] max-w-[180px] opacity-80 [animation:farmCloudDrift_24s_ease-in-out_infinite]" />
+          <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={72} height={72} className="pointer-events-none absolute left-[34%] top-[26%] w-[4vw] min-w-[36px] max-w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
+          <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={72} height={72} className="pointer-events-none absolute left-[62%] top-[34%] w-[3.8vw] min-w-[32px] max-w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute left-[17%] top-[31%] h-16 w-24 rounded-full border border-[#d8f8ff]/45 [animation:farmRippleFloat_6.5s_ease-in-out_infinite]" />
             <div className="absolute left-[21%] top-[33%] h-12 w-20 rounded-full border border-[#e7fbff]/42 [animation:farmRippleFloat_7.2s_ease-in-out_infinite_reverse]" />
@@ -852,7 +826,7 @@ export function FarmClient({ initialDashboard }: Props) {
                           <div className="pointer-events-none absolute inset-x-2 bottom-3 h-7 rounded-[50%] bg-[radial-gradient(circle,_rgba(73,48,16,0.55),_rgba(73,48,16,0.04)_72%)] blur-sm" />
                           <div className="pointer-events-none absolute inset-x-[6%] top-[16%] flex justify-center">
                             <div className="relative h-14 w-14 sm:h-16 sm:w-16">
-                              <Image src="/farm/wood-sign.svg" alt="" fill className="object-contain drop-shadow-[0_6px_8px_rgba(0,0,0,0.18)]" />
+                              <Image src={FARM_SCENE_ASSETS.woodSign} alt="" fill className="object-contain drop-shadow-[0_6px_8px_rgba(0,0,0,0.18)]" />
                               <span className="absolute inset-x-0 top-[28%] text-center text-[12px] font-black tracking-[0.18em] text-[#583514] sm:text-[13px]">{String(entry.plotIndex).padStart(2, '0')}</span>
                             </div>
                           </div>
@@ -860,14 +834,14 @@ export function FarmClient({ initialDashboard }: Props) {
                           {entry.status === 'READY' ? <span className="absolute right-3 top-3 rounded-full border border-[#ffe8b6]/45 bg-[linear-gradient(180deg,_rgba(255,227,153,0.96),_rgba(243,186,62,0.96))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#684108]">READY</span> : null}
                           {entry.status === 'READY' && !viewDashboard.owner.isSelf && !entry.plot?.canSteal ? <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[#ffd9b3]/35 bg-[linear-gradient(180deg,_rgba(131,63,23,0.95),_rgba(89,38,12,0.95))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ffe6c9]">已偷</span> : null}
                           <div className="pointer-events-none absolute inset-0">
-                            <Image src="/farm/plot-frame.svg" alt="" fill className={`object-contain drop-shadow-[0_22px_28px_rgba(0,0,0,0.24)] ${entry.highlight === 'ready' ? 'brightness-[1.06]' : entry.highlight === 'growing' ? 'brightness-[1.02]' : ''}`} />
+                            <Image src={FARM_SCENE_ASSETS.plotFrame} alt="" fill className={`object-contain drop-shadow-[0_22px_28px_rgba(0,0,0,0.24)] ${entry.highlight === 'ready' ? 'brightness-[1.06]' : entry.highlight === 'growing' ? 'brightness-[1.02]' : ''}`} />
                           </div>
                           <div className="relative flex h-[96px] w-[96px] items-end justify-center sm:h-[108px] sm:w-[108px]">
                             {entry.status === 'READY' ? <div className={`absolute inset-1 rounded-full ${viewDashboard.owner.isSelf ? 'bg-[radial-gradient(circle,_rgba(255,224,138,0.56),_rgba(255,224,138,0.06)_70%)]' : 'bg-[radial-gradient(circle,_rgba(255,174,120,0.42),_rgba(255,174,120,0.05)_70%)]'} animate-pulse`} /> : null}
                             {harvestTransition ? (
                               <>
                                 <div className="absolute inset-0">
-                                  <Image src="/farm/plot-harvested.svg" alt="" fill className="object-contain opacity-0" style={{ animation: 'farmHarvestFieldReset 0.8s ease-out forwards' }} />
+                                  <Image src={FARM_SCENE_ASSETS.plotHarvested} alt="" fill className="object-contain opacity-0" style={{ animation: 'farmHarvestFieldReset 0.8s ease-out forwards' }} />
                                 </div>
                                 <div className="absolute inset-0">
                                   <Image
@@ -961,7 +935,7 @@ export function FarmClient({ initialDashboard }: Props) {
                             <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[78px] w-[78px] items-center justify-center rounded-[24px] border transition sm:h-[84px] sm:w-[84px] ${selected ? 'border-[#f6cf77]/80 bg-[linear-gradient(180deg,_rgba(255,239,192,0.95),_rgba(235,190,79,0.95))] shadow-[0_18px_28px_rgba(53,30,9,0.26)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-[linear-gradient(180deg,_rgba(255,248,227,0.15),_rgba(255,230,162,0.08))] hover:border-[#f2cb74]/55 hover:bg-white/16` : 'border-dashed border-white/10 bg-black/12 opacity-45'}`}>
                               <span className="absolute inset-[4px] rounded-[20px] border border-[#f8e7bf]/12" />
                               {seed.unlocked ? <span className={`absolute right-2 top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.14em] ${rarity.badge}`}>{rarity.label}</span> : null}
-                              <div className="relative h-11 w-11 sm:h-12 sm:w-12"><Image src={cropStageAssetMap[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
+                              <div className="relative h-11 w-11 sm:h-12 sm:w-12"><Image src={FARM_CROP_ASSETS[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
                               <span className="absolute left-2 top-2 rounded-full bg-black/24 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.18em] text-[#ffe4a5]">{seed.unlockLevel}</span>
                               {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[24px] bg-black/24 text-xs font-semibold text-[#ffe2a5]">Lv.{seed.unlockLevel}</span> : null}
                               {selected ? <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#fff2ae] shadow-[0_0_12px_rgba(255,242,174,0.9)]" /> : null}
@@ -997,7 +971,7 @@ export function FarmClient({ initialDashboard }: Props) {
               <div className="rounded-[26px] border border-[#d8bf87]/38 bg-[linear-gradient(145deg,_rgba(255,250,236,0.95),_rgba(252,235,194,0.95))] p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
                 <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">当前选中</p>
                 <div className="mt-3 flex items-start gap-4">
-                  <div className="relative h-20 w-20 shrink-0"><Image src={cropStageAssetMap[currentSeed.code].READY} alt={currentSeed.name} fill className="object-contain" /></div>
+                  <div className="relative h-20 w-20 shrink-0"><Image src={FARM_CROP_ASSETS[currentSeed.code].READY} alt={currentSeed.name} fill className="object-contain" /></div>
                   <div>
                     <h3 className="text-2xl font-semibold tracking-[0.05em] text-[#35210a]">{currentSeed.name}</h3>
                     <p className="mt-2 text-sm leading-7 text-[#705529]">{currentSeed.description}</p>
@@ -1031,7 +1005,7 @@ export function FarmClient({ initialDashboard }: Props) {
                   <button key={seed.code} type="button" disabled={!seed.unlocked} onClick={() => setSelectedSeed(seed.code)} className={`w-full rounded-[26px] border p-4 text-left transition ${selected ? 'border-[#d39916] bg-[linear-gradient(145deg,_#fff3c7,_#ffe19a)] shadow-[0_16px_32px_rgba(211,153,22,0.12)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-white/72 hover:border-[#d39916]/50 hover:bg-[#fff8e7]` : 'border-dashed border-[#cbb68d]/35 bg-[#efe8d7] text-[#9d8e71]'}`}>
                     <div className="flex items-start gap-4">
                       <div className="relative h-16 w-16 shrink-0 rounded-[20px] border border-white/40 bg-[linear-gradient(180deg,_rgba(255,248,234,0.95),_rgba(249,233,194,0.95))] p-2">
-                        <Image src={cropStageAssetMap[seed.code].READY} alt={seed.name} fill className="object-contain p-2" />
+                        <Image src={FARM_CROP_ASSETS[seed.code].READY} alt={seed.name} fill className="object-contain p-2" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-3">
@@ -1222,7 +1196,7 @@ export function FarmClient({ initialDashboard }: Props) {
                 <div className="relative flex h-full min-h-[300px] flex-col items-center justify-center text-center">
                   <div className="rounded-full border border-white/35 bg-white/18 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8d6509]">地块 {activePlot.plotIndex}</div>
                   <div className="relative mt-5 flex h-56 w-56 items-center justify-center">
-                    <Image src="/farm/plot-frame.svg" alt="" fill className="object-contain opacity-95" />
+                    <Image src={FARM_SCENE_ASSETS.plotFrame} alt="" fill className="object-contain opacity-95" />
                     <Image src={getPlotAsset(activePlot).asset} alt={activePlot.title} fill className={`object-contain ${getPlotAsset(activePlot).className}`} />
                   </div>
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
