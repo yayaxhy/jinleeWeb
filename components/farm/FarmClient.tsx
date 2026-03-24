@@ -711,9 +711,17 @@ export function FarmClient({ initialDashboard }: Props) {
         }
       `}</style>
 
-      <div className="relative h-dvh w-screen overflow-hidden bg-[#2b1408]">
+      <div className="relative h-dvh w-screen overflow-hidden bg-[linear-gradient(180deg,_#f3dec2_0%,_#e6cda4_18%,_#97b18a_52%,_#5f7045_100%)]">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-x-0 top-0 h-[34%] bg-[radial-gradient(circle_at_50%_12%,_rgba(255,248,228,0.96),_rgba(255,248,228,0.16)_48%,_transparent_70%)]" />
+          <div className="absolute left-[-8%] top-[10%] h-[46%] w-[28%] rounded-[50%] bg-[radial-gradient(circle,_rgba(143,52,34,0.2),_rgba(143,52,34,0.02)_68%,_transparent_74%)] blur-3xl" />
+          <div className="absolute right-[-10%] top-[8%] h-[44%] w-[30%] rounded-[50%] bg-[radial-gradient(circle,_rgba(214,169,86,0.22),_rgba(214,169,86,0.03)_68%,_transparent_74%)] blur-3xl" />
+          <div className="absolute inset-x-[6%] bottom-[-8%] h-[34%] rounded-[50%] bg-[radial-gradient(circle,_rgba(94,121,84,0.46),_rgba(94,121,84,0.08)_62%,_transparent_76%)] blur-2xl" />
+          <div className="absolute inset-x-[10%] bottom-[4%] h-[8px] rounded-full bg-[linear-gradient(90deg,_transparent,_rgba(255,239,194,0.55),_transparent)] blur-md" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(61,27,12,0.06),_transparent_22%,_transparent_78%,_rgba(37,19,8,0.18))]" />
+        </div>
         <section
-          className="absolute left-1/2 top-1/2 overflow-hidden bg-[linear-gradient(180deg,_#f4dfd1_0%,_#eed0b6_20%,_#8aa15d_48%,_#66773d_100%)]"
+          className="absolute left-1/2 top-1/2 overflow-hidden rounded-[44px] border border-[#f2d492]/70 bg-[linear-gradient(180deg,_#f4dfd1_0%,_#eed0b6_20%,_#8aa15d_48%,_#66773d_100%)] shadow-[0_30px_80px_rgba(55,23,11,0.28)]"
           style={{
             width: `${SCENE_BASE_WIDTH}px`,
             height: `${SCENE_BASE_HEIGHT}px`,
@@ -721,6 +729,10 @@ export function FarmClient({ initialDashboard }: Props) {
             transformOrigin: 'center center',
           }}
         >
+          <div className="pointer-events-none absolute inset-[-18px] rounded-[56px] border border-[#fff0c7]/26" />
+          <div className="pointer-events-none absolute inset-[10px] rounded-[34px] border border-[#fff1c5]/22" />
+          <div className="pointer-events-none absolute -left-[8%] top-[16%] h-[62%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(130,41,28,0.18),_rgba(130,41,28,0.02)_68%,_transparent_74%)] blur-2xl" />
+          <div className="pointer-events-none absolute -right-[8%] top-[18%] h-[60%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(220,181,92,0.2),_rgba(220,181,92,0.02)_68%,_transparent_74%)] blur-2xl" />
           <Image src={FARM_SCENE_ASSETS.manorBase} alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(127,20,17,0.38),_rgba(127,20,17,0.06),_transparent)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[44%] bg-[radial-gradient(circle_at_50%_8%,_rgba(255,248,224,0.88),_rgba(255,248,224,0.12)_46%,_transparent_62%)]" />
