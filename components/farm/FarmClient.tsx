@@ -383,21 +383,23 @@ export function FarmClient({ initialDashboard }: Props) {
             ? currentSeed
               ? `准备播种 ${currentSeed.name}`
               : '先选一个种子'
-            : '这块地目前空着'
+            : '访客视角 · 这块地目前空着'
           : status === 'READY'
             ? viewDashboard.owner.isSelf
               ? '成熟完成，点击收获'
               : plot?.canSteal
-                ? '成熟完成，点击偷菜'
-                : '本轮已被偷过'
-            : `${stageLabelMap[plot?.growthStage ?? 'SPROUT']} · ${formatRemaining(plot?.remainingSeconds ?? 0)}`;
+                ? '访客视角 · 成熟完成，可偷菜'
+                : '访客视角 · 本轮已被偷过'
+            : viewDashboard.owner.isSelf
+              ? `${stageLabelMap[plot?.growthStage ?? 'SPROUT']} · ${formatRemaining(plot?.remainingSeconds ?? 0)}`
+              : `访客视角 · ${stageLabelMap[plot?.growthStage ?? 'SPROUT']} · ${formatRemaining(plot?.remainingSeconds ?? 0)}`;
       const tooltipLines = !unlocked
         ? ['庄园仍可继续扩地。', homeDashboard.summary.nextPlotCost ? `下一块地：${formatAmount(homeDashboard.summary.nextPlotCost)} 金币` : '已达到最大地块']
         : status === 'EMPTY'
-          ? [viewDashboard.owner.isSelf ? `当前种子：${currentSeed?.name ?? '未选择'}` : '这块地目前没有作物。', viewDashboard.owner.isSelf ? '点击地块直接播种。' : '空地没有可以偷的东西。']
+          ? [viewDashboard.owner.isSelf ? `当前种子：${currentSeed?.name ?? '未选择'}` : '访客视角下，这块地目前没有作物。', viewDashboard.owner.isSelf ? '点击地块直接播种。' : '空地没有可以偷的东西。']
           : status === 'READY'
-            ? [viewDashboard.owner.isSelf ? '作物已经成熟，点击收获。' : plot?.canSteal ? '这一轮可以偷菜。' : '这一轮已经被偷过。', seedMeta ? `预计产出：${formatAmount(seedMeta.minYieldCoins)} ~ ${formatAmount(seedMeta.maxYieldCoins)} 金币` : '等待结算产出。']
-            : [`剩余时间：${formatRemaining(plot?.remainingSeconds ?? 0)}`, `成长进度：${Math.round((plot?.progressRatio ?? 0) * 100)}%`];
+            ? [viewDashboard.owner.isSelf ? '作物已经成熟，点击收获。' : plot?.canSteal ? '访客视角：这一轮可以偷菜。' : '访客视角：这一轮已经被偷过。', seedMeta ? `预计产出：${formatAmount(seedMeta.minYieldCoins)} ~ ${formatAmount(seedMeta.maxYieldCoins)} 金币` : '等待结算产出。']
+            : [viewDashboard.owner.isSelf ? `剩余时间：${formatRemaining(plot?.remainingSeconds ?? 0)}` : `访客观察：${formatRemaining(plot?.remainingSeconds ?? 0)} 后成熟`, `成长进度：${Math.round((plot?.progressRatio ?? 0) * 100)}%`];
       const highlight = !unlocked ? 'locked' : status === 'EMPTY' ? 'idle' : status === 'READY' ? 'ready' : 'growing';
       return { plotIndex, unlocked, plot, status, seedMeta, title, subtitle, tooltipLines, highlight };
     });
@@ -703,6 +705,20 @@ export function FarmClient({ initialDashboard }: Props) {
           0% { opacity: 0; transform: translateY(18px) scale(0.94); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
+        @keyframes farmRippleFloat {
+          0% { opacity: 0.34; transform: scale(0.86); }
+          50% { opacity: 0.18; transform: scale(1); }
+          100% { opacity: 0.04; transform: scale(1.12); }
+        }
+        @keyframes farmLightPulse {
+          0%, 100% { opacity: 0.18; transform: scale(0.94); }
+          50% { opacity: 0.36; transform: scale(1.08); }
+        }
+        @keyframes farmLeafDrift {
+          0% { opacity: 0; transform: translate3d(0, -8px, 0) rotate(0deg); }
+          15% { opacity: 0.7; }
+          100% { opacity: 0; transform: translate3d(42px, 68px, 0) rotate(115deg); }
+        }
       `}</style>
 
       <div className="mx-auto max-w-[1540px] px-3 py-3 sm:px-4 lg:px-6 lg:py-4">
@@ -716,6 +732,15 @@ export function FarmClient({ initialDashboard }: Props) {
           <Image src="/farm/cloud.svg" alt="" width={200} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[12vw] min-w-[90px] max-w-[180px] opacity-80 [animation:farmCloudDrift_24s_ease-in-out_infinite]" />
           <Image src="/farm/butterfly.svg" alt="" width={72} height={72} className="pointer-events-none absolute left-[34%] top-[26%] w-[4vw] min-w-[36px] max-w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
           <Image src="/farm/butterfly.svg" alt="" width={72} height={72} className="pointer-events-none absolute left-[62%] top-[34%] w-[3.8vw] min-w-[32px] max-w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute left-[17%] top-[31%] h-16 w-24 rounded-full border border-[#d8f8ff]/45 [animation:farmRippleFloat_6.5s_ease-in-out_infinite]" />
+            <div className="absolute left-[21%] top-[33%] h-12 w-20 rounded-full border border-[#e7fbff]/42 [animation:farmRippleFloat_7.2s_ease-in-out_infinite_reverse]" />
+            <div className="absolute left-[48%] top-[22%] h-14 w-14 rounded-full bg-[radial-gradient(circle,_rgba(255,243,192,0.24),_rgba(255,243,192,0.02)_68%)] [animation:farmLightPulse_5.8s_ease-in-out_infinite]" />
+            <div className="absolute left-[64%] top-[28%] h-12 w-12 rounded-full bg-[radial-gradient(circle,_rgba(255,244,204,0.18),_rgba(255,244,204,0.02)_68%)] [animation:farmLightPulse_6.6s_ease-in-out_infinite_reverse]" />
+            <div className="absolute left-[39%] top-[19%] h-4 w-3 rounded-[80%_20%_75%_25%] bg-[linear-gradient(180deg,_rgba(180,91,55,0.86),_rgba(120,51,26,0.86))] [animation:farmLeafDrift_8.5s_linear_infinite]" />
+            <div className="absolute left-[58%] top-[17%] h-4 w-3 rounded-[30%_80%_25%_75%] bg-[linear-gradient(180deg,_rgba(214,141,71,0.82),_rgba(141,84,28,0.82))] [animation:farmLeafDrift_10s_linear_infinite_reverse]" />
+            <div className="absolute left-[74%] top-[24%] h-3.5 w-3 rounded-[70%_30%_70%_30%] bg-[linear-gradient(180deg,_rgba(168,89,42,0.8),_rgba(110,56,20,0.8))] [animation:farmLeafDrift_9.2s_linear_infinite]" />
+          </div>
           <div className="pointer-events-none absolute inset-x-[14%] bottom-[4.5%] h-[2px] bg-[linear-gradient(90deg,_transparent,_rgba(255,235,183,0.45),_transparent)]" />
 
           <div className="relative z-10 flex h-full min-h-[calc(100vh-2rem)] flex-col p-4 sm:p-5 lg:p-6">
