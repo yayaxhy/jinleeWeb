@@ -3,7 +3,7 @@ import type { FarmSeedTypeValue } from '@/lib/farmConfig';
 export type FarmGrowthStage = 'SPROUT' | 'YOUNG' | 'MATURE' | 'READY';
 
 export const FARM_SCENE_ASSETS = {
-  manorBase: '/farm/manor-base.svg',
+  manorBase: '/farm/generated/manor-base.webp',
   cloud: '/farm/cloud.svg',
   butterfly: '/farm/butterfly.svg',
   woodSign: '/farm/wood-sign.svg',
