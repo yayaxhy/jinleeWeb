@@ -186,7 +186,7 @@ function getPlotAsset(entry: PlotCard) {
   return { asset, className };
 }
 
-function ToolButton({ icon, label, active, onClick }: { icon: string; label: string; active: boolean; onClick: () => void }) {
+function ToolButton({ icon, label, active, onClick, muted = false }: { icon: string; label: string; active: boolean; onClick: () => void; muted?: boolean }) {
   return (
     <button
       type="button"
@@ -196,7 +196,9 @@ function ToolButton({ icon, label, active, onClick }: { icon: string; label: str
       className={`group relative flex h-16 w-16 items-center justify-center rounded-[26px] border transition ${
         active
           ? 'border-[#f4d17a] bg-[linear-gradient(180deg,_#a66d28,_#6a3b12)] text-white shadow-[0_18px_28px_rgba(53,30,9,0.3)]'
-          : 'border-[#f0d7a0]/35 bg-[linear-gradient(180deg,_rgba(176,117,51,0.92),_rgba(94,53,18,0.94))] text-[#fff1d0] hover:border-[#f0ca72]/7 hover:brightness-105'
+          : muted
+            ? 'border-[#f0d7a0]/18 bg-[linear-gradient(180deg,_rgba(113,69,30,0.58),_rgba(59,34,13,0.62))] text-[#efd7ad]/70 opacity-70'
+            : 'border-[#f0d7a0]/35 bg-[linear-gradient(180deg,_rgba(176,117,51,0.92),_rgba(94,53,18,0.94))] text-[#fff1d0] hover:border-[#f0ca72]/7 hover:brightness-105'
       }`}
     >
       <span className="absolute inset-[5px] rounded-[20px] border border-[#f9e5b6]/25" />
@@ -297,6 +299,12 @@ export function FarmClient({ initialDashboard }: Props) {
   useEffect(() => {
     setSeedPage((current) => Math.min(current, Math.max(0, totalSeedPages - 1)));
   }, [totalSeedPages]);
+
+  useEffect(() => {
+    if (isVisiting && activeDrawer !== 'none') {
+      setActiveDrawer('none');
+    }
+  }, [activeDrawer, isVisiting]);
 
   useEffect(() => {
     if (!friendModalOpen) return;
@@ -698,26 +706,17 @@ export function FarmClient({ initialDashboard }: Props) {
       `}</style>
 
       <div className="mx-auto max-w-[1540px] px-3 py-3 sm:px-4 lg:px-6 lg:py-4">
-        <section className="relative min-h-[calc(100vh-2rem)] overflow-hidden rounded-[42px] border border-[#e9c978]/70 bg-[linear-gradient(180deg,_#f8e0d1_0%,_#f6d7b1_18%,_#8aa95f_48%,_#6f8148_100%)] shadow-[0_28px_80px_rgba(72,23,16,0.28)]">
+        <section className="relative min-h-[calc(100vh-2rem)] overflow-hidden rounded-[42px] border border-[#e9c978]/70 bg-[linear-gradient(180deg,_#f4dfd1_0%,_#eed0b6_20%,_#8aa15d_48%,_#66773d_100%)] shadow-[0_28px_80px_rgba(72,23,16,0.28)]">
           <Image src="/farm/manor-base.svg" alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,_rgba(127,20,17,0.48),_rgba(127,20,17,0.08),_transparent)]" />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[42%] bg-[radial-gradient(circle_at_50%_10%,_rgba(255,251,229,0.92),_rgba(255,251,229,0.15)_45%,_transparent_60%)]" />
-          <div className="pointer-events-none absolute inset-x-[9%] bottom-[7%] h-[34%] rounded-[50%] bg-[radial-gradient(circle,_rgba(76,108,41,0.46),_rgba(76,108,41,0.06)_68%,_transparent_74%)] blur-sm" />
-          <div className="pointer-events-none absolute inset-x-[18%] bottom-[12%] h-[18%] rounded-[50%] border border-white/8 bg-[radial-gradient(circle,_rgba(251,234,186,0.18),_rgba(251,234,186,0.02)_72%,_transparent_76%)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(127,20,17,0.38),_rgba(127,20,17,0.06),_transparent)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[44%] bg-[radial-gradient(circle_at_50%_8%,_rgba(255,248,224,0.88),_rgba(255,248,224,0.12)_46%,_transparent_62%)]" />
+          <div className="pointer-events-none absolute inset-x-[12%] bottom-[5%] h-[26%] rounded-[50%] bg-[radial-gradient(circle,_rgba(245,223,159,0.14),_rgba(245,223,159,0.01)_72%,_transparent_76%)]" />
           <Image src="/farm/cloud.svg" alt="" width={260} height={120} className="pointer-events-none absolute left-[8%] top-[5%] w-[18vw] min-w-[120px] max-w-[250px] opacity-95 [animation:farmCloudDrift_18s_ease-in-out_infinite]" />
           <Image src="/farm/cloud.svg" alt="" width={220} height={110} className="pointer-events-none absolute right-[14%] top-[9%] w-[14vw] min-w-[100px] max-w-[210px] opacity-90 [animation:farmCloudDrift_21s_ease-in-out_infinite_reverse]" />
           <Image src="/farm/cloud.svg" alt="" width={200} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[12vw] min-w-[90px] max-w-[180px] opacity-80 [animation:farmCloudDrift_24s_ease-in-out_infinite]" />
-          <Image src="/farm/pond.svg" alt="pond" width={260} height={180} className="pointer-events-none absolute left-[5%] top-[18%] w-[20vw] min-w-[110px] max-w-[250px] opacity-85" />
-          <Image src="/farm/tree.svg" alt="tree" width={170} height={220} className="pointer-events-none absolute left-[2%] bottom-[18%] w-[11vw] min-w-[90px] max-w-[150px] opacity-95" />
-          <Image src="/farm/tree.svg" alt="tree" width={180} height={230} className="pointer-events-none absolute right-[8%] top-[17%] w-[11vw] min-w-[88px] max-w-[150px] scale-x-[-1] opacity-95" />
-          <Image src="/farm/barn.svg" alt="barn" width={260} height={220} className="pointer-events-none absolute right-[5%] bottom-[16%] w-[18vw] min-w-[130px] max-w-[250px] opacity-95" />
-          <Image src="/farm/mailbox.svg" alt="" width={140} height={180} className="pointer-events-none absolute left-[14%] bottom-[18%] w-[8vw] min-w-[70px] max-w-[120px] opacity-95" />
-          <Image src="/farm/windmill.svg" alt="" width={180} height={230} className="pointer-events-none absolute right-[18%] top-[19%] w-[10vw] min-w-[90px] max-w-[150px] opacity-90 [animation:farmWindmillSpin_18s_linear_infinite]" />
-          <Image src="/farm/fence.svg" alt="" width={420} height={110} className="pointer-events-none absolute bottom-[6%] left-[8%] w-[32vw] min-w-[240px] max-w-[460px] opacity-85" />
-          <Image src="/farm/fence.svg" alt="" width={420} height={110} className="pointer-events-none absolute bottom-[6%] right-[8%] w-[32vw] min-w-[240px] max-w-[460px] scale-x-[-1] opacity-85" />
           <Image src="/farm/butterfly.svg" alt="" width={72} height={72} className="pointer-events-none absolute left-[34%] top-[26%] w-[4vw] min-w-[36px] max-w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
           <Image src="/farm/butterfly.svg" alt="" width={72} height={72} className="pointer-events-none absolute left-[62%] top-[34%] w-[3.8vw] min-w-[32px] max-w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
-          <div className="pointer-events-none absolute inset-x-[14%] bottom-[4.5%] h-[2px] bg-[linear-gradient(90deg,_transparent,_rgba(255,235,183,0.65),_transparent)]" />
+          <div className="pointer-events-none absolute inset-x-[14%] bottom-[4.5%] h-[2px] bg-[linear-gradient(90deg,_transparent,_rgba(255,235,183,0.45),_transparent)]" />
 
           <div className="relative z-10 flex h-full min-h-[calc(100vh-2rem)] flex-col p-4 sm:p-5 lg:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -770,7 +769,9 @@ export function FarmClient({ initialDashboard }: Props) {
             )}
 
             <div className="relative mt-4 flex-1 overflow-hidden rounded-[38px] border border-[#f5dcaa]/35 bg-[linear-gradient(180deg,_rgba(210,231,255,0.18),_rgba(65,90,28,0.08))] shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]">
-              <div className="absolute left-4 top-4 z-20 rounded-[22px] border border-[#f6ddb0]/28 bg-[linear-gradient(180deg,_rgba(87,20,14,0.82),_rgba(54,17,12,0.72))] px-4 py-3 text-xs tracking-[0.18em] text-[#fbe5b0] backdrop-blur-sm">{currentSeed ? `已选种子 · ${currentSeed.name}` : '点击下方图标先选种子'}</div>
+              <div className="absolute left-4 top-4 z-20 rounded-[22px] border border-[#f6ddb0]/28 bg-[linear-gradient(180deg,_rgba(87,20,14,0.82),_rgba(54,17,12,0.72))] px-4 py-3 text-xs tracking-[0.18em] text-[#fbe5b0] backdrop-blur-sm">
+                {isVisiting ? '访客视角 · 主庄园工具已收起' : currentSeed ? `已选种子 · ${currentSeed.name}` : '点击下方图标先选种子'}
+              </div>
               {isVisiting ? (
                 <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-[24px] border border-[#f6ddb0]/38 bg-[linear-gradient(180deg,_rgba(125,24,18,0.92),_rgba(86,18,14,0.88))] px-5 py-3 text-center text-[#fff4d3] shadow-[0_18px_34px_rgba(69,18,15,0.22)] backdrop-blur-sm">
                   <p className="text-[10px] uppercase tracking-[0.32em] text-[#f7d58c]">Visitor Mode</p>
@@ -779,12 +780,26 @@ export function FarmClient({ initialDashboard }: Props) {
                 </div>
               ) : null}
               <div className="absolute right-4 top-4 z-20 flex flex-col gap-2 lg:hidden">
-                <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
-                {(Object.keys(drawerMeta) as Array<Exclude<DrawerKey, 'none'>>).map((key) => <ToolButton key={key} icon={drawerMeta[key].icon} label={drawerMeta[key].label} active={activeDrawer === key} onClick={() => setActiveDrawer((current) => (current === key ? 'none' : key))} />)}
+                <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} muted={isVisiting} />
+                {!isVisiting ? (
+                  (Object.keys(drawerMeta) as Array<Exclude<DrawerKey, 'none'>>).map((key) => <ToolButton key={key} icon={drawerMeta[key].icon} label={drawerMeta[key].label} active={activeDrawer === key} onClick={() => setActiveDrawer((current) => (current === key ? 'none' : key))} />)
+                ) : (
+                  <div className="rounded-[20px] border border-[#efd7a4]/18 bg-[linear-gradient(180deg,_rgba(67,35,14,0.62),_rgba(40,21,7,0.72))] px-3 py-3 text-center text-[10px] uppercase tracking-[0.24em] text-[#ffe5b5]/70">
+                    种子袋 / 兑换所 / 日志
+                    <div className="mt-1 text-[9px] tracking-[0.16em] text-[#f4ddb3]/55">访客模式已弱化显示</div>
+                  </div>
+                )}
               </div>
               <div className="absolute right-5 top-5 z-20 hidden flex-col gap-3 lg:flex">
-                <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
-                {(Object.keys(drawerMeta) as Array<Exclude<DrawerKey, 'none'>>).map((key) => <ToolButton key={key} icon={drawerMeta[key].icon} label={drawerMeta[key].label} active={activeDrawer === key} onClick={() => setActiveDrawer((current) => (current === key ? 'none' : key))} />)}
+                <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} muted={isVisiting} />
+                {!isVisiting ? (
+                  (Object.keys(drawerMeta) as Array<Exclude<DrawerKey, 'none'>>).map((key) => <ToolButton key={key} icon={drawerMeta[key].icon} label={drawerMeta[key].label} active={activeDrawer === key} onClick={() => setActiveDrawer((current) => (current === key ? 'none' : key))} />)
+                ) : (
+                  <div className="w-28 rounded-[22px] border border-[#efd7a4]/18 bg-[linear-gradient(180deg,_rgba(67,35,14,0.62),_rgba(40,21,7,0.72))] px-3 py-3 text-center text-[10px] uppercase tracking-[0.24em] text-[#ffe5b5]/70">
+                    主庄园工具
+                    <div className="mt-1 text-[9px] tracking-[0.16em] text-[#f4ddb3]/55">访客模式收起</div>
+                  </div>
+                )}
               </div>
 
               <div className="absolute inset-x-0 top-[12%] bottom-[16%]">
@@ -895,37 +910,49 @@ export function FarmClient({ initialDashboard }: Props) {
               </div>
 
               <div className="absolute inset-x-4 bottom-4 z-20 flex items-center justify-center">
-                <div className="w-full max-w-4xl rounded-[30px] border border-[#f1d59f]/28 bg-[linear-gradient(180deg,_rgba(89,50,17,0.92),_rgba(46,24,7,0.9))] px-4 py-4 shadow-[0_18px_36px_rgba(14,8,3,0.24)] backdrop-blur-sm">
+                <div className={`w-full max-w-4xl rounded-[30px] border px-4 py-4 shadow-[0_18px_36px_rgba(14,8,3,0.24)] backdrop-blur-sm ${isVisiting ? 'border-[#f1d59f]/14 bg-[linear-gradient(180deg,_rgba(76,41,14,0.54),_rgba(39,20,6,0.58))]' : 'border-[#f1d59f]/28 bg-[linear-gradient(180deg,_rgba(89,50,17,0.92),_rgba(46,24,7,0.9))]'}`}>
                   <div className="rounded-[24px] border border-[#f8e5bc]/12 px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="hidden sm:block">
-                        <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]">庄园背包</p>
-                        <p className="mt-1 text-sm text-[#fff2c7]/82">点击物品栏切换当前种子，再对地块执行播种。</p>
+                    {isVisiting ? (
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]/80">访客模式</p>
+                          <p className="mt-1 text-sm text-[#fff2c7]/72">已收起你的种子袋和兑换入口。当前只保留拜访、观察与偷菜相关操作。</p>
+                        </div>
+                        <button type="button" onClick={() => loadTargetFarm()} className="rounded-full border border-[#e4ca8f]/28 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/16">
+                          返回主庄园
+                        </button>
                       </div>
-                      <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
-                      {pagedSeeds.map((seed) => {
-                        const rarity = getSeedRarity(seed);
-                        const selected = seed.code === selectedSeed;
-                        return (
-                          <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[78px] w-[78px] items-center justify-center rounded-[24px] border transition sm:h-[84px] sm:w-[84px] ${selected ? 'border-[#f6cf77]/80 bg-[linear-gradient(180deg,_rgba(255,239,192,0.95),_rgba(235,190,79,0.95))] shadow-[0_18px_28px_rgba(53,30,9,0.26)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-[linear-gradient(180deg,_rgba(255,248,227,0.15),_rgba(255,230,162,0.08))] hover:border-[#f2cb74]/55 hover:bg-white/16` : 'border-dashed border-white/10 bg-black/12 opacity-45'}`}>
-                            <span className="absolute inset-[4px] rounded-[20px] border border-[#f8e7bf]/12" />
-                            {seed.unlocked ? <span className={`absolute right-2 top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.14em] ${rarity.badge}`}>{rarity.label}</span> : null}
-                            <div className="relative h-11 w-11 sm:h-12 sm:w-12"><Image src={cropStageAssetMap[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
-                            <span className="absolute left-2 top-2 rounded-full bg-black/24 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.18em] text-[#ffe4a5]">{seed.unlockLevel}</span>
-                            {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[24px] bg-black/24 text-xs font-semibold text-[#ffe2a5]">Lv.{seed.unlockLevel}</span> : null}
-                            {selected ? <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#fff2ae] shadow-[0_0_12px_rgba(255,242,174,0.9)]" /> : null}
-                            <span className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-full border border-[#e4ca8f]/35 bg-[#2a1606]/94 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffe4a5] lg:group-hover:block">{seed.name}</span>
-                          </button>
-                        );
-                      })}
+                    ) : (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="hidden sm:block">
+                          <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]">庄园背包</p>
+                          <p className="mt-1 text-sm text-[#fff2c7]/82">点击物品栏切换当前种子，再对地块执行播种。</p>
+                        </div>
+                        <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
+                        {pagedSeeds.map((seed) => {
+                          const rarity = getSeedRarity(seed);
+                          const selected = seed.code === selectedSeed;
+                          return (
+                            <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[78px] w-[78px] items-center justify-center rounded-[24px] border transition sm:h-[84px] sm:w-[84px] ${selected ? 'border-[#f6cf77]/80 bg-[linear-gradient(180deg,_rgba(255,239,192,0.95),_rgba(235,190,79,0.95))] shadow-[0_18px_28px_rgba(53,30,9,0.26)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-[linear-gradient(180deg,_rgba(255,248,227,0.15),_rgba(255,230,162,0.08))] hover:border-[#f2cb74]/55 hover:bg-white/16` : 'border-dashed border-white/10 bg-black/12 opacity-45'}`}>
+                              <span className="absolute inset-[4px] rounded-[20px] border border-[#f8e7bf]/12" />
+                              {seed.unlocked ? <span className={`absolute right-2 top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.14em] ${rarity.badge}`}>{rarity.label}</span> : null}
+                              <div className="relative h-11 w-11 sm:h-12 sm:w-12"><Image src={cropStageAssetMap[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
+                              <span className="absolute left-2 top-2 rounded-full bg-black/24 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.18em] text-[#ffe4a5]">{seed.unlockLevel}</span>
+                              {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[24px] bg-black/24 text-xs font-semibold text-[#ffe2a5]">Lv.{seed.unlockLevel}</span> : null}
+                              {selected ? <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#fff2ae] shadow-[0_0_12px_rgba(255,242,174,0.9)]" /> : null}
+                              <span className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-full border border-[#e4ca8f]/35 bg-[#2a1606]/94 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffe4a5] lg:group-hover:block">{seed.name}</span>
+                            </button>
+                          );
+                        })}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button type="button" disabled={visibleSeedPage === 0} onClick={() => setSeedPage((current) => Math.max(0, current - 1))} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18 disabled:opacity-40">‹</button>
+                          <span className="text-[11px] uppercase tracking-[0.24em] text-[#f4d38a]">{visibleSeedPage + 1}/{totalSeedPages}</span>
+                          <button type="button" disabled={visibleSeedPage >= totalSeedPages - 1} onClick={() => setSeedPage((current) => Math.min(totalSeedPages - 1, current + 1))} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18 disabled:opacity-40">›</button>
+                          <button type="button" onClick={() => setActiveDrawer('seeds')} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18">打开种子袋</button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" disabled={visibleSeedPage === 0} onClick={() => setSeedPage((current) => Math.max(0, current - 1))} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18 disabled:opacity-40">‹</button>
-                        <span className="text-[11px] uppercase tracking-[0.24em] text-[#f4d38a]">{visibleSeedPage + 1}/{totalSeedPages}</span>
-                        <button type="button" disabled={visibleSeedPage >= totalSeedPages - 1} onClick={() => setSeedPage((current) => Math.min(totalSeedPages - 1, current + 1))} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18 disabled:opacity-40">›</button>
-                        <button type="button" onClick={() => setActiveDrawer('seeds')} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18">打开种子袋</button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>

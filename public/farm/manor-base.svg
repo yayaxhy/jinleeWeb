@@ -1,48 +1,123 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 980" fill="none">
   <defs>
     <linearGradient id="sky" x1="800" y1="0" x2="800" y2="980" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#D8F1FF"/>
-      <stop offset="0.22" stop-color="#BDE4FF"/>
-      <stop offset="0.55" stop-color="#8CB866"/>
-      <stop offset="1" stop-color="#657943"/>
+      <stop stop-color="#F7E3D1"/>
+      <stop offset="0.2" stop-color="#F1D7B3"/>
+      <stop offset="0.5" stop-color="#B9D7BF"/>
+      <stop offset="0.78" stop-color="#86A86C"/>
+      <stop offset="1" stop-color="#66753D"/>
     </linearGradient>
-    <radialGradient id="sunGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(800 120) rotate(90) scale(220 520)">
-      <stop stop-color="#FFF7CC" stop-opacity=".95"/>
-      <stop offset="1" stop-color="#FFF7CC" stop-opacity="0"/>
+    <radialGradient id="sunGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(800 112) rotate(90) scale(230 620)">
+      <stop stop-color="#FFF9D7" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#FFF9D7" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="path" x1="800" y1="240" x2="800" y2="760" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#B58546" stop-opacity=".8"/>
-      <stop offset="1" stop-color="#7E5525" stop-opacity=".78"/>
+    <linearGradient id="terrace" x1="800" y1="208" x2="800" y2="734" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C28A43"/>
+      <stop offset="1" stop-color="#87511E"/>
     </linearGradient>
-    <linearGradient id="fieldEdge" x1="800" y1="320" x2="800" y2="780" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#9E6B30" stop-opacity=".55"/>
-      <stop offset="1" stop-color="#6A4317" stop-opacity=".52"/>
+    <linearGradient id="terraceShade" x1="800" y1="260" x2="800" y2="740" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#85511F" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#563313" stop-opacity=".58"/>
     </linearGradient>
-    <radialGradient id="groundFade" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(800 760) rotate(90) scale(170 520)">
-      <stop stop-color="#9BC36C" stop-opacity=".45"/>
-      <stop offset="1" stop-color="#9BC36C" stop-opacity="0"/>
-    </radialGradient>
+    <linearGradient id="water" x1="190" y1="220" x2="340" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9F7FF"/>
+      <stop offset="0.55" stop-color="#7FD1F2"/>
+      <stop offset="1" stop-color="#4A8CB4"/>
+    </linearGradient>
+    <linearGradient id="houseBody" x1="1190" y1="290" x2="1190" y2="580" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B55A30"/>
+      <stop offset="1" stop-color="#6C2A16"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="1195" y1="252" x2="1195" y2="388" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7D1815"/>
+      <stop offset="1" stop-color="#430C0C"/>
+    </linearGradient>
+    <linearGradient id="bridge" x1="352" y1="360" x2="540" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8C1516"/>
+      <stop offset="1" stop-color="#5F0A0A"/>
+    </linearGradient>
+    <linearGradient id="fenceWood" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#F6DEAB"/>
+      <stop offset="1" stop-color="#A66B2A"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="160%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#2C1308" flood-opacity=".18"/>
+    </filter>
   </defs>
+
   <rect width="1600" height="980" fill="url(#sky)"/>
   <rect width="1600" height="980" fill="url(#sunGlow)"/>
-  <path d="M90 540C280 430 430 420 580 500c98 52 167 58 254 8 111-64 240-71 405 9 111 55 212 56 281 24v302H90V540Z" fill="#6F8A48" fill-opacity=".46"/>
-  <ellipse cx="800" cy="790" rx="510" ry="170" fill="url(#groundFade)"/>
-  <path d="M330 332 800 220l470 112-470 112z" fill="#B7864B" fill-opacity=".52"/>
-  <path d="M345 340 800 240l455 100-455 100z" stroke="#F4D99C" stroke-opacity=".42" stroke-width="8" stroke-linejoin="round"/>
-  <path d="M420 470 800 372l380 98-380 98z" fill="#AE7A3C" fill-opacity=".48"/>
-  <path d="M434 476 800 386l366 90-366 90z" stroke="#EFCF8A" stroke-opacity=".34" stroke-width="7" stroke-linejoin="round"/>
-  <path d="M494 606 800 524l306 82-306 82z" fill="#9A662F" fill-opacity=".44"/>
-  <path d="M507 610 800 538l293 72-293 72z" stroke="#E4C77C" stroke-opacity=".3" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M690 262 800 236l110 26-110 28z" fill="#F3DFB4" fill-opacity=".2"/>
-  <path d="M648 416 800 381l152 35-152 38z" fill="#F3DFB4" fill-opacity=".15"/>
-  <path d="M640 562 800 526l160 36-160 40z" fill="#F3DFB4" fill-opacity=".12"/>
-  <path d="M742 182 800 150l58 32-58 34z" fill="#D5EEFA" fill-opacity=".65"/>
-  <path d="M186 602c52-49 115-67 189-55 44 7 92 30 125 64-76 22-132 59-175 108-76-14-125-49-149-117Z" fill="#7B9955" fill-opacity=".5"/>
-  <path d="M1122 602c52-49 115-67 189-55 44 7 92 30 125 64-76 22-132 59-175 108-76-14-125-49-149-117Z" fill="#7B9955" fill-opacity=".5"/>
-  <path d="M785 690c24-32 56-52 96-58 60-10 124 14 181 70-57 44-92 89-109 138H672c16-55 54-104 113-150Z" fill="#6A8441" fill-opacity=".42"/>
-  <path d="M320 706c124-32 279-22 415 24" stroke="url(#path)" stroke-width="42" stroke-linecap="round" opacity=".52"/>
-  <path d="M1268 710c-122-30-256-26-378 12" stroke="url(#path)" stroke-width="40" stroke-linecap="round" opacity=".46"/>
-  <path d="M338 332 800 220l462 112" stroke="url(#fieldEdge)" stroke-width="18" stroke-linecap="round" opacity=".42"/>
-  <path d="M430 470 800 372l370 98" stroke="url(#fieldEdge)" stroke-width="16" stroke-linecap="round" opacity=".35"/>
-  <path d="M506 606 800 524l294 82" stroke="url(#fieldEdge)" stroke-width="14" stroke-linecap="round" opacity=".3"/>
+
+  <path d="M0 530C216 410 441 404 628 496c101 50 170 53 257 8 119-62 251-74 425 15 113 58 223 61 290 25v306H0V530Z" fill="#779452" fill-opacity=".48"/>
+  <ellipse cx="800" cy="788" rx="545" ry="178" fill="#6E8444" fill-opacity=".22"/>
+
+  <g opacity=".95" filter="url(#softShadow)">
+    <path d="M302 318 800 198l498 120-498 120z" fill="url(#terrace)" fill-opacity=".88"/>
+    <path d="M322 330 800 220l478 110-478 110z" stroke="#F8E2AE" stroke-opacity=".46" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M392 454 800 354l408 100-408 100z" fill="url(#terrace)" fill-opacity=".8"/>
+    <path d="M410 463 800 371l390 92-390 92z" stroke="#F5DA97" stroke-opacity=".38" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M476 596 800 516l324 80-324 82z" fill="url(#terrace)" fill-opacity=".72"/>
+    <path d="M492 602 800 530l308 72-308 74z" stroke="#EBCB82" stroke-opacity=".34" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M302 318 800 198l498 120" stroke="url(#terraceShade)" stroke-width="20" stroke-linecap="round" opacity=".42"/>
+    <path d="M392 454 800 354l408 100" stroke="url(#terraceShade)" stroke-width="18" stroke-linecap="round" opacity=".34"/>
+    <path d="M476 596 800 516l324 80" stroke="url(#terraceShade)" stroke-width="16" stroke-linecap="round" opacity=".28"/>
+  </g>
+
+  <g opacity=".95">
+    <path d="M120 792h1360" stroke="#FBE7B5" stroke-opacity=".4" stroke-width="4" stroke-linecap="round"/>
+    <path d="M160 748h1280" stroke="#FFEFC7" stroke-opacity=".18" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(142 238)" filter="url(#softShadow)">
+    <path d="M0 96c44-52 142-79 232-54 53 15 100 44 135 87-26 40-37 78-33 114-52 16-96 24-144 23-92-3-159-31-190-93-18-34-18-54 0-77Z" fill="url(#water)"/>
+    <path d="M68 80c42-34 106-52 168-41" stroke="#FFFFFF" stroke-opacity=".38" stroke-width="10" stroke-linecap="round"/>
+    <path d="M96 170c46 18 106 19 166 4" stroke="#FFFFFF" stroke-opacity=".22" stroke-width="8" stroke-linecap="round"/>
+    <path d="M164 104 252 104" stroke="url(#bridge)" stroke-width="18" stroke-linecap="round"/>
+    <path d="M182 90c15 36 52 54 84 58" stroke="#D57E47" stroke-width="8" stroke-linecap="round"/>
+    <path d="M218 90c-15 36-52 54-84 58" stroke="#D57E47" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(1036 206)" filter="url(#softShadow)">
+    <path d="M42 92 156 32l114 60-114 32z" fill="url(#roof)"/>
+    <path d="M22 118 156 48l134 70-134 38z" fill="#8F1E1D"/>
+    <path d="M64 152h184v146H64z" rx="18" fill="url(#houseBody)"/>
+    <path d="M52 160h208" stroke="#F2CF91" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/>
+    <rect x="100" y="206" width="42" height="92" rx="10" fill="#F4D194" fill-opacity=".7"/>
+    <rect x="172" y="190" width="44" height="46" rx="10" fill="#F8E3B6" fill-opacity=".72"/>
+    <rect x="74" y="190" width="44" height="46" rx="10" fill="#F8E3B6" fill-opacity=".72"/>
+    <path d="M156 30v-42" stroke="#6A2A16" stroke-width="10" stroke-linecap="round"/>
+    <path d="M146 0h20" stroke="#6A2A16" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <g opacity=".92" filter="url(#softShadow)">
+    <g transform="translate(178 614)">
+      <rect x="0" y="40" width="18" height="64" rx="8" fill="url(#fenceWood)"/>
+      <rect x="52" y="26" width="18" height="82" rx="8" fill="url(#fenceWood)"/>
+      <rect x="104" y="34" width="18" height="74" rx="8" fill="url(#fenceWood)"/>
+      <rect x="156" y="18" width="18" height="92" rx="8" fill="url(#fenceWood)"/>
+      <path d="M10 70h162" stroke="#F8E6B6" stroke-opacity=".65" stroke-width="12" stroke-linecap="round"/>
+      <path d="M10 95h162" stroke="#C48740" stroke-opacity=".72" stroke-width="12" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(1224 614)">
+      <rect x="0" y="40" width="18" height="64" rx="8" fill="url(#fenceWood)"/>
+      <rect x="52" y="26" width="18" height="82" rx="8" fill="url(#fenceWood)"/>
+      <rect x="104" y="34" width="18" height="74" rx="8" fill="url(#fenceWood)"/>
+      <rect x="156" y="18" width="18" height="92" rx="8" fill="url(#fenceWood)"/>
+      <path d="M10 70h162" stroke="#F8E6B6" stroke-opacity=".65" stroke-width="12" stroke-linecap="round"/>
+      <path d="M10 95h162" stroke="#C48740" stroke-opacity=".72" stroke-width="12" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <g opacity=".9" filter="url(#softShadow)">
+    <path d="M186 636c34-58 80-95 138-112 38-11 75-10 114 4-11 37-4 74 18 111-46 22-94 34-146 35-58 1-101-11-124-38Z" fill="#6E8A43"/>
+    <path d="M1220 244c20-45 61-78 118-95 33-10 67-9 104 2 7 32 22 59 46 82-28 15-61 23-102 24-71 3-126-1-166-13Z" fill="#7D9954" fill-opacity=".88"/>
+    <path d="M1378 662c18-50 56-89 112-113 43-18 88-23 134-16-6 44 2 83 26 118-55 18-111 27-162 24-52-2-88-7-110-13Z" fill="#6D8847"/>
+  </g>
+
+  <g opacity=".82">
+    <circle cx="756" cy="192" r="10" fill="#FFF6D9"/>
+    <circle cx="790" cy="176" r="8" fill="#FFF6D9"/>
+    <circle cx="830" cy="196" r="9" fill="#FFF6D9"/>
+    <circle cx="812" cy="222" r="7" fill="#FFF6D9"/>
+  </g>
 </svg>
