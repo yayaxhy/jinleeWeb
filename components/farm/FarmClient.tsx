@@ -31,6 +31,17 @@ const formatRemaining = (remainingSeconds: number) => {
 type Props = { initialDashboard: FarmDashboard };
 type PlotStatus = 'LOCKED' | 'EMPTY' | 'GROWING' | 'READY';
 
+const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
+  1: { left: '10%', top: '16%', depth: 1 },
+  2: { left: '34%', top: '8%', depth: 2 },
+  3: { left: '58%', top: '16%', depth: 1 },
+  4: { left: '22%', top: '34%', depth: 3 },
+  5: { left: '46%', top: '26%', depth: 4 },
+  6: { left: '70%', top: '34%', depth: 3 },
+  7: { left: '34%', top: '52%', depth: 5 },
+  8: { left: '58%', top: '44%', depth: 4 },
+};
+
 const cropVisualMap: Partial<
   Record<FarmSeedTypeValue, { cropEmoji: string; seedEmoji: string; cropAsset: string; sproutAsset: string }>
 > = {
@@ -72,6 +83,7 @@ function SectionCard({ eyebrow, title, children, className = '' }: { eyebrow: st
 
 export function FarmClient({ initialDashboard }: Props) {
   const [dashboard, setDashboard] = useState(initialDashboard);
+  const [selectedPlotIndex, setSelectedPlotIndex] = useState(1);
   const [selectedSeed, setSelectedSeed] = useState<FarmSeedTypeValue | null>(initialDashboard.seeds.find((seed) => seed.unlocked)?.code ?? null);
   const [balanceAmount, setBalanceAmount] = useState('1');
   const [pointAmount, setPointAmount] = useState('100');
@@ -92,6 +104,61 @@ export function FarmClient({ initialDashboard }: Props) {
       return { plotIndex, unlocked: plotIndex <= dashboard.summary.unlockedPlots, plot: map.get(plotIndex) ?? null };
     });
   }, [dashboard.plots, dashboard.summary.unlockedPlots]);
+
+  const currentSeed = dashboard.seeds.find((seed) => seed.code === selectedSeed) ?? null;
+
+  const plotCards = useMemo(() => {
+    return plotsByIndex.map(({ plotIndex, unlocked, plot }) => {
+      const status: PlotStatus = unlocked ? plot?.status ?? 'EMPTY' : 'LOCKED';
+      const cropVisual = plot?.seedType ? cropVisualMap[plot.seedType] : null;
+      const seedMeta = plot?.seedType ? dashboard.seeds.find((seed) => seed.code === plot.seedType) ?? null : null;
+      const statusLabel = status === 'LOCKED' ? '待解锁' : status === 'EMPTY' ? '空地' : status === 'GROWING' ? '生长中' : '可收获';
+      const soilClass = status === 'LOCKED'
+        ? 'bg-[linear-gradient(180deg,_#b9a47b,_#927047)] opacity-60'
+        : status === 'EMPTY'
+          ? 'bg-[linear-gradient(180deg,_#8f6237,_#5e3818)]'
+          : status === 'GROWING'
+            ? 'bg-[linear-gradient(180deg,_#94683d,_#613916)]'
+            : 'bg-[linear-gradient(180deg,_#9c6c3e,_#6b3f17)]';
+      const panelClass = status === 'LOCKED'
+        ? 'border-dashed border-[#cdb27b]/45 bg-[linear-gradient(180deg,_rgba(245,235,212,0.95),_rgba(227,211,180,0.95))]'
+        : status === 'EMPTY'
+          ? 'border-[#d9bf8d]/45 bg-[linear-gradient(180deg,_rgba(255,252,244,0.96),_rgba(248,236,204,0.95))]'
+          : status === 'GROWING'
+            ? 'border-[#d0b777]/55 bg-[linear-gradient(180deg,_rgba(255,249,225,0.98),_rgba(240,225,176,0.96))]'
+            : 'border-[#f0bf36]/70 bg-[linear-gradient(180deg,_rgba(255,248,215,1),_rgba(255,228,141,0.98))]';
+      const sceneBaseClass = status === 'LOCKED'
+        ? 'border-[#c7b08a]/35 bg-[linear-gradient(180deg,_#c9bb94,_#a38857)]'
+        : status === 'EMPTY'
+          ? 'border-[#a06b37]/45 bg-[linear-gradient(180deg,_#9f764b,_#6c451e)]'
+          : status === 'GROWING'
+            ? 'border-[#8a6a2c]/45 bg-[linear-gradient(180deg,_#a17b43,_#6a481a)]'
+            : 'border-[#d7a728]/55 bg-[linear-gradient(180deg,_#cb9740,_#83531b)]';
+      const title = !unlocked ? '待解锁地块' : seedMeta?.name ?? '空地';
+      const summaryLines = !unlocked
+        ? ['解锁更多地块后，这里会加入新的作物位置。']
+        : status === 'EMPTY'
+          ? [`当前已选种子：${currentSeed?.name ?? '未选择'}`, '选好右侧种子后，就能直接播种在这里。']
+          : status === 'GROWING'
+            ? [`成熟倒计时：${formatRemaining(plot?.remainingSeconds ?? 0)}`, `预计成熟时间：${plot?.readyAt ? new Date(plot.readyAt).toLocaleString('zh-CN') : '—'}`]
+            : ['作物已成熟，直接收获即可回收金币和经验。', `预计收获区间：${seedMeta ? `${formatAmount(seedMeta.minYieldCoins)} ~ ${formatAmount(seedMeta.maxYieldCoins)} 金币` : '—'}`];
+
+      return {
+        plotIndex,
+        unlocked,
+        plot,
+        status,
+        cropVisual,
+        seedMeta,
+        statusLabel,
+        soilClass,
+        panelClass,
+        sceneBaseClass,
+        title,
+        summaryLines,
+      };
+    });
+  }, [plotsByIndex, dashboard.seeds, currentSeed]);
 
   const runAction = async (action: string, payload: Record<string, unknown>, key: string) => {
     setLoadingKey(key);
@@ -114,7 +181,7 @@ export function FarmClient({ initialDashboard }: Props) {
     }
   };
 
-  const currentSeed = dashboard.seeds.find((seed) => seed.code === selectedSeed) ?? null;
+  const selectedPlotEntry = plotCards.find((item) => item.plotIndex === selectedPlotIndex) ?? plotCards[0];
   const nextLevelProgress = dashboard.summary.nextLevelExperience && dashboard.summary.nextLevelExperience > 0
     ? Math.min(100, (dashboard.summary.experience / dashboard.summary.nextLevelExperience) * 100)
     : 100;
@@ -187,75 +254,173 @@ export function FarmClient({ initialDashboard }: Props) {
                 <div className="pointer-events-none absolute bottom-5 left-5 flex h-20 w-20 items-center justify-center rounded-full border border-[#a3c6b8]/35 bg-[radial-gradient(circle,_rgba(129,176,164,0.82),_rgba(62,118,112,0.96))] text-3xl">🐟</div>
                 <div className="pointer-events-none absolute bottom-14 right-8 rounded-full border border-[#d7bf84]/45 bg-[#fff7dd]/80 px-4 py-2 text-xs text-[#7a5d25]">当前已解锁 {dashboard.summary.unlockedPlots} 块地</div>
 
-                <div className="relative mt-16 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
-                  {plotsByIndex.map(({ plotIndex, unlocked, plot }) => {
-                    const status: PlotStatus = unlocked ? plot?.status ?? 'EMPTY' : 'LOCKED';
-                    const cropVisual = plot?.seedType ? cropVisualMap[plot.seedType] : null;
-                    const seedMeta = plot?.seedType ? dashboard.seeds.find((seed) => seed.code === plot.seedType) : null;
-                    const statusLabel = status === 'LOCKED' ? '待解锁' : status === 'EMPTY' ? '空地' : status === 'GROWING' ? '生长中' : '可收获';
-                    const soilClass = status === 'LOCKED' ? 'bg-[linear-gradient(180deg,_#b9a47b,_#927047)] opacity-60' : status === 'EMPTY' ? 'bg-[linear-gradient(180deg,_#8f6237,_#5e3818)]' : status === 'GROWING' ? 'bg-[linear-gradient(180deg,_#94683d,_#613916)]' : 'bg-[linear-gradient(180deg,_#9c6c3e,_#6b3f17)]';
-                    const panelClass = status === 'LOCKED' ? 'border-dashed border-[#cdb27b]/45 bg-[linear-gradient(180deg,_rgba(245,235,212,0.95),_rgba(227,211,180,0.95))]' : status === 'EMPTY' ? 'border-[#d9bf8d]/45 bg-[linear-gradient(180deg,_rgba(255,252,244,0.96),_rgba(248,236,204,0.95))]' : status === 'GROWING' ? 'border-[#d0b777]/55 bg-[linear-gradient(180deg,_rgba(255,249,225,0.98),_rgba(240,225,176,0.96))]' : 'border-[#f0bf36]/70 bg-[linear-gradient(180deg,_rgba(255,248,215,1),_rgba(255,228,141,0.98))]';
+                <div className="relative mt-16 hidden xl:block">
+                  <div className="relative h-[720px] overflow-hidden rounded-[30px] border border-white/35 bg-[linear-gradient(180deg,_rgba(180,216,132,0.12),_rgba(83,126,54,0.08))]">
+                    <div className="pointer-events-none absolute left-[10%] top-[14%] h-24 w-24 rounded-full bg-white/20 blur-3xl" />
+                    <div className="pointer-events-none absolute right-[14%] top-[20%] h-28 w-28 rounded-full bg-[radial-gradient(circle,_rgba(255,241,188,0.4),_transparent_72%)]" />
+                    <div className="pointer-events-none absolute bottom-8 left-[12%] h-20 w-[76%] rounded-[999px] bg-[linear-gradient(90deg,_rgba(111,83,34,0.08),_rgba(111,83,34,0.18),_rgba(111,83,34,0.08))] blur-xl" />
+
+                    {plotCards.map((entry) => {
+                      const position = plotScenePositions[entry.plotIndex];
+                      const isSelected = entry.plotIndex === selectedPlotIndex;
+                      const previewAsset = !entry.unlocked
+                        ? '/farm/locked-plot.svg'
+                        : entry.status === 'EMPTY'
+                          ? '/farm/sprout-generic.svg'
+                          : entry.status === 'READY'
+                            ? entry.cropVisual?.cropAsset ?? '/farm/crop-wheat.svg'
+                            : entry.cropVisual?.sproutAsset ?? '/farm/sprout-generic.svg';
+
+                      return (
+                        <button
+                          key={entry.plotIndex}
+                          type="button"
+                          onClick={() => setSelectedPlotIndex(entry.plotIndex)}
+                          className="absolute h-[210px] w-[210px] -translate-x-1/2 -translate-y-1/2 text-left transition duration-300 hover:scale-[1.03]"
+                          style={{ left: position.left, top: position.top, zIndex: isSelected ? 120 + position.depth : position.depth * 10 }}
+                        >
+                          <div className="pointer-events-none absolute inset-x-9 bottom-8 h-8 rounded-full bg-black/20 blur-lg" />
+                          <div className={`pointer-events-none absolute inset-x-6 bottom-8 h-[108px] rounded-[34px] border shadow-[0_16px_28px_rgba(45,28,8,0.18)] [transform:perspective(900px)_rotateX(64deg)_rotateZ(45deg)] ${entry.sceneBaseClass} ${isSelected ? 'ring-4 ring-[#ffe094]/55' : ''}`} />
+                          <div className="pointer-events-none absolute inset-x-12 bottom-[36px] h-[14px] rounded-b-[24px] bg-black/15 blur-[2px]" />
+                          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                            <div className="mb-2 rounded-full border border-white/30 bg-white/25 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-[#fff6dd]">
+                              地块 {entry.plotIndex}
+                            </div>
+                            <div className="relative flex h-24 w-24 items-center justify-center">
+                              <Image src={previewAsset} alt={entry.title} width={110} height={110} className={entry.status === 'READY' ? 'drop-shadow-[0_14px_16px_rgba(0,0,0,0.18)]' : entry.status === 'EMPTY' ? 'opacity-60 saturate-75' : 'drop-shadow-[0_10px_14px_rgba(0,0,0,0.16)]'} />
+                            </div>
+                            <div className={`mt-2 rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.18em] ${entry.status === 'READY' ? 'bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] text-white' : 'border border-white/35 bg-white/75 text-[#7e5c1d]'}`}>
+                              {entry.statusLabel}
+                            </div>
+                            <p className="mt-3 max-w-[170px] text-center text-sm font-semibold tracking-[0.08em] text-[#fff9eb] drop-shadow-[0_2px_6px_rgba(0,0,0,0.18)]">
+                              {entry.title}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="relative mt-16 grid grid-cols-1 gap-4 md:grid-cols-2 xl:hidden">
+                  {plotCards.map((entry) => {
+                    const isSelected = entry.plotIndex === selectedPlotIndex;
+                    const previewAsset = !entry.unlocked
+                      ? '/farm/locked-plot.svg'
+                      : entry.status === 'EMPTY'
+                        ? '/farm/sprout-generic.svg'
+                        : entry.status === 'READY'
+                          ? entry.cropVisual?.cropAsset ?? '/farm/crop-wheat.svg'
+                          : entry.cropVisual?.sproutAsset ?? '/farm/sprout-generic.svg';
+
                     return (
-                      <article key={plotIndex} className={`relative rounded-[30px] border px-4 pb-4 pt-5 text-[#34210c] shadow-[0_20px_40px_rgba(86,55,20,0.10)] ${panelClass}`}>
+                      <button
+                        key={entry.plotIndex}
+                        type="button"
+                        onClick={() => setSelectedPlotIndex(entry.plotIndex)}
+                        className={`relative rounded-[28px] border px-4 pb-4 pt-5 text-left text-[#34210c] shadow-[0_20px_40px_rgba(86,55,20,0.10)] transition ${entry.panelClass} ${isSelected ? 'ring-2 ring-[#e0b24c]' : ''}`}
+                      >
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.35em] text-[#8d690e]">地块 {plotIndex}</p>
-                            <p className="mt-2 text-lg font-semibold tracking-[0.04em]">{!unlocked ? '待解锁地块' : seedMeta?.name ?? '空地'}</p>
+                            <p className="text-[11px] uppercase tracking-[0.35em] text-[#8d690e]">地块 {entry.plotIndex}</p>
+                            <p className="mt-2 text-lg font-semibold tracking-[0.04em]">{entry.title}</p>
                           </div>
-                          <span className="rounded-full border border-[#d0b27c]/50 bg-white/75 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-[#946c10]">{statusLabel}</span>
+                          <span className="rounded-full border border-[#d0b27c]/50 bg-white/75 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-[#946c10]">{entry.statusLabel}</span>
                         </div>
                         <div className="mt-5 rounded-[26px] border border-black/5 bg-[linear-gradient(180deg,_rgba(255,255,255,0.34),_rgba(255,255,255,0.08))] p-4">
-                          <div className={`relative overflow-hidden rounded-[26px] ${soilClass} px-4 pb-5 pt-6 text-center`}>
-                            {!unlocked ? (
-                              <div className="flex h-36 flex-col items-center justify-center text-[#f5e4b8]">
-                                <Image src="/farm/locked-plot.svg" alt="locked plot" width={108} height={108} className="drop-shadow-[0_14px_18px_rgba(0,0,0,0.14)]" />
-                                <p className="mt-4 text-sm tracking-[0.2em] text-[#f8edcf]">解锁后启用</p>
-                              </div>
-                            ) : status === 'EMPTY' ? (
-                              <div className="flex h-36 flex-col items-center justify-center text-[#f5e4b8]">
-                                <Image src="/farm/sprout-generic.svg" alt="empty plot" width={118} height={118} className="opacity-45 saturate-50" />
-                                <p className="mt-2 text-sm tracking-[0.18em] text-[#f6e8c2]">等待播种</p>
-                              </div>
-                            ) : (
-                              <div className="flex h-36 flex-col items-center justify-center">
-                                <div className="relative flex h-28 w-28 items-center justify-center rounded-full border border-white/30 bg-white/20 shadow-[0_18px_28px_rgba(0,0,0,0.12)]">
-                                  <Image
-                                    src={status === 'READY' ? cropVisual?.cropAsset ?? '/farm/crop-wheat.svg' : cropVisual?.sproutAsset ?? '/farm/sprout-generic.svg'}
-                                    alt={seedMeta?.name ?? 'crop'}
-                                    width={96}
-                                    height={96}
-                                    className={status === 'READY' ? 'drop-shadow-[0_12px_18px_rgba(0,0,0,0.16)]' : 'scale-90 opacity-95'}
-                                  />
-                                </div>
-                                <div className="mt-4 rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] px-4 py-1 text-xs font-semibold text-white">{status === 'READY' ? '成熟完成' : '生长中'}</div>
-                              </div>
-                            )}
+                          <div className={`relative overflow-hidden rounded-[26px] ${entry.soilClass} px-4 pb-5 pt-6 text-center`}>
+                            <div className="flex h-36 flex-col items-center justify-center">
+                              <Image src={previewAsset} alt={entry.title} width={118} height={118} className={entry.status === 'EMPTY' ? 'opacity-45 saturate-50' : 'drop-shadow-[0_12px_18px_rgba(0,0,0,0.14)]'} />
+                            </div>
                           </div>
                         </div>
-                        <div className="mt-4 space-y-2 text-sm text-[#6d5122]">
-                          {!unlocked ? (
-                            <p>解锁更多地块后，这里会加入新的作物位置。</p>
-                          ) : status === 'EMPTY' ? (
-                            <><p>当前已选种子：{currentSeed?.name ?? '未选择'}</p><p>选好右侧种子后，就能直接播种在这里。</p></>
-                          ) : status === 'GROWING' ? (
-                            <><p>成熟倒计时：{formatRemaining(plot?.remainingSeconds ?? 0)}</p><p>预计成熟时间：{plot?.readyAt ? new Date(plot.readyAt).toLocaleString('zh-CN') : '—'}</p></>
-                          ) : (
-                            <><p>作物已成熟，直接收获即可回收金币和经验。</p><p>预计收获区间：{seedMeta ? `${formatAmount(seedMeta.minYieldCoins)} ~ ${formatAmount(seedMeta.maxYieldCoins)} 金币` : '—'}</p></>
-                          )}
-                        </div>
-                        {unlocked && status === 'EMPTY' && (
-                          <button type="button" disabled={!currentSeed || loadingKey === `plant:${plotIndex}`} onClick={() => currentSeed && runAction('plant', { plotIndex, seedType: currentSeed.code }, `plant:${plotIndex}`)} className="mt-4 w-full rounded-full bg-[linear-gradient(90deg,_#8e5c11,_#bb7d10)] px-4 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">
-                            {loadingKey === `plant:${plotIndex}` ? '种植中…' : currentSeed?.name ? `种植 ${currentSeed.name}` : '请选择种子'}
-                          </button>
-                        )}
-                        {unlocked && status === 'READY' && (
-                          <button type="button" disabled={loadingKey === `harvest:${plotIndex}`} onClick={() => runAction('harvest', { plotIndex }, `harvest:${plotIndex}`)} className="mt-4 w-full rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] px-4 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">
-                            {loadingKey === `harvest:${plotIndex}` ? '收获中…' : '立即收获'}
-                          </button>
-                        )}
-                      </article>
+                      </button>
                     );
                   })}
+                </div>
+
+                <div className="mt-6 grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
+                  <div className={`rounded-[28px] border p-5 shadow-[0_18px_34px_rgba(77,52,19,0.10)] ${selectedPlotEntry.panelClass}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.35em] text-[#8f690d]">当前选中</p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.05em] text-[#38230b]">地块 {selectedPlotEntry.plotIndex}</h3>
+                        <p className="mt-2 text-sm text-[#6c5126]">{selectedPlotEntry.title}</p>
+                      </div>
+                      <span className="rounded-full border border-[#d0b27c]/50 bg-white/75 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-[#946c10]">
+                        {selectedPlotEntry.statusLabel}
+                      </span>
+                    </div>
+                    <div className="mt-5 rounded-[26px] border border-black/5 bg-[linear-gradient(180deg,_rgba(255,255,255,0.34),_rgba(255,255,255,0.08))] p-4">
+                      <div className={`relative overflow-hidden rounded-[26px] ${selectedPlotEntry.soilClass} px-4 pb-5 pt-6 text-center`}>
+                        {!selectedPlotEntry.unlocked ? (
+                          <div className="flex h-44 flex-col items-center justify-center text-[#f5e4b8]">
+                            <Image src="/farm/locked-plot.svg" alt="locked plot" width={128} height={128} className="drop-shadow-[0_14px_18px_rgba(0,0,0,0.14)]" />
+                            <p className="mt-4 text-sm tracking-[0.2em] text-[#f8edcf]">解锁后启用</p>
+                          </div>
+                        ) : selectedPlotEntry.status === 'EMPTY' ? (
+                          <div className="flex h-44 flex-col items-center justify-center text-[#f5e4b8]">
+                            <Image src="/farm/sprout-generic.svg" alt="empty plot" width={130} height={130} className="opacity-45 saturate-50" />
+                            <p className="mt-3 text-sm tracking-[0.18em] text-[#f6e8c2]">等待播种</p>
+                          </div>
+                        ) : (
+                          <div className="flex h-44 flex-col items-center justify-center">
+                            <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-white/30 bg-white/20 shadow-[0_18px_28px_rgba(0,0,0,0.12)]">
+                              <Image
+                                src={selectedPlotEntry.status === 'READY' ? selectedPlotEntry.cropVisual?.cropAsset ?? '/farm/crop-wheat.svg' : selectedPlotEntry.cropVisual?.sproutAsset ?? '/farm/sprout-generic.svg'}
+                                alt={selectedPlotEntry.seedMeta?.name ?? 'crop'}
+                                width={108}
+                                height={108}
+                                className={selectedPlotEntry.status === 'READY' ? 'drop-shadow-[0_12px_18px_rgba(0,0,0,0.16)]' : 'scale-90 opacity-95'}
+                              />
+                            </div>
+                            <div className="mt-4 rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] px-4 py-1 text-xs font-semibold text-white">
+                              {selectedPlotEntry.status === 'READY' ? '成熟完成' : selectedPlotEntry.status === 'GROWING' ? '生长中' : '待播种'}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[28px] border border-[#d7bc83]/45 bg-[linear-gradient(145deg,_rgba(255,250,236,0.95),_rgba(255,235,193,0.95))] p-5 shadow-[0_18px_34px_rgba(77,52,19,0.10)]">
+                    <p className="text-[11px] uppercase tracking-[0.35em] text-[#9d7518]">地块详情</p>
+                    <div className="mt-4 space-y-3 text-sm leading-7 text-[#6d5122]">
+                      {selectedPlotEntry.summaryLines.map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
+                    </div>
+                    {selectedPlotEntry.unlocked && selectedPlotEntry.status === 'EMPTY' && (
+                      <button
+                        type="button"
+                        disabled={!currentSeed || loadingKey === `plant:${selectedPlotEntry.plotIndex}`}
+                        onClick={() => currentSeed && runAction('plant', { plotIndex: selectedPlotEntry.plotIndex, seedType: currentSeed.code }, `plant:${selectedPlotEntry.plotIndex}`)}
+                        className="mt-5 w-full rounded-full bg-[linear-gradient(90deg,_#8e5c11,_#bb7d10)] px-4 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {loadingKey === `plant:${selectedPlotEntry.plotIndex}` ? '种植中…' : currentSeed?.name ? `种植 ${currentSeed.name}` : '请选择种子'}
+                      </button>
+                    )}
+                    {selectedPlotEntry.unlocked && selectedPlotEntry.status === 'READY' && (
+                      <button
+                        type="button"
+                        disabled={loadingKey === `harvest:${selectedPlotEntry.plotIndex}`}
+                        onClick={() => runAction('harvest', { plotIndex: selectedPlotEntry.plotIndex }, `harvest:${selectedPlotEntry.plotIndex}`)}
+                        className="mt-5 w-full rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] px-4 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {loadingKey === `harvest:${selectedPlotEntry.plotIndex}` ? '收获中…' : '立即收获'}
+                      </button>
+                    )}
+                    {!selectedPlotEntry.unlocked && dashboard.summary.nextPlotCost ? (
+                      <button
+                        type="button"
+                        disabled={loadingKey === 'expand'}
+                        onClick={() => runAction('expand', {}, 'expand')}
+                        className="mt-5 w-full rounded-full bg-[linear-gradient(90deg,_#503015,_#8d5b11,_#c78a18)] px-4 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {loadingKey === 'expand' ? '扩地中…' : `解锁下一块地 · ${formatAmount(dashboard.summary.nextPlotCost)} 金币`}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </SectionCard>
