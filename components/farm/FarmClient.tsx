@@ -83,15 +83,15 @@ type PlotCard = {
 };
 
 const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
-  // Isometric lattice aligned to the terrace guide lines in the manor background.
-  1: { left: '650px', top: '432px', depth: 10 },
-  2: { left: '760px', top: '457px', depth: 11 },
-  3: { left: '870px', top: '482px', depth: 12 },
-  4: { left: '980px', top: '507px', depth: 13 },
-  5: { left: '565px', top: '492px', depth: 20 },
-  6: { left: '675px', top: '517px', depth: 21 },
-  7: { left: '785px', top: '542px', depth: 22 },
-  8: { left: '895px', top: '567px', depth: 23 },
+  // 4x2 proportional lattice fitted to the terrace parallelogram.
+  1: { left: '668px', top: '438px', depth: 10 },
+  2: { left: '766px', top: '458px', depth: 11 },
+  3: { left: '864px', top: '478px', depth: 12 },
+  4: { left: '962px', top: '498px', depth: 13 },
+  5: { left: '612px', top: '492px', depth: 20 },
+  6: { left: '710px', top: '512px', depth: 21 },
+  7: { left: '808px', top: '532px', depth: 22 },
+  8: { left: '906px', top: '552px', depth: 23 },
 };
 
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
@@ -858,17 +858,16 @@ export function FarmClient({ initialDashboard }: Props) {
             </div>
 
             <div className="absolute inset-x-0 top-[224px] bottom-[176px]">
-                <div className="pointer-events-none absolute left-[516px] top-[360px] z-[1] h-[318px] w-[640px] opacity-55">
-                  <svg viewBox="0 0 640 318" className="h-full w-full overflow-visible">
-                    <g stroke="rgba(110,63,17,0.34)" strokeWidth="3.5" strokeLinecap="round" fill="none">
-                      <path d="M84 150 C164 104 248 52 352 16" />
-                      <path d="M52 238 C152 180 260 112 400 34" />
-                      <path d="M112 304 C228 234 356 150 514 62" />
-                      <path d="M240 318 C360 248 486 176 620 102" />
-                      <path d="M202 14 C286 66 366 120 450 174" />
-                      <path d="M118 44 C230 112 336 178 444 246" />
-                      <path d="M56 104 C164 174 270 240 378 308" />
-                      <path d="M310 22 C398 80 490 140 584 204" />
+                <div className="pointer-events-none absolute left-[560px] top-[398px] z-[1] h-[220px] w-[488px] opacity-45">
+                  <svg viewBox="0 0 488 220" className="h-full w-full overflow-visible">
+                    <g stroke="rgba(110,63,17,0.28)" strokeWidth="2.8" strokeLinecap="round" fill="none">
+                      <path d="M84 44 L378 104" />
+                      <path d="M56 98 L350 158" />
+                      <path d="M28 152 L322 212" />
+                      <path d="M154 22 L70 170" />
+                      <path d="M252 42 L168 190" />
+                      <path d="M350 62 L266 210" />
+                      <path d="M448 82 L364 220" />
                     </g>
                   </svg>
                 </div>
