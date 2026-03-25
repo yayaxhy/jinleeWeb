@@ -82,17 +82,22 @@ type PlotCard = {
   highlight: 'locked' | 'idle' | 'growing' | 'ready';
 };
 
-const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
-  // Packed into a contiguous isometric 4x2 block on the central terrace.
-  1: { left: '40%', top: '54%', depth: 10 },
-  2: { left: '49%', top: '52%', depth: 11 },
-  3: { left: '58%', top: '54%', depth: 10 },
-  4: { left: '67%', top: '52%', depth: 11 },
-  5: { left: '44%', top: '65%', depth: 12 },
-  6: { left: '53%', top: '63%', depth: 13 },
-  7: { left: '62%', top: '65%', depth: 12 },
-  8: { left: '71%', top: '63%', depth: 13 },
-};
+const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = Object.fromEntries(
+  Array.from({ length: 8 }, (_, index) => {
+    const row = index >= 4 ? 1 : 0;
+    const col = index % 4;
+    const baseX = 560;
+    const baseY = 530;
+    const colStep = 142;
+    const rowOffsetX = 68;
+    const rowStepY = 126;
+    const staggerY = col % 2 === 1 ? -16 : 0;
+    const left = `${baseX + col * colStep + row * rowOffsetX}px`;
+    const top = `${baseY + row * rowStepY + staggerY}px`;
+    const depth = 10 + row * 2 + (col % 2);
+    return [index + 1, { left, top, depth }];
+  }),
+) as Record<number, { left: string; top: string; depth: number }>;
 
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
   seeds: { icon: '🌱', label: '种子袋' },
@@ -846,23 +851,23 @@ export function FarmClient({ initialDashboard }: Props) {
                           onFocus={() => setHoveredPlotIndex(entry.plotIndex)}
                           onBlur={() => setHoveredPlotIndex((current) => (current === entry.plotIndex ? null : current))}
                           onClick={() => setActivePlotIndex(entry.plotIndex)}
-                          className={`relative flex h-[132px] w-[150px] items-end justify-center rounded-[34px] px-3 pb-3 transition duration-200 hover:-translate-y-1 hover:scale-[1.02] sm:h-[146px] sm:w-[168px] ${entry.highlight === 'ready' ? 'animate-[farmPlotBob_2.2s_ease-in-out_infinite] hover:brightness-105' : 'hover:brightness-105'} ${entry.highlight === 'locked' ? 'opacity-90' : ''}`}
+                          className={`relative flex h-[120px] w-[136px] items-end justify-center rounded-[30px] px-3 pb-3 transition duration-200 hover:-translate-y-1 hover:scale-[1.02] sm:h-[132px] sm:w-[152px] ${entry.highlight === 'ready' ? 'animate-[farmPlotBob_2.2s_ease-in-out_infinite] hover:brightness-105' : 'hover:brightness-105'} ${entry.highlight === 'locked' ? 'opacity-90' : ''}`}
                         >
-                          <div className={`pointer-events-none absolute inset-0 rounded-[34px] ${entry.highlight === 'ready' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(255,224,138,0.24),_rgba(255,224,138,0.02)_70%,_transparent_78%)]' : entry.highlight === 'growing' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(245,215,140,0.18),_rgba(245,215,140,0.01)_72%,_transparent_78%)]' : 'bg-transparent'}`} />
+                          <div className={`pointer-events-none absolute inset-0 rounded-[30px] ${entry.highlight === 'ready' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(255,224,138,0.24),_rgba(255,224,138,0.02)_70%,_transparent_78%)]' : entry.highlight === 'growing' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(245,215,140,0.18),_rgba(245,215,140,0.01)_72%,_transparent_78%)]' : 'bg-transparent'}`} />
                           <div className="pointer-events-none absolute inset-x-2 bottom-3 h-7 rounded-[50%] bg-[radial-gradient(circle,_rgba(73,48,16,0.55),_rgba(73,48,16,0.04)_72%)] blur-sm" />
                           <div className="pointer-events-none absolute inset-x-[6%] top-[16%] flex justify-center">
-                            <div className="relative h-14 w-14 sm:h-16 sm:w-16">
+                            <div className="relative h-12 w-12 sm:h-14 sm:w-14">
                               <Image src={FARM_SCENE_ASSETS.woodSign} alt="" fill className="object-contain drop-shadow-[0_6px_8px_rgba(0,0,0,0.18)]" />
-                              <span className="absolute inset-x-0 top-[28%] text-center text-[12px] font-black tracking-[0.18em] text-[#583514] sm:text-[13px]">{String(entry.plotIndex).padStart(2, '0')}</span>
+                              <span className="absolute inset-x-0 top-[28%] text-center text-[11px] font-black tracking-[0.18em] text-[#583514] sm:text-[12px]">{String(entry.plotIndex).padStart(2, '0')}</span>
                             </div>
                           </div>
-                          <div className={`pointer-events-none absolute inset-[4%] rounded-[32px] border ${entry.highlight === 'ready' ? 'border-[#f6d07f]/55' : entry.highlight === 'growing' ? 'border-[#ebca85]/42' : entry.highlight === 'idle' ? 'border-[#e0bf82]/26' : 'border-[#d5c5a3]/20'}`} />
+                          <div className={`pointer-events-none absolute inset-[4%] rounded-[28px] border ${entry.highlight === 'ready' ? 'border-[#f6d07f]/55' : entry.highlight === 'growing' ? 'border-[#ebca85]/42' : entry.highlight === 'idle' ? 'border-[#e0bf82]/26' : 'border-[#d5c5a3]/20'}`} />
                           {entry.status === 'READY' ? <span className="absolute right-3 top-3 rounded-full border border-[#ffe8b6]/45 bg-[linear-gradient(180deg,_rgba(255,227,153,0.96),_rgba(243,186,62,0.96))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#684108]">READY</span> : null}
                           {entry.status === 'READY' && !viewDashboard.owner.isSelf && !entry.plot?.canSteal ? <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[#ffd9b3]/35 bg-[linear-gradient(180deg,_rgba(131,63,23,0.95),_rgba(89,38,12,0.95))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ffe6c9]">已偷</span> : null}
                           <div className="pointer-events-none absolute inset-0">
                             <Image src={FARM_SCENE_ASSETS.plotFrame} alt="" fill className={`object-contain drop-shadow-[0_22px_28px_rgba(0,0,0,0.24)] ${entry.highlight === 'ready' ? 'brightness-[1.06]' : entry.highlight === 'growing' ? 'brightness-[1.02]' : ''}`} />
                           </div>
-                          <div className="relative flex h-[96px] w-[96px] items-end justify-center sm:h-[108px] sm:w-[108px]">
+                          <div className="relative flex h-[86px] w-[86px] items-end justify-center sm:h-[96px] sm:w-[96px]">
                             {entry.status === 'READY' ? <div className={`absolute inset-1 rounded-full ${viewDashboard.owner.isSelf ? 'bg-[radial-gradient(circle,_rgba(255,224,138,0.56),_rgba(255,224,138,0.06)_70%)]' : 'bg-[radial-gradient(circle,_rgba(255,174,120,0.42),_rgba(255,174,120,0.05)_70%)]'} animate-pulse`} /> : null}
                             {harvestTransition ? (
                               <>
