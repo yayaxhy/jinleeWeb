@@ -82,22 +82,17 @@ type PlotCard = {
   highlight: 'locked' | 'idle' | 'growing' | 'ready';
 };
 
-const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = Object.fromEntries(
-  Array.from({ length: 8 }, (_, index) => {
-    const row = index >= 4 ? 1 : 0;
-    const col = index % 4;
-    const baseX = 560;
-    const baseY = 530;
-    const colStep = 142;
-    const rowOffsetX = 68;
-    const rowStepY = 126;
-    const staggerY = col % 2 === 1 ? -16 : 0;
-    const left = `${baseX + col * colStep + row * rowOffsetX}px`;
-    const top = `${baseY + row * rowStepY + staggerY}px`;
-    const depth = 10 + row * 2 + (col % 2);
-    return [index + 1, { left, top, depth }];
-  }),
-) as Record<number, { left: string; top: string; depth: number }>;
+const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
+  // Anchored to the terrace perspective so the tiles visually merge into the manor art.
+  1: { left: '628px', top: '434px', depth: 10 },
+  2: { left: '742px', top: '458px', depth: 11 },
+  3: { left: '856px', top: '482px', depth: 12 },
+  4: { left: '970px', top: '506px', depth: 13 },
+  5: { left: '686px', top: '528px', depth: 20 },
+  6: { left: '800px', top: '552px', depth: 21 },
+  7: { left: '914px', top: '576px', depth: 22 },
+  8: { left: '1028px', top: '600px', depth: 23 },
+};
 
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
   seeds: { icon: '🌱', label: '种子袋' },
@@ -151,20 +146,20 @@ function getSeedRarity(seed: FarmDashboard['seeds'][number]) {
 
 function getPlotAsset(entry: PlotCard) {
   if (!entry.unlocked) {
-    return { asset: FARM_SCENE_ASSETS.plotLocked, className: 'scale-[0.98] opacity-85 drop-shadow-[0_18px_24px_rgba(0,0,0,0.18)]' };
+    return { asset: FARM_SCENE_ASSETS.plotLocked, className: 'scale-[0.92] opacity-82 drop-shadow-[0_10px_14px_rgba(59,37,12,0.18)]' };
   }
   if (!entry.plot || entry.status === 'EMPTY' || !entry.plot.seedType) {
-    return { asset: FARM_SCENE_ASSETS.plotEmpty, className: 'scale-[0.84] opacity-90 drop-shadow-[0_12px_16px_rgba(0,0,0,0.12)]' };
+    return { asset: FARM_SCENE_ASSETS.plotEmpty, className: 'scale-[0.82] opacity-94 drop-shadow-[0_8px_10px_rgba(92,62,24,0.12)]' };
   }
   const asset = FARM_CROP_ASSETS[entry.plot.seedType][entry.plot.growthStage];
   const className =
     entry.plot.growthStage === 'READY'
-      ? 'scale-[1.02] animate-[farmGlow_2.2s_ease-in-out_infinite] drop-shadow-[0_16px_24px_rgba(0,0,0,0.18)]'
+      ? 'scale-[0.98] animate-[farmGlow_2.2s_ease-in-out_infinite] drop-shadow-[0_10px_14px_rgba(69,45,15,0.16)]'
       : entry.plot.growthStage === 'MATURE'
-        ? 'scale-[0.96] drop-shadow-[0_14px_20px_rgba(0,0,0,0.16)]'
+        ? 'scale-[0.92] drop-shadow-[0_9px_12px_rgba(69,45,15,0.14)]'
         : entry.plot.growthStage === 'YOUNG'
-          ? 'scale-[0.86] opacity-95'
-          : 'scale-[0.72] opacity-90';
+          ? 'scale-[0.82] opacity-95'
+          : 'scale-[0.68] opacity-90';
   return { asset, className };
 }
 
@@ -851,23 +846,23 @@ export function FarmClient({ initialDashboard }: Props) {
                           onFocus={() => setHoveredPlotIndex(entry.plotIndex)}
                           onBlur={() => setHoveredPlotIndex((current) => (current === entry.plotIndex ? null : current))}
                           onClick={() => setActivePlotIndex(entry.plotIndex)}
-                          className={`relative flex h-[120px] w-[136px] items-end justify-center rounded-[30px] px-3 pb-3 transition duration-200 hover:-translate-y-1 hover:scale-[1.02] sm:h-[132px] sm:w-[152px] ${entry.highlight === 'ready' ? 'animate-[farmPlotBob_2.2s_ease-in-out_infinite] hover:brightness-105' : 'hover:brightness-105'} ${entry.highlight === 'locked' ? 'opacity-90' : ''}`}
+                          className={`relative flex h-[110px] w-[126px] items-end justify-center rounded-[28px] px-2 pb-2 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] sm:h-[122px] sm:w-[140px] ${entry.highlight === 'ready' ? 'animate-[farmPlotBob_2.2s_ease-in-out_infinite] hover:brightness-105' : 'hover:brightness-105'} ${entry.highlight === 'locked' ? 'opacity-90' : ''}`}
                         >
                           <div className={`pointer-events-none absolute inset-0 rounded-[30px] ${entry.highlight === 'ready' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(255,224,138,0.24),_rgba(255,224,138,0.02)_70%,_transparent_78%)]' : entry.highlight === 'growing' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(245,215,140,0.18),_rgba(245,215,140,0.01)_72%,_transparent_78%)]' : 'bg-transparent'}`} />
-                          <div className="pointer-events-none absolute inset-x-2 bottom-3 h-7 rounded-[50%] bg-[radial-gradient(circle,_rgba(73,48,16,0.55),_rgba(73,48,16,0.04)_72%)] blur-sm" />
+                          <div className="pointer-events-none absolute inset-x-3 bottom-2 h-5 rounded-[50%] bg-[radial-gradient(circle,_rgba(73,48,16,0.22),_rgba(73,48,16,0.02)_72%)] blur-[6px]" />
                           <div className="pointer-events-none absolute inset-x-[6%] top-[16%] flex justify-center">
                             <div className="relative h-12 w-12 sm:h-14 sm:w-14">
                               <Image src={FARM_SCENE_ASSETS.woodSign} alt="" fill className="object-contain drop-shadow-[0_6px_8px_rgba(0,0,0,0.18)]" />
                               <span className="absolute inset-x-0 top-[28%] text-center text-[11px] font-black tracking-[0.18em] text-[#583514] sm:text-[12px]">{String(entry.plotIndex).padStart(2, '0')}</span>
                             </div>
                           </div>
-                          <div className={`pointer-events-none absolute inset-[4%] rounded-[28px] border ${entry.highlight === 'ready' ? 'border-[#f6d07f]/55' : entry.highlight === 'growing' ? 'border-[#ebca85]/42' : entry.highlight === 'idle' ? 'border-[#e0bf82]/26' : 'border-[#d5c5a3]/20'}`} />
+                          <div className={`pointer-events-none absolute inset-[5%] rounded-[24px] border ${entry.highlight === 'ready' ? 'border-[#f6d07f]/45' : entry.highlight === 'growing' ? 'border-[#ebca85]/32' : entry.highlight === 'idle' ? 'border-[#e0bf82]/18' : 'border-[#d5c5a3]/16'}`} />
                           {entry.status === 'READY' ? <span className="absolute right-3 top-3 rounded-full border border-[#ffe8b6]/45 bg-[linear-gradient(180deg,_rgba(255,227,153,0.96),_rgba(243,186,62,0.96))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#684108]">READY</span> : null}
                           {entry.status === 'READY' && !viewDashboard.owner.isSelf && !entry.plot?.canSteal ? <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[#ffd9b3]/35 bg-[linear-gradient(180deg,_rgba(131,63,23,0.95),_rgba(89,38,12,0.95))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ffe6c9]">已偷</span> : null}
                           <div className="pointer-events-none absolute inset-0">
-                            <Image src={FARM_SCENE_ASSETS.plotFrame} alt="" fill className={`object-contain drop-shadow-[0_22px_28px_rgba(0,0,0,0.24)] ${entry.highlight === 'ready' ? 'brightness-[1.06]' : entry.highlight === 'growing' ? 'brightness-[1.02]' : ''}`} />
+                            <Image src={FARM_SCENE_ASSETS.plotFrame} alt="" fill className={`object-contain drop-shadow-[0_9px_12px_rgba(69,45,15,0.16)] ${entry.highlight === 'ready' ? 'brightness-[1.04]' : entry.highlight === 'growing' ? 'brightness-[1.01]' : ''}`} />
                           </div>
-                          <div className="relative flex h-[86px] w-[86px] items-end justify-center sm:h-[96px] sm:w-[96px]">
+                          <div className="relative flex h-[80px] w-[80px] items-end justify-center sm:h-[88px] sm:w-[88px]">
                             {entry.status === 'READY' ? <div className={`absolute inset-1 rounded-full ${viewDashboard.owner.isSelf ? 'bg-[radial-gradient(circle,_rgba(255,224,138,0.56),_rgba(255,224,138,0.06)_70%)]' : 'bg-[radial-gradient(circle,_rgba(255,174,120,0.42),_rgba(255,174,120,0.05)_70%)]'} animate-pulse`} /> : null}
                             {harvestTransition ? (
                               <>
