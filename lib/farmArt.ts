@@ -7,9 +7,9 @@ export const FARM_SCENE_ASSETS = {
   cloud: '/farm/cloud.svg',
   butterfly: '/farm/butterfly.svg',
   woodSign: '/farm/generated/wood-sign.webp',
-  plotFrame: '/farm/plot-frame.svg',
-  plotEmpty: '/farm/plot-empty.svg',
-  plotHarvested: '/farm/plot-harvested.svg',
+  plotFrame: '/farm/generated/plot-frame.webp',
+  plotEmpty: '/farm/generated/plot-empty.webp',
+  plotHarvested: '/farm/generated/plot-harvested.webp',
   plotLocked: '/farm/locked-plot.svg',
 } as const;
 
