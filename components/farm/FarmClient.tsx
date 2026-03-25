@@ -83,14 +83,15 @@ type PlotCard = {
 };
 
 const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
-  1: { left: '31%', top: '41%', depth: 10 },
-  2: { left: '42%', top: '39%', depth: 11 },
-  3: { left: '53%', top: '41%', depth: 10 },
-  4: { left: '64%', top: '39%', depth: 11 },
-  5: { left: '35%', top: '54%', depth: 12 },
-  6: { left: '46%', top: '52%', depth: 13 },
-  7: { left: '57%', top: '54%', depth: 12 },
-  8: { left: '68%', top: '52%', depth: 13 },
+  // Aligned to the central terrace in the approved manor-base art.
+  1: { left: '34%', top: '46%', depth: 10 },
+  2: { left: '46%', top: '44%', depth: 11 },
+  3: { left: '58%', top: '46%', depth: 10 },
+  4: { left: '70%', top: '44%', depth: 11 },
+  5: { left: '38%', top: '64%', depth: 12 },
+  6: { left: '50%', top: '62%', depth: 13 },
+  7: { left: '62%', top: '64%', depth: 12 },
+  8: { left: '74%', top: '62%', depth: 13 },
 };
 
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
