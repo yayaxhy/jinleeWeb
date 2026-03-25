@@ -83,15 +83,15 @@ type PlotCard = {
 };
 
 const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
-  // Packed staggered cluster, matching the terrace perspective in the reference layout.
-  1: { left: '780px', top: '358px', depth: 10 },
-  2: { left: '610px', top: '470px', depth: 20 },
-  3: { left: '722px', top: '470px', depth: 21 },
-  4: { left: '834px', top: '470px', depth: 22 },
-  5: { left: '946px', top: '470px', depth: 23 },
-  6: { left: '666px', top: '532px', depth: 30 },
-  7: { left: '778px', top: '532px', depth: 31 },
-  8: { left: '890px', top: '532px', depth: 32 },
+  // Isometric lattice aligned to the terrace guide lines in the manor background.
+  1: { left: '650px', top: '432px', depth: 10 },
+  2: { left: '760px', top: '457px', depth: 11 },
+  3: { left: '870px', top: '482px', depth: 12 },
+  4: { left: '980px', top: '507px', depth: 13 },
+  5: { left: '565px', top: '492px', depth: 20 },
+  6: { left: '675px', top: '517px', depth: 21 },
+  7: { left: '785px', top: '542px', depth: 22 },
+  8: { left: '895px', top: '567px', depth: 23 },
 };
 
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
@@ -146,21 +146,50 @@ function getSeedRarity(seed: FarmDashboard['seeds'][number]) {
 
 function getPlotAsset(entry: PlotCard) {
   if (!entry.unlocked) {
-    return { asset: FARM_SCENE_ASSETS.plotLocked, className: 'scale-[0.92] opacity-82 drop-shadow-[0_10px_14px_rgba(59,37,12,0.18)]' };
+    return { asset: FARM_SCENE_ASSETS.plotLocked, className: 'scale-[0.78] opacity-82 drop-shadow-[0_4px_6px_rgba(59,37,12,0.12)]' };
   }
   if (!entry.plot || entry.status === 'EMPTY' || !entry.plot.seedType) {
-    return { asset: FARM_SCENE_ASSETS.plotEmpty, className: 'scale-[0.82] opacity-94 drop-shadow-[0_8px_10px_rgba(92,62,24,0.12)]' };
+    return { asset: null, className: '' };
   }
   const asset = FARM_CROP_ASSETS[entry.plot.seedType][entry.plot.growthStage];
   const className =
     entry.plot.growthStage === 'READY'
-      ? 'scale-[0.98] animate-[farmGlow_2.2s_ease-in-out_infinite] drop-shadow-[0_10px_14px_rgba(69,45,15,0.16)]'
+      ? 'scale-[0.94] animate-[farmGlow_2.2s_ease-in-out_infinite] drop-shadow-[0_8px_10px_rgba(69,45,15,0.14)]'
       : entry.plot.growthStage === 'MATURE'
-        ? 'scale-[0.92] drop-shadow-[0_9px_12px_rgba(69,45,15,0.14)]'
+        ? 'scale-[0.88] drop-shadow-[0_6px_8px_rgba(69,45,15,0.12)]'
         : entry.plot.growthStage === 'YOUNG'
-          ? 'scale-[0.82] opacity-95'
-          : 'scale-[0.68] opacity-90';
+          ? 'scale-[0.78] opacity-95'
+          : 'scale-[0.64] opacity-92';
   return { asset, className };
+}
+
+function getPlotSurfaceTone(entry: PlotCard) {
+  if (!entry.unlocked) {
+    return {
+      fill: 'from-[rgba(119,94,56,0.32)] to-[rgba(96,72,39,0.22)]',
+      border: 'border-[rgba(135,111,75,0.3)]',
+      furrow: 'bg-[rgba(90,71,42,0.18)]',
+    };
+  }
+  if (!entry.plot || entry.status === 'EMPTY' || !entry.plot.seedType) {
+    return {
+      fill: 'from-[rgba(141,100,39,0.2)] to-[rgba(112,79,30,0.12)]',
+      border: 'border-[rgba(136,99,44,0.24)]',
+      furrow: 'bg-[rgba(104,75,33,0.12)]',
+    };
+  }
+  if (entry.status === 'READY') {
+    return {
+      fill: 'from-[rgba(118,78,26,0.32)] to-[rgba(90,60,20,0.2)]',
+      border: 'border-[rgba(157,117,49,0.34)]',
+      furrow: 'bg-[rgba(92,60,20,0.22)]',
+    };
+  }
+  return {
+    fill: 'from-[rgba(124,84,31,0.28)] to-[rgba(94,65,24,0.16)]',
+    border: 'border-[rgba(146,106,42,0.28)]',
+    furrow: 'bg-[rgba(93,64,25,0.18)]',
+  };
 }
 
 function ToolButton({ icon, label, active, onClick, muted = false }: { icon: string; label: string; active: boolean; onClick: () => void; muted?: boolean }) {
@@ -397,6 +426,7 @@ export function FarmClient({ initialDashboard }: Props) {
   }, [plotsByIndex, viewDashboard.seeds, viewDashboard.owner.isSelf, currentSeed, homeDashboard.summary.nextPlotCost]);
 
   const activePlot = plotCards.find((entry) => entry.plotIndex === activePlotIndex) ?? null;
+  const activePlotPreview = activePlot ? getPlotAsset(activePlot) : null;
   const nextLevelProgress = homeDashboard.summary.nextLevelExperience && homeDashboard.summary.nextLevelExperience > 0
     ? Math.min(100, (homeDashboard.summary.experience / homeDashboard.summary.nextLevelExperience) * 100)
     : 100;
@@ -421,7 +451,7 @@ export function FarmClient({ initialDashboard }: Props) {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setHarvestTransitions((current) => [
       ...current.filter((item) => item.plotIndex !== entry.plotIndex),
-      { id, plotIndex: entry.plotIndex, previousAsset: preview.asset, previousClassName: preview.className },
+      { id, plotIndex: entry.plotIndex, previousAsset: preview.asset ?? FARM_SCENE_ASSETS.plotEmpty, previousClassName: preview.className },
     ]);
     window.setTimeout(() => {
       setHarvestTransitions((current) => current.filter((item) => item.id !== id));
@@ -828,9 +858,24 @@ export function FarmClient({ initialDashboard }: Props) {
             </div>
 
             <div className="absolute inset-x-0 top-[224px] bottom-[176px]">
+                <div className="pointer-events-none absolute left-[516px] top-[360px] z-[1] h-[318px] w-[640px] opacity-55">
+                  <svg viewBox="0 0 640 318" className="h-full w-full overflow-visible">
+                    <g stroke="rgba(110,63,17,0.34)" strokeWidth="3.5" strokeLinecap="round" fill="none">
+                      <path d="M84 150 C164 104 248 52 352 16" />
+                      <path d="M52 238 C152 180 260 112 400 34" />
+                      <path d="M112 304 C228 234 356 150 514 62" />
+                      <path d="M240 318 C360 248 486 176 620 102" />
+                      <path d="M202 14 C286 66 366 120 450 174" />
+                      <path d="M118 44 C230 112 336 178 444 246" />
+                      <path d="M56 104 C164 174 270 240 378 308" />
+                      <path d="M310 22 C398 80 490 140 584 204" />
+                    </g>
+                  </svg>
+                </div>
                 {plotCards.map((entry) => {
                   const scene = plotScenePositions[entry.plotIndex];
                   const preview = getPlotAsset(entry);
+                  const surfaceTone = getPlotSurfaceTone(entry);
                   const harvestTransition = harvestTransitions.find((item) => item.plotIndex === entry.plotIndex) ?? null;
                   const plantTransition = plantTransitions.find((item) => item.plotIndex === entry.plotIndex) ?? null;
                   const actionKey = entry.status === 'EMPTY' ? `plant:${entry.plotIndex}` : entry.status === 'READY' && viewDashboard.owner.isSelf ? `harvest:${entry.plotIndex}` : `steal:${entry.plotIndex}`;
@@ -846,28 +891,40 @@ export function FarmClient({ initialDashboard }: Props) {
                           onFocus={() => setHoveredPlotIndex(entry.plotIndex)}
                           onBlur={() => setHoveredPlotIndex((current) => (current === entry.plotIndex ? null : current))}
                           onClick={() => setActivePlotIndex(entry.plotIndex)}
-                          className={`relative flex h-[110px] w-[126px] items-end justify-center rounded-[28px] px-2 pb-2 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] sm:h-[122px] sm:w-[140px] ${entry.highlight === 'ready' ? 'animate-[farmPlotBob_2.2s_ease-in-out_infinite] hover:brightness-105' : 'hover:brightness-105'} ${entry.highlight === 'locked' ? 'opacity-90' : ''}`}
+                          className={`relative flex h-[96px] w-[112px] items-end justify-center px-1 pb-1 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] sm:h-[104px] sm:w-[122px] ${entry.highlight === 'ready' ? 'animate-[farmPlotBob_2.2s_ease-in-out_infinite] hover:brightness-105' : 'hover:brightness-105'} ${entry.highlight === 'locked' ? 'opacity-90' : ''}`}
                         >
-                          <div className={`pointer-events-none absolute inset-0 rounded-[30px] ${entry.highlight === 'ready' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(255,224,138,0.24),_rgba(255,224,138,0.02)_70%,_transparent_78%)]' : entry.highlight === 'growing' ? 'bg-[radial-gradient(circle_at_50%_42%,_rgba(245,215,140,0.18),_rgba(245,215,140,0.01)_72%,_transparent_78%)]' : 'bg-transparent'}`} />
-                          <div className="pointer-events-none absolute inset-x-3 bottom-2 h-5 rounded-[50%] bg-[radial-gradient(circle,_rgba(73,48,16,0.22),_rgba(73,48,16,0.02)_72%)] blur-[6px]" />
-                          <div className="pointer-events-none absolute inset-x-[6%] top-[16%] flex justify-center">
-                            <div className="relative h-12 w-12 sm:h-14 sm:w-14">
-                              <Image src={FARM_SCENE_ASSETS.woodSign} alt="" fill className="object-contain drop-shadow-[0_6px_8px_rgba(0,0,0,0.18)]" />
-                              <span className="absolute inset-x-0 top-[28%] text-center text-[11px] font-black tracking-[0.18em] text-[#583514] sm:text-[12px]">{String(entry.plotIndex).padStart(2, '0')}</span>
+                          <div className={`pointer-events-none absolute inset-0 ${entry.highlight === 'ready' ? 'bg-[radial-gradient(circle_at_50%_52%,_rgba(255,224,138,0.18),_rgba(255,224,138,0.02)_68%,_transparent_76%)]' : entry.highlight === 'growing' ? 'bg-[radial-gradient(circle_at_50%_52%,_rgba(245,215,140,0.12),_rgba(245,215,140,0.01)_68%,_transparent_76%)]' : 'bg-transparent'}`} />
+                          <div className="pointer-events-none absolute inset-x-4 bottom-1 h-3 rounded-[50%] bg-[radial-gradient(circle,_rgba(73,48,16,0.14),_rgba(73,48,16,0.01)_72%)] blur-[5px]" />
+                          {(tooltipVisible || activePlotIndex === entry.plotIndex) ? (
+                            <div className="pointer-events-none absolute inset-x-[12%] -top-5 flex justify-center">
+                              <div className="relative h-9 w-9 sm:h-10 sm:w-10">
+                                <Image src={FARM_SCENE_ASSETS.woodSign} alt="" fill className="object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.16)]" />
+                                <span className="absolute inset-x-0 top-[28%] text-center text-[9px] font-black tracking-[0.16em] text-[#583514] sm:text-[10px]">{String(entry.plotIndex).padStart(2, '0')}</span>
+                              </div>
+                            </div>
+                          ) : null}
+                          {entry.status === 'READY' ? <span className="absolute right-0 top-0 rounded-full border border-[#ffe8b6]/38 bg-[linear-gradient(180deg,_rgba(255,227,153,0.94),_rgba(243,186,62,0.94))] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#684108]">READY</span> : null}
+                          {entry.status === 'READY' && !viewDashboard.owner.isSelf && !entry.plot?.canSteal ? <span className="absolute left-1/2 top-0 -translate-x-1/2 rounded-full border border-[#ffd9b3]/32 bg-[linear-gradient(180deg,_rgba(131,63,23,0.94),_rgba(89,38,12,0.94))] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#ffe6c9]">已偷</span> : null}
+                          <div className="pointer-events-none absolute inset-x-[10%] top-[24px] flex justify-center">
+                            <div
+                              className={`relative h-[42px] w-[92px] border bg-gradient-to-b ${surfaceTone.fill} ${surfaceTone.border}`}
+                              style={{
+                                clipPath: 'polygon(20% 0%, 82% 0%, 100% 34%, 80% 100%, 18% 100%, 0% 66%)',
+                                transform: 'skewX(-24deg)',
+                              }}
+                            >
+                              <div className="absolute inset-[2px] border border-white/8 opacity-40" style={{ clipPath: 'inherit' }} />
+                              <div className={`absolute left-[20%] right-[16%] top-[10px] h-[2px] ${surfaceTone.furrow}`} />
+                              <div className={`absolute left-[16%] right-[20%] top-[18px] h-[2px] ${surfaceTone.furrow}`} />
+                              <div className={`absolute left-[20%] right-[16%] top-[26px] h-[2px] ${surfaceTone.furrow}`} />
                             </div>
                           </div>
-                          <div className={`pointer-events-none absolute inset-[5%] rounded-[24px] border ${entry.highlight === 'ready' ? 'border-[#f6d07f]/45' : entry.highlight === 'growing' ? 'border-[#ebca85]/32' : entry.highlight === 'idle' ? 'border-[#e0bf82]/18' : 'border-[#d5c5a3]/16'}`} />
-                          {entry.status === 'READY' ? <span className="absolute right-3 top-3 rounded-full border border-[#ffe8b6]/45 bg-[linear-gradient(180deg,_rgba(255,227,153,0.96),_rgba(243,186,62,0.96))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#684108]">READY</span> : null}
-                          {entry.status === 'READY' && !viewDashboard.owner.isSelf && !entry.plot?.canSteal ? <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[#ffd9b3]/35 bg-[linear-gradient(180deg,_rgba(131,63,23,0.95),_rgba(89,38,12,0.95))] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ffe6c9]">已偷</span> : null}
-                          <div className="pointer-events-none absolute inset-0">
-                            <Image src={FARM_SCENE_ASSETS.plotFrame} alt="" fill className={`object-contain drop-shadow-[0_9px_12px_rgba(69,45,15,0.16)] ${entry.highlight === 'ready' ? 'brightness-[1.04]' : entry.highlight === 'growing' ? 'brightness-[1.01]' : ''}`} />
-                          </div>
-                          <div className="relative flex h-[80px] w-[80px] items-end justify-center sm:h-[88px] sm:w-[88px]">
+                          <div className="relative flex h-[76px] w-[76px] items-end justify-center sm:h-[84px] sm:w-[84px]">
                             {entry.status === 'READY' ? <div className={`absolute inset-1 rounded-full ${viewDashboard.owner.isSelf ? 'bg-[radial-gradient(circle,_rgba(255,224,138,0.56),_rgba(255,224,138,0.06)_70%)]' : 'bg-[radial-gradient(circle,_rgba(255,174,120,0.42),_rgba(255,174,120,0.05)_70%)]'} animate-pulse`} /> : null}
                             {harvestTransition ? (
                               <>
                                 <div className="absolute inset-0">
-                                  <Image src={FARM_SCENE_ASSETS.plotHarvested} alt="" fill className="object-contain opacity-0" style={{ animation: 'farmHarvestFieldReset 0.8s ease-out forwards' }} />
+                                  <Image src={FARM_SCENE_ASSETS.plotHarvested} alt="" fill className="object-contain opacity-0 scale-[0.82]" style={{ animation: 'farmHarvestFieldReset 0.8s ease-out forwards' }} />
                                 </div>
                                 <div className="absolute inset-0">
                                   <Image
@@ -888,7 +945,7 @@ export function FarmClient({ initialDashboard }: Props) {
                                 </div>
                               </>
                             ) : null}
-                            <Image src={preview.asset} alt={entry.title} fill className={`object-contain ${preview.className}`} />
+                            {preview.asset ? <Image src={preview.asset} alt={entry.title} fill className={`object-contain ${preview.className}`} /> : null}
                           </div>
                         </button>
                         <div className={`pointer-events-none absolute bottom-[calc(100%+14px)] left-1/2 w-52 -translate-x-1/2 rounded-[20px] border border-[#e4ca8f]/40 bg-[linear-gradient(180deg,_rgba(52,29,9,0.94),_rgba(31,16,6,0.94))] px-4 py-3 text-left text-[#fff3d1] shadow-[0_18px_36px_rgba(17,9,3,0.28)] transition ${tooltipVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}>
@@ -1222,7 +1279,7 @@ export function FarmClient({ initialDashboard }: Props) {
                   <div className="rounded-full border border-white/35 bg-white/18 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8d6509]">地块 {activePlot.plotIndex}</div>
                   <div className="relative mt-5 flex h-56 w-56 items-center justify-center">
                     <Image src={FARM_SCENE_ASSETS.plotFrame} alt="" fill className="object-contain opacity-95" />
-                    <Image src={getPlotAsset(activePlot).asset} alt={activePlot.title} fill className={`object-contain ${getPlotAsset(activePlot).className}`} />
+                    {activePlotPreview?.asset ? <Image src={activePlotPreview.asset} alt={activePlot.title} fill className={`object-contain ${activePlotPreview.className}`} /> : null}
                   </div>
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <span className="rounded-full border border-white/38 bg-white/24 px-4 py-2 text-sm font-semibold tracking-[0.16em] text-[#5f3b0d]">{activePlot.status === 'READY' ? '成熟完成' : activePlot.status === 'GROWING' && activePlot.plot ? stageLabelMap[activePlot.plot.growthStage] : activePlot.status === 'EMPTY' ? '等待播种' : '待解锁'}</span>
