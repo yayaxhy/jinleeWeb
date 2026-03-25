@@ -83,14 +83,14 @@ type PlotCard = {
 };
 
 const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
-  1: { left: '18%', top: '18%', depth: 1 },
-  2: { left: '37%', top: '14%', depth: 2 },
-  3: { left: '56%', top: '18%', depth: 1 },
-  4: { left: '75%', top: '14%', depth: 2 },
-  5: { left: '27%', top: '40%', depth: 3 },
-  6: { left: '46%', top: '36%', depth: 4 },
-  7: { left: '65%', top: '40%', depth: 3 },
-  8: { left: '84%', top: '36%', depth: 4 },
+  1: { left: '31%', top: '41%', depth: 10 },
+  2: { left: '42%', top: '39%', depth: 11 },
+  3: { left: '53%', top: '41%', depth: 10 },
+  4: { left: '64%', top: '39%', depth: 11 },
+  5: { left: '35%', top: '54%', depth: 12 },
+  6: { left: '46%', top: '52%', depth: 13 },
+  7: { left: '57%', top: '54%', depth: 12 },
+  8: { left: '68%', top: '52%', depth: 13 },
 };
 
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {

@@ -15,28 +15,28 @@ export const FARM_SCENE_ASSETS = {
 
 export const FARM_CROP_ASSETS: Record<FarmSeedTypeValue, Record<FarmGrowthStage, string>> = {
   WHEAT: {
-    SPROUT: '/farm/wheat-sprout.svg',
-    YOUNG: '/farm/wheat-young.svg',
-    MATURE: '/farm/wheat-mature.svg',
-    READY: '/farm/wheat-ready.svg',
+    SPROUT: '/farm/generated/normalized/wheat-sprout.webp',
+    YOUNG: '/farm/generated/normalized/wheat-young.webp',
+    MATURE: '/farm/generated/normalized/wheat-mature.webp',
+    READY: '/farm/generated/normalized/wheat-ready.webp',
   },
   ROSE: {
-    SPROUT: '/farm/rose-sprout.svg',
-    YOUNG: '/farm/rose-young.svg',
-    MATURE: '/farm/rose-mature.svg',
-    READY: '/farm/rose-ready.svg',
+    SPROUT: '/farm/generated/normalized/rose-sprout.webp',
+    YOUNG: '/farm/generated/normalized/rose-young.webp',
+    MATURE: '/farm/generated/normalized/rose-mature.webp',
+    READY: '/farm/generated/normalized/rose-ready.webp',
   },
   KOI_FLOWER: {
-    SPROUT: '/farm/koi-flower-sprout.svg',
-    YOUNG: '/farm/koi-flower-young.svg',
-    MATURE: '/farm/koi-flower-mature.svg',
-    READY: '/farm/koi-flower-ready.svg',
+    SPROUT: '/farm/generated/normalized/koi-flower-sprout.webp',
+    YOUNG: '/farm/generated/normalized/koi-flower-young.webp',
+    MATURE: '/farm/generated/normalized/koi-flower-mature.webp',
+    READY: '/farm/generated/normalized/koi-flower-ready.webp',
   },
   MYSTERY_FRUIT: {
-    SPROUT: '/farm/mystery-fruit-sprout.svg',
-    YOUNG: '/farm/mystery-fruit-young.svg',
-    MATURE: '/farm/mystery-fruit-mature.svg',
-    READY: '/farm/mystery-fruit-ready.svg',
+    SPROUT: '/farm/generated/normalized/mystery-fruit-sprout.webp',
+    YOUNG: '/farm/generated/normalized/mystery-fruit-young.webp',
+    MATURE: '/farm/generated/normalized/mystery-fruit-mature.webp',
+    READY: '/farm/generated/normalized/mystery-fruit-ready.webp',
   },
 };
 

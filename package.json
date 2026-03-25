@@ -9,7 +9,9 @@
     "lint": "eslint",
     "farm:generate": "node scripts/generate-farm-asset.mjs",
     "farm:generate:all-core": "node scripts/generate-farm-asset.mjs --all-core",
-    "farm:derive-plots": "node scripts/derive-plot-states.mjs"
+    "farm:generate:all-crops": "node scripts/generate-farm-asset.mjs --all-crops",
+    "farm:derive-plots": "node scripts/derive-plot-states.mjs",
+    "farm:normalize-crops": "node scripts/normalize-farm-crops.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
