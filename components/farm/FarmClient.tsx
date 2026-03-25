@@ -83,15 +83,15 @@ type PlotCard = {
 };
 
 const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
-  // Anchored to the terrace perspective so the tiles visually merge into the manor art.
-  1: { left: '628px', top: '434px', depth: 10 },
-  2: { left: '742px', top: '458px', depth: 11 },
-  3: { left: '856px', top: '482px', depth: 12 },
-  4: { left: '970px', top: '506px', depth: 13 },
-  5: { left: '686px', top: '528px', depth: 20 },
-  6: { left: '800px', top: '552px', depth: 21 },
-  7: { left: '914px', top: '576px', depth: 22 },
-  8: { left: '1028px', top: '600px', depth: 23 },
+  // Parallel 4x2 rows centered on the terrace.
+  1: { left: '616px', top: '470px', depth: 10 },
+  2: { left: '730px', top: '470px', depth: 11 },
+  3: { left: '844px', top: '470px', depth: 12 },
+  4: { left: '958px', top: '470px', depth: 13 },
+  5: { left: '616px', top: '566px', depth: 20 },
+  6: { left: '730px', top: '566px', depth: 21 },
+  7: { left: '844px', top: '566px', depth: 22 },
+  8: { left: '958px', top: '566px', depth: 23 },
 };
 
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
