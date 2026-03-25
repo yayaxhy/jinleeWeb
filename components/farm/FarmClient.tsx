@@ -84,7 +84,7 @@ type PlotCard = {
 
 const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
   // Packed staggered cluster, matching the terrace perspective in the reference layout.
-  1: { left: '808px', top: '308px', depth: 10 },
+  1: { left: '780px', top: '358px', depth: 10 },
   2: { left: '610px', top: '470px', depth: 20 },
   3: { left: '722px', top: '470px', depth: 21 },
   4: { left: '834px', top: '470px', depth: 22 },
