@@ -83,15 +83,15 @@ type PlotCard = {
 };
 
 const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
-  // Parallel 4x2 rows centered on the terrace.
-  1: { left: '616px', top: '470px', depth: 10 },
-  2: { left: '730px', top: '470px', depth: 11 },
-  3: { left: '844px', top: '470px', depth: 12 },
-  4: { left: '958px', top: '470px', depth: 13 },
-  5: { left: '616px', top: '566px', depth: 20 },
-  6: { left: '730px', top: '566px', depth: 21 },
-  7: { left: '844px', top: '566px', depth: 22 },
-  8: { left: '958px', top: '566px', depth: 23 },
+  // Packed staggered cluster, matching the terrace perspective in the reference layout.
+  1: { left: '708px', top: '408px', depth: 10 },
+  2: { left: '610px', top: '470px', depth: 20 },
+  3: { left: '722px', top: '470px', depth: 21 },
+  4: { left: '834px', top: '470px', depth: 22 },
+  5: { left: '946px', top: '470px', depth: 23 },
+  6: { left: '666px', top: '532px', depth: 30 },
+  7: { left: '778px', top: '532px', depth: 31 },
+  8: { left: '890px', top: '532px', depth: 32 },
 };
 
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
