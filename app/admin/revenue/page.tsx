@@ -5,7 +5,9 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
-import { parseUtcDateRange } from '@/lib/utcDateRange';
+import { RevenueTimeRangeActions } from '@/components/admin/RevenueTimeRangeActions';
+import { parseCentralEuropeanDateRange } from '@/lib/centralEuropeanDateRange';
+import { formatDateTimeInputUtc } from '@/lib/utcDateRange';
 
 export const metadata = {
   title: '查看收益',
@@ -89,7 +91,9 @@ export default async function AdminRevenuePage(props: PageProps) {
   const resolveDisplayName = (discordId: string) => excludeDisplayMap.get(discordId) || '未知用户';
   const startParam = Array.isArray(searchParams.startDate) ? searchParams.startDate[0] : searchParams.startDate;
   const endParam = Array.isArray(searchParams.endDate) ? searchParams.endDate[0] : searchParams.endDate;
-  const { start, end, startValue, endValue } = parseUtcDateRange(startParam, endParam);
+  const { start, end, startValue, endValue } = parseCentralEuropeanDateRange(startParam, endParam);
+  const startUtcValue = formatDateTimeInputUtc(start);
+  const endUtcValue = formatDateTimeInputUtc(end);
 
   const blockStackAgg = await prisma.blockStackGame.aggregate({
     _sum: {
@@ -397,8 +401,9 @@ export default async function AdminRevenuePage(props: PageProps) {
 
       <form className="grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 md:grid-cols-2" method="get">
         <label className="space-y-2 text-sm">
-          <span className="text-white/70">开始时间 (UTC+0)</span>
+          <span className="text-white/70">开始时间 (中欧时区 CET/CEST)</span>
           <input
+            id="admin-revenue-startDate"
             type="datetime-local"
             name="startDate"
             defaultValue={startValue}
@@ -406,8 +411,9 @@ export default async function AdminRevenuePage(props: PageProps) {
           />
         </label>
         <label className="space-y-2 text-sm">
-          <span className="text-white/70">结束时间 (UTC+0)</span>
+          <span className="text-white/70">结束时间 (中欧时区 CET/CEST)</span>
           <input
+            id="admin-revenue-endDate"
             type="datetime-local"
             name="endDate"
             defaultValue={endValue}
@@ -417,6 +423,7 @@ export default async function AdminRevenuePage(props: PageProps) {
         <label className="space-y-2 text-sm">
           <span className="text-white/70">充值/提现排除 IDs</span>
           <textarea
+            id="admin-revenue-excludeRecharge"
             name="excludeRecharge"
             defaultValue={excludeRechargeInput}
             rows={2}
@@ -437,6 +444,7 @@ export default async function AdminRevenuePage(props: PageProps) {
         <label className="space-y-2 text-sm">
           <span className="text-white/70">会员余额排除 IDs</span>
           <textarea
+            id="admin-revenue-excludeMember"
             name="excludeMember"
             defaultValue={excludeMemberInput}
             rows={2}
@@ -456,30 +464,7 @@ export default async function AdminRevenuePage(props: PageProps) {
         </label>
         <div className="md:col-span-2">
           <div className="flex flex-col items-start gap-3">
-            <button
-              type="submit"
-              formAction="/api/admin/revenue/export"
-              formMethod="get"
-              className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm text-white hover:bg-white/10"
-            >
-              下载 Excel（全部收益数据）
-            </button>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center rounded-full bg-white/15 px-6 py-2 text-sm text-white hover:bg-white/25"
-              >
-                刷新数据
-              </button>
-              <button
-                type="submit"
-                formAction="/admin/revenue/charts"
-                formMethod="get"
-                className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm text-white hover:bg-white/10"
-              >
-                查看表格
-              </button>
-            </div>
+            <RevenueTimeRangeActions fallbackStartUtcValue={startUtcValue} fallbackEndUtcValue={endUtcValue} />
           </div>
         </div>
       </form>

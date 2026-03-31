@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import { formatDateTimeInputCentralEuropean } from '@/lib/centralEuropeanDateRange';
 import { parseUtcDateRange } from '@/lib/utcDateRange';
 
 export const metadata = {
@@ -54,6 +55,22 @@ const parseNumber = (value: unknown): number => {
   return 0;
 };
 
+const buildDailySeries = <T extends Record<string, unknown>>(
+  rows: T[],
+  dateField: keyof T,
+  valueField: keyof T,
+  allDays: string[]
+): DailyPoint[] => {
+  const sumMap = new Map<string, number>();
+  for (const row of rows) {
+    const rawDate = row[dateField];
+    if (!(rawDate instanceof Date) || Number.isNaN(rawDate.getTime())) continue;
+    const key = toDayKey(rawDate);
+    sumMap.set(key, (sumMap.get(key) ?? 0) + parseNumber(row[valueField]));
+  }
+  return allDays.map((day) => ({ day, value: sumMap.get(day) ?? 0 }));
+};
+
 const getDateRowWindow = (start: Date, end: Date) => {
   const startDay = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), 0, 0, 0, 0));
   const endDay = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate(), 0, 0, 0, 0));
@@ -73,22 +90,6 @@ const buildDayKeys = (start: Date, end: Date) => {
     keys.push(toDayKey(cur));
   }
   return keys;
-};
-
-const buildDailySeries = <T extends Record<string, unknown>>(
-  rows: T[],
-  dateField: keyof T,
-  valueField: keyof T,
-  allDays: string[]
-): DailyPoint[] => {
-  const sumMap = new Map<string, number>();
-  for (const row of rows) {
-    const rawDate = row[dateField];
-    if (!(rawDate instanceof Date) || Number.isNaN(rawDate.getTime())) continue;
-    const key = toDayKey(rawDate);
-    sumMap.set(key, (sumMap.get(key) ?? 0) + parseNumber(row[valueField]));
-  }
-  return allDays.map((day) => ({ day, value: sumMap.get(day) ?? 0 }));
 };
 
 const subtractDailySeries = (base: DailyPoint[], deduction: DailyPoint[]): DailyPoint[] => {
@@ -399,8 +400,8 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
   const commissionSeries = subtractDailySeries(rawCommissionSeries, revertedGiftFeeSeries);
 
   const revenueHref = buildSearchHref('/admin/revenue', {
-    startDate: startValue,
-    endDate: endValue,
+    startDate: formatDateTimeInputCentralEuropean(start),
+    endDate: formatDateTimeInputCentralEuropean(end),
     excludeRecharge: excludeRechargeInput,
     excludeMember: excludeMemberInput,
   });
