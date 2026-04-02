@@ -4,8 +4,10 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
-import { formatDateTimeInputCentralEuropean } from '@/lib/centralEuropeanDateRange';
-import { parseUtcDateRange } from '@/lib/utcDateRange';
+import {
+  formatDateTimeInputCentralEuropean,
+  parseCentralEuropeanDateRange,
+} from '@/lib/centralEuropeanDateRange';
 
 export const metadata = {
   title: '收益图表',
@@ -36,8 +38,21 @@ const parseExcludeIds = (value: string) =>
 
 const pad2 = (value: number) => String(value).padStart(2, '0');
 
-const toDayKey = (date: Date) =>
-  `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`;
+const parseDateTimeInputValue = (value: string) => {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute] = match;
+  return {
+    year: Number(year),
+    month: Number(month),
+    day: Number(day),
+    hour: Number(hour),
+    minute: Number(minute),
+  };
+};
+
+const toDayKey = (date: Date) => formatDateTimeInputCentralEuropean(date).slice(0, 10);
 
 const parseNumber = (value: unknown): number => {
   if (value === null || value === undefined) return 0;
@@ -71,23 +86,19 @@ const buildDailySeries = <T extends Record<string, unknown>>(
   return allDays.map((day) => ({ day, value: sumMap.get(day) ?? 0 }));
 };
 
-const getDateRowWindow = (start: Date, end: Date) => {
-  const startDay = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), 0, 0, 0, 0));
-  const endDay = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate(), 0, 0, 0, 0));
-  const endHasTime =
-    end.getUTCHours() !== 0 ||
-    end.getUTCMinutes() !== 0 ||
-    end.getUTCSeconds() !== 0 ||
-    end.getUTCMilliseconds() !== 0;
-  const endExclusive = new Date(endDay.getTime() + (endHasTime ? DAY_MS : 0));
-  return { startDay, endExclusive };
-};
+const buildDayKeys = (startValue: string, endValue: string) => {
+  const startParts = parseDateTimeInputValue(startValue);
+  const endParts = parseDateTimeInputValue(endValue);
+  if (!startParts || !endParts) return [];
 
-const buildDayKeys = (start: Date, end: Date) => {
-  const { startDay, endExclusive } = getDateRowWindow(start, end);
+  const startDay = Date.UTC(startParts.year, startParts.month - 1, startParts.day, 0, 0, 0, 0);
+  const endDay = Date.UTC(endParts.year, endParts.month - 1, endParts.day, 0, 0, 0, 0);
+  const endHasTime = endParts.hour !== 0 || endParts.minute !== 0;
+  const endExclusive = endDay + (endHasTime ? DAY_MS : 0);
   const keys: string[] = [];
-  for (let cur = new Date(startDay); cur < endExclusive; cur.setUTCDate(cur.getUTCDate() + 1)) {
-    keys.push(toDayKey(cur));
+  for (let cur = startDay; cur < endExclusive; cur += DAY_MS) {
+    const date = new Date(cur);
+    keys.push(`${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`);
   }
   return keys;
 };
@@ -345,7 +356,7 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
     ? searchParams.excludeMember[0]
     : searchParams.excludeMember;
 
-  const { start, end, startValue, endValue } = parseUtcDateRange(startParam, endParam);
+  const { start, end, startValue, endValue } = parseCentralEuropeanDateRange(startParam, endParam);
   const excludeRechargeInput = (excludeRechargeParam ?? '').trim();
   const excludeMemberInput = (excludeMemberParam ?? '').trim();
   const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
@@ -389,7 +400,7 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
     }),
   ]);
 
-  const allDays = buildDayKeys(start, end);
+  const allDays = buildDayKeys(startValue, endValue);
   const rechargeSeries = buildDailySeries(rechargeRows, 'createdAt', 'amount', allDays);
   const rawGiftSeries = buildDailySeries(giftRows, 'createdAt', 'gross', allDays);
   const revertedGiftSeries = buildDailySeries(revertedGiftRows, 'createdAt', 'gross', allDays);
@@ -400,8 +411,8 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
   const commissionSeries = subtractDailySeries(rawCommissionSeries, revertedGiftFeeSeries);
 
   const revenueHref = buildSearchHref('/admin/revenue', {
-    startDate: formatDateTimeInputCentralEuropean(start),
-    endDate: formatDateTimeInputCentralEuropean(end),
+    startDate: startValue,
+    endDate: endValue,
     excludeRecharge: excludeRechargeInput,
     excludeMember: excludeMemberInput,
   });
@@ -413,7 +424,7 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
           <p className="text-xs uppercase tracking-[0.5em] text-white/60">ADMIN</p>
           <h2 className="text-2xl font-semibold">查看表格</h2>
           <p className="mt-1 text-sm text-white/60">
-            区间（UTC+0）：{startValue.replace('T', ' ')} ~ {endValue.replace('T', ' ')}
+            区间（中欧时区 CET/CEST）：{startValue.replace('T', ' ')} ~ {endValue.replace('T', ' ')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">

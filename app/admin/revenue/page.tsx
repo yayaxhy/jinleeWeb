@@ -7,7 +7,6 @@ import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { RevenueTimeRangeActions } from '@/components/admin/RevenueTimeRangeActions';
 import { parseCentralEuropeanDateRange } from '@/lib/centralEuropeanDateRange';
-import { formatDateTimeInputUtc } from '@/lib/utcDateRange';
 
 export const metadata = {
   title: '查看收益',
@@ -92,8 +91,6 @@ export default async function AdminRevenuePage(props: PageProps) {
   const startParam = Array.isArray(searchParams.startDate) ? searchParams.startDate[0] : searchParams.startDate;
   const endParam = Array.isArray(searchParams.endDate) ? searchParams.endDate[0] : searchParams.endDate;
   const { start, end, startValue, endValue } = parseCentralEuropeanDateRange(startParam, endParam);
-  const startUtcValue = formatDateTimeInputUtc(start);
-  const endUtcValue = formatDateTimeInputUtc(end);
 
   const blockStackAgg = await prisma.blockStackGame.aggregate({
     _sum: {
@@ -464,7 +461,10 @@ export default async function AdminRevenuePage(props: PageProps) {
         </label>
         <div className="md:col-span-2">
           <div className="flex flex-col items-start gap-3">
-            <RevenueTimeRangeActions fallbackStartUtcValue={startUtcValue} fallbackEndUtcValue={endUtcValue} />
+            <RevenueTimeRangeActions
+              fallbackStartValue={startValue}
+              fallbackEndValue={endValue}
+            />
           </div>
         </div>
       </form>

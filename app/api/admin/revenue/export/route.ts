@@ -4,7 +4,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { canViewRevenue } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-import { formatDateTimeTextUtc, formatFileTimestampUtc, parseUtcDateRange } from '@/lib/utcDateRange';
+import {
+  formatDateTimeTextCentralEuropean,
+  formatFileTimestampCentralEuropean,
+  parseCentralEuropeanDateRange,
+} from '@/lib/centralEuropeanDateRange';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -136,7 +140,7 @@ function addKeyValueSheet(
   }
 }
 
-const toFileName = (prefix: string, date = new Date()) => `${prefix}_${formatFileTimestampUtc(date)}.xlsx`;
+const toFileName = (prefix: string, date = new Date()) => `${prefix}_${formatFileTimestampCentralEuropean(date)}.xlsx`;
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession();
@@ -149,7 +153,10 @@ export async function GET(request: NextRequest) {
   const excludeMemberInput = (searchParams.get('excludeMember') ?? '1441310169492361268').trim();
   const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
   const excludeMemberIds = excludeMemberInput ? parseExcludeIds(excludeMemberInput) : [];
-  const { start, end } = parseUtcDateRange(searchParams.get('startDate') ?? undefined, searchParams.get('endDate') ?? undefined);
+  const { start, end } = parseCentralEuropeanDateRange(
+    searchParams.get('startDate') ?? undefined,
+    searchParams.get('endDate') ?? undefined,
+  );
 
   const excludePreviewIds = Array.from(new Set([...excludeRechargeIds, ...excludeMemberIds]));
   const excludeMembers = excludePreviewIds.length
@@ -341,8 +348,8 @@ export async function GET(request: NextRequest) {
   workbook.created = new Date();
 
   addKeyValueSheet(workbook, '导出参数', [
-    { section: 'filters', key: 'start', value: formatDateTimeTextUtc(start) },
-    { section: 'filters', key: 'end(exclusive)', value: formatDateTimeTextUtc(end) },
+    { section: 'filters', key: 'start', value: formatDateTimeTextCentralEuropean(start) },
+    { section: 'filters', key: 'end(exclusive)', value: formatDateTimeTextCentralEuropean(end) },
     { section: 'filters', key: 'excludeRecharge(raw)', value: excludeRechargeInput },
     { section: 'filters', key: 'excludeMember(raw)', value: excludeMemberInput },
     { section: 'filters', key: 'excludeRechargeIds', value: excludeRechargeIds.join(', ') },

@@ -117,6 +117,13 @@ export const formatDateTimeTextCentralEuropean = (date: Date) => {
   )}:${pad2(parts.second)} ${parts.timeZoneName ?? TIME_ZONE}`;
 };
 
+export const formatFileTimestampCentralEuropean = (date: Date) => {
+  const parts = getCentralEuropeanDateTimeParts(date);
+  return `${parts.year}${pad2(parts.month)}${pad2(parts.day)}_${pad2(parts.hour)}${pad2(parts.minute)}${pad2(
+    parts.second
+  )}`;
+};
+
 export const parseDateTimeLocalAsCentralEuropean = (raw?: string) => {
   const value = raw?.trim();
   if (!value) return null;
