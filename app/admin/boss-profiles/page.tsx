@@ -46,67 +46,87 @@ function Notice({ type, message }: { type: string; message: string }) {
   );
 }
 
-function ProfileRow({ profile }: { profile: StoredBossPortrait }) {
+function ProfileCard({ profile }: { profile: StoredBossPortrait }) {
   return (
-    <tr className="border-b border-white/10 align-top last:border-0">
-      <td className="py-4 pr-4">
-        <div className="space-y-1">
+    <article className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-4">
+        <div className="min-w-0 space-y-1">
           <div className="font-medium text-white/95">{profile.displayName}</div>
-          <div className="font-mono text-xs text-white/50">{profile.bossId}</div>
+          <div className="break-all font-mono text-xs text-white/50">{profile.bossId}</div>
         </div>
-      </td>
-      <td className="py-4 pr-4 text-white/85">{formatGames(profile)}</td>
-      <td className="py-4 pr-4 text-white/85">{profile.styleLabel}</td>
-      <td className="py-4 pr-4 text-white/85">{profile.preferredCompanionLabel}</td>
-      <td className="py-4 pr-4 text-white/85">{profile.rankLabel}</td>
-      <td className="py-4 pr-4">
-        <div className="space-y-1">
-          <div className="text-white/90">{profile.spendLevelLabel}</div>
+        <form action={generateSingleBossProfileAction} className="inline-flex">
+          <input type="hidden" name="bossId" value={profile.bossId} />
+          <input type="hidden" name="sampleSize" value="50" />
+          <button
+            type="submit"
+            className="rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.25em] text-white hover:bg-white/10"
+          >
+            刷新
+          </button>
+        </form>
+      </div>
+
+      <div className="grid gap-4 pt-4 sm:grid-cols-2 2xl:grid-cols-3">
+        <div className="min-w-0 space-y-1">
+          <div className="text-xs uppercase tracking-[0.25em] text-white/45">常玩游戏</div>
+          <div className="break-words text-sm text-white/85">{formatGames(profile)}</div>
+        </div>
+
+        <div className="min-w-0 space-y-1">
+          <div className="text-xs uppercase tracking-[0.25em] text-white/45">玩法风格</div>
+          <div className="break-words text-sm text-white/85">{profile.styleLabel}</div>
+        </div>
+
+        <div className="min-w-0 space-y-1">
+          <div className="text-xs uppercase tracking-[0.25em] text-white/45">陪玩偏好</div>
+          <div className="break-words text-sm text-white/85">{profile.preferredCompanionLabel}</div>
+        </div>
+
+        <div className="min-w-0 space-y-1">
+          <div className="text-xs uppercase tracking-[0.25em] text-white/45">段位推断</div>
+          <div className="break-words text-sm text-white/85">{profile.rankLabel}</div>
+        </div>
+
+        <div className="min-w-0 space-y-1">
+          <div className="text-xs uppercase tracking-[0.25em] text-white/45">消费画像</div>
+          <div className="text-sm text-white/90">{profile.spendLevelLabel}</div>
           <div className="text-xs text-white/50">总消费 {formatAmountDown2(profile.totalSpentSnapshot)}</div>
           <div className="text-xs text-white/50">余额 {formatAmountDown2(profile.totalBalanceSnapshot)}</div>
         </div>
-      </td>
-      <td className="py-4 pr-4">
-        <div className="space-y-1 text-sm text-white/85">
+
+        <div className="min-w-0 space-y-1 text-sm text-white/85">
+          <div className="text-xs uppercase tracking-[0.25em] text-white/45">样本</div>
           <div>派单 {profile.totalRequestCount}</div>
           <div className="text-xs text-white/50">抽样派单 {profile.sampledRequestCount}</div>
           <div className="text-xs text-white/50">完结 {profile.totalEndedOrderCount}</div>
           <div className="text-xs text-white/50">抽样完结 {profile.sampledEndedOrderCount}</div>
           <div className="text-xs text-white/50">抢单均值 {profile.averageClickCount.toFixed(2)}</div>
         </div>
-      </td>
-      <td className="py-4 pr-4">
-        <div className="space-y-1 text-sm text-white/85">
+
+        <div className="min-w-0 space-y-1 text-sm text-white/85">
+          <div className="text-xs uppercase tracking-[0.25em] text-white/45">价格 / 时段</div>
           <div>客单价 {formatAmountDown2(profile.averageSpendPerOrder)}</div>
           <div className="text-xs text-white/50">单价 {formatAmountDown2(profile.averageUnitPrice)}/小时</div>
-          <div className="text-xs text-white/50">{profile.activeWindowLabel}</div>
+          <div className="break-words text-xs text-white/50">{profile.activeWindowLabel}</div>
         </div>
-      </td>
-      <td className="py-4 pr-4">
-        <div className="space-y-1 text-sm text-white/85">
+
+        <div className="min-w-0 space-y-1 text-sm text-white/85">
+          <div className="text-xs uppercase tracking-[0.25em] text-white/45">更新时间</div>
           <div>{formatDate(profile.updatedAt)}</div>
           <div className="text-xs text-white/50">首次样本 {formatDate(profile.firstSeenAt)}</div>
         </div>
-      </td>
-      <td className="py-4 pr-0">
-        <div className="space-y-3">
-          <form action={generateSingleBossProfileAction} className="inline-flex">
-            <input type="hidden" name="bossId" value={profile.bossId} />
-            <input type="hidden" name="sampleSize" value="50" />
-            <button
-              type="submit"
-              className="rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.25em] text-white hover:bg-white/10"
-            >
-              刷新
-            </button>
-          </form>
-          <div className="text-xs text-white/50">{profile.repeatWorkerLabel}</div>
+
+        <div className="min-w-0 space-y-3">
+          <div className="text-xs uppercase tracking-[0.25em] text-white/45">复购 / 证据</div>
+          <div className="break-words text-xs text-white/50">{profile.repeatWorkerLabel}</div>
           {profile.evidenceLines.length > 0 ? (
             <details className="text-xs text-white/60">
               <summary className="cursor-pointer text-white/75">查看证据</summary>
               <div className="mt-2 space-y-1">
                 {profile.evidenceLines.map((line) => (
-                  <div key={line}>{line}</div>
+                  <div key={line} className="break-words">
+                    {line}
+                  </div>
                 ))}
               </div>
             </details>
@@ -114,8 +134,8 @@ function ProfileRow({ profile }: { profile: StoredBossPortrait }) {
             <div className="text-xs text-white/40">无证据片段</div>
           )}
         </div>
-      </td>
-    </tr>
+      </div>
+    </article>
   );
 }
 
@@ -241,28 +261,10 @@ export default async function BossProfilesPage(props: PageProps) {
         </div>
 
         {profiles.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-[1460px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-white/10 text-xs uppercase tracking-[0.3em] text-white/60">
-                  <th className="py-3 pr-4">老板</th>
-                  <th className="py-3 pr-4">常玩游戏</th>
-                  <th className="py-3 pr-4">玩法风格</th>
-                  <th className="py-3 pr-4">陪玩偏好</th>
-                  <th className="py-3 pr-4">段位推断</th>
-                  <th className="py-3 pr-4">消费画像</th>
-                  <th className="py-3 pr-4">样本</th>
-                  <th className="py-3 pr-4">价格/时段</th>
-                  <th className="py-3 pr-4">更新时间</th>
-                  <th className="py-3 pr-0">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {profiles.map((profile) => (
-                  <ProfileRow key={profile.bossId} profile={profile} />
-                ))}
-              </tbody>
-            </table>
+          <div className="grid gap-4 xl:grid-cols-2">
+            {profiles.map((profile) => (
+              <ProfileCard key={profile.bossId} profile={profile} />
+            ))}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-white/50">
