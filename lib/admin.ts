@@ -70,6 +70,7 @@ export const canViewTransactions = (discordId?: string | null) =>
 
 export const canViewOrderRequests = canViewTransactions;
 export const canViewRefundableGifts = canViewTransactions;
+export const canManageBossProfiles = canViewTransactions;
 
 export const canViewReferrals = (discordId?: string | null) =>
   isAdminDiscordId(discordId) || isKefuDiscordId(discordId) || isHowardDiscordId(discordId);
