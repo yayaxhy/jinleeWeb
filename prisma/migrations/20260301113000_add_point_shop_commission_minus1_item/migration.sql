@@ -19,7 +19,7 @@ VALUES (
   'PS_COMMISSION_MINUS1_VOUCHER',
   '抽成降1%券',
   '与抽奖奖池同款：抽成降1%券',
-  10000,
+  3000,
   NULL,
   TRUE,
   'COUPON'::"PointShopDeliveryType",
