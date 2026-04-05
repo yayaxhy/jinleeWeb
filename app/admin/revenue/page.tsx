@@ -331,24 +331,58 @@ export default async function AdminRevenuePage(props: PageProps) {
   const expenseWhere: Prisma.ExpenseWhereInput = {
     createdAt: { gte: start, lt: end },
   };
-  const expenseAgg = await prisma.expense.aggregate({
-    _sum: { amount: true },
-    _count: { id: true },
-    where: expenseWhere,
-  });
-  const pureProfitAgg = await prisma.pureProfit.aggregate({
-    _sum: { amount: true },
-    where: { createdAt: { gte: start, lt: end } },
-  });
-  const expenseByReason = await prisma.expense.groupBy({
-    by: ['reason'],
-    _sum: { amount: true },
-    _count: { id: true },
-    where: expenseWhere,
-  });
+  const [expenseAgg, pureProfitAgg, expenseByReason, voucherGiftExpenseRows] = await Promise.all([
+    prisma.expense.aggregate({
+      _sum: { amount: true },
+      _count: { id: true },
+      where: expenseWhere,
+    }),
+    prisma.pureProfit.aggregate({
+      _sum: { amount: true },
+      where: { createdAt: { gte: start, lt: end } },
+    }),
+    prisma.expense.groupBy({
+      by: ['reason'],
+      _sum: { amount: true },
+      _count: { id: true },
+      where: expenseWhere,
+    }),
+    prisma.$queryRaw<{ voucher_gift_expense: Prisma.Decimal | null; voucher_gift_count: bigint | number }[]>(
+      Prisma.sql`
+        SELECT
+          COALESCE(SUM(ga."gross" - ga."payable"), 0) AS voucher_gift_expense,
+          COUNT(*) AS voucher_gift_count
+        FROM "gift_audit" ga
+        WHERE ga."createdAt" >= ${start}
+          AND ga."createdAt" < ${end}
+          AND (
+            jsonb_array_length(
+              CASE
+                WHEN jsonb_typeof(ga."voucherIds") = 'array' THEN ga."voucherIds"
+                ELSE '[]'::jsonb
+              END
+            ) > 0
+            OR jsonb_array_length(
+              CASE
+                WHEN jsonb_typeof(ga."couponIds") = 'array' THEN ga."couponIds"
+                ELSE '[]'::jsonb
+              END
+            ) > 0
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "revert" r
+            WHERE r."status" = 'SUCCESS'
+              AND r."originalTransactionId" = ga."individualTransactionId"
+          )
+      `,
+    ),
+  ]);
   const expenseByReasonSorted = [...expenseByReason].sort(
     (a, b) => (parseNumber(b._sum.amount) ?? 0) - (parseNumber(a._sum.amount) ?? 0)
   );
+  const voucherGiftExpense = dec(voucherGiftExpenseRows[0]?.voucher_gift_expense);
+  const voucherGiftExpenseCount = Number(voucherGiftExpenseRows[0]?.voucher_gift_count ?? 0);
 
   const pointShopOrderWhere: Prisma.PointShopOrderWhereInput = {
     createdAt: { gte: start, lt: end },
@@ -543,7 +577,9 @@ export default async function AdminRevenuePage(props: PageProps) {
           <div className="space-y-1 text-sm text-white/70">
             <p>笔数：{expenseAgg._count.id}</p>
             <p>总额：¥{formatNumber(expenseAgg._sum.amount, 4)}</p>
-            <p>总扣款金额：¥{formatNumber(pureProfitAgg._sum.amount, 4)}</p>
+            <p>送券金额（礼物券优惠）：¥{formatNumber(voucherGiftExpense, 4)}</p>
+            <p>送券笔数：{voucherGiftExpenseCount}</p>
+            <p>总扣款金额(收入）：¥{formatNumber(pureProfitAgg._sum.amount, 4)}</p>
           </div>
           <div className="space-y-1 text-sm text-white/70">
             <p className="text-white/90">按原因分类：</p>
