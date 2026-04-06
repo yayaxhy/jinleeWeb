@@ -54,6 +54,28 @@ export const parseHttpUrl = (value: string): URL | null => {
 
 export const isDiscordCdnHost = (url: URL) => url.hostname.toLowerCase() === WECHAT_WITHDRAW_HOST;
 
+const truncateMiddle = (value: string, maxLength: number) => {
+  if (value.length <= maxLength) return value;
+  if (maxLength <= 1) return '…';
+  const head = Math.ceil((maxLength - 1) / 2);
+  const tail = Math.floor((maxLength - 1) / 2);
+  return `${value.slice(0, head)}…${value.slice(value.length - tail)}`;
+};
+
+export const getWithdrawAccountDetailSummary = (detail: string, maxLength = 40) => {
+  const normalizedDetail = normalizeWithdrawDetail(detail);
+  const parsed = parseHttpUrl(normalizedDetail);
+  if (parsed) {
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    const fileName = segments.at(-1);
+    const compactUrl = fileName
+      ? `${parsed.hostname}/.../${fileName}`
+      : parsed.hostname;
+    return truncateMiddle(compactUrl, maxLength);
+  }
+  return truncateMiddle(normalizedDetail, maxLength);
+};
+
 export const getWithdrawErrorMessage = (error?: string | null) => {
   switch (error) {
     case 'unauthorized':

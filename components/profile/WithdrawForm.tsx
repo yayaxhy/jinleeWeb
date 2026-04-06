@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState, useTransition } f
 import { useRouter } from 'next/navigation';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import {
+  getWithdrawAccountDetailSummary,
   getWithdrawErrorMessage,
   parseStoredWithdrawAccount,
   type ParsedWithdrawAccount,
@@ -185,13 +186,26 @@ export default function WithdrawForm({
           <option value="">请选择提现方式</option>
           {parsedAccounts.map((acc) => (
             <option key={acc.slot} value={acc.slot}>
-              提现方式{acc.slot} · {acc.method} · {acc.detail}
+              提现方式{acc.slot} · {acc.method} · {getWithdrawAccountDetailSummary(acc.detail, 34)}
             </option>
           ))}
         </select>
         {parsedAccounts.length === 0 && (
           <p className="text-xs text-gray-500">尚未保存提现方式，请先在下方添加。</p>
         )}
+        {selectedAccount ? (
+          <div className="rounded-2xl border border-black/5 bg-[#faf7ff] px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#5c43a3]">
+              当前账户信息
+            </p>
+            <p className="mt-2 text-sm font-medium text-[#171717]">
+              提现方式{selectedAccount.slot} · {selectedAccount.method}
+            </p>
+            <p className="mt-1 break-all text-xs leading-6 text-gray-600">
+              {selectedAccount.detail}
+            </p>
+          </div>
+        ) : null}
       </div>
       <form onSubmit={handleSubmit} className="space-y-4 text-left">
         <div className="space-y-2">

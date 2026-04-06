@@ -129,10 +129,22 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                 {slotSuccess ? <span className="text-xs font-semibold text-emerald-700">已保存</span> : null}
               </div>
               {parsed ? (
-                <p className="text-sm text-gray-600">
-                  提现方式：{parsed.method} <br />
-                  账户信息：{parsed.detail}
-                </p>
+                <div className="text-sm text-gray-600">
+                  <p>提现方式：{parsed.method}</p>
+                  <p className="mt-1">账户信息：</p>
+                  <p
+                    className="mt-1 overflow-hidden text-xs leading-5 text-gray-500"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      wordBreak: 'break-all',
+                    }}
+                    title={parsed.detail}
+                  >
+                    {parsed.detail}
+                  </p>
+                </div>
               ) : (
                 <p className="text-sm text-gray-400">未设置</p>
               )}
