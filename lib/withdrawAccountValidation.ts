@@ -1,8 +1,8 @@
 import {
   isDiscordCdnHost,
-  isWeChatWithdrawMethod,
   normalizeWithdrawDetail,
   parseHttpUrl,
+  shouldValidateWithdrawImageLink,
 } from './withdrawAccounts';
 
 const WITHDRAW_ACCOUNT_CHECK_TIMEOUT_MS = 10_000;
@@ -22,7 +22,7 @@ export async function validateWithdrawAccountDetail(method: string, detail: stri
     throw new WithdrawAccountValidationError('detail_required');
   }
 
-  if (!isWeChatWithdrawMethod(method)) {
+  if (!shouldValidateWithdrawImageLink(method, normalizedDetail)) {
     return normalizedDetail;
   }
 

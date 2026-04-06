@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import {
   getWithdrawErrorMessage,
   isDiscordCdnHost,
-  isWeChatWithdrawMethod,
   parseHttpUrl,
   parseStoredWithdrawAccount,
+  shouldValidateWithdrawImageLink,
   WITHDRAW_METHOD_OPTIONS,
 } from '@/lib/withdrawAccounts';
 import { NoticeBanner } from './NoticeBanner';
@@ -54,11 +54,11 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
       setNotice({ level: 'error', text: getWithdrawErrorMessage('detail_required'), slot });
       return;
     }
-    if (isWeChatWithdrawMethod(method) && !parsedUrl) {
+    if (shouldValidateWithdrawImageLink(method, trimmed) && !parsedUrl) {
       setNotice({ level: 'error', text: getWithdrawErrorMessage('wechat_detail_invalid_url'), slot });
       return;
     }
-    if (isWeChatWithdrawMethod(method) && parsedUrl && !isDiscordCdnHost(parsedUrl)) {
+    if (shouldValidateWithdrawImageLink(method, trimmed) && parsedUrl && !isDiscordCdnHost(parsedUrl)) {
       setNotice({ level: 'error', text: getWithdrawErrorMessage('wechat_detail_invalid_host'), slot });
       return;
     }
@@ -202,7 +202,9 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                 <br />
                 微信：https://cdn.discordapp.com/...<br />
                 <br />
-                Paypal: xxx@gmail.com +名字
+                Paypal: xxx@gmail.com +名字<br />
+                <br />
+                如果填写的是链接而不是纯文本账号，也必须使用 `cdn.discordapp.com` 图片链接
               </p>
             </div>
           );

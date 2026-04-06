@@ -22,6 +22,13 @@ export const isWeChatWithdrawMethod = (value: string) => {
   return normalized === '微信' || normalized === 'wechat';
 };
 
+export const shouldValidateWithdrawImageLink = (method: string, detail: string) => {
+  const normalizedDetail = normalizeWithdrawDetail(detail);
+  if (!normalizedDetail) return false;
+  if (isWeChatWithdrawMethod(method)) return true;
+  return parseHttpUrl(normalizedDetail) !== null;
+};
+
 export const parseStoredWithdrawAccount = (value?: string | null): ParsedWithdrawAccount | null => {
   if (!value) return null;
   const [method, ...rest] = value.split(':');
@@ -60,13 +67,13 @@ export const getWithdrawErrorMessage = (error?: string | null) => {
     case 'detail_required':
       return '请输入提现账号信息';
     case 'wechat_detail_invalid_url':
-      return '微信收款码必须填写完整图片链接';
+      return '收款码图片链接必须填写完整的 http/https 链接';
     case 'wechat_detail_invalid_host':
-      return `微信收款码必须使用 ${WECHAT_WITHDRAW_HOST} 链接`;
+      return `使用图片链接时，必须使用 ${WECHAT_WITHDRAW_HOST} 链接`;
     case 'wechat_detail_unreachable':
-      return '微信收款码链接无法访问，请检查后重试';
+      return '收款码图片链接无法访问，请检查后重试';
     case 'wechat_detail_not_image':
-      return '微信收款码链接不是图片，请重新上传后保存';
+      return '收款码图片链接不是图片，请重新上传后保存';
     case 'invalid_amount':
       return '提现金额无效';
     case 'withdraw_cooldown':
