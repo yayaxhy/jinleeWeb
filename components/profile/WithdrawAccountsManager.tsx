@@ -2,18 +2,17 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { WITHDRAW_METHOD_OPTIONS } from './WithdrawForm';
+import {
+  getWithdrawErrorMessage,
+  isDiscordCdnHost,
+  isWeChatWithdrawMethod,
+  parseHttpUrl,
+  parseStoredWithdrawAccount,
+  WITHDRAW_METHOD_OPTIONS,
+} from '@/lib/withdrawAccounts';
 
 type SlotKey = 1 | 2 | 3;
 type AccountMap = { account1?: string | null; account2?: string | null; account3?: string | null };
-
-const parseAccount = (value?: string | null) => {
-  if (!value) return null;
-  const [method, ...rest] = value.split(':');
-  const detail = rest.join(':').trim();
-  if (!method || !detail) return null;
-  return { method, detail };
-};
 
 type WithdrawAccountsManagerProps = {
   initialAccounts: AccountMap;
@@ -32,19 +31,30 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
 
   const parsedAccounts = useMemo(() => {
     return {
-      1: parseAccount(accounts.account1),
-      2: parseAccount(accounts.account2),
-      3: parseAccount(accounts.account3),
+      1: parseStoredWithdrawAccount(accounts.account1),
+      2: parseStoredWithdrawAccount(accounts.account2),
+      3: parseStoredWithdrawAccount(accounts.account3),
     } as Record<SlotKey, { method: string; detail: string } | null>;
   }, [accounts.account1, accounts.account2, accounts.account3]);
 
   const handleSave = (slot: SlotKey) => {
     const { method, detail } = editing[slot];
     const trimmed = detail.trim();
+    const parsedUrl = parseHttpUrl(trimmed);
+
     if (!trimmed) {
-      setStatus('请输入提现账号信息');
+      setStatus(getWithdrawErrorMessage('detail_required'));
       return;
     }
+    if (isWeChatWithdrawMethod(method) && !parsedUrl) {
+      setStatus(getWithdrawErrorMessage('wechat_detail_invalid_url'));
+      return;
+    }
+    if (isWeChatWithdrawMethod(method) && parsedUrl && !isDiscordCdnHost(parsedUrl)) {
+      setStatus(getWithdrawErrorMessage('wechat_detail_invalid_host'));
+      return;
+    }
+
     startTransition(async () => {
       setStatus(null);
       try {
@@ -55,7 +65,7 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data?.error) {
-          throw new Error(data.error ?? '保存失败，请稍后重试');
+          throw new Error(getWithdrawErrorMessage(data?.error));
         }
         setAccounts((prev) => ({
           ...prev,
@@ -125,7 +135,11 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                     }))
                   }
                   className="w-full rounded-2xl border border-black/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-                  placeholder="请输入账号"
+                  placeholder={
+                    editing[slot as SlotKey].method === '微信'
+                      ? '请输入 cdn.discordapp.com 图片链接'
+                      : '请输入账号'
+                  }
                 />
               </div>
               <button
@@ -140,7 +154,7 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                 例子：<br />
                 支付宝：18888888 真实姓名<br />
                 <br />
-                微信：微信号 真实姓名<br />
+                微信：https://cdn.discordapp.com/...<br />
                 <br />
                 Paypal: xxx@gmail.com +名字
               </p>

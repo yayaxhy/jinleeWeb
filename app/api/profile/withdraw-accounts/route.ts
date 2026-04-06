@@ -1,17 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-
-const METHOD_OPTIONS = ['微信', '支付宝', 'Paypal'] as const;
-type MethodOption = (typeof METHOD_OPTIONS)[number];
+import {
+  buildStoredWithdrawAccount,
+  isWithdrawMethodOption,
+  normalizeWithdrawDetail,
+  normalizeWithdrawMethod,
+  WITHDRAW_METHOD_OPTIONS,
+} from '@/lib/withdrawAccounts';
+import {
+  validateWithdrawAccountDetail,
+  WithdrawAccountValidationError,
+} from '@/lib/withdrawAccountValidation';
 
 const parseSlot = (value: unknown) => {
   const numeric = Number(value);
   if (!Number.isInteger(numeric) || numeric < 1 || numeric > 3) return null;
   return numeric as 1 | 2 | 3;
 };
-
-const normalizeString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
 export async function GET() {
   const session = await getServerSession();
@@ -41,19 +47,27 @@ export async function POST(request: Request) {
   }
 
   const slot = parseSlot(body.slot);
-  const method = normalizeString(body.method) as MethodOption;
-  const detail = normalizeString(body.detail);
+  const method = normalizeWithdrawMethod(body.method);
+  const detail = normalizeWithdrawDetail(body.detail);
 
   if (!slot) {
     return NextResponse.json({ error: 'slot_invalid' }, { status: 400 });
   }
-  if (!method || !METHOD_OPTIONS.includes(method)) {
+  if (!method || !isWithdrawMethodOption(method)) {
     return NextResponse.json({ error: 'method_invalid' }, { status: 400 });
   }
-  if (!detail) {
-    return NextResponse.json({ error: 'detail_required' }, { status: 400 });
+
+  let normalizedDetail = detail;
+  try {
+    normalizedDetail = await validateWithdrawAccountDetail(method, detail);
+  } catch (error) {
+    if (error instanceof WithdrawAccountValidationError) {
+      return NextResponse.json({ error: error.code }, { status: 400 });
+    }
+    throw error;
   }
-  const combined = `${method}:${detail}`;
+
+  const combined = buildStoredWithdrawAccount(method, normalizedDetail);
   const data: Partial<Record<'account1' | 'account2' | 'account3', string>> = {};
   data[`account${slot}` as const] = combined;
 

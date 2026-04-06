@@ -3,10 +3,14 @@
 import { type FormEvent, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import {
+  getWithdrawErrorMessage,
+  parseStoredWithdrawAccount,
+  type ParsedWithdrawAccount,
+} from '@/lib/withdrawAccounts';
 
 const MIN_WITHDRAW_AMOUNT = 100;
 const ROME_TIMEZONE = 'Europe/Rome';
-export const WITHDRAW_METHOD_OPTIONS = ['微信', '支付宝', 'Paypal'] as const;
 
 type WithdrawFormProps = {
   maxAmount?: string;
@@ -25,16 +29,7 @@ const formatDateTime = (value?: string | Date | null) => {
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toLocaleString('zh-CN', { hour12: false, timeZone: ROME_TIMEZONE });
 };
-
-type ParsedAccount = { slot: '1' | '2' | '3'; method: string; detail: string };
-
-const parseAccount = (slot: '1' | '2' | '3', value?: string | null): ParsedAccount | null => {
-  if (!value) return null;
-  const [method, ...rest] = value.split(':');
-  const detail = rest.join(':').trim();
-  if (!method || !detail) return null;
-  return { slot, method, detail };
-};
+type ParsedAccount = ParsedWithdrawAccount & { slot: '1' | '2' | '3' };
 
 export default function WithdrawForm({
   maxAmount = '0',
@@ -75,9 +70,18 @@ export default function WithdrawForm({
     (Number.isNaN(amountValue) || amountValue < MIN_WITHDRAW_AMOUNT || amountValue > maxWithdrawable);
   const parsedAccounts = useMemo(() => {
     return [
-      parseAccount('1', savedAccounts?.account1),
-      parseAccount('2', savedAccounts?.account2),
-      parseAccount('3', savedAccounts?.account3),
+      (() => {
+        const account = parseStoredWithdrawAccount(savedAccounts?.account1);
+        return account ? { slot: '1' as const, ...account } : null;
+      })(),
+      (() => {
+        const account = parseStoredWithdrawAccount(savedAccounts?.account2);
+        return account ? { slot: '2' as const, ...account } : null;
+      })(),
+      (() => {
+        const account = parseStoredWithdrawAccount(savedAccounts?.account3);
+        return account ? { slot: '3' as const, ...account } : null;
+      })(),
     ].filter(Boolean) as ParsedAccount[];
   }, [savedAccounts?.account1, savedAccounts?.account2, savedAccounts?.account3]);
   const selectedAccount = parsedAccounts.find((acc) => acc.slot === selectedSlot);
@@ -113,7 +117,7 @@ export default function WithdrawForm({
           const friendlyMessage =
             data?.error === 'withdraw_cooldown' && nextAvailableFromResponse
               ? `提现冷却中，下次可在 ${nextAvailableFromResponse} 后再试。`
-              : data?.error ?? 'unknown_error';
+              : getWithdrawErrorMessage(data?.error);
           throw new Error(friendlyMessage);
         }
 

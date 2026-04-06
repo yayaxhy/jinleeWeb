@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
+import { parseStoredWithdrawAccount } from '@/lib/withdrawAccounts';
+import {
+  validateWithdrawAccountDetail,
+  WithdrawAccountValidationError,
+} from '@/lib/withdrawAccountValidation';
 
 class WithdrawError extends Error {
   code: string;
@@ -57,6 +62,33 @@ export async function POST(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      const withdrawalAccount = await tx.withdrawalAccount.findUnique({
+        where: { discordUserId: session.discordId },
+        select: { account1: true, account2: true, account3: true },
+      });
+      const savedMethods = [
+        withdrawalAccount?.account1,
+        withdrawalAccount?.account2,
+        withdrawalAccount?.account3,
+      ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+
+      if (!savedMethods.includes(method)) {
+        throw new WithdrawError('method_not_saved');
+      }
+
+      const parsedMethod = parseStoredWithdrawAccount(method);
+      if (!parsedMethod) {
+        throw new WithdrawError('invalid_method');
+      }
+      try {
+        await validateWithdrawAccountDetail(parsedMethod.method, parsedMethod.detail);
+      } catch (error) {
+        if (error instanceof WithdrawAccountValidationError) {
+          throw new WithdrawError(error.code);
+        }
+        throw error;
+      }
+
       const lastWithdraw = await tx.withdraw.findFirst({
         where: { discordId: session.discordId },
         orderBy: { createdAt: 'desc' },

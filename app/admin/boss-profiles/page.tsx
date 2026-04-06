@@ -16,12 +16,53 @@ type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+type BossProfileFilters = {
+  query: string;
+  game: string;
+};
+
 function readParam(
   params: Record<string, string | string[] | undefined>,
   key: string,
 ) {
   const value = params[key];
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+function normalizeText(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function buildFilters(params: Record<string, string | string[] | undefined>): BossProfileFilters {
+  return {
+    query: readParam(params, 'q').trim(),
+    game: readParam(params, 'game').trim(),
+  };
+}
+
+function matchesSearch(profile: StoredBossPortrait, query: string) {
+  if (!query) return true;
+
+  const needle = normalizeText(query);
+  const haystacks = [
+    profile.displayName,
+    profile.bossId,
+    profile.styleLabel,
+    profile.preferredCompanionLabel,
+    profile.rankLabel,
+    profile.spendLevelLabel,
+    profile.activeWindowLabel,
+    profile.repeatWorkerLabel,
+    ...profile.topGames,
+    ...profile.evidenceLines,
+  ];
+
+  return haystacks.some((value) => normalizeText(value).includes(needle));
+}
+
+function matchesGame(profile: StoredBossPortrait, game: string) {
+  if (!game) return true;
+  return profile.topGames.includes(game);
 }
 
 function formatDate(value?: Date | null) {
@@ -146,9 +187,16 @@ export default async function BossProfilesPage(props: PageProps) {
   }
 
   const searchParams = (await props.searchParams) ?? {};
+  const filters = buildFilters(searchParams);
   const noticeType = readParam(searchParams, 'type');
   const noticeMessage = readParam(searchParams, 'message');
-  const profiles = await listStoredBossPortraits(500);
+  const allProfiles = await listStoredBossPortraits(500);
+  const gameOptions = [...new Set(allProfiles.flatMap((profile) => profile.topGames))].sort((left, right) =>
+    left.localeCompare(right, 'zh-CN'),
+  );
+  const profiles = allProfiles.filter(
+    (profile) => matchesSearch(profile, filters.query) && matchesGame(profile, filters.game),
+  );
 
   return (
     <div className="space-y-6 text-white">
@@ -256,9 +304,61 @@ export default async function BossProfilesPage(props: PageProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">画像记录</h2>
-            <p className="text-sm text-white/60">当前已入库 {profiles.length} 条，按更新时间倒序展示。</p>
+            <p className="text-sm text-white/60">
+              当前共 {allProfiles.length} 条画像，筛选后显示 {profiles.length} 条，按更新时间倒序展示。
+            </p>
           </div>
         </div>
+
+        <form action="/admin/boss-profiles" method="get" className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 lg:grid-cols-[1.3fr_0.8fr_auto] lg:items-end">
+          <div className="space-y-1">
+            <label htmlFor="q" className="text-xs text-white/60">
+              搜索
+            </label>
+            <input
+              id="q"
+              name="q"
+              type="text"
+              defaultValue={filters.query}
+              placeholder="搜索老板昵称、Discord ID、游戏、画像关键词"
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="game" className="text-xs text-white/60">
+              Filter
+            </label>
+            <select
+              id="game"
+              name="game"
+              defaultValue={filters.game}
+              className="w-full rounded-2xl border border-white/10 bg-[#131318] px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+            >
+              <option value="">全部游戏</option>
+              {gameOptions.map((game) => (
+                <option key={game} value={game}>
+                  {game}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-full bg-[#5c43a3] px-6 py-3 text-sm tracking-[0.2em] text-white hover:bg-[#4a3388]"
+            >
+              搜索
+            </button>
+            <Link
+              href="/admin/boss-profiles"
+              className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3 text-sm text-white hover:bg-white/10"
+            >
+              清空
+            </Link>
+          </div>
+        </form>
 
         {profiles.length > 0 ? (
           <div className="grid gap-4 xl:grid-cols-2">
@@ -268,7 +368,7 @@ export default async function BossProfilesPage(props: PageProps) {
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-white/50">
-            还没有生成过任何老板画像。
+            {allProfiles.length > 0 ? '没有符合当前搜索条件的画像记录。' : '还没有生成过任何老板画像。'}
           </div>
         )}
       </section>
