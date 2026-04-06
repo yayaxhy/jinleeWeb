@@ -23,6 +23,9 @@ class WithdrawError extends Error {
 
 const MIN_WITHDRAW_AMOUNT = 100;
 const WITHDRAW_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+const INTERNAL_API_HOST = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
+const INTERNAL_API_PORT = process.env.INTERNAL_API_PORT;
+const INTERNAL_API_TOKEN = process.env.INTERNAL_API_TOKEN;
 
 const parseAmount = (raw: unknown): number | null => {
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
@@ -37,6 +40,40 @@ const ensureMethod = (raw: unknown) => {
   if (typeof raw !== 'string') return '';
   return raw.trim();
 };
+
+type WithdrawalNotificationRequest = {
+  userDiscordId: string;
+  amount: string;
+  requestedAt: string;
+  withdrawalId: string;
+  note: string;
+  remainingIncome: string;
+};
+
+async function notifyBotWithdrawal(payload: WithdrawalNotificationRequest) {
+  if (!INTERNAL_API_PORT || !INTERNAL_API_TOKEN) {
+    throw new Error('内部接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）');
+  }
+
+  const endpoint = `http://${INTERNAL_API_HOST}:${INTERNAL_API_PORT}/internal/withdrawals`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Internal-Token': INTERNAL_API_TOKEN,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message =
+      typeof data?.error === 'string' ? data.error : `内部提现通知失败 (${response.status})`;
+    throw new Error(message);
+  }
+
+  return data as { ok: boolean; duplicate?: boolean };
+}
 
 export async function POST(request: Request) {
   const session = await getServerSession();
@@ -129,11 +166,16 @@ export async function POST(request: Request) {
         select: { income: true, totalBalance: true },
       });
 
-      await tx.withdraw.create({
+      const withdrawRecord = await tx.withdraw.create({
         data: {
           discordId: session.discordId,
           amount: amountDecimal,
           method,
+        },
+        select: {
+          id: true,
+          createdAt: true,
+          method: true,
         },
       });
 
@@ -151,13 +193,40 @@ export async function POST(request: Request) {
       });
 
       return {
+        withdrawalId: withdrawRecord.id,
         remainingIncome: updatedMember.income?.toString() ?? '0',
         remainingBalance: updatedMember.totalBalance?.toString() ?? '0',
         nextAvailableAt: new Date(Date.now() + WITHDRAW_COOLDOWN_MS).toISOString(),
+        notificationPayload: {
+          userDiscordId: session.discordId,
+          amount: amountDecimal.toFixed(2),
+          requestedAt: withdrawRecord.createdAt.toISOString(),
+          withdrawalId: withdrawRecord.id,
+          note: withdrawRecord.method,
+          remainingIncome: updatedMember.income?.toString() ?? '0',
+        },
       };
     });
 
-    return NextResponse.json({ ok: true, ...result });
+    let notificationStatus: 'sent' | 'duplicate' | 'failed' = 'failed';
+    try {
+      const notifyResult = await notifyBotWithdrawal(result.notificationPayload);
+      notificationStatus = notifyResult.duplicate ? 'duplicate' : 'sent';
+    } catch (error) {
+      console.error('[withdraw] bot notification failed', {
+        withdrawalId: result.withdrawalId,
+        error,
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      withdrawalId: result.withdrawalId,
+      remainingIncome: result.remainingIncome,
+      remainingBalance: result.remainingBalance,
+      nextAvailableAt: result.nextAvailableAt,
+      notificationStatus,
+    });
   } catch (error) {
     if (error instanceof WithdrawError) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getWithdrawErrorMessage,
@@ -10,9 +10,11 @@ import {
   parseStoredWithdrawAccount,
   WITHDRAW_METHOD_OPTIONS,
 } from '@/lib/withdrawAccounts';
+import { NoticeBanner } from './NoticeBanner';
 
 type SlotKey = 1 | 2 | 3;
 type AccountMap = { account1?: string | null; account2?: string | null; account3?: string | null };
+type Notice = { level: 'success' | 'error'; text: string; slot?: SlotKey };
 
 type WithdrawAccountsManagerProps = {
   initialAccounts: AccountMap;
@@ -26,8 +28,9 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
     2: { method: WITHDRAW_METHOD_OPTIONS[0], detail: '' },
     3: { method: WITHDRAW_METHOD_OPTIONS[0], detail: '' },
   });
-  const [status, setStatus] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [isPending, startTransition] = useTransition();
+  const noticeRef = useRef<HTMLDivElement | null>(null);
 
   const parsedAccounts = useMemo(() => {
     return {
@@ -37,26 +40,31 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
     } as Record<SlotKey, { method: string; detail: string } | null>;
   }, [accounts.account1, accounts.account2, accounts.account3]);
 
+  useEffect(() => {
+    if (!notice) return;
+    noticeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [notice]);
+
   const handleSave = (slot: SlotKey) => {
     const { method, detail } = editing[slot];
     const trimmed = detail.trim();
     const parsedUrl = parseHttpUrl(trimmed);
 
     if (!trimmed) {
-      setStatus(getWithdrawErrorMessage('detail_required'));
+      setNotice({ level: 'error', text: getWithdrawErrorMessage('detail_required'), slot });
       return;
     }
     if (isWeChatWithdrawMethod(method) && !parsedUrl) {
-      setStatus(getWithdrawErrorMessage('wechat_detail_invalid_url'));
+      setNotice({ level: 'error', text: getWithdrawErrorMessage('wechat_detail_invalid_url'), slot });
       return;
     }
     if (isWeChatWithdrawMethod(method) && parsedUrl && !isDiscordCdnHost(parsedUrl)) {
-      setStatus(getWithdrawErrorMessage('wechat_detail_invalid_host'));
+      setNotice({ level: 'error', text: getWithdrawErrorMessage('wechat_detail_invalid_host'), slot });
       return;
     }
 
     startTransition(async () => {
-      setStatus(null);
+      setNotice(null);
       try {
         const res = await fetch('/api/profile/withdraw-accounts', {
           method: 'POST',
@@ -71,10 +79,14 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
           ...prev,
           [`account${slot}`]: `${method}:${trimmed}`,
         }));
-        setStatus(`提现方式${slot} 已保存`);
+        setNotice({ level: 'success', text: `提现方式${slot} 已保存`, slot });
         router.refresh();
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : '保存失败，请稍后重试');
+        setNotice({
+          level: 'error',
+          text: error instanceof Error ? error.message : '保存失败，请稍后重试',
+          slot,
+        });
       }
     });
   };
@@ -83,18 +95,38 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-[#5c43a3]">预存提现方式</h3>
-        {status && <p className="text-xs text-gray-500">{status}</p>}
       </div>
+      {notice ? (
+        <div ref={noticeRef}>
+          <NoticeBanner
+            level={notice.level}
+            title={notice.level === 'error' ? '保存失败，请检查输入内容' : undefined}
+            message={notice.text}
+            onDismiss={() => setNotice(null)}
+          />
+        </div>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-3">
         {[1, 2, 3].map((slot) => {
           const parsed = parsedAccounts[slot as SlotKey];
+          const slotNotice = notice?.slot === slot ? notice : null;
+          const slotError = slotNotice?.level === 'error';
+          const slotSuccess = slotNotice?.level === 'success';
           return (
             <div
               key={slot}
-              className="rounded-2xl border border-black/5 bg-white p-4 space-y-3 shadow-sm"
+              className={`rounded-2xl border bg-white p-4 space-y-3 shadow-sm transition-colors ${
+                slotError
+                  ? 'border-red-300 bg-red-50/60 shadow-[0_0_0_3px_rgba(239,68,68,0.08)]'
+                  : slotSuccess
+                    ? 'border-emerald-200 bg-emerald-50/60 shadow-[0_0_0_3px_rgba(16,185,129,0.08)]'
+                    : 'border-black/5'
+              }`}
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-[#171717]">提现方式{slot}</p>
+                {slotError ? <span className="text-xs font-semibold text-red-700">需要处理</span> : null}
+                {slotSuccess ? <span className="text-xs font-semibold text-emerald-700">已保存</span> : null}
               </div>
               {parsed ? (
                 <p className="text-sm text-gray-600">
@@ -109,12 +141,17 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                 <select
                   value={editing[slot as SlotKey].method}
                   onChange={(event) =>
-                    setEditing((prev) => ({
-                      ...prev,
-                      [slot]: { ...prev[slot as SlotKey], method: event.target.value },
-                    }))
+                    {
+                      setEditing((prev) => ({
+                        ...prev,
+                        [slot]: { ...prev[slot as SlotKey], method: event.target.value },
+                      }));
+                      if (notice?.slot === slot) setNotice(null);
+                    }
                   }
-                  className="w-full rounded-2xl border border-black/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+                  className={`w-full rounded-2xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] ${
+                    slotError ? 'border-red-300 bg-white' : 'border-black/10'
+                  }`}
                 >
                   {WITHDRAW_METHOD_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -129,18 +166,27 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                   type="text"
                   value={editing[slot as SlotKey].detail}
                   onChange={(event) =>
-                    setEditing((prev) => ({
-                      ...prev,
-                      [slot]: { ...prev[slot as SlotKey], detail: event.target.value },
-                    }))
+                    {
+                      setEditing((prev) => ({
+                        ...prev,
+                        [slot]: { ...prev[slot as SlotKey], detail: event.target.value },
+                      }));
+                      if (notice?.slot === slot) setNotice(null);
+                    }
                   }
-                  className="w-full rounded-2xl border border-black/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+                  aria-invalid={slotError ? true : undefined}
+                  className={`w-full rounded-2xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] ${
+                    slotError ? 'border-red-300 bg-white text-red-900 placeholder:text-red-300' : 'border-black/10'
+                  }`}
                   placeholder={
                     editing[slot as SlotKey].method === '微信'
                       ? '请输入 cdn.discordapp.com 图片链接'
                       : '请输入账号'
                   }
                 />
+                {slotError ? (
+                  <p className="text-xs font-medium text-red-700">{slotNotice?.text}</p>
+                ) : null}
               </div>
               <button
                 type="button"

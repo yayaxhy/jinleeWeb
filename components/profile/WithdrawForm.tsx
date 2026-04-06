@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useEffect, useMemo, useState, useTransition } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import {
@@ -8,6 +8,7 @@ import {
   parseStoredWithdrawAccount,
   type ParsedWithdrawAccount,
 } from '@/lib/withdrawAccounts';
+import { NoticeBanner } from './NoticeBanner';
 
 const MIN_WITHDRAW_AMOUNT = 100;
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -29,6 +30,8 @@ const formatDateTime = (value?: string | Date | null) => {
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toLocaleString('zh-CN', { hour12: false, timeZone: ROME_TIMEZONE });
 };
+
+type Notice = { level: 'success' | 'error'; text: string };
 type ParsedAccount = ParsedWithdrawAccount & { slot: '1' | '2' | '3' };
 
 export default function WithdrawForm({
@@ -40,8 +43,9 @@ export default function WithdrawForm({
   const router = useRouter();
   const [amount, setAmount] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<string>('');
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [isPending, startTransition] = useTransition();
+  const noticeRef = useRef<HTMLDivElement | null>(null);
 
   const max = useMemo(() => {
     const parsed = Number(maxAmount);
@@ -90,13 +94,17 @@ export default function WithdrawForm({
       setSelectedSlot(parsedAccounts[0].slot);
     }
   }, [parsedAccounts, selectedSlot]);
+  useEffect(() => {
+    if (!notice) return;
+    noticeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [notice]);
   const canSubmit =
     !amountError && amountValue >= MIN_WITHDRAW_AMOUNT && !inCooldown && !!selectedAccount;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
-    setStatusMessage(null);
+    setNotice(null);
 
     startTransition(async () => {
       try {
@@ -124,14 +132,14 @@ export default function WithdrawForm({
         const successMessage = nextAvailableFromResponse
           ? `提现成功！下次可提现时间：${nextAvailableFromResponse}`
           : '提现成功，我们将尽快处理！';
-        setStatusMessage(successMessage);
+        setNotice({ level: 'success', text: successMessage });
         setAmount('');
         setSelectedSlot('');
         router.refresh();
       } catch (error) {
         const message =
           error instanceof Error && error.message ? error.message : '提交失败，请稍后再试';
-        setStatusMessage(message);
+        setNotice({ level: 'error', text: message });
       }
     });
   };
@@ -153,16 +161,24 @@ export default function WithdrawForm({
       {lastWithdrawDate && (
         <p className="text-xs text-gray-400">上次提现：{formatDateTime(lastWithdrawDate)}</p>
       )}
-      {statusMessage && (
-        <p className="text-xs text-gray-600" role="status">
-          {statusMessage}
-        </p>
-      )}
+      {notice ? (
+        <div ref={noticeRef}>
+          <NoticeBanner
+            level={notice.level}
+            title={notice.level === 'error' ? '提现提交失败' : undefined}
+            message={notice.text}
+            onDismiss={() => setNotice(null)}
+          />
+        </div>
+      ) : null}
       <div className="space-y-2">
         <label className="text-xs uppercase tracking-[0.4em] text-gray-500">选择提现方式</label>
         <select
           value={selectedSlot}
-          onChange={(event) => setSelectedSlot(event.target.value)}
+          onChange={(event) => {
+            setSelectedSlot(event.target.value);
+            if (notice?.level === 'error') setNotice(null);
+          }}
           disabled={parsedAccounts.length === 0}
           className="w-full rounded-2xl border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] disabled:bg-gray-100 disabled:text-gray-400"
         >
@@ -185,8 +201,12 @@ export default function WithdrawForm({
             min={MIN_WITHDRAW_AMOUNT}
             step="0.01"
             value={amount}
-            onChange={(event) => setAmount(event.target.value)}
+            onChange={(event) => {
+              setAmount(event.target.value);
+              if (notice?.level === 'error') setNotice(null);
+            }}
             disabled={!canWithdraw}
+            aria-invalid={amountError ? true : undefined}
             className={`w-full rounded-2xl border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] ${
               amountError ? 'border-red-400 text-red-500' : 'border-black/10'
             } ${!canWithdraw ? 'bg-gray-100 text-gray-400' : ''}`}
