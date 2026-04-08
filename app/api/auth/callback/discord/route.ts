@@ -7,6 +7,7 @@ import {
   getLoginStateCookie,
   normalizeRedirectTarget,
 } from '@/lib/session';
+import { ensureAppUserForDiscordMember } from '@/lib/app-user';
 import { exchangeCodeForTokens, fetchDiscordUser, fetchGuildMember } from '@/lib/discord';
 import { prisma } from '@/lib/prisma';
 
@@ -82,6 +83,11 @@ export async function GET(request: Request) {
       guildMember?.user?.username ??
       discordUser.global_name ??
       discordUser.username;
+    const avatarUrl = discordUser.avatar
+      ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.${
+          discordUser.avatar.startsWith('a_') ? 'gif' : 'png'
+        }`
+      : null;
 
     await prisma.member.upsert({
       where: { discordUserId: discordUser.id },
@@ -99,12 +105,24 @@ export async function GET(request: Request) {
         .catch(() => {});
     }
 
+    const appUser = await ensureAppUserForDiscordMember({
+      discordUserId: discordUser.id,
+      displayName: serverDisplayName,
+      avatarUrl,
+      profile: {
+        username: discordUser.username,
+        globalName: discordUser.global_name ?? null,
+        discriminator: discordUser.discriminator ?? null,
+      },
+    });
+
     const cookieTarget = await getLoginRedirectCookie();
     const redirectTarget = normalizeRedirectTarget(cookieTarget ?? state.next ?? undefined, '/profile');
     const absoluteRedirect = new URL(redirectTarget, origin);
     const response = NextResponse.redirect(absoluteRedirect, { status: 302 });
 
     attachSessionToResponse(response, {
+      userId: appUser.id,
       discordId: discordUser.id,
       username: discordUser.global_name ?? discordUser.username,
       discriminator: discordUser.discriminator && discordUser.discriminator !== '0' ? discordUser.discriminator : null,
