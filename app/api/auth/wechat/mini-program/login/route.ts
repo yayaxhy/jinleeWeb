@@ -14,15 +14,15 @@ const normalizeString = (value: unknown, maxLength: number) => {
 const normalizeProfile = (raw: unknown) => {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return {
-      nickname: null,
-      avatarUrl: null,
+      nickname: undefined as string | undefined,
+      avatarUrl: undefined as string | undefined,
       payload: undefined as Prisma.InputJsonValue | undefined,
     };
   }
 
   const source = raw as Record<string, unknown>;
-  const nickname = normalizeString(source.nickname, 64);
-  const avatarUrl = normalizeString(source.avatarUrl, 512);
+  const nickname = normalizeString(source.nickname, 64) ?? undefined;
+  const avatarUrl = normalizeString(source.avatarUrl, 512) ?? undefined;
   const payload: Record<string, string> = {};
 
   if (nickname) {
