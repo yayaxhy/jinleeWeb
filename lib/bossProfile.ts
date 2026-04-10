@@ -312,6 +312,30 @@ function formatDateShort(date: Date) {
 
 export async function buildBossPortrait(bossId: string, sampleSize = 50): Promise<BossPortrait | null> {
   const take = Math.min(Math.max(sampleSize, 20), 200);
+  const bossJinleeUser = await prisma.jinleeUser.findFirst({
+    where: {
+      OR: [{ discordUserId: bossId }, { jinleeId: bossId }],
+    },
+    select: {
+      jinleeId: true,
+      discordUserId: true,
+      discordDisplayName: true,
+      wechatDisplayName: true,
+      totalSpent: true,
+      totalBalance: true,
+    },
+  });
+  const bossJinleeId = bossJinleeUser?.jinleeId ?? null;
+  const orderHostWhere: Prisma.OrderWhereInput =
+    bossJinleeId != null
+      ? {
+          OR: [{ hostId: bossId }, { hostJinleeId: bossJinleeId }],
+          status: OrderStatus.ENDED,
+        }
+      : {
+          hostId: bossId,
+          status: OrderStatus.ENDED,
+        };
 
   const [member, totalRequestCount, requestLogs, totalEndedOrderCount, endedOrders, firstRequest, firstOrder] =
     await Promise.all([
@@ -338,16 +362,10 @@ export async function buildBossPortrait(bossId: string, sampleSize = 50): Promis
         },
       }),
       prisma.order.count({
-        where: {
-          hostId: bossId,
-          status: OrderStatus.ENDED,
-        },
+        where: orderHostWhere,
       }),
       prisma.order.findMany({
-        where: {
-          hostId: bossId,
-          status: OrderStatus.ENDED,
-        },
+        where: orderHostWhere,
         orderBy: { createdAt: 'desc' },
         take,
         select: {
@@ -378,7 +396,7 @@ export async function buildBossPortrait(bossId: string, sampleSize = 50): Promis
         select: { createdAt: true },
       }),
       prisma.order.findFirst({
-        where: { hostId: bossId },
+        where: bossJinleeId != null ? { OR: [{ hostId: bossId }, { hostJinleeId: bossJinleeId }] } : { hostId: bossId },
         orderBy: { createdAt: 'asc' },
         select: { createdAt: true },
       }),
@@ -388,11 +406,13 @@ export async function buildBossPortrait(bossId: string, sampleSize = 50): Promis
 
   const displayName =
     member?.serverDisplayName?.trim()
+    || bossJinleeUser?.discordDisplayName?.trim()
+    || bossJinleeUser?.wechatDisplayName?.trim()
     || requestLogs.find((row) => row.ownerDisplayName?.trim())?.ownerDisplayName?.trim()
     || bossId;
 
-  const totalSpent = toNumber(member?.totalSpent);
-  const totalBalance = toNumber(member?.totalBalance);
+  const totalSpent = toNumber(member?.totalSpent ?? bossJinleeUser?.totalSpent);
+  const totalBalance = toNumber(member?.totalBalance ?? bossJinleeUser?.totalBalance);
 
   const gameSignals = new Map<PortraitGameKey, GameSignal>();
   const rankCounts = new Map<string, number>();
@@ -683,7 +703,9 @@ export async function generateBossPortraitBatch(
 
   const candidateIds = [...new Set([
     ...requestOwners.map((row) => row.ownerId.trim()),
-    ...orderHosts.map((row) => row.hostId.trim()),
+    ...orderHosts
+      .map((row) => row.hostId?.trim())
+      .filter((hostId): hostId is string => Boolean(hostId)),
   ].filter(Boolean))].sort((left, right) => left.localeCompare(right));
 
   const existingIds = new Set(existingRows.map((row) => row.bossId));

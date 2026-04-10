@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId')?.trim() ?? '';
   const discordId = searchParams.get('discordId')?.trim() ?? '';
   const startParam = searchParams.get('startDate');
   const endParam = searchParams.get('endDate');
@@ -80,8 +81,9 @@ export async function GET(request: NextRequest) {
   const endDate = parsedEnd && !Number.isNaN(parsedEnd.getTime()) ? parsedEnd : null;
 
   const whereClause: Prisma.IndividualTransactionWhereInput = {};
-  if (discordId) {
-    whereClause.discordId = discordId;
+  const identityFilter = userId || discordId;
+  if (identityFilter) {
+    whereClause.OR = [{ discordId: identityFilter }, { jinleeId: identityFilter }];
   }
   if (startDate || endDate) {
     whereClause.timeCreatedAt = {
@@ -102,6 +104,7 @@ export async function GET(request: NextRequest) {
   const worksheet = workbook.addWorksheet('查询流水');
   worksheet.columns = [
     { header: '时间(罗马)', key: 'time', width: 22 },
+    { header: 'Jinlee ID', key: 'jinleeId', width: 26 },
     { header: 'Discord ID', key: 'discordId', width: 22 },
     { header: '类型', key: 'type', width: 16 },
     { header: '变动前余额', key: 'before', width: 16 },
@@ -115,6 +118,7 @@ export async function GET(request: NextRequest) {
   for (const tx of transactions) {
     worksheet.addRow({
       time: formatDate(tx.timeCreatedAt),
+      jinleeId: tx.jinleeId ?? '',
       discordId: tx.discordId,
       type: tx.typeOfTransaction,
       before: parseNumber(tx.balanceBefore),

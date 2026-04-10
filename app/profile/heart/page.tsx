@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -37,10 +37,39 @@ const HEART_ROLE_TIERS: Tier[] = [
 ];
 
 export default async function HeartPage() {
-  const session = await getServerSession();
-  const discordId = session?.discordId;
-  if (!discordId) {
+  const currentUser = await getCurrentJinleeUser();
+  if (!currentUser) {
     redirect('/');
+  }
+
+  const discordId = currentUser.discordUserId;
+  const displayName =
+    currentUser.jinleeUser.discordDisplayName ??
+    currentUser.jinleeUser.member?.serverDisplayName ??
+    currentUser.jinleeUser.wechatDisplayName ??
+    currentUser.jinleeId;
+
+  if (!discordId) {
+    return (
+      <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
+        <section className="max-w-4xl mx-auto space-y-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-semibold tracking-wide">心动值总览</h1>
+              <p className="mt-2 text-sm text-gray-500">
+                当前账号：{displayName}。心动值仍基于 Discord 互动统计，绑定 Discord 后这里会自动显示数据。
+              </p>
+            </div>
+            <Link
+              href="/profile"
+              className="text-xs uppercase tracking-[0.4em] text-gray-500 hover:text-black transition"
+            >
+              返回个人主页
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   const [receivedAgg, givenAgg, topSenders, topRecipients] = await Promise.all([

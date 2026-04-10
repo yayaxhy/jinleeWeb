@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { DiscountUsageButton } from '@/components/profile/DiscountUsageButton';
 import { GiftUsageButton, SelfUseButton } from '@/components/profile/GiftAndSelfUseButtons';
 import {
@@ -36,15 +36,15 @@ const toMillis = (value?: Date | string | null) => {
 };
 
 export default async function BagPage() {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+  const currentUser = await getCurrentJinleeUser();
+  if (!currentUser) {
     redirect('/');
   }
   const nowTs = Date.parse(new Date().toISOString());
 
   const [draws, coupons, pointShopGrants] = await Promise.all([
     prisma.lotteryDraw.findMany({
-      where: { userId: session.discordId },
+      where: { jinleeId: currentUser.jinleeId },
       orderBy: { createdAt: 'desc' },
       include: {
         prize: {
@@ -54,13 +54,13 @@ export default async function BagPage() {
       take: 200,
     }),
     prisma.coupon.findMany({
-      where: { discordId: session.discordId },
+      where: { jinleeId: currentUser.jinleeId },
       orderBy: { issuedAt: 'desc' },
       take: 200,
     }),
     prisma.pointShopGrant.findMany({
       where: {
-        discordUserId: session.discordId,
+        jinleeId: currentUser.jinleeId,
         deliveryType: PointShopDeliveryType.COUPON,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
       },

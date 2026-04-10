@@ -50,14 +50,14 @@ export const buildZPayUrl = (params: PlainParams, secret: string, gateway = DEFA
   return `${gateway}?${searchParams.toString()}`;
 };
 
-export const buildOutTradeNo = (discordId: string) => {
+export const buildOutTradeNo = (userKey: string) => {
   const now = new Date();
   const pad = (n: number) => n.toString().padStart(2, '0');
   const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(
     now.getHours(),
   )}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
   const random = Math.floor(Math.random() * 900) + 100;
-  const suffix = discordId.slice(-4);
+  const suffix = userKey.slice(-4);
   return `${timestamp}${random}${suffix}`;
 };
 

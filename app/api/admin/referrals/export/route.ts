@@ -11,6 +11,9 @@ export const dynamic = 'force-dynamic';
 const ROME_TIMEZONE = 'Europe/Rome';
 
 const normalizeId = (value?: string | null) => value?.trim() ?? '';
+const DISCORD_ID_PATTERN = /^\d+$/;
+
+const validateDiscordId = (value: string) => DISCORD_ID_PATTERN.test(value);
 
 const parseReferralType = (value?: string | null): ReferralType | null => {
   if (!value) return null;
@@ -46,6 +49,12 @@ export async function GET(request: NextRequest) {
   const inviteeId = normalizeId(searchParams.get('inviteeId'));
   const inviterId = normalizeId(searchParams.get('inviterId'));
   const type = parseReferralType(searchParams.get('type'));
+  if ((inviteeId && !validateDiscordId(inviteeId)) || (inviterId && !validateDiscordId(inviterId))) {
+    return NextResponse.json(
+      { error: 'Referral 导出仅支持纯数字 Discord ID 过滤。' },
+      { status: 400 },
+    );
+  }
 
   const where = {
     ...(inviteeId ? { inviteeId } : {}),
@@ -68,9 +77,9 @@ export async function GET(request: NextRequest) {
   const worksheet = workbook.addWorksheet('邀请关系');
   worksheet.columns = [
     { header: '被邀请人昵称', key: 'inviteeName', width: 18 },
-    { header: '被邀请人ID', key: 'inviteeId', width: 24 },
+    { header: '被邀请人Discord ID', key: 'inviteeId', width: 24 },
     { header: '邀请人昵称', key: 'inviterName', width: 18 },
-    { header: '邀请人ID', key: 'inviterId', width: 24 },
+    { header: '邀请人Discord ID', key: 'inviterId', width: 24 },
     { header: '类型', key: 'type', width: 12 },
     { header: '创建时间(罗马)', key: 'createdAt', width: 22 },
   ];

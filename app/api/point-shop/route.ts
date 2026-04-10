@@ -6,7 +6,7 @@ import {
   getPointShopDashboard,
   removePointShopCartItem,
 } from '@/lib/pointShop';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 
 const parseQuantity = (value: unknown, fallback = 1) => {
   if (value === undefined || value === null || value === '') return fallback;
@@ -15,19 +15,22 @@ const parseQuantity = (value: unknown, fallback = 1) => {
   return parsed;
 };
 
-export async function GET() {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+export async function GET(request: Request) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const data = await getPointShopDashboard(session.discordId);
+  const data = await getPointShopDashboard({
+    jinleeId: currentUser.jinleeId,
+    discordUserId: currentUser.discordUserId,
+  });
   return NextResponse.json({ ok: true, data });
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
@@ -48,7 +51,10 @@ export async function POST(request: Request) {
     }
 
     const result = await addPointShopCartItem({
-      userId: session.discordId,
+      identity: {
+        jinleeId: currentUser.jinleeId,
+        discordUserId: currentUser.discordUserId,
+      },
       sku,
       quantity,
     });
@@ -63,7 +69,10 @@ export async function POST(request: Request) {
     }
 
     const result = await removePointShopCartItem({
-      userId: session.discordId,
+      identity: {
+        jinleeId: currentUser.jinleeId,
+        discordUserId: currentUser.discordUserId,
+      },
       sku,
       quantity,
     });
@@ -71,14 +80,20 @@ export async function POST(request: Request) {
   }
 
   if (action === 'clear') {
-    const result = await clearPointShopCart(session.discordId);
+    const result = await clearPointShopCart({
+      jinleeId: currentUser.jinleeId,
+      discordUserId: currentUser.discordUserId,
+    });
     return NextResponse.json({ ok: true, result });
   }
 
   if (action === 'checkout') {
     const requestKey = typeof body.requestKey === 'string' ? body.requestKey : null;
     const result = await checkoutPointShopCart({
-      userId: session.discordId,
+      identity: {
+        jinleeId: currentUser.jinleeId,
+        discordUserId: currentUser.discordUserId,
+      },
       requestKey,
     });
     return NextResponse.json({ ok: true, result });

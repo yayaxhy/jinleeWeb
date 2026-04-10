@@ -2,10 +2,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
 
 const BOSS_LEVELS = [
   { threshold: 500, label: '锦鲤' },
@@ -196,54 +196,38 @@ export default async function Profile(props: ProfilePageProps) {
     (link) => link.href !== '/profile' && link.href !== '/recharge' && link.href !== '/profile/withdraw',
   );
 
-  const session = await getServerSession();
-  const discordId = session?.discordId;
-
-  if (!discordId) {
+  const currentUser = await getCurrentJinleeUser();
+  if (!currentUser) {
     redirect('/');
   }
 
-    const member = await prisma.member.findUnique({
-      where: { discordUserId: discordId },
-      include: {
-        peiwan: {
-          include: {
-            gameProfiles: {
-              orderBy: { gameCode: 'asc' },
+  const { jinleeUser, jinleeId, discordUserId } = currentUser;
+  const member = discordUserId
+    ? await prisma.member.findUnique({
+        where: { discordUserId },
+        include: {
+          peiwan: {
+            include: {
+              gameProfiles: {
+                orderBy: { gameCode: 'asc' },
+              },
             },
           },
         },
-      },
-    });
+      })
+    : null;
 
-  if (!member) {
-    return (
-      <main className="min-h-screen bg-black text-white px-6 py-16 flex items-center justify-center">
-        <div className="space-y-4 text-center">
-          <p className="text-white/70">未找到该成员。</p>
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center rounded-full border border-white/30 px-6 py-2 text-sm uppercase tracking-[0.2em] hover:bg-white/10"
-          >
-            返回主页
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
-  const peiwan = member.peiwan;
-  const isPeiwanMember = member.status === 'PEIWAN';
-  const isLaobanMember = member.status === 'LAOBAN';
+  const peiwan = member?.peiwan ?? null;
+  const isPeiwanMember = member?.status === 'PEIWAN';
+  const isLaobanMember = member?.status !== 'PEIWAN';
   const now = new Date();
-  const level = peiwan?.level;
-  const displayName = session?.username ?? member.discordUserId;
-  const avatarUrl = session?.avatar
-    ? `https://cdn.discordapp.com/avatars/${session.discordId}/${session.avatar}.${
-        session.avatar.startsWith('a_') ? 'gif' : 'png'
-      }`
-    : undefined;
+  const level = peiwan?.level ?? '—';
+  const displayName =
+    jinleeUser.discordDisplayName ?? member?.serverDisplayName ?? jinleeUser.wechatDisplayName ?? '微信用户';
+  const avatarUrl = jinleeUser.discordAvatarUrl ?? jinleeUser.wechatAvatarUrl ?? undefined;
   const avatarLetter = displayName?.[0]?.toUpperCase?.() ?? 'M';
+  const primaryIdLabel = discordUserId ? 'Discord ID' : null;
+  const primaryIdValue = discordUserId ?? null;
   const pageParam = resolvedSearchParams?.page;
   const parsedPage =
     typeof pageParam === 'string' ? Number.parseInt(pageParam, 10) : Number.parseInt(pageParam?.[0] ?? '1', 10);
@@ -251,37 +235,45 @@ export default async function Profile(props: ProfilePageProps) {
   const skip = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
 
   const couponsPromise = prisma.coupon.findMany({
-    where: { discordId },
+    where: { jinleeId },
     orderBy: { issuedAt: 'desc' },
   });
   type CouponRecord = Awaited<typeof couponsPromise>[number];
   const totalTransactionsPromise = prisma.individualTransaction.count({
-    where: { discordId },
+    where: { jinleeId },
   });
   const transactionsPromise = prisma.individualTransaction.findMany({
-    where: { discordId },
+    where: { jinleeId },
     orderBy: { timeCreatedAt: 'desc' },
     skip,
     take: TRANSACTIONS_PER_PAGE,
   });
-  const commissionBuffPromise = prisma.commissionBuff.findUnique({
-    where: { userId: discordId },
+  const commissionBuffPromise = discordUserId
+    ? prisma.commissionBuff.findUnique({
+        where: { userId: discordUserId },
+      })
+    : Promise.resolve(null);
+  const autoCommissionBuffPromise = discordUserId
+    ? prisma.autoCommissionBuff.findUnique({
+        where: { userId: discordUserId },
+      })
+    : Promise.resolve(null);
+  const flowBuffPromise = discordUserId
+    ? prisma.flowBuff.findUnique({
+        where: { userId: discordUserId },
+      })
+    : Promise.resolve(null);
+  const spendBuffPromise = discordUserId
+    ? prisma.spendBuff.findUnique({
+        where: { userId: discordUserId },
+      })
+    : Promise.resolve(null);
+  const loyaltyPointPromise = prisma.loyaltyPoint.findFirst({
+    where: { jinleeId },
   });
-  const autoCommissionBuffPromise = prisma.autoCommissionBuff.findUnique({
-    where: { userId: discordId },
-  });
-  const flowBuffPromise = prisma.flowBuff.findUnique({
-    where: { userId: discordId },
-  });
-  const spendBuffPromise = prisma.spendBuff.findUnique({
-    where: { userId: discordId },
-  });
-  const loyaltyPointPromise = prisma.loyaltyPoint.findUnique({
-    where: { discordUserId: discordId },
-  });
-  const peiwanReviewsPromise = isPeiwanMember
+  const peiwanReviewsPromise = isPeiwanMember && discordUserId
     ? prisma.peiwanReview.findMany({
-        where: { peiwanDiscordId: discordId },
+        where: { peiwanDiscordId: discordUserId },
         orderBy: { createdAt: 'desc' },
         take: 200,
       })
@@ -321,7 +313,7 @@ export default async function Profile(props: ProfilePageProps) {
   const autoCommissionIncomeRows = isPeiwanMember
     ? await prisma.individualTransaction.findMany({
         where: {
-          discordId,
+          jinleeId,
           timeCreatedAt: {
             gte: autoCommissionWindowStart,
             lte: autoCommissionWindowEnd,
@@ -337,16 +329,18 @@ export default async function Profile(props: ProfilePageProps) {
   const prevPage = Math.max(1, currentPage - 1);
   const nextPage = Math.min(totalPages, currentPage + 1);
 
-  const balanceValue = member.income;
+  const totalBalanceValue = member?.totalBalance ?? jinleeUser.totalBalance;
+  const balanceValue = member?.income ?? jinleeUser.income;
+  const totalSpentAmount = member?.totalSpent ?? jinleeUser.totalSpent;
   const stats = [
-    { label: '账户余额', value: member.totalBalance },
+    { label: '账户余额', value: totalBalanceValue },
     { label: '可提现余额', value: balanceValue },
-    { label: '累计消费', value: member.totalSpent },
+    { label: '累计消费', value: totalSpentAmount },
     { label: '累计流水', value: peiwan?.totalEarn ?? null },
-    { label: '锦鲤积分', value: loyaltyPoint?.points ?? 0 },
+    { label: '锦鲤积分', value: loyaltyPoint?.points ?? jinleeUser.loyaltyPoints ?? 0 },
   ];
 
-  const totalSpentValue = parseNumeric(member.totalSpent) ?? 0;
+  const totalSpentValue = parseNumeric(totalSpentAmount) ?? 0;
   const currentBossLevel = BOSS_LEVELS.reduce<
     (typeof BOSS_LEVELS)[number] | undefined
   >((acc, role) => (totalSpentValue >= role.threshold ? role : acc), undefined);
@@ -407,7 +401,6 @@ export default async function Profile(props: ProfilePageProps) {
         return sum;
       }, 0)
     : 0;
-  const autoCommissionRemainingAmount = Math.max(0, AUTO_COMMISSION_THRESHOLD - autoCommissionCurrentAmount);
   const autoCommissionProgressPercent = Math.max(
     0,
     Math.min(100, (autoCommissionCurrentAmount / AUTO_COMMISSION_THRESHOLD) * 100),
@@ -423,7 +416,7 @@ export default async function Profile(props: ProfilePageProps) {
   const profileCommissionRate =
     autoCommissionActive && autoCommissionBuff?.targetShare != null
       ? autoCommissionBuff.targetShare
-      : member.commissionRate;
+      : member?.commissionRate ?? null;
 
   const buffCards = [
     {
@@ -497,7 +490,11 @@ export default async function Profile(props: ProfilePageProps) {
               </div>
               <div className="space-y-1">
                 <p className="text-3xl font-semibold tracking-wide">{displayName}</p>
-                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">ID: {member.discordUserId}</p>
+                {primaryIdLabel && primaryIdValue ? (
+                  <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                    {primaryIdLabel}: {primaryIdValue}
+                  </p>
+                ) : null}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -768,7 +765,7 @@ export default async function Profile(props: ProfilePageProps) {
                       {!isLaobanMember && (
                         <div>
                           <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">抽成比例</dt>
-                          <dd className="text-lg font-medium">{formatCommissionRateDisplay(profileCommissionRate)}</dd>
+                        <dd className="text-lg font-medium">{formatCommissionRateDisplay(profileCommissionRate)}</dd>
                         </div>
                       )}
                     </dl>

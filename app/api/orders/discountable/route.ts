@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 
 const MAX_FETCH = 50;
 const MAX_RETURN = 20;
 const DISCOUNT_PRIZE_NAMES = ['8折券', '7折券', '特殊9折券', '特殊九折券'];
 
-export async function GET() {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+export async function GET(request: Request) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
   const orders = await prisma.order.findMany({
-    where: { hostId: session.discordId, status: 'ENDED' },
+    where: { hostJinleeId: currentUser.jinleeId, status: 'ENDED' },
     orderBy: { endedAt: 'desc' },
     take: MAX_FETCH,
     select: {
@@ -31,10 +31,18 @@ export async function GET() {
     return NextResponse.json({ orders: [] });
   }
 
-  const [couponUsage, lotteryUsage] = await Promise.all([
+  const [couponUsage, pointShopUsage, lotteryUsage] = await Promise.all([
     prisma.coupon.findMany({
       where: { orderId: { in: orderIds }, status: 'USED' },
       select: { orderId: true },
+    }),
+    prisma.pointShopGrant.findMany({
+      where: {
+        consumeOrderId: { in: orderIds },
+        deliveryType: 'COUPON',
+        couponStatus: 'USED',
+      },
+      select: { consumeOrderId: true },
     }),
     prisma.lotteryDraw.findMany({
       where: {
@@ -48,6 +56,7 @@ export async function GET() {
 
   const usedIds = new Set<string>();
   couponUsage.forEach((item) => item.orderId && usedIds.add(item.orderId));
+  pointShopUsage.forEach((item) => item.consumeOrderId && usedIds.add(item.consumeOrderId));
   lotteryUsage.forEach((item) => item.requestId && usedIds.add(item.requestId));
 
   const eligible = orders

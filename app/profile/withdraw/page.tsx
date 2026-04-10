@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import WithdrawForm from '@/components/profile/WithdrawForm';
 import { WithdrawAccountsManager } from '@/components/profile/WithdrawAccountsManager';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -14,23 +14,17 @@ const formatNumber = (value: unknown) => {
 };
 
 export default async function WithdrawPage() {
-  const session = await getServerSession();
-  const discordId = session?.discordId;
-  if (!discordId) {
+  const currentUser = await getCurrentJinleeUser();
+  if (!currentUser) {
     redirect('/');
   }
 
-  const member = await prisma.member.findUnique({
-    where: { discordUserId: discordId },
-    select: { totalBalance: true, income: true },
-  });
-  if (!member) {
-    redirect('/');
-  }
+  const totalBalance = currentUser.jinleeUser.member?.totalBalance ?? currentUser.jinleeUser.totalBalance;
+  const income = currentUser.jinleeUser.member?.income ?? currentUser.jinleeUser.income;
 
   const withdrawCooldownMs = 3 * 24 * 60 * 60 * 1000;
   const lastWithdraw = await prisma.withdraw.findFirst({
-    where: { discordId },
+    where: { jinleeId: currentUser.jinleeId },
     orderBy: { createdAt: 'desc' },
     select: { createdAt: true },
   });
@@ -40,10 +34,21 @@ export default async function WithdrawPage() {
 
   const lastWithdrawAtIso = lastWithdrawAt?.toISOString() ?? null;
   const nextAvailableAtIso = nextAvailableAt?.toISOString() ?? null;
-  const savedAccounts = await prisma.withdrawalAccount.findUnique({
-    where: { discordUserId: discordId },
-    select: { account1: true, account2: true, account3: true },
-  });
+  const legacyAccounts =
+    currentUser.discordUserId &&
+    !currentUser.jinleeUser.withdrawAccount1 &&
+    !currentUser.jinleeUser.withdrawAccount2 &&
+    !currentUser.jinleeUser.withdrawAccount3
+      ? await prisma.withdrawalAccount.findUnique({
+          where: { discordUserId: currentUser.discordUserId },
+          select: { account1: true, account2: true, account3: true },
+        })
+      : null;
+  const savedAccounts = {
+    account1: currentUser.jinleeUser.withdrawAccount1 ?? legacyAccounts?.account1 ?? null,
+    account2: currentUser.jinleeUser.withdrawAccount2 ?? legacyAccounts?.account2 ?? null,
+    account3: currentUser.jinleeUser.withdrawAccount3 ?? legacyAccounts?.account3 ?? null,
+  };
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
@@ -64,11 +69,11 @@ export default async function WithdrawPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-3xl border border-black/5 bg-white p-6 space-y-2">
             <p className="text-xs tracking-[0.4em] text-gray-500">账户余额</p>
-            <p className="text-3xl font-mono">{formatNumber(member.totalBalance)}</p>
+            <p className="text-3xl font-mono">{formatNumber(totalBalance)}</p>
           </div>
           <div className="rounded-3xl border border-black/5 bg-white p-6 space-y-2">
             <p className="text-xs tracking-[0.4em] text-gray-500">可提现余额</p>
-            <p className="text-3xl font-mono">{formatNumber(member.income)}</p>
+            <p className="text-3xl font-mono">{formatNumber(income)}</p>
           </div>
         </div>
 
@@ -76,7 +81,7 @@ export default async function WithdrawPage() {
           <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">提交提现</h2>
           
           <WithdrawForm
-            maxAmount={String(member.income ?? '0')}
+            maxAmount={String(income ?? '0')}
             lastWithdrawAt={lastWithdrawAtIso}
             nextAvailableAt={nextAvailableAtIso}
             savedAccounts={savedAccounts ?? undefined}

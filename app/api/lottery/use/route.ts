@@ -7,7 +7,7 @@ import {
   PointShopDeliveryType,
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { COUPON_VOUCHER_META, GIFT_NAME_BY_PRIZE_NAME, VANITY_CARD_PRIZE_NAMES } from '@/lib/voucherCatalog';
 
 type UsePayload =
@@ -68,14 +68,29 @@ const callGiftWebhook = async (params: {
     couponId: params.couponId,
     requestId: params.requestId,
   };
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Internal-Token': token,
-    },
-    body: JSON.stringify(payload),
-  });
+  let res: Response;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Token': token,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('礼物服务超时，请稍后重试');
+    }
+    throw new Error('礼物服务暂不可用，请联系管理员');
+  }
   if (!res.ok) {
     let message = `礼物接口错误 (${res.status})`;
     try {
@@ -91,8 +106,8 @@ const callGiftWebhook = async (params: {
 };
 
 export async function POST(request: Request) {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
 
@@ -114,7 +129,7 @@ export async function POST(request: Request) {
     const coupon = await prisma.coupon.findFirst({
       where: {
         id: couponId,
-        discordId: session.discordId,
+        jinleeId: currentUser.jinleeId,
         status: CouponStatus.ACTIVE,
         expiresAt: { gt: now },
       },
@@ -132,7 +147,7 @@ export async function POST(request: Request) {
       const pointShopGrant = await prisma.pointShopGrant.findFirst({
         where: {
           id: couponId,
-          discordUserId: session.discordId,
+          jinleeId: currentUser.jinleeId,
           deliveryType: PointShopDeliveryType.COUPON,
           deliveryStatus: PointShopDeliveryStatus.DELIVERED,
           couponStatus: CouponStatus.ACTIVE,
@@ -162,7 +177,7 @@ export async function POST(request: Request) {
       },
     });
 
-    if (!draw || draw.userId !== session.discordId) {
+    if (!draw || draw.jinleeId !== currentUser.jinleeId) {
       return NextResponse.json({ error: '记录不存在' }, { status: 404 });
     }
     if (draw.status !== LotteryStatus.UNUSED) {
@@ -183,9 +198,12 @@ export async function POST(request: Request) {
     }
     const giftNameForBot = GIFT_NAME_BY_PRIZE_NAME[prizeName] ?? prizeName.replace(/代金券$/, '') ?? '礼物';
     const requestId = `GIFT:${receiverId}`;
+    if (!currentUser.discordUserId) {
+      return NextResponse.json({ error: '该功能需要先绑定 Discord 账号' }, { status: 400 });
+    }
     try {
       await callGiftWebhook({
-        giverId: session.discordId,
+        giverId: currentUser.discordUserId,
         receiverId,
         giftName: giftNameForBot,
         quantity: 1,
@@ -207,6 +225,9 @@ export async function POST(request: Request) {
 
     // Vanity cards: let bot consume & notify via internal API
     if (isVanityCard) {
+      if (!currentUser.discordUserId) {
+        return NextResponse.json({ error: '该功能需要先绑定 Discord 账号' }, { status: 400 });
+      }
       const port = process.env.INTERNAL_API_PORT;
       const host = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
       const token = process.env.INTERNAL_API_TOKEN;
@@ -225,7 +246,7 @@ export async function POST(request: Request) {
               'Content-Type': 'application/json',
               'X-Internal-Token': token,
             },
-            body: JSON.stringify({ userId: session.discordId, voucherId: couponId || lotteryId }),
+            body: JSON.stringify({ userId: currentUser.discordUserId, voucherId: couponId || lotteryId }),
             signal: controller.signal,
           });
         } finally {
@@ -254,7 +275,8 @@ export async function POST(request: Request) {
           status: CouponStatus.USED,
           consumedAt: now,
           consumeAmount: 0,
-          consumeTargetId: session.discordId,
+          consumeTargetId: currentUser.discordUserId,
+          consumeTargetJinleeId: currentUser.jinleeId,
         },
       });
       if (updateResult.count !== 1) {
@@ -264,7 +286,7 @@ export async function POST(request: Request) {
       const updateResult = await prisma.pointShopGrant.updateMany({
         where: {
           id: couponId,
-          discordUserId: session.discordId,
+          jinleeId: currentUser.jinleeId,
           deliveryType: PointShopDeliveryType.COUPON,
           deliveryStatus: PointShopDeliveryStatus.DELIVERED,
           couponStatus: CouponStatus.ACTIVE,
@@ -274,7 +296,8 @@ export async function POST(request: Request) {
           couponStatus: CouponStatus.USED,
           consumedAt: now,
           consumeAmount: 0,
-          consumeTargetId: session.discordId,
+          consumeTargetId: currentUser.discordUserId,
+          consumeTargetJinleeId: currentUser.jinleeId,
         },
       });
       if (updateResult.count !== 1) {
@@ -287,6 +310,8 @@ export async function POST(request: Request) {
           status: LotteryStatus.USED,
           consumeAt: now,
           requestId: 'SELFUSE',
+          consumeTargetId: currentUser.discordUserId ?? null,
+          consumeTargetJinleeId: currentUser.jinleeId,
         },
       });
       if (updateResult.count !== 1) {

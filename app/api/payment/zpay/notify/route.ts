@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
+import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
 import { buildSignaturePayload, buildZPaySignature, requiredZPayConfig, verifyZPaySignature } from '@/lib/zpay';
 
 type PlainObject = Record<string, string>;
@@ -97,6 +98,10 @@ async function handleNotify(params: PlainObject) {
     console.log('[zpay.notify] already_paid', { outTradeNo: order.outTradeNo });
     return successResponse();
   }
+  if (!order.jinleeId) {
+    return failResponse('missing_jinlee_id', { outTradeNo: params.out_trade_no });
+  }
+  const orderJinleeId = order.jinleeId;
 
   const amountDecimal = new Decimal(params.money).toDecimalPlaces(2);
   if (!order.amount.equals(amountDecimal)) {
@@ -118,49 +123,46 @@ async function handleNotify(params: PlainObject) {
       },
     });
 
-    const memberSnapshot = await tx.member.upsert({
-      where: { discordUserId: order.discordUserId },
-      create: {
-        discordUserId: order.discordUserId,
-        recharge: amountDecimal,
-        totalBalance: amountDecimal,
-      },
-      update: {
-        recharge: { increment: amountDecimal },
-        totalBalance: { increment: amountDecimal },
-      },
-      select: { totalBalance: true },
-    });
-
-    const hasPeiwan = await tx.pEIWAN.findUnique({
-      where: { discordUserId: order.discordUserId },
-      select: { PEIWANID: true },
-    });
-    if (hasPeiwan) {
-      await tx.pEIWAN.update({
+    if (order.discordUserId) {
+      await tx.member.upsert({
         where: { discordUserId: order.discordUserId },
-        data: { balance: memberSnapshot.totalBalance },
+        create: {
+          discordUserId: order.discordUserId,
+          recharge: 0,
+          totalBalance: 0,
+        },
+        update: {},
       });
     }
 
-    const balanceAfter = new Decimal(memberSnapshot.totalBalance ?? 0);
-    const balanceBefore = balanceAfter.sub(amountDecimal);
+    const walletBefore = await getJinleeWalletSnapshotTx(tx, {
+      jinleeId: orderJinleeId,
+      discordUserId: order.discordUserId ?? null,
+    });
+    const walletAfter = await applyJinleeWalletDeltaTx(tx, {
+      jinleeId: orderJinleeId,
+      discordUserId: order.discordUserId ?? null,
+      rechargeDelta: amountDecimal,
+      totalBalanceDelta: amountDecimal,
+    });
 
     await tx.recharge.create({
       data: {
         amount: amountDecimal,
-        toWhom: order.discordUserId,
+        toWhom: order.discordUserId ?? null,
+        jinleeId: orderJinleeId,
         fromWhom: params.buyer ?? params.openid ?? 'zpay_gateway',
       },
     });
 
     await tx.individualTransaction.create({
       data: {
-        discordId: order.discordUserId,
+        discordId: order.discordUserId ?? null,
+        jinleeId: orderJinleeId,
         thirdPartydiscordId: params.trade_no ?? 'zpay_gateway',
-        balanceBefore,
+        balanceBefore: new Decimal(walletBefore.totalBalance),
         amountChange: amountDecimal,
-        balanceAfter,
+        balanceAfter: new Decimal(walletAfter.totalBalance),
         typeOfTransaction: '网站充值',
       },
     });

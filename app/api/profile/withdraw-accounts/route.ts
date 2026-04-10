@@ -1,12 +1,12 @@
+import { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import {
   buildStoredWithdrawAccount,
   isWithdrawMethodOption,
   normalizeWithdrawDetail,
   normalizeWithdrawMethod,
-  WITHDRAW_METHOD_OPTIONS,
 } from '@/lib/withdrawAccounts';
 import {
   validateWithdrawAccountDetail,
@@ -19,23 +19,24 @@ const parseSlot = (value: unknown) => {
   return numeric as 1 | 2 | 3;
 };
 
-export async function GET() {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+export async function GET(request: Request) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const accounts = await prisma.withdrawalAccount.findUnique({
-    where: { discordUserId: session.discordId },
-    select: { account1: true, account2: true, account3: true },
-  });
+  const accounts = {
+    account1: currentUser.jinleeUser.withdrawAccount1,
+    account2: currentUser.jinleeUser.withdrawAccount2,
+    account3: currentUser.jinleeUser.withdrawAccount3,
+  };
 
   return NextResponse.json(accounts ?? { account1: null, account2: null, account3: null });
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
@@ -68,13 +69,39 @@ export async function POST(request: Request) {
   }
 
   const combined = buildStoredWithdrawAccount(method, normalizedDetail);
-  const data: Partial<Record<'account1' | 'account2' | 'account3', string>> = {};
-  data[`account${slot}` as const] = combined;
+  const jinleeData: Prisma.JinleeUserUpdateInput =
+    slot === 1
+      ? { withdrawAccount1: combined }
+      : slot === 2
+        ? { withdrawAccount2: combined }
+        : { withdrawAccount3: combined };
+  const legacyData =
+    slot === 1
+      ? { account1: combined }
+      : slot === 2
+        ? { account2: combined }
+        : { account3: combined };
 
-  await prisma.withdrawalAccount.upsert({
-    where: { discordUserId: session.discordId },
-    create: { discordUserId: session.discordId, ...data },
-    update: data,
+  await prisma.$transaction(async (tx) => {
+    await tx.jinleeUser.update({
+      where: { jinleeId: currentUser.jinleeId },
+      data: jinleeData,
+    });
+
+    if (currentUser.discordUserId) {
+      await tx.withdrawalAccount.upsert({
+        where: { discordUserId: currentUser.discordUserId },
+        create: {
+          discordUserId: currentUser.discordUserId,
+          jinleeId: currentUser.jinleeId,
+          ...legacyData,
+        },
+        update: {
+          jinleeId: currentUser.jinleeId,
+          ...legacyData,
+        },
+      });
+    }
   });
 
   return NextResponse.json({ ok: true });

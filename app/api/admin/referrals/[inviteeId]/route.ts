@@ -16,6 +16,9 @@ const ensureReferralWriteSession = async () => {
 };
 
 const normalizeId = (value?: string | null) => value?.trim() ?? '';
+const DISCORD_ID_PATTERN = /^\d+$/;
+
+const validateDiscordId = (value: string) => DISCORD_ID_PATTERN.test(value);
 
 const parseReferralType = (value?: string | null): ReferralType | null => {
   if (!value) return null;
@@ -33,18 +36,29 @@ export async function PATCH(
   }
 
   const { inviteeId: rawInviteeId } = await context.params;
-  const inviteeId = decodeURIComponent(rawInviteeId);
+  const inviteeId = normalizeId(decodeURIComponent(rawInviteeId));
+  if (!validateDiscordId(inviteeId)) {
+    return NextResponse.json(
+      { error: 'Referral 仅支持 Discord 用户，请填写纯数字 Discord ID。' },
+      { status: 400 },
+    );
+  }
 
   const body = await request.json().catch(() => null);
   const type = parseReferralType(body?.type);
   const inviterId = normalizeId(body?.inviterId);
 
   if (!type && !inviterId) {
-    return NextResponse.json({ error: '至少需要提供 type 或 inviterId' }, { status: 400 });
+    return NextResponse.json({ error: '至少需要提供 type 或 inviterDiscordId' }, { status: 400 });
   }
-
   if (inviterId && inviterId === inviteeId) {
     return NextResponse.json({ error: '禁止自邀' }, { status: 400 });
+  }
+  if (inviterId && !validateDiscordId(inviterId)) {
+    return NextResponse.json(
+      { error: 'Referral 仅支持 Discord 用户，请填写纯数字 Discord ID。' },
+      { status: 400 },
+    );
   }
 
   const existingReferral = await prisma.referral.findUnique({
@@ -54,19 +68,16 @@ export async function PATCH(
   if (!existingReferral) {
     return NextResponse.json({ error: '记录不存在' }, { status: 404 });
   }
-  const [invitee] = await Promise.all([
-    prisma.member.findUnique({ where: { discordUserId: inviteeId } }),
-  ]);
+
+  const invitee = await prisma.member.findUnique({ where: { discordUserId: inviteeId } });
   if (!invitee) {
-    return NextResponse.json({ error: '被邀请人不存在，请先创建成员' }, { status: 404 });
+    return NextResponse.json({ error: '被邀请人 Discord 用户不存在，请先绑定 Discord。' }, { status: 404 });
   }
 
   if (inviterId) {
-    const [inviter] = await Promise.all([
-      prisma.member.findUnique({ where: { discordUserId: inviterId } }),
-    ]);
+    const inviter = await prisma.member.findUnique({ where: { discordUserId: inviterId } });
     if (!inviter) {
-      return NextResponse.json({ error: '新的邀请人不存在，请先创建成员' }, { status: 404 });
+      return NextResponse.json({ error: '新的邀请人 Discord 用户不存在，请先绑定 Discord。' }, { status: 404 });
     }
   }
 
@@ -107,7 +118,13 @@ export async function DELETE(
   }
 
   const { inviteeId: rawInviteeId } = await context.params;
-  const inviteeId = decodeURIComponent(rawInviteeId);
+  const inviteeId = normalizeId(decodeURIComponent(rawInviteeId));
+  if (!validateDiscordId(inviteeId)) {
+    return NextResponse.json(
+      { error: 'Referral 仅支持 Discord 用户，请填写纯数字 Discord ID。' },
+      { status: 400 },
+    );
+  }
 
   try {
     const payoutCount = await prisma.referralPayout.count({

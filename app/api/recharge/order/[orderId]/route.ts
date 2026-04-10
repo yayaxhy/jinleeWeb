@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 
 type RouteParams = { orderId: string };
 
 export async function GET(request: Request, context: { params: Promise<RouteParams> }) {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
@@ -21,10 +21,15 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
       paidAt: true,
       createdAt: true,
       discordUserId: true,
+      jinleeId: true,
     },
   });
 
-  if (!order || order.discordUserId !== session.discordId) {
+  if (
+    !order ||
+    (order.jinleeId && order.jinleeId !== currentUser.jinleeId) ||
+    (!order.jinleeId && order.discordUserId !== currentUser.discordUserId)
+  ) {
     return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
   }
 

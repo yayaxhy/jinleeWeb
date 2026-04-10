@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
 import { parseStoredWithdrawAccount } from '@/lib/withdrawAccounts';
 import {
   validateWithdrawAccountDetail,
@@ -42,7 +43,7 @@ const ensureMethod = (raw: unknown) => {
 };
 
 type WithdrawalNotificationRequest = {
-  userDiscordId: string;
+  userDiscordId?: string;
   amount: string;
   requestedAt: string;
   withdrawalId: string;
@@ -56,14 +57,29 @@ async function notifyBotWithdrawal(payload: WithdrawalNotificationRequest) {
   }
 
   const endpoint = `http://${INTERNAL_API_HOST}:${INTERNAL_API_PORT}/internal/withdrawals`;
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Internal-Token': INTERNAL_API_TOKEN,
-    },
-    body: JSON.stringify(payload),
-  });
+  let response: Response;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Token': INTERNAL_API_TOKEN,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('内部提现通知超时');
+    }
+    throw new Error('内部提现通知不可用');
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -76,8 +92,8 @@ async function notifyBotWithdrawal(payload: WithdrawalNotificationRequest) {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
@@ -99,14 +115,17 @@ export async function POST(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const withdrawalAccount = await tx.withdrawalAccount.findUnique({
-        where: { discordUserId: session.discordId },
-        select: { account1: true, account2: true, account3: true },
-      });
+      const withdrawalAccount =
+        currentUser.discordUserId && !currentUser.jinleeUser.withdrawAccount1 && !currentUser.jinleeUser.withdrawAccount2 && !currentUser.jinleeUser.withdrawAccount3
+          ? await tx.withdrawalAccount.findUnique({
+              where: { discordUserId: currentUser.discordUserId },
+              select: { account1: true, account2: true, account3: true },
+            })
+          : null;
       const savedMethods = [
-        withdrawalAccount?.account1,
-        withdrawalAccount?.account2,
-        withdrawalAccount?.account3,
+        currentUser.jinleeUser.withdrawAccount1 ?? withdrawalAccount?.account1,
+        currentUser.jinleeUser.withdrawAccount2 ?? withdrawalAccount?.account2,
+        currentUser.jinleeUser.withdrawAccount3 ?? withdrawalAccount?.account3,
       ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
 
       if (!savedMethods.includes(method)) {
@@ -127,7 +146,7 @@ export async function POST(request: Request) {
       }
 
       const lastWithdraw = await tx.withdraw.findFirst({
-        where: { discordId: session.discordId },
+        where: { jinleeId: currentUser.jinleeId },
         orderBy: { createdAt: 'desc' },
         select: { createdAt: true },
       });
@@ -141,34 +160,29 @@ export async function POST(request: Request) {
         }
       }
 
-      const member = await tx.member.findUnique({
-        where: { discordUserId: session.discordId },
-        select: { income: true, totalBalance: true },
-      });
-      if (!member) {
-        throw new WithdrawError('member_not_found', 404);
-      }
-
       const amountDecimal = new Prisma.Decimal(amountNumber);
-      const incomeDecimal = new Prisma.Decimal(member.income ?? 0);
-      const balanceDecimal = new Prisma.Decimal(member.totalBalance ?? 0);
+      const walletSnapshot = await getJinleeWalletSnapshotTx(tx, {
+        jinleeId: currentUser.jinleeId,
+        discordUserId: currentUser.discordUserId,
+      });
+      const incomeDecimal = new Prisma.Decimal(walletSnapshot.income);
+      const balanceDecimal = new Prisma.Decimal(walletSnapshot.totalBalance);
 
       if (incomeDecimal.lt(amountDecimal) || balanceDecimal.lt(amountDecimal)) {
         throw new WithdrawError('insufficient_balance');
       }
 
-      const updatedMember = await tx.member.update({
-        where: { discordUserId: session.discordId },
-        data: {
-          income: { decrement: amountDecimal },
-          totalBalance: { decrement: amountDecimal },
-        },
-        select: { income: true, totalBalance: true },
+      const updatedWallet = await applyJinleeWalletDeltaTx(tx, {
+        jinleeId: currentUser.jinleeId,
+        discordUserId: currentUser.discordUserId,
+        incomeDelta: amountDecimal.negated(),
+        totalBalanceDelta: amountDecimal.negated(),
       });
 
       const withdrawRecord = await tx.withdraw.create({
         data: {
-          discordId: session.discordId,
+          discordId: currentUser.discordUserId,
+          jinleeId: currentUser.jinleeId,
           amount: amountDecimal,
           method,
         },
@@ -179,11 +193,12 @@ export async function POST(request: Request) {
         },
       });
 
-      const balanceAfter = new Prisma.Decimal(updatedMember.totalBalance ?? 0);
+      const balanceAfter = new Prisma.Decimal(updatedWallet.totalBalance ?? 0);
 
       await tx.individualTransaction.create({
         data: {
-          discordId: session.discordId,
+          discordId: currentUser.discordUserId,
+          jinleeId: currentUser.jinleeId,
           thirdPartydiscordId: method,
           balanceBefore: balanceDecimal,
           amountChange: amountDecimal.mul(-1),
@@ -194,29 +209,32 @@ export async function POST(request: Request) {
 
       return {
         withdrawalId: withdrawRecord.id,
-        remainingIncome: updatedMember.income?.toString() ?? '0',
-        remainingBalance: updatedMember.totalBalance?.toString() ?? '0',
+        remainingIncome: updatedWallet.income?.toString() ?? '0',
+        remainingBalance: updatedWallet.totalBalance?.toString() ?? '0',
         nextAvailableAt: new Date(Date.now() + WITHDRAW_COOLDOWN_MS).toISOString(),
         notificationPayload: {
-          userDiscordId: session.discordId,
+          userDiscordId: currentUser.discordUserId ?? undefined,
           amount: amountDecimal.toFixed(2),
           requestedAt: withdrawRecord.createdAt.toISOString(),
           withdrawalId: withdrawRecord.id,
           note: withdrawRecord.method,
-          remainingIncome: updatedMember.income?.toString() ?? '0',
+          remainingIncome: updatedWallet.income?.toString() ?? '0',
         },
       };
     });
 
-    let notificationStatus: 'sent' | 'duplicate' | 'failed' = 'failed';
-    try {
-      const notifyResult = await notifyBotWithdrawal(result.notificationPayload);
-      notificationStatus = notifyResult.duplicate ? 'duplicate' : 'sent';
-    } catch (error) {
-      console.error('[withdraw] bot notification failed', {
-        withdrawalId: result.withdrawalId,
-        error,
-      });
+    let notificationStatus: 'sent' | 'duplicate' | 'failed' | 'skipped' = 'skipped';
+    if (result.notificationPayload.userDiscordId) {
+      notificationStatus = 'failed';
+      try {
+        const notifyResult = await notifyBotWithdrawal(result.notificationPayload);
+        notificationStatus = notifyResult.duplicate ? 'duplicate' : 'sent';
+      } catch (error) {
+        console.error('[withdraw] bot notification failed', {
+          withdrawalId: result.withdrawalId,
+          error,
+        });
+      }
     }
 
     return NextResponse.json({

@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PointShopClient } from '@/components/profile/PointShopClient';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { getPointShopDashboard } from '@/lib/pointShop';
-import { getServerSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,13 +11,15 @@ const decToString = (value: { toString(): string } | null | undefined) =>
   value ? value.toString() : '0';
 
 export default async function PointShopPage() {
-  const session = await getServerSession();
-  const discordId = session?.discordId;
-  if (!discordId) {
+  const currentUser = await getCurrentJinleeUser();
+  if (!currentUser) {
     redirect('/');
   }
 
-  const dashboard = await getPointShopDashboard(discordId);
+  const dashboard = await getPointShopDashboard({
+    jinleeId: currentUser.jinleeId,
+    discordUserId: currentUser.discordUserId,
+  });
 
   const initialData = {
     points: decToString(dashboard.points),

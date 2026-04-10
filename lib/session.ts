@@ -65,7 +65,7 @@ export const getServerSession = async (): Promise<AppSession | null> => {
   const payload = decodeSessionToken(token);
   if (!payload) return null;
   return {
-    userId: payload.userId ?? null,
+    jinleeId: payload.jinleeId ?? null,
     discordId: payload.discordId,
     username: payload.username,
     discriminator: payload.discriminator ?? null,
@@ -167,6 +167,6 @@ export const normalizeRedirectTarget = (value?: string | null, fallback = '/prof
 
 export const summarizeSession = (session: AppSession | null) => {
   if (!session) return null;
-  const { userId, discordId, username, discriminator, avatar } = session;
-  return { userId: userId ?? null, discordId, username, discriminator, avatar };
+  const { jinleeId, discordId, username, discriminator, avatar } = session;
+  return { jinleeId: jinleeId ?? null, discordId, username, discriminator, avatar };
 };

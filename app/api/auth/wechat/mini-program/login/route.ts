@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
-import { ensureAppUserForMiniProgram, summarizeAppUser } from '@/lib/app-user';
-import { createMiniProgramSession } from '@/lib/mini-program-session';
+import { ensureJinleeUserForWechatProgram, summarizeJinleeUser } from '@/lib/jinlee-user';
+import { createWechatProgramSession } from '@/lib/wechat-program-session';
 import { WeChatMiniProgramAuthError, exchangeMiniProgramCode } from '@/lib/wechat';
 
 const normalizeString = (value: unknown, maxLength: number) => {
@@ -23,7 +23,7 @@ const normalizeProfile = (raw: unknown) => {
   const source = raw as Record<string, unknown>;
   const nickname = normalizeString(source.nickname, 64);
   const avatarUrl = normalizeString(source.avatarUrl, 512);
-  const payload: Prisma.InputJsonObject = {};
+  const payload: Record<string, string> = {};
 
   if (nickname) {
     payload.nickname = nickname;
@@ -56,31 +56,33 @@ export async function POST(request: Request) {
 
   try {
     const loginData = await exchangeMiniProgramCode(code);
-    const profilePayload: Prisma.InputJsonObject = {
+    const profilePayload: Record<string, string> = {
       openId: loginData.openid,
-      unionId: loginData.unionid,
     };
-
-    if (profile.payload && typeof profile.payload === 'object' && !Array.isArray(profile.payload)) {
-      Object.assign(profilePayload, profile.payload);
+    if (loginData.unionid) {
+      profilePayload.unionId = loginData.unionid;
     }
 
-    const { user, bindingId } = await ensureAppUserForMiniProgram({
+    if (profile.payload && typeof profile.payload === 'object' && !Array.isArray(profile.payload)) {
+      Object.assign(profilePayload, profile.payload as Record<string, string>);
+    }
+
+    const { jinleeUser, bindingId } = await ensureJinleeUserForWechatProgram({
       openId: loginData.openid,
       unionId: loginData.unionid,
       displayName: profile.nickname,
       avatarUrl: profile.avatarUrl,
-      profile: profilePayload,
+      profile: profilePayload as Prisma.InputJsonValue,
     });
 
-    const session = await createMiniProgramSession({
-      userId: user.id,
+    const session = await createWechatProgramSession({
+      jinleeId: jinleeUser.jinleeId,
       providerAccountId: bindingId,
     });
 
     return NextResponse.json({
       ok: true,
-      user: summarizeAppUser(user),
+      user: summarizeJinleeUser(jinleeUser),
       session: {
         token: session.token,
         expiresAt: session.expiresAt.toISOString(),

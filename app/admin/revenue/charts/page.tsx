@@ -365,7 +365,9 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
     prisma.recharge.findMany({
       where: {
         createdAt: { gte: start, lt: end },
-        ...(excludeRechargeIds.length ? { toWhom: { notIn: excludeRechargeIds } } : {}),
+        ...(excludeRechargeIds.length
+          ? { OR: [{ toWhom: null }, { toWhom: { notIn: excludeRechargeIds } }] }
+          : {}),
       },
       select: { createdAt: true, amount: true },
       orderBy: { createdAt: 'asc' },

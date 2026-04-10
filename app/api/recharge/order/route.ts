@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import {
   SUPPORTED_CHANNELS,
   buildOutTradeNo,
@@ -39,8 +39,8 @@ const parseAmount = (raw: unknown) => {
 const normalizeAmount = (value: number) => new Decimal(value).toDecimalPlaces(2);
 
 export async function POST(request: Request) {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   const amountDecimal = normalizeAmount(rawAmount);
   const amountText = amountDecimal.toFixed(2);
 
-  const outTradeNo = buildOutTradeNo(session.discordId);
+  const outTradeNo = buildOutTradeNo(currentUser.jinleeId);
   const notifyUrl = resolveAbsoluteUrl(process.env.ZPAY_NOTIFY_URL, '/api/payment/zpay/notify').toString();
   const returnUrlObject = resolveAbsoluteUrl(process.env.ZPAY_RETURN_URL, '/recharge/result');
   returnUrlObject.searchParams.set('order', outTradeNo);
@@ -86,15 +86,21 @@ export async function POST(request: Request) {
   await prisma.zPayRechargeOrder.create({
     data: {
       outTradeNo,
-      discordUserId: session.discordId,
+      discordUserId: currentUser.discordUserId,
+      jinleeId: currentUser.jinleeId,
       amount: amountDecimal,
       channel: requestedChannel,
     },
   });
 
+  const orderDisplayName =
+    currentUser.jinleeUser.discordDisplayName ??
+    currentUser.jinleeUser.member?.serverDisplayName ??
+    currentUser.jinleeUser.wechatDisplayName ??
+    currentUser.jinleeId;
   const orderTitle = sanitizeZPayText(
-    `账户充值-${session.username ?? session.discordId}`,
-    `账户充值-${session.discordId}`,
+    `账户充值-${orderDisplayName}`,
+    `账户充值-${currentUser.jinleeId}`,
   );
   const safeSiteName = sanitizeZPayText(SITE_NAME, 'Jinlee Club');
 

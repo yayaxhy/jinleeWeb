@@ -24,6 +24,9 @@ const ensureReferralWriteSession = async () => {
 };
 
 const normalizeId = (value?: string | null) => value?.trim() ?? '';
+const DISCORD_ID_PATTERN = /^\d+$/;
+
+const validateDiscordId = (value: string) => DISCORD_ID_PATTERN.test(value);
 
 const parseReferralType = (value?: string | null): ReferralType | null => {
   if (!value) return null;
@@ -41,10 +44,16 @@ export async function GET(request: NextRequest) {
   const inviteeId = normalizeId(searchParams.get('inviteeId'));
   const inviterId = normalizeId(searchParams.get('inviterId'));
   const type = parseReferralType(searchParams.get('type'));
+  if ((inviteeId && !validateDiscordId(inviteeId)) || (inviterId && !validateDiscordId(inviterId))) {
+    return NextResponse.json(
+      { error: 'Referral 查询仅支持纯数字 Discord ID。微信-only 用户不会出现在该列表中。' },
+      { status: 400 },
+    );
+  }
 
   const where = {
-    ...(inviteeId ? { inviteeId } : {}),
-    ...(inviterId ? { inviterId } : {}),
+    ...(inviteeId && validateDiscordId(inviteeId) ? { inviteeId } : {}),
+    ...(inviterId && validateDiscordId(inviterId) ? { inviterId } : {}),
     ...(type ? { type } : {}),
   };
 
@@ -90,10 +99,16 @@ export async function POST(request: Request) {
   const type = parseReferralType(body?.type);
 
   if (!inviteeId || !inviterId || !type) {
-    return NextResponse.json({ error: 'inviteeId、inviterId、type 均为必填' }, { status: 400 });
+    return NextResponse.json({ error: 'inviteeDiscordId、inviterDiscordId、type 均为必填' }, { status: 400 });
   }
   if (inviteeId === inviterId) {
     return NextResponse.json({ error: '禁止自邀' }, { status: 400 });
+  }
+  if (!validateDiscordId(inviteeId) || !validateDiscordId(inviterId)) {
+    return NextResponse.json(
+      { error: 'Referral 仅支持 Discord 用户，请填写纯数字 Discord ID。微信-only 用户需先绑定 Discord。' },
+      { status: 400 },
+    );
   }
 
   const existing = await prisma.referral.findUnique({ where: { inviteeId } });
@@ -106,10 +121,10 @@ export async function POST(request: Request) {
     prisma.member.findUnique({ where: { discordUserId: inviterId } }),
   ]);
   if (!invitee) {
-    return NextResponse.json({ error: '被邀请人不存在，请先创建成员' }, { status: 404 });
+    return NextResponse.json({ error: '被邀请人 Discord 用户不存在，请先绑定 Discord。' }, { status: 404 });
   }
   if (!inviter) {
-    return NextResponse.json({ error: '邀请人不存在，请先创建成员' }, { status: 404 });
+    return NextResponse.json({ error: '邀请人 Discord 用户不存在，请先绑定 Discord。' }, { status: 404 });
   }
 
   const snapshot = await getReferralSnapshotForBinding(inviterId, type);

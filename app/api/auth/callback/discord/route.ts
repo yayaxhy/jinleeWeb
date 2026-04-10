@@ -7,7 +7,7 @@ import {
   getLoginStateCookie,
   normalizeRedirectTarget,
 } from '@/lib/session';
-import { ensureAppUserForDiscordMember } from '@/lib/app-user';
+import { ensureJinleeUserForDiscordMember } from '@/lib/jinlee-user';
 import { exchangeCodeForTokens, fetchDiscordUser, fetchGuildMember } from '@/lib/discord';
 import { prisma } from '@/lib/prisma';
 
@@ -105,7 +105,7 @@ export async function GET(request: Request) {
         .catch(() => {});
     }
 
-    const appUser = await ensureAppUserForDiscordMember({
+    const jinleeUser = await ensureJinleeUserForDiscordMember({
       discordUserId: discordUser.id,
       displayName: serverDisplayName,
       avatarUrl,
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
     const response = NextResponse.redirect(absoluteRedirect, { status: 302 });
 
     attachSessionToResponse(response, {
-      userId: appUser.id,
+      jinleeId: jinleeUser.jinleeId,
       discordId: discordUser.id,
       username: discordUser.global_name ?? discordUser.username,
       discriminator: discordUser.discriminator && discordUser.discriminator !== '0' ? discordUser.discriminator : null,

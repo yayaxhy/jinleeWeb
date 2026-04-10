@@ -20,6 +20,7 @@ type FilterState = {
 
 const REFERRAL_TYPES: ReferralType[] = ['LAOBAN', 'PEIWAN'];
 const ROME_TIMEZONE = 'Europe/Rome';
+const DISCORD_ID_PATTERN = /^\d+$/;
 
 export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
   const [createForm, setCreateForm] = useState<{ inviteeId: string; inviterId: string; type: ReferralType }>({
@@ -58,6 +59,13 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
     async (criteria: FilterState) => {
       setIsLoading(true);
       setListError(null);
+      if ((criteria.inviteeId && !DISCORD_ID_PATTERN.test(criteria.inviteeId)) || (criteria.inviterId && !DISCORD_ID_PATTERN.test(criteria.inviterId))) {
+        setReferrals([]);
+        setTotal(0);
+        setListError('Referral 查询仅支持纯数字 Discord ID。微信-only 用户不会出现在该列表中。');
+        setIsLoading(false);
+        return;
+      }
       const query = new URLSearchParams();
       if (criteria.inviteeId) query.set('inviteeId', criteria.inviteeId);
       if (criteria.inviterId) query.set('inviterId', criteria.inviterId);
@@ -109,11 +117,18 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
     const type = createForm.type;
 
     if (!inviteeId || !inviterId) {
-      setGlobalMessage({ type: 'error', text: 'inviteeId、inviterId 均为必填' });
+      setGlobalMessage({ type: 'error', text: 'inviteeDiscordId、inviterDiscordId 均为必填' });
       return;
     }
     if (inviteeId === inviterId) {
       setGlobalMessage({ type: 'error', text: '禁止自邀' });
+      return;
+    }
+    if (!DISCORD_ID_PATTERN.test(inviteeId) || !DISCORD_ID_PATTERN.test(inviterId)) {
+      setGlobalMessage({
+        type: 'error',
+        text: 'Referral 仅支持 Discord 用户，请填写纯数字 Discord ID。微信-only 用户需先绑定 Discord。',
+      });
       return;
     }
 
@@ -209,7 +224,7 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-white/50">ADMIN</p>
           <h2 className="text-2xl font-semibold">邀请人管理</h2>
-          <p className="text-sm text-white/70">插入 / 查询 / 删除 邀请人 记录</p>
+          <p className="text-sm text-white/70">仅管理 Discord 用户的 Referral 关系，微信-only 用户需先绑定 Discord。</p>
           <p className="text-xs text-white/60">当前总数：{total}</p>
         </div>
         <a
@@ -227,24 +242,24 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
             {isCreating ? <span className="text-xs text-white/60">提交中…</span> : null}
           </div>
           <label className="space-y-1 text-sm">
-            <span className="text-white/70">被邀请人 ID（inviteeId）</span>
+            <span className="text-white/70">被邀请人 Discord ID（inviteeId）</span>
             <input
               type="text"
               value={createForm.inviteeId}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, inviteeId: event.target.value }))}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-              placeholder="必填且唯一"
+              placeholder="纯数字 Discord ID"
               disabled={readOnly}
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-white/70">邀请人 ID（inviterId）</span>
+            <span className="text-white/70">邀请人 Discord ID（inviterId）</span>
             <input
               type="text"
               value={createForm.inviterId}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, inviterId: event.target.value }))}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-              placeholder="必填"
+              placeholder="纯数字 Discord ID"
               disabled={readOnly}
             />
           </label>
@@ -284,17 +299,17 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
                 value={filters.inviterId}
                 onChange={(event) => setFilters((prev) => ({ ...prev, inviterId: event.target.value }))}
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-                placeholder="inviterId"
+                placeholder="Discord ID"
               />
             </label>
             <label className="space-y-1 text-sm">
-              <span className="text-white/70">按被邀请人 ID</span>
+              <span className="text-white/70">按被邀请人 Discord ID</span>
               <input
                 type="text"
                 value={filters.inviteeId}
                 onChange={(event) => setFilters((prev) => ({ ...prev, inviteeId: event.target.value }))}
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-                placeholder="inviteeId"
+                placeholder="Discord ID"
               />
             </label>
           </div>
@@ -308,13 +323,17 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
             </button>
             <button
               type="button"
-              onClick={() => setFilters({ inviteeId: '', inviterId: '', type: '' })}
+              onClick={() => {
+                const empty = { inviteeId: '', inviterId: '', type: '' };
+                setFilters(empty);
+                setAppliedFilters(empty);
+              }}
               className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/5"
             >
               清空
             </button>
           </div>
-          <p className="text-xs text-white/60">默认返回最新 100 条，可按 inviterId / inviteeId 过滤。</p>
+          <p className="text-xs text-white/60">默认返回最新 100 条，仅支持按纯数字 Discord ID 过滤。</p>
         </form>
       </div>
 
@@ -331,8 +350,8 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
         <table className="min-w-full text-sm">
           <thead>
             <tr className="bg-white/5 text-left text-white/60 uppercase tracking-[0.3em]">
-              <th className="px-4 py-3">InviteeId</th>
-              <th className="px-4 py-3">InviterId</th>
+              <th className="px-4 py-3">Invitee Discord ID</th>
+              <th className="px-4 py-3">Inviter Discord ID</th>
               <th className="px-4 py-3">类型</th>
               <th className="px-4 py-3">创建时间</th>
               <th className="px-4 py-3 text-right">操作</th>

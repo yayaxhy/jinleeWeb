@@ -58,23 +58,28 @@ export async function GET(request: NextRequest) {
   const workerId = searchParams.get('workerId')?.trim() ?? '';
   const peiwanIdRaw = searchParams.get('peiwanId')?.trim() ?? '';
 
-  const whereClause: Prisma.OrderWhereInput = { status: 'RUNNING' };
+  const filters: Prisma.OrderWhereInput[] = [{ status: 'RUNNING' }];
   if (orderId) {
     const numeric = Number(orderId);
     if (Number.isInteger(numeric) && numeric > 0) {
-      whereClause.OR = [{ displayNo: numeric }, { id: orderId }];
+      filters.push({ OR: [{ displayNo: numeric }, { id: orderId }] });
     } else {
-      whereClause.id = orderId;
+      filters.push({ id: orderId });
     }
   }
-  if (hostId) whereClause.hostId = hostId;
-  if (workerId) whereClause.workerId = workerId;
+  if (hostId) {
+    filters.push({
+      OR: [{ hostId }, { hostJinleeId: hostId }],
+    });
+  }
+  if (workerId) filters.push({ workerId });
   if (peiwanIdRaw) {
     const numericPeiwan = Number(peiwanIdRaw);
     if (Number.isInteger(numericPeiwan) && numericPeiwan > 0) {
-      whereClause.peiwanId = numericPeiwan;
+      filters.push({ peiwanId: numericPeiwan });
     }
   }
+  const whereClause: Prisma.OrderWhereInput = { AND: filters };
 
   const rows = await prisma.order.findMany({
     where: whereClause,
@@ -83,6 +88,7 @@ export async function GET(request: NextRequest) {
       id: true,
       displayNo: true,
       hostId: true,
+      hostJinleeId: true,
       workerId: true,
       peiwanId: true,
       unitPrice: true,
@@ -92,6 +98,7 @@ export async function GET(request: NextRequest) {
       acceptedAt: true,
       stopwatchStartAt: true,
       cutoffAt: true,
+      hostJinleeUser: { select: { jinleeId: true, discordDisplayName: true, wechatDisplayName: true } },
       host: { select: { discordUserId: true, serverDisplayName: true } },
       worker: { select: { discordUserId: true, serverDisplayName: true } },
     },
@@ -106,7 +113,8 @@ export async function GET(request: NextRequest) {
     { header: '订单编号', key: 'displayNo', width: 12 },
     { header: '订单ID', key: 'id', width: 30 },
     { header: '老板昵称', key: 'hostName', width: 18 },
-    { header: '老板ID', key: 'hostId', width: 24 },
+    { header: '老板ID', key: 'hostId', width: 28 },
+    { header: '老板DiscordID', key: 'hostDiscordId', width: 24 },
     { header: '陪玩昵称', key: 'workerName', width: 18 },
     { header: '陪玩ID', key: 'workerId', width: 24 },
     { header: '陪玩编号', key: 'peiwanId', width: 12 },
@@ -120,14 +128,22 @@ export async function GET(request: NextRequest) {
   worksheet.views = [{ state: 'frozen', ySplit: 1 }];
 
   for (const row of rows) {
-    const hostName = row.host?.serverDisplayName ?? row.host?.discordUserId ?? row.hostId;
+    const hostName =
+      row.host?.serverDisplayName ??
+      row.hostJinleeUser?.discordDisplayName ??
+      row.hostJinleeUser?.wechatDisplayName ??
+      row.host?.discordUserId ??
+      row.hostId ??
+      row.hostJinleeId ??
+      '';
     const workerName = row.worker?.serverDisplayName ?? row.worker?.discordUserId ?? row.workerId;
     worksheet.addRow({
       acceptedAt: formatDate(row.acceptedAt ?? row.createdAt),
       displayNo: row.displayNo,
       id: row.id,
       hostName,
-      hostId: row.hostId,
+      hostId: row.hostJinleeId ?? row.hostId,
+      hostDiscordId: row.hostId ?? '',
       workerName,
       workerId: row.workerId,
       peiwanId: row.peiwanId,

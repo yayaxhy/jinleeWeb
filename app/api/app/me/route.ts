@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { summarizeAppUser } from '@/lib/app-user';
-import { getMiniProgramSessionFromRequest, revokeMiniProgramSession } from '@/lib/mini-program-session';
-import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { summarizeJinleeUser } from '@/lib/jinlee-user';
+import { revokeWechatProgramSession } from '@/lib/wechat-program-session';
 
 const buildMemberPayload = (
   member:
@@ -35,44 +34,20 @@ const buildMemberPayload = (
 };
 
 export async function GET(request: Request) {
-  const miniProgramSession = await getMiniProgramSessionFromRequest(request);
-  if (miniProgramSession) {
-    return NextResponse.json({
-      ok: true,
-      sessionSource: 'mini_program',
-      user: summarizeAppUser(miniProgramSession.user),
-      member: buildMemberPayload(miniProgramSession.user.member),
-    });
-  }
-
-  const webSession = await getServerSession();
-  if (!webSession?.discordId) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
-  }
-
-  const appUser = webSession.userId
-    ? await prisma.appUser.findUnique({
-        where: { id: webSession.userId },
-        include: { member: true },
-      })
-    : await prisma.appUser.findFirst({
-        where: { memberDiscordUserId: webSession.discordId },
-        include: { member: true },
-      });
-
-  if (!appUser) {
-    return NextResponse.json({ ok: false, error: 'app_user_not_found' }, { status: 404 });
   }
 
   return NextResponse.json({
     ok: true,
-    sessionSource: 'web',
-    user: summarizeAppUser(appUser),
-    member: buildMemberPayload(appUser.member),
+    sessionSource: currentUser.sessionSource,
+    user: summarizeJinleeUser(currentUser.jinleeUser),
+    member: buildMemberPayload(currentUser.jinleeUser.member),
   });
 }
 
 export async function DELETE(request: Request) {
-  await revokeMiniProgramSession(request);
+  await revokeWechatProgramSession(request);
   return NextResponse.json({ ok: true });
 }

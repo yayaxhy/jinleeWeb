@@ -9,6 +9,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx, type JinleeWalletIdentity } from '@/lib/jinlee-wallet';
 
 const DEC = (value: Prisma.Decimal | number | string) =>
   value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value);
@@ -64,6 +65,8 @@ export type PointShopDashboard = {
   items: PointShopItemView[];
   cart: PointShopCartView | null;
 };
+
+export type PointShopUserIdentity = JinleeWalletIdentity;
 
 export type AddCartItemResult =
   | { status: 'ok'; cart: PointShopCartView }
@@ -147,9 +150,9 @@ async function withSerializableRetry<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-async function getOrCreateOpenCartTx(tx: Prisma.TransactionClient, userId: string) {
+async function getOrCreateOpenCartTx(tx: Prisma.TransactionClient, identity: PointShopUserIdentity) {
   const existing = await tx.pointShopCart.findFirst({
-    where: { discordUserId: userId, status: PointShopCartStatus.OPEN },
+    where: { jinleeId: identity.jinleeId, status: PointShopCartStatus.OPEN },
     orderBy: { updatedAt: 'desc' },
   });
   if (existing) return existing;
@@ -157,7 +160,8 @@ async function getOrCreateOpenCartTx(tx: Prisma.TransactionClient, userId: strin
   try {
     return await tx.pointShopCart.create({
       data: {
-        discordUserId: userId,
+        discordUserId: identity.discordUserId ?? null,
+        jinleeId: identity.jinleeId,
         status: PointShopCartStatus.OPEN,
         version: 1,
       },
@@ -166,7 +170,7 @@ async function getOrCreateOpenCartTx(tx: Prisma.TransactionClient, userId: strin
     // The DB enforces one OPEN cart per user via partial unique index.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       const fallback = await tx.pointShopCart.findFirst({
-        where: { discordUserId: userId, status: PointShopCartStatus.OPEN },
+        where: { jinleeId: identity.jinleeId, status: PointShopCartStatus.OPEN },
         orderBy: { updatedAt: 'desc' },
       });
       if (fallback) return fallback;
@@ -175,9 +179,12 @@ async function getOrCreateOpenCartTx(tx: Prisma.TransactionClient, userId: strin
   }
 }
 
-async function loadOpenCartViewTx(tx: Prisma.TransactionClient, userId: string): Promise<PointShopCartView | null> {
+async function loadOpenCartViewTx(
+  tx: Prisma.TransactionClient,
+  identity: PointShopUserIdentity,
+): Promise<PointShopCartView | null> {
   const cart = await tx.pointShopCart.findFirst({
-    where: { discordUserId: userId, status: PointShopCartStatus.OPEN },
+    where: { jinleeId: identity.jinleeId, status: PointShopCartStatus.OPEN },
     orderBy: { updatedAt: 'desc' },
     include: {
       items: {
@@ -226,18 +233,21 @@ async function loadOpenCartViewTx(tx: Prisma.TransactionClient, userId: string):
   };
 }
 
-async function getCurrentPointsTx(tx: Prisma.TransactionClient, userId: string): Promise<Prisma.Decimal> {
-  const row = await tx.loyaltyPoint.findUnique({
-    where: { discordUserId: userId },
-    select: { points: true },
+async function getCurrentPointsTx(
+  tx: Prisma.TransactionClient,
+  identity: PointShopUserIdentity,
+): Promise<Prisma.Decimal> {
+  const row = await tx.jinleeUser.findUnique({
+    where: { jinleeId: identity.jinleeId },
+    select: { loyaltyPoints: true },
   });
-  return DEC(row?.points ?? 0);
+  return DEC(row?.loyaltyPoints ?? 0);
 }
 
-export async function getPointShopDashboard(userId: string): Promise<PointShopDashboard> {
+export async function getPointShopDashboard(identity: PointShopUserIdentity): Promise<PointShopDashboard> {
   return prisma.$transaction(async (tx) => {
     const [points, items, cart] = await Promise.all([
-      getCurrentPointsTx(tx, userId),
+      getCurrentPointsTx(tx, identity),
       tx.pointShopItem.findMany({
         where: { isActive: true },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
@@ -252,7 +262,7 @@ export async function getPointShopDashboard(userId: string): Promise<PointShopDa
           balanceCreditAmount: true,
         },
       }),
-      loadOpenCartViewTx(tx, userId),
+      loadOpenCartViewTx(tx, identity),
     ]);
 
     return {
@@ -264,7 +274,7 @@ export async function getPointShopDashboard(userId: string): Promise<PointShopDa
 }
 
 export async function addPointShopCartItem(params: {
-  userId: string;
+  identity: PointShopUserIdentity;
   sku: string;
   quantity: number;
 }): Promise<AddCartItemResult> {
@@ -290,7 +300,7 @@ export async function addPointShopCartItem(params: {
     });
     if (!item) return { status: 'item_not_found' as const };
 
-    const cart = await getOrCreateOpenCartTx(tx, params.userId);
+    const cart = await getOrCreateOpenCartTx(tx, params.identity);
 
     const existing = await tx.pointShopCartItem.findUnique({
       where: {
@@ -337,13 +347,13 @@ export async function addPointShopCartItem(params: {
       data: { version: { increment: 1 } },
     });
 
-    const view = await loadOpenCartViewTx(tx, params.userId);
+    const view = await loadOpenCartViewTx(tx, params.identity);
     return { status: 'ok' as const, cart: view! };
   });
 }
 
 export async function removePointShopCartItem(params: {
-  userId: string;
+  identity: PointShopUserIdentity;
   sku: string;
   quantity: number;
 }): Promise<RemoveCartItemResult> {
@@ -355,7 +365,7 @@ export async function removePointShopCartItem(params: {
 
   return prisma.$transaction(async (tx) => {
     const cart = await tx.pointShopCart.findFirst({
-      where: { discordUserId: params.userId, status: PointShopCartStatus.OPEN },
+      where: { jinleeId: params.identity.jinleeId, status: PointShopCartStatus.OPEN },
       orderBy: { updatedAt: 'desc' },
       select: { id: true },
     });
@@ -388,16 +398,16 @@ export async function removePointShopCartItem(params: {
       data: { version: { increment: 1 } },
     });
 
-    const view = await loadOpenCartViewTx(tx, params.userId);
+    const view = await loadOpenCartViewTx(tx, params.identity);
     if (!view) return { status: 'empty_cart' as const };
     return { status: 'ok' as const, cart: view };
   });
 }
 
-export async function clearPointShopCart(userId: string): Promise<ClearCartResult> {
+export async function clearPointShopCart(identity: PointShopUserIdentity): Promise<ClearCartResult> {
   return prisma.$transaction(async (tx) => {
     const cart = await tx.pointShopCart.findFirst({
-      where: { discordUserId: userId, status: PointShopCartStatus.OPEN },
+      where: { jinleeId: identity.jinleeId, status: PointShopCartStatus.OPEN },
       orderBy: { updatedAt: 'desc' },
       select: { id: true, version: true },
     });
@@ -432,7 +442,7 @@ async function deliverOrderItemTx(
     orderItemId: string;
     itemSku: string;
     itemName: string;
-    ownerId: string;
+    owner: PointShopUserIdentity;
     quantity: number;
     unitPoints: Prisma.Decimal;
     subtotalPoints: Prisma.Decimal;
@@ -447,7 +457,7 @@ async function deliverOrderItemTx(
     orderItemId,
     itemSku,
     itemName,
-    ownerId,
+    owner,
     quantity,
     unitPoints,
     subtotalPoints,
@@ -466,7 +476,8 @@ async function deliverOrderItemTx(
       data: Array.from({ length: quantity }, () => ({
         orderId,
         orderItemId,
-        discordUserId: ownerId,
+        discordUserId: owner.discordUserId ?? null,
+        jinleeId: owner.jinleeId,
         deliveryType: PointShopDeliveryType.COUPON,
         itemSku,
         itemName,
@@ -499,7 +510,8 @@ async function deliverOrderItemTx(
       data: Array.from({ length: quantity }, () => ({
         orderId,
         orderItemId,
-        discordUserId: ownerId,
+        discordUserId: owner.discordUserId ?? null,
+        jinleeId: owner.jinleeId,
         deliveryType: PointShopDeliveryType.COUPON,
         itemSku,
         itemName,
@@ -530,7 +542,8 @@ async function deliverOrderItemTx(
       data: {
         orderId,
         orderItemId,
-        discordUserId: ownerId,
+        discordUserId: owner.discordUserId ?? null,
+        jinleeId: owner.jinleeId,
         deliveryType: PointShopDeliveryType.COUPON,
         itemSku,
         itemName,
@@ -560,7 +573,8 @@ async function deliverOrderItemTx(
         data: {
           orderId,
           orderItemId,
-          discordUserId: ownerId,
+          discordUserId: owner.discordUserId ?? null,
+          jinleeId: owner.jinleeId,
           deliveryType: PointShopDeliveryType.BALANCE,
           itemSku,
           itemName,
@@ -584,28 +598,22 @@ async function deliverOrderItemTx(
     }
 
     const amountChange = unitCredit.mul(quantity);
-    const member = await tx.member.findUnique({
-      where: { discordUserId: ownerId },
-      select: { totalBalance: true },
-    });
-    const balanceBefore = DEC(member?.totalBalance ?? 0);
-    const balanceAfter = balanceBefore.add(amountChange);
-
-    await tx.member.update({
-      where: { discordUserId: ownerId },
-      data: {
-        totalBalance: { increment: amountChange },
-        recharge: { increment: amountChange },
-      },
+    const walletBefore = await getJinleeWalletSnapshotTx(tx, owner);
+    const walletAfter = await applyJinleeWalletDeltaTx(tx, {
+      jinleeId: owner.jinleeId,
+      discordUserId: owner.discordUserId ?? null,
+      totalBalanceDelta: amountChange,
+      rechargeDelta: amountChange,
     });
 
     await tx.individualTransaction.create({
       data: {
-        discordId: ownerId,
+        discordId: owner.discordUserId ?? null,
+        jinleeId: owner.jinleeId,
         thirdPartydiscordId: POINT_SHOP_SYSTEM_ACCOUNT,
-        balanceBefore,
+        balanceBefore: walletBefore.totalBalance,
         amountChange,
-        balanceAfter,
+        balanceAfter: walletAfter.totalBalance,
         typeOfTransaction: '积分商城余额兑换',
       },
     });
@@ -615,7 +623,8 @@ async function deliverOrderItemTx(
       data: {
         orderId,
         orderItemId,
-        discordUserId: ownerId,
+        discordUserId: owner.discordUserId ?? null,
+        jinleeId: owner.jinleeId,
         deliveryType: PointShopDeliveryType.BALANCE,
         itemSku,
         itemName,
@@ -643,7 +652,8 @@ async function deliverOrderItemTx(
     data: {
       orderId,
       orderItemId,
-      discordUserId: ownerId,
+      discordUserId: owner.discordUserId ?? null,
+      jinleeId: owner.jinleeId,
       deliveryType,
       itemSku,
       itemName,
@@ -666,7 +676,7 @@ async function deliverOrderItemTx(
 }
 
 export async function checkoutPointShopCart(params: {
-  userId: string;
+  identity: PointShopUserIdentity;
   requestKey?: string | null;
 }): Promise<CheckoutCartResult> {
   try {
@@ -676,7 +686,7 @@ export async function checkoutPointShopCart(params: {
         Prisma.sql`
           SELECT "id", "version"
           FROM "PointShopCart"
-          WHERE "discordUserId" = ${params.userId}
+          WHERE "jinleeId" = ${params.identity.jinleeId}
             AND "status" = 'OPEN'
           ORDER BY "updatedAt" DESC
           LIMIT 1
@@ -691,12 +701,10 @@ export async function checkoutPointShopCart(params: {
         return { status: 'empty_cart' as const, requestKey };
       }
 
-      const existing = await tx.pointShopOrder.findUnique({
+      const existing = await tx.pointShopOrder.findFirst({
         where: {
-          discordUserId_requestKey: {
-            discordUserId: params.userId,
-            requestKey,
-          },
+          jinleeId: params.identity.jinleeId,
+          requestKey,
         },
         select: {
           id: true,
@@ -764,11 +772,8 @@ export async function checkoutPointShopCart(params: {
         totalItems += line.quantity;
       }
 
-      const pointsRow = await tx.loyaltyPoint.findUnique({
-        where: { discordUserId: params.userId },
-        select: { points: true },
-      });
-      const pointsBefore = DEC(pointsRow?.points ?? 0);
+      const walletBefore = await getJinleeWalletSnapshotTx(tx, params.identity);
+      const pointsBefore = DEC(walletBefore.loyaltyPoints);
 
       if (pointsBefore.lt(totalPoints)) {
         return {
@@ -826,20 +831,30 @@ export async function checkoutPointShopCart(params: {
       }
 
       const pointsAfter = pointsBefore.sub(totalPoints);
-      if (pointsRow) {
-        await tx.loyaltyPoint.update({
-          where: { discordUserId: params.userId },
-          data: { points: pointsAfter },
-        });
-      } else {
-        await tx.loyaltyPoint.create({
-          data: { discordUserId: params.userId, points: pointsAfter },
+      await applyJinleeWalletDeltaTx(tx, {
+        jinleeId: params.identity.jinleeId,
+        discordUserId: params.identity.discordUserId ?? null,
+        loyaltyPointsDelta: totalPoints.negated(),
+      });
+      if (params.identity.discordUserId) {
+        await tx.loyaltyPoint.upsert({
+          where: { discordUserId: params.identity.discordUserId },
+          create: {
+            discordUserId: params.identity.discordUserId,
+            jinleeId: params.identity.jinleeId,
+            points: pointsAfter,
+          },
+          update: {
+            jinleeId: params.identity.jinleeId,
+            points: pointsAfter,
+          },
         });
       }
 
       const order = await tx.pointShopOrder.create({
         data: {
-          discordUserId: params.userId,
+          discordUserId: params.identity.discordUserId ?? null,
+          jinleeId: params.identity.jinleeId,
           cartId: cart.id,
           requestKey,
           status: PointShopOrderStatus.SUCCESS,
@@ -851,7 +866,8 @@ export async function checkoutPointShopCart(params: {
 
       await tx.pointShopPointLedger.create({
         data: {
-          discordUserId: params.userId,
+          discordUserId: params.identity.discordUserId ?? null,
+          jinleeId: params.identity.jinleeId,
           orderId: order.id,
           ledgerType: PointShopPointLedgerType.DEBIT,
           deltaPoints: totalPoints,
@@ -894,7 +910,7 @@ export async function checkoutPointShopCart(params: {
           orderItemId: item.id,
           itemSku: item.itemSku,
           itemName: item.itemName,
-          ownerId: params.userId,
+          owner: params.identity,
           quantity: item.quantity,
           unitPoints: DEC(item.unitPoints),
           subtotalPoints: DEC(item.subtotalPoints),

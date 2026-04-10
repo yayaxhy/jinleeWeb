@@ -22,24 +22,6 @@ const formatDate = (value?: Date | string | null) => {
   return date.toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
-const parseNumber = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'number') return Number.isNaN(value) ? null : value;
-  if (typeof value === 'bigint') return Number(value);
-  if (typeof value === 'string') {
-    const numeric = Number(value);
-    return Number.isNaN(numeric) ? null : numeric;
-  }
-  if (typeof value === 'object' && value !== null && 'toString' in value) {
-    const text = (value as { toString?: () => string }).toString?.();
-    if (text) {
-      const numeric = Number(text);
-      return Number.isNaN(numeric) ? null : numeric;
-    }
-  }
-  return null;
-};
-
 const formatNumber = (value: unknown, maximumFractionDigits = 2) => {
   void maximumFractionDigits;
   return formatAmountDown2(value);
@@ -98,24 +80,29 @@ export default async function RunningOrdersPage(props: PageProps) {
         ? peiwanIdParam[0]?.trim()
         : '';
 
-  const whereClause: Prisma.OrderWhereInput = { status: 'RUNNING' };
+  const filters: Prisma.OrderWhereInput[] = [{ status: 'RUNNING' }];
 
   if (orderId) {
     const numeric = Number(orderId);
     if (Number.isInteger(numeric) && numeric > 0) {
-      whereClause.OR = [{ displayNo: numeric }, { id: orderId }];
+      filters.push({ OR: [{ displayNo: numeric }, { id: orderId }] });
     } else {
-      whereClause.id = orderId;
+      filters.push({ id: orderId });
     }
   }
-  if (hostId) whereClause.hostId = hostId;
-  if (workerId) whereClause.workerId = workerId;
+  if (hostId) {
+    filters.push({
+      OR: [{ hostId }, { hostJinleeId: hostId }],
+    });
+  }
+  if (workerId) filters.push({ workerId });
   if (peiwanIdRaw) {
     const numericPeiwan = Number(peiwanIdRaw);
     if (Number.isInteger(numericPeiwan) && numericPeiwan > 0) {
-      whereClause.peiwanId = numericPeiwan;
+      filters.push({ peiwanId: numericPeiwan });
     }
   }
+  const whereClause: Prisma.OrderWhereInput = { AND: filters };
 
   const pageParam = searchParams.page;
   const rawPage = Array.isArray(pageParam) ? pageParam[0] : pageParam;
@@ -134,6 +121,7 @@ export default async function RunningOrdersPage(props: PageProps) {
         id: true,
         displayNo: true,
         hostId: true,
+        hostJinleeId: true,
         workerId: true,
         peiwanId: true,
         unitPrice: true,
@@ -143,6 +131,7 @@ export default async function RunningOrdersPage(props: PageProps) {
         acceptedAt: true,
         stopwatchStartAt: true,
         cutoffAt: true,
+        hostJinleeUser: { select: { jinleeId: true, discordDisplayName: true, wechatDisplayName: true } },
         host: { select: { discordUserId: true, serverDisplayName: true } },
         worker: { select: { discordUserId: true, serverDisplayName: true } },
       },
@@ -188,7 +177,7 @@ export default async function RunningOrdersPage(props: PageProps) {
             name="hostId"
             defaultValue={hostId}
             className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
-            placeholder="discord id"
+            placeholder="jinleeId 或 discord id"
           />
         </div>
         <div className="space-y-1">
@@ -251,7 +240,14 @@ export default async function RunningOrdersPage(props: PageProps) {
               </tr>
             )}
             {orders.map((order) => {
-              const hostName = order.host?.serverDisplayName ?? order.host?.discordUserId ?? order.hostId;
+              const hostName =
+                order.host?.serverDisplayName ??
+                order.hostJinleeUser?.discordDisplayName ??
+                order.hostJinleeUser?.wechatDisplayName ??
+                order.host?.discordUserId ??
+                order.hostId ??
+                order.hostJinleeId ??
+                '未知用户';
               const workerName = order.worker?.serverDisplayName ?? order.worker?.discordUserId ?? order.workerId;
               return (
                 <tr key={order.id} className="align-top">
@@ -265,7 +261,10 @@ export default async function RunningOrdersPage(props: PageProps) {
                   <td className="px-4 py-4">
                     <div className="space-y-1">
                       <div className="text-white/90">{hostName}</div>
-                      <div className="text-xs text-white/50 font-mono">{order.hostId}</div>
+                      <div className="text-xs text-white/50 font-mono">{order.hostJinleeId ?? order.hostId ?? '—'}</div>
+                      {order.hostId && order.hostJinleeId ? (
+                        <div className="text-xs text-white/40 font-mono">Discord: {order.hostId}</div>
+                      ) : null}
                     </div>
                   </td>
                   <td className="px-4 py-4">

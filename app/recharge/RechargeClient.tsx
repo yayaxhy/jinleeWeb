@@ -151,7 +151,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
             </div>
             <p className="text-sm text-gray-500">{selectedChannel.description}</p>
             <p className="text-xs text-gray-500">
-              转账备注建议填写 Discord ID：<span className="font-mono">{username ?? '未登录'}</span>
+              转账备注建议填写当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
             </p>
           </div>
 

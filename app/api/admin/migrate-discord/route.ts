@@ -1,3 +1,4 @@
+import { AccountProvider } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
@@ -43,13 +44,29 @@ export async function POST(request: NextRequest) {
   if (newMember) {
     return NextResponse.json({ error: '新 Discord ID 已存在，不能覆盖' }, { status: 409 });
   }
+  const newJinleeUser = await prisma.jinleeUser.findUnique({ where: { discordUserId: newId } });
+  if (newJinleeUser) {
+    return NextResponse.json({ error: '新 Discord ID 已绑定到 Jinlee 用户，不能覆盖' }, { status: 409 });
+  }
+  const newDiscordBinding = await prisma.accountBinding.findUnique({
+    where: {
+      provider_providerUserId: {
+        provider: AccountProvider.DISCORD,
+        providerUserId: newId,
+      },
+    },
+  });
+  if (newDiscordBinding) {
+    return NextResponse.json({ error: '新 Discord ID 已存在绑定记录，不能覆盖' }, { status: 409 });
+  }
 
   try {
     const changed: Record<string, number> = {};
 
     await prisma.$transaction(async (tx) => {
       // 1) 先创建新的 Member（复制旧数据），确保外键可指向新 ID
-      const { discordUserId: _old, ...memberData } = oldMember;
+      const memberData = { ...oldMember };
+      delete (memberData as { discordUserId?: string }).discordUserId;
       await tx.member.create({
         data: {
           ...memberData,
@@ -67,6 +84,50 @@ export async function POST(request: NextRequest) {
       await run(
         'LoyaltyPoint',
         tx.$executeRaw`UPDATE "LoyaltyPoint" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'FarmProfile',
+        tx.$executeRaw`UPDATE "FarmProfile" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'FarmPlot.discordUserId',
+        tx.$executeRaw`UPDATE "FarmPlot" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'FarmPlot.lastStolenBy',
+        tx.$executeRaw`UPDATE "FarmPlot" SET "lastStolenBy" = ${newId} WHERE "lastStolenBy" = ${oldId}`,
+      );
+      await run(
+        'FarmActionLog',
+        tx.$executeRaw`UPDATE "FarmActionLog" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'FarmVisit.viewerDiscordId',
+        tx.$executeRaw`UPDATE "FarmVisit" SET "viewerDiscordId" = ${newId} WHERE "viewerDiscordId" = ${oldId}`,
+      );
+      await run(
+        'FarmVisit.targetDiscordId',
+        tx.$executeRaw`UPDATE "FarmVisit" SET "targetDiscordId" = ${newId} WHERE "targetDiscordId" = ${oldId}`,
+      );
+      await run(
+        'VoicePointSession',
+        tx.$executeRaw`UPDATE "VoicePointSession" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'VoicePointLedger',
+        tx.$executeRaw`UPDATE "VoicePointLedger" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'PageViewEvent.discordUserId',
+        tx.$executeRaw`UPDATE "PageViewEvent" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'JinleeUser.discordUserId',
+        tx.$executeRaw`UPDATE "JinleeUser" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'AccountBinding.DISCORD',
+        tx.$executeRaw`UPDATE "AccountBinding" SET "providerUserId" = ${newId} WHERE "provider" = 'DISCORD' AND "providerUserId" = ${oldId}`,
       );
       await run(
         'Transaction.fromId',
@@ -111,6 +172,14 @@ export async function POST(request: NextRequest) {
       await run(
         'Order.workerId',
         tx.$executeRaw`UPDATE "Order" SET "workerId" = ${newId} WHERE "workerId" = ${oldId}`,
+      );
+      await run(
+        'OrderAudit.hostId',
+        tx.$executeRaw`UPDATE "order_audit" SET "hostId" = ${newId} WHERE "hostId" = ${oldId}`,
+      );
+      await run(
+        'OrderAudit.workerId',
+        tx.$executeRaw`UPDATE "order_audit" SET "workerId" = ${newId} WHERE "workerId" = ${oldId}`,
       );
       await run(
         'OrderRequestLog',
@@ -205,6 +274,26 @@ export async function POST(request: NextRequest) {
         tx.$executeRaw`UPDATE "Coupon" SET "consumeTargetId" = ${newId} WHERE "consumeTargetId" = ${oldId}`,
       );
       await run(
+        'PointShopCart.discordUserId',
+        tx.$executeRaw`UPDATE "PointShopCart" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'PointShopOrder.discordUserId',
+        tx.$executeRaw`UPDATE "PointShopOrder" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'PointShopGrant.discordUserId',
+        tx.$executeRaw`UPDATE "PointShopGrant" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'PointShopGrant.consumeTargetId',
+        tx.$executeRaw`UPDATE "PointShopGrant" SET "consumeTargetId" = ${newId} WHERE "consumeTargetId" = ${oldId}`,
+      );
+      await run(
+        'PointShopPointLedger.discordUserId',
+        tx.$executeRaw`UPDATE "PointShopPointLedger" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
         'InteractionLog',
         tx.$executeRaw`UPDATE "InteractionLog" SET "memberId" = ${newId} WHERE "memberId" = ${oldId}`,
       );
@@ -219,6 +308,10 @@ export async function POST(request: NextRequest) {
       await run(
         'SpendBuff',
         tx.$executeRaw`UPDATE "spend_buff" SET "user_id" = ${newId} WHERE "user_id" = ${oldId}`,
+      );
+      await run(
+        'AutoCommissionBuff',
+        tx.$executeRaw`UPDATE "auto_commission_buff" SET "user_id" = ${newId} WHERE "user_id" = ${oldId}`,
       );
       await run(
         'LotteryDraw',
@@ -259,6 +352,42 @@ export async function POST(request: NextRequest) {
       await run(
         'GuildJoinRecord',
         tx.$executeRaw`UPDATE "GuildJoinRecord" SET "userId" = ${newId} WHERE "userId" = ${oldId}`,
+      );
+      await run(
+        'BossProfile',
+        tx.$executeRaw`UPDATE "BossProfile" SET "bossId" = ${newId} WHERE "bossId" = ${oldId}`,
+      );
+      await run(
+        'BossChannelBinding',
+        tx.$executeRaw`UPDATE "BossChannelBinding" SET "ownerId" = ${newId} WHERE "ownerId" = ${oldId}`,
+      );
+      await run(
+        'PeiwanDeletion.deletedBy',
+        tx.$executeRaw`UPDATE "PeiwanDeletion" SET "deletedBy" = ${newId} WHERE "deletedBy" = ${oldId}`,
+      );
+      await run(
+        'PeiwanGameProfile',
+        tx.$executeRaw`UPDATE "PeiwanGameProfile" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`,
+      );
+      await run(
+        'BlockStackPlayer.userId',
+        tx.$executeRaw`UPDATE "BlockStackPlayer" SET "userId" = ${newId} WHERE "userId" = ${oldId}`,
+      );
+      await run(
+        'BlockStackDraw.userId',
+        tx.$executeRaw`UPDATE "BlockStackDraw" SET "userId" = ${newId} WHERE "userId" = ${oldId}`,
+      );
+      await run(
+        'ScratchTicket.ownerId',
+        tx.$executeRaw`UPDATE "ScratchTicket" SET "ownerId" = ${newId} WHERE "ownerId" = ${oldId}`,
+      );
+      await run(
+        'PeiwanReview.reviewerDiscordId',
+        tx.$executeRaw`UPDATE "PeiwanReview" SET "reviewerDiscordId" = ${newId} WHERE "reviewerDiscordId" = ${oldId}`,
+      );
+      await run(
+        'PeiwanReview.peiwanDiscordId',
+        tx.$executeRaw`UPDATE "PeiwanReview" SET "peiwanDiscordId" = ${newId} WHERE "peiwanDiscordId" = ${oldId}`,
       );
 
       // 3) 清理旧 Member

@@ -1,13 +1,19 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getServerSession } from '@/lib/session';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import RechargeClient from './RechargeClient';
 
 export default async function RechargePage() {
-  const session = await getServerSession();
-  if (!session?.discordId) {
+  const currentUser = await getCurrentJinleeUser();
+  if (!currentUser) {
     redirect('/accounts/discord/login?callbackUrl=%2Frecharge');
   }
+
+  const username =
+    currentUser.jinleeUser.discordDisplayName ??
+    currentUser.jinleeUser.member?.serverDisplayName ??
+    currentUser.jinleeUser.wechatDisplayName ??
+    '微信用户';
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-12">
@@ -31,7 +37,7 @@ export default async function RechargePage() {
           </div>
         </div>
 
-        <RechargeClient username={session.username ?? session.discordId} />
+        <RechargeClient username={username} />
       </section>
     </main>
   );

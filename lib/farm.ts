@@ -499,7 +499,10 @@ export async function getFarmCompanionLists(viewerDiscordId: string): Promise<Fa
   };
 
   for (const row of orderRows) {
-    touch(row.hostId === viewerDiscordId ? row.workerId : row.hostId, row.createdAt, 'order');
+    const counterpartId = row.hostId === viewerDiscordId ? row.workerId : row.hostId;
+    if (counterpartId) {
+      touch(counterpartId, row.createdAt, 'order');
+    }
   }
   for (const row of giftRows) {
     touch(row.giverId === viewerDiscordId ? row.receiverId : row.giverId, row.createdAt, 'gift');
@@ -646,6 +649,10 @@ export async function exchangePointsToCoins(discordUserId: string, amount: strin
       where: { discordUserId },
       data: { points: { decrement: pointAmount } },
     });
+    await tx.jinleeUser.updateMany({
+      where: { discordUserId },
+      data: { loyaltyPoints: { decrement: pointAmount } },
+    });
 
     await ensureFarmProfileTx(tx, discordUserId);
     await tx.farmProfile.update({
@@ -683,15 +690,24 @@ export async function exchangeCoinsToPoints(discordUserId: string, amount: strin
       where: { discordUserId },
       data: { coins: { decrement: coinAmount } },
     });
+    const jinleeUser = await tx.jinleeUser.findFirst({
+      where: { discordUserId },
+      select: { jinleeId: true },
+    });
     await tx.loyaltyPoint.upsert({
       where: { discordUserId },
       create: {
         discordUserId,
+        jinleeId: jinleeUser?.jinleeId,
         points: pointDelta,
       },
       update: {
         points: { increment: pointDelta },
       },
+    });
+    await tx.jinleeUser.updateMany({
+      where: { discordUserId },
+      data: { loyaltyPoints: { increment: pointDelta } },
     });
     await tx.farmActionLog.create({
       data: {

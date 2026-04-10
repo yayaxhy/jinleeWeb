@@ -82,13 +82,18 @@ export default async function AdminTransactionsPage(props: PageProps) {
   }
 
   const searchParams = (await props.searchParams) ?? {};
+  const userIdParam = searchParams.userId;
   const discordIdParam = searchParams.discordId;
-  const discordId =
-    typeof discordIdParam === 'string'
-      ? discordIdParam.trim()
-      : Array.isArray(discordIdParam)
-        ? discordIdParam[0]?.trim()
-        : '';
+  const userId =
+    typeof userIdParam === 'string'
+      ? userIdParam.trim()
+      : Array.isArray(userIdParam)
+        ? userIdParam[0]?.trim()
+        : typeof discordIdParam === 'string'
+          ? discordIdParam.trim()
+          : Array.isArray(discordIdParam)
+            ? discordIdParam[0]?.trim()
+            : '';
   const startParam = Array.isArray(searchParams.startDate) ? searchParams.startDate[0] : searchParams.startDate;
   const endParam = Array.isArray(searchParams.endDate) ? searchParams.endDate[0] : searchParams.endDate;
   const parsedStart = startParam ? new Date(startParam) : null;
@@ -101,8 +106,8 @@ export default async function AdminTransactionsPage(props: PageProps) {
   const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (currentPage - 1) * PAGE_SIZE;
   const whereClause: Prisma.IndividualTransactionWhereInput = {};
-  if (discordId) {
-    whereClause.discordId = discordId;
+  if (userId) {
+    whereClause.OR = [{ discordId: userId }, { jinleeId: userId }];
   }
   if (startDate || endDate) {
     whereClause.timeCreatedAt = {
@@ -112,10 +117,17 @@ export default async function AdminTransactionsPage(props: PageProps) {
   }
   const hasFilters = Object.keys(whereClause).length > 0;
 
-  const member = discordId
-    ? await prisma.member.findUnique({
-        where: { discordUserId: discordId },
-        select: { discordUserId: true, serverDisplayName: true },
+  const userSummary = userId
+    ? await prisma.jinleeUser.findFirst({
+        where: {
+          OR: [{ jinleeId: userId }, { discordUserId: userId }],
+        },
+        select: {
+          jinleeId: true,
+          discordUserId: true,
+          discordDisplayName: true,
+          wechatDisplayName: true,
+        },
       })
     : null;
 
@@ -133,8 +145,16 @@ export default async function AdminTransactionsPage(props: PageProps) {
     new Set(
       transactions
         .flatMap((tx) => [tx.discordId, tx.thirdPartydiscordId ?? ''])
-        .map((id) => id.trim())
+        .map((id) => id?.trim())
+        .filter((id): id is string => Boolean(id))
         .filter((id) => /^\d+$/.test(id))
+    )
+  );
+  const relatedJinleeIds = Array.from(
+    new Set(
+      transactions
+        .map((tx) => tx.jinleeId?.trim())
+        .filter((id): id is string => Boolean(id))
     )
   );
   const relatedMembers = relatedDiscordIds.length
@@ -143,10 +163,29 @@ export default async function AdminTransactionsPage(props: PageProps) {
         select: { discordUserId: true, serverDisplayName: true },
       })
     : [];
+  const relatedJinleeUsers = relatedJinleeIds.length
+    ? await prisma.jinleeUser.findMany({
+        where: { jinleeId: { in: relatedJinleeIds } },
+        select: {
+          jinleeId: true,
+          discordDisplayName: true,
+          wechatDisplayName: true,
+        },
+      })
+    : [];
   const displayNameMap = new Map(
     relatedMembers.map((row) => [row.discordUserId, row.serverDisplayName?.trim() ?? ''])
   );
-  const resolveDisplayName = (discordUserId?: string | null) => {
+  const jinleeNameMap = new Map(
+    relatedJinleeUsers.map((row) => [
+      row.jinleeId,
+      row.discordDisplayName?.trim() || row.wechatDisplayName?.trim() || '',
+    ])
+  );
+  const resolveDisplayName = (params: { discordUserId?: string | null; jinleeId?: string | null }) => {
+    const jinleeMapped = params.jinleeId ? jinleeNameMap.get(params.jinleeId)?.trim() : '';
+    if (jinleeMapped) return jinleeMapped;
+    const discordUserId = params.discordUserId;
     if (!discordUserId) return '—';
     const mapped = displayNameMap.get(discordUserId)?.trim();
     if (mapped) return mapped;
@@ -159,7 +198,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
   const prevPage = Math.max(1, currentPage - 1);
   const nextPage = Math.min(totalPages, currentPage + 1);
   const exportParams = new URLSearchParams({
-    ...(discordId ? { discordId } : {}),
+    ...(userId ? { userId } : {}),
     ...(startParam ? { startDate: startParam } : {}),
     ...(endParam ? { endDate: endParam } : {}),
   });
@@ -173,7 +212,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
             <h1 className="text-3xl font-semibold">查询流水</h1>
-            <p className="text-sm text-white/60">默认展示全部流水，可按 Discord ID 与日期区间筛选。</p>
+            <p className="text-sm text-white/60">默认展示全部流水，可按 Jinlee ID / Discord ID 与日期区间筛选。</p>
           </div>
           <Link
             href="/admin"
@@ -185,13 +224,13 @@ export default async function AdminTransactionsPage(props: PageProps) {
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
           <form className="space-y-3" action="/admin/transactions" method="get">
-            <label className="text-sm text-white/80">Discord ID</label>
+            <label className="text-sm text-white/80">用户 ID</label>
             <div className="flex flex-col gap-3">
               <input
                 type="text"
-                name="discordId"
-                defaultValue={discordId}
-                placeholder="请输入 Discord ID"
+                name="userId"
+                defaultValue={userId}
+                placeholder="请输入 Jinlee ID 或 Discord ID"
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
               />
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -230,7 +269,15 @@ export default async function AdminTransactionsPage(props: PageProps) {
             <div>
               <h2 className="text-xl font-semibold">查询结果</h2>
               <p className="text-sm text-white/60">
-                {discordId ? `用户：${member?.serverDisplayName ?? '—'}（${discordId}）` : '全部流水'}
+                {userId
+                  ? `用户：${
+                      userSummary?.discordDisplayName ??
+                      userSummary?.wechatDisplayName ??
+                      userSummary?.discordUserId ??
+                      userSummary?.jinleeId ??
+                      '—'
+                    }（${userSummary?.jinleeId ?? userId}）`
+                  : '全部流水'}
                 {startDate || endDate ? (
                   <>
                     {' '}
@@ -277,8 +324,13 @@ export default async function AdminTransactionsPage(props: PageProps) {
                         <td className="py-3 pr-4 font-mono text-white/90">{formatDate(tx.timeCreatedAt)}</td>
                         <td className="py-3 pr-4">
                           <div className="space-y-1">
-                            <div className="text-white/90">{resolveDisplayName(tx.discordId)}</div>
-                            <div className="text-xs text-white/50 font-mono">{tx.discordId}</div>
+                            <div className="text-white/90">
+                              {resolveDisplayName({ discordUserId: tx.discordId, jinleeId: tx.jinleeId })}
+                            </div>
+                            <div className="text-xs text-white/50 font-mono">{tx.jinleeId ?? tx.discordId ?? '—'}</div>
+                            {tx.discordId && tx.jinleeId ? (
+                              <div className="text-xs text-white/40 font-mono">Discord: {tx.discordId}</div>
+                            ) : null}
                           </div>
                         </td>
                         <td className="py-3 pr-4 text-white/90">{tx.typeOfTransaction}</td>
@@ -288,7 +340,9 @@ export default async function AdminTransactionsPage(props: PageProps) {
                         <td className="py-3 pr-4">
                           {tx.thirdPartydiscordId ? (
                             <div className="space-y-1">
-                              <div className="text-white/70">{resolveDisplayName(tx.thirdPartydiscordId)}</div>
+                              <div className="text-white/70">
+                                {resolveDisplayName({ discordUserId: tx.thirdPartydiscordId })}
+                              </div>
                               <div className="text-xs text-white/50 font-mono">{tx.thirdPartydiscordId}</div>
                             </div>
                           ) : (
@@ -308,7 +362,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
                   <Link
                     prefetch={false}
                     href={`/admin/transactions?${new URLSearchParams({
-                      ...(discordId ? { discordId } : {}),
+                      ...(userId ? { userId } : {}),
                       ...(startParam ? { startDate: startParam } : {}),
                       ...(endParam ? { endDate: endParam } : {}),
                       page: String(prevPage),
@@ -325,7 +379,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
                     action="/admin/transactions"
                     className="flex items-center gap-2 text-xs uppercase tracking-[0.3em]"
                   >
-                    {discordId ? <input type="hidden" name="discordId" value={discordId} /> : null}
+                    {userId ? <input type="hidden" name="userId" value={userId} /> : null}
                     {startParam ? <input type="hidden" name="startDate" value={startParam} /> : null}
                     {endParam ? <input type="hidden" name="endDate" value={endParam} /> : null}
                     <label className="text-white/60">跳转页</label>
@@ -347,7 +401,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
                   <Link
                     prefetch={false}
                     href={`/admin/transactions?${new URLSearchParams({
-                      ...(discordId ? { discordId } : {}),
+                      ...(userId ? { userId } : {}),
                       ...(startParam ? { startDate: startParam } : {}),
                       ...(endParam ? { endDate: endParam } : {}),
                       page: String(nextPage),

@@ -9,20 +9,10 @@ import {
   formatFileTimestampCentralEuropean,
   parseCentralEuropeanDateRange,
 } from '@/lib/centralEuropeanDateRange';
+import { parseRevenueIdentityList, resolveRevenueExclusions } from '@/lib/admin/revenue-exclusion';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const normalizeId = (raw: string) => {
-  const cleaned = raw.trim().replace(/^<@!?/, '').replace(/>$/, '');
-  return /^\d+$/.test(cleaned) ? cleaned : '';
-};
-
-const parseExcludeIds = (value: string) =>
-  value
-    .split(/[\s,]+/)
-    .map(normalizeId)
-    .filter(Boolean);
 
 const parseNumber = (value: unknown): number | null => {
   if (value === null || value === undefined) return null;
@@ -48,7 +38,7 @@ const dec = (value: unknown) => {
   return new Prisma.Decimal(numeric ?? 0);
 };
 
-const decimalSum = (rows: any[], field: string) =>
+const decimalSum = (rows: Array<Record<string, unknown>>, field: string) =>
   rows.reduce((sum, row) => sum.add(dec(row?.[field])), new Prisma.Decimal(0));
 
 const safeSheetName = (name: string) =>
@@ -77,6 +67,46 @@ const toCellValue = (value: unknown): string | number | boolean | null => {
   return String(value);
 };
 
+const buildIdentityExclusion = (
+  jinleeField: string,
+  discordField: string | null,
+  excludeJinleeIds: string[],
+  excludeDiscordIds: string[],
+) => {
+  const clauses: Record<string, unknown>[] = [];
+  if (excludeJinleeIds.length) {
+    clauses.push({ [jinleeField]: { in: excludeJinleeIds } });
+  }
+  if (discordField && excludeDiscordIds.length) {
+    clauses.push({ [discordField]: { in: excludeDiscordIds } });
+  }
+  return clauses.length ? { NOT: { OR: clauses } } : {};
+};
+
+const buildRawIdentityExclusion = (
+  jinleeColumn: string,
+  discordColumn: string | null,
+  excludeJinleeIds: string[],
+  excludeDiscordIds: string[],
+) => {
+  const clauses: Prisma.Sql[] = [];
+  if (excludeJinleeIds.length) {
+    clauses.push(Prisma.sql`${Prisma.raw(jinleeColumn)} IN (${Prisma.join(excludeJinleeIds)})`);
+  }
+  if (discordColumn && excludeDiscordIds.length) {
+    clauses.push(Prisma.sql`${Prisma.raw(discordColumn)} IN (${Prisma.join(excludeDiscordIds)})`);
+  }
+  if (!clauses.length) {
+    return Prisma.empty;
+  }
+
+  const combined = clauses.slice(1).reduce(
+    (sql, clause) => Prisma.sql`${sql} OR ${clause}`,
+    clauses[0],
+  );
+  return Prisma.sql`AND NOT (${combined})`;
+};
+
 type OrderReferralRow = {
   id: string;
   referralId: string;
@@ -88,7 +118,23 @@ type OrderReferralRow = {
   workerId: string | null;
 };
 
-function addObjectRowsSheet(workbook: ExcelJS.Workbook, title: string, rows: any[]) {
+type RevertedGiftRow = {
+  revertId: string;
+  originalTransactionId: string | null;
+  revertCreatedAt: Date;
+  revertStatus: string;
+  giftAuditCreatedAt: Date;
+  individualTransactionId: string | null;
+  gross: Prisma.Decimal | null;
+  payable: Prisma.Decimal | null;
+  subsidyAmount: Prisma.Decimal | null;
+};
+
+function addObjectRowsSheet(
+  workbook: ExcelJS.Workbook,
+  title: string,
+  rows: Array<Record<string, unknown>>,
+) {
   const sheet = workbook.addWorksheet(safeSheetName(title));
   if (!rows.length) {
     sheet.addRow(['无数据']);
@@ -151,45 +197,83 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const excludeRechargeInput = (searchParams.get('excludeRecharge') ?? '').trim();
   const excludeMemberInput = (searchParams.get('excludeMember') ?? '1441310169492361268').trim();
-  const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];
-  const excludeMemberIds = excludeMemberInput ? parseExcludeIds(excludeMemberInput) : [];
+  const excludeRechargeRawIds = excludeRechargeInput ? parseRevenueIdentityList(excludeRechargeInput) : [];
+  const excludeMemberRawIds = excludeMemberInput ? parseRevenueIdentityList(excludeMemberInput) : [];
+  const [excludeRechargeResolved, excludeMemberResolved] = await Promise.all([
+    resolveRevenueExclusions(excludeRechargeRawIds),
+    resolveRevenueExclusions(excludeMemberRawIds),
+  ]);
   const { start, end } = parseCentralEuropeanDateRange(
     searchParams.get('startDate') ?? undefined,
     searchParams.get('endDate') ?? undefined,
   );
 
-  const excludePreviewIds = Array.from(new Set([...excludeRechargeIds, ...excludeMemberIds]));
-  const excludeMembers = excludePreviewIds.length
-    ? await prisma.member.findMany({
-        where: { discordUserId: { in: excludePreviewIds } },
-        select: { discordUserId: true, serverDisplayName: true },
-        orderBy: { discordUserId: 'asc' },
-      })
-    : [];
+  const excludeMembers = [...excludeRechargeResolved.preview, ...excludeMemberResolved.preview];
+  const orderRevenueExclusionSql = buildRawIdentityExclusion(
+    'o."hostJinleeId"',
+    'o."hostId"',
+    excludeMemberResolved.excludeJinleeIds,
+    excludeMemberResolved.excludeDiscordIds,
+  );
 
-  const rechargeWhere: Prisma.RechargeWhereInput = { createdAt: { gte: start, lt: end } };
-  if (excludeRechargeIds.length) rechargeWhere.toWhom = { notIn: excludeRechargeIds };
+  const rechargeWhere: Prisma.RechargeWhereInput = {
+    createdAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'toWhom',
+      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDiscordIds,
+    ) as Prisma.RechargeWhereInput),
+  };
 
-  const withdrawWhere: Prisma.WithdrawWhereInput = { createdAt: { gte: start, lt: end } };
-  if (excludeRechargeIds.length) withdrawWhere.discordId = { notIn: excludeRechargeIds };
+  const withdrawWhere: Prisma.WithdrawWhereInput = {
+    createdAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordId',
+      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDiscordIds,
+    ) as Prisma.WithdrawWhereInput),
+  };
 
   const zpayWhere: Prisma.ZPayRechargeOrderWhereInput = {
     status: 'PAID',
     createdAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordUserId',
+      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDiscordIds,
+    ) as Prisma.ZPayRechargeOrderWhereInput),
   };
-  if (excludeRechargeIds.length) zpayWhere.discordUserId = { notIn: excludeRechargeIds };
 
-  const memberWhere: Prisma.MemberWhereInput = {};
-  if (excludeMemberIds.length) memberWhere.discordUserId = { notIn: excludeMemberIds };
+  const jinleeWhere: Prisma.JinleeUserWhereInput = buildIdentityExclusion(
+    'jinleeId',
+    'discordUserId',
+    excludeMemberResolved.excludeJinleeIds,
+    excludeMemberResolved.excludeDiscordIds,
+  ) as Prisma.JinleeUserWhereInput;
 
-  const commissionWhere: Prisma.CommissionWhereInput = { createdAt: { gte: start, lt: end } };
-  if (excludeMemberIds.length) commissionWhere.toId = { notIn: excludeMemberIds };
+  const commissionWhere: Prisma.CommissionWhereInput = {
+    createdAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'toJinleeId',
+      'toId',
+      excludeMemberResolved.excludeJinleeIds,
+      excludeMemberResolved.excludeDiscordIds,
+    ) as Prisma.CommissionWhereInput),
+  };
 
   const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
     typeOfTransaction: '优惠返利',
     timeCreatedAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordId',
+      excludeMemberResolved.excludeJinleeIds,
+      excludeMemberResolved.excludeDiscordIds,
+    ) as Prisma.IndividualTransactionWhereInput),
   };
-  if (excludeMemberIds.length) discountRebateWhere.discordId = { notIn: excludeMemberIds };
 
   const [
     blockStackRows,
@@ -216,13 +300,14 @@ export async function GET(request: NextRequest) {
     prisma.recharge.findMany({ where: rechargeWhere, orderBy: { createdAt: 'desc' } }),
     prisma.withdraw.findMany({ where: withdrawWhere, orderBy: { createdAt: 'desc' } }),
     prisma.zPayRechargeOrder.findMany({ where: zpayWhere, orderBy: { createdAt: 'desc' } }),
-    prisma.member.findMany({
-      where: memberWhere,
-      orderBy: { discordUserId: 'asc' },
+    prisma.jinleeUser.findMany({
+      where: jinleeWhere,
+      orderBy: { jinleeId: 'asc' },
       select: {
+        jinleeId: true,
         discordUserId: true,
-        serverDisplayName: true,
-        status: true,
+        discordDisplayName: true,
+        wechatDisplayName: true,
         recharge: true,
         income: true,
         totalBalance: true,
@@ -232,7 +317,16 @@ export async function GET(request: NextRequest) {
     prisma.commission.findMany({ where: commissionWhere, orderBy: { createdAt: 'desc' } }),
     prisma.giftAudit.findMany({ where: { createdAt: { gte: start, lt: end } }, orderBy: { createdAt: 'desc' } }),
     prisma.order.findMany({
-      where: { status: 'ENDED', endedAt: { gte: start, lt: end } },
+      where: {
+        status: 'ENDED',
+        endedAt: { gte: start, lt: end },
+        ...(buildIdentityExclusion(
+          'hostJinleeId',
+          'hostId',
+          excludeMemberResolved.excludeJinleeIds,
+          excludeMemberResolved.excludeDiscordIds,
+        ) as Prisma.OrderWhereInput),
+      },
       orderBy: { endedAt: 'desc' },
     }),
     prisma.$queryRaw<OrderReferralRow[]>(Prisma.sql`
@@ -251,20 +345,43 @@ export async function GET(request: NextRequest) {
       WHERE rp."createdAt" >= ${start}
         AND rp."createdAt" < ${end}
         AND o."status" = 'ENDED'
+        ${orderRevenueExclusionSql}
       ORDER BY rp."createdAt" DESC
     `),
     prisma.individualTransaction.findMany({
       where: discountRebateWhere,
       orderBy: { timeCreatedAt: 'desc' },
     }),
-    prisma.lotteryDraw.findMany({ where: { createdAt: { gte: start, lt: end } }, orderBy: { createdAt: 'desc' } }),
-    prisma.lotteryDraw.findMany({ where: { consumeAt: { gte: start, lt: end } }, orderBy: { consumeAt: 'desc' } }),
+    prisma.lotteryDraw.findMany({
+      where: {
+        createdAt: { gte: start, lt: end },
+        ...(buildIdentityExclusion(
+          'jinleeId',
+          'userId',
+          excludeMemberResolved.excludeJinleeIds,
+          excludeMemberResolved.excludeDiscordIds,
+        ) as Prisma.LotteryDrawWhereInput),
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.lotteryDraw.findMany({
+      where: {
+        consumeAt: { gte: start, lt: end },
+        ...(buildIdentityExclusion(
+          'jinleeId',
+          'userId',
+          excludeMemberResolved.excludeJinleeIds,
+          excludeMemberResolved.excludeDiscordIds,
+        ) as Prisma.LotteryDrawWhereInput),
+      },
+      orderBy: { consumeAt: 'desc' },
+    }),
     prisma.scratchTicket.findMany({
       where: { status: 'REVEALED', revealedAt: { gte: start, lt: end } },
       orderBy: { revealedAt: 'desc' },
     }),
     prisma.expense.findMany({ where: { createdAt: { gte: start, lt: end } }, orderBy: { createdAt: 'desc' } }),
-    prisma.$queryRaw<any[]>(Prisma.sql`
+    prisma.$queryRaw<RevertedGiftRow[]>(Prisma.sql`
       SELECT
         r.id AS "revertId",
         r."originalTransactionId",
@@ -290,7 +407,12 @@ export async function GET(request: NextRequest) {
         status: CouponStatus.USED,
         consumedAt: { gte: start, lt: end },
         consumeAmount: { not: null },
-        ...(excludeMemberIds.length ? { discordId: { notIn: excludeMemberIds } } : {}),
+        ...(buildIdentityExclusion(
+          'jinleeId',
+          'discordId',
+          excludeMemberResolved.excludeJinleeIds,
+          excludeMemberResolved.excludeDiscordIds,
+        ) as Prisma.CouponWhereInput),
       },
     }),
   ]);
@@ -365,13 +487,15 @@ export async function GET(request: NextRequest) {
     { section: 'filters', key: 'end(exclusive)', value: formatDateTimeTextCentralEuropean(end) },
     { section: 'filters', key: 'excludeRecharge(raw)', value: excludeRechargeInput },
     { section: 'filters', key: 'excludeMember(raw)', value: excludeMemberInput },
-    { section: 'filters', key: 'excludeRechargeIds', value: excludeRechargeIds.join(', ') },
-    { section: 'filters', key: 'excludeMemberIds', value: excludeMemberIds.join(', ') },
+    { section: 'filters', key: 'excludeRechargeJinleeIds', value: excludeRechargeResolved.excludeJinleeIds.join(', ') },
+    { section: 'filters', key: 'excludeRechargeDiscordIds', value: excludeRechargeResolved.excludeDiscordIds.join(', ') },
+    { section: 'filters', key: 'excludeMemberJinleeIds', value: excludeMemberResolved.excludeJinleeIds.join(', ') },
+    { section: 'filters', key: 'excludeMemberDiscordIds', value: excludeMemberResolved.excludeDiscordIds.join(', ') },
     { section: 'rows', key: 'BlockStackGame', value: blockStackRows.length },
     { section: 'rows', key: 'Recharge', value: rechargeRows.length },
     { section: 'rows', key: 'Withdraw', value: withdrawRows.length },
     { section: 'rows', key: 'ZPayRechargeOrder(PAID)', value: zpayRows.length },
-    { section: 'rows', key: 'Member(filtered)', value: memberRows.length },
+    { section: 'rows', key: 'JinleeUser(filtered)', value: memberRows.length },
     { section: 'rows', key: 'Commission(filtered)', value: commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: giftAuditRows.length },
     { section: 'rows', key: 'Order(ENDED)', value: orderRows.length },
@@ -391,9 +515,9 @@ export async function GET(request: NextRequest) {
     { section: '当月充值提现', key: '提现总额', value: withdrawTotal.toString() },
     { section: '当月充值提现', key: '净充值', value: netRecharge.toString() },
 
-    { section: '会员余额汇总', key: 'Member.recharge 合计', value: memberRechargeTotal.toString() },
-    { section: '会员余额汇总', key: 'Member.income 合计', value: memberIncomeTotal.toString() },
-    { section: '会员余额汇总', key: 'Member.totalBalance 合计', value: memberBalanceTotal.toString() },
+    { section: '会员余额汇总', key: 'JinleeUser.recharge 合计', value: memberRechargeTotal.toString() },
+    { section: '会员余额汇总', key: 'JinleeUser.income 合计', value: memberIncomeTotal.toString() },
+    { section: '会员余额汇总', key: 'JinleeUser.totalBalance 合计', value: memberBalanceTotal.toString() },
     { section: '会员余额汇总', key: '当月 Commission 合计', value: commissionTotal.toString() },
 
     { section: '抽奖收益', key: '抽奖次数', value: drawCount },
