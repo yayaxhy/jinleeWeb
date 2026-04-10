@@ -1,38 +1,48 @@
 {
-  "name": "jinlee-club",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --webpack",
-    "build": "node -e \"require('fs').rmSync('.next/dev',{ recursive: true, force: true });\" && next build --webpack",
-    "start": "next start",
-    "lint": "eslint",
-    "farm:generate": "node scripts/generate-farm-asset.mjs",
-    "farm:generate:all-core": "node scripts/generate-farm-asset.mjs --all-core",
-    "farm:generate:all-crops": "node scripts/generate-farm-asset.mjs --all-crops",
-    "farm:derive-plots": "node scripts/derive-plot-states.mjs",
-    "farm:normalize-crops": "node scripts/normalize-farm-crops.mjs"
-  },
-  "dependencies": {
-    "@prisma/client": "^6.19.2",
-    "exceljs": "^4.4.0",
-    "next": "^16.1.6",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "dotenv": "^17.3.1",
-    "eslint": "^9",
-    "eslint-config-next": "16.0.7",
-    "prisma": "^6.19.2",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  },
-  "overrides": {
-    "effect": "^3.20.1"
-  }
+    "name": "jinlee-club",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev --webpack",
+        "build": "next build --webpack",
+        "start": "next start",
+        "lint": "eslint",
+        "farm:generate": "node scripts/generate-farm-asset.mjs",
+        "farm:generate:all-core": "node scripts/generate-farm-asset.mjs --all-core",
+        "farm:generate:all-crops": "node scripts/generate-farm-asset.mjs --all-crops",
+        "farm:generate:field-overlays": "node scripts/generate-field-overlays.mjs",
+        "farm:derive-plots": "node scripts/derive-plot-states.mjs",
+        "farm:normalize-crops": "node scripts/normalize-farm-crops.mjs",
+        "farm:rasterize-pixel-assets": "node scripts/rasterize-farm-pixel-assets.mjs",
+        "farm:generate-pixel-field-tiles": "node scripts/generate-pixel-field-tiles.mjs",
+        "farm:generate-front-scene-assets": "node scripts/generate-pixel-front-scene-assets.mjs",
+        "farm:generate-pixel-crops": "node scripts/generate-pixel-crop-sprites.mjs",
+        "farm:generate-pixel-scene-fx": "node scripts/generate-pixel-scene-fx.mjs",
+        "farm:generate:prototype-assets": "npm run farm:generate-front-scene-assets && npm run farm:generate-pixel-field-tiles && npm run farm:generate-pixel-crops && npm run farm:generate-pixel-scene-fx"
+    },
+    "dependencies": {
+        "@prisma/client": "^6.19.2",
+        "cuid": "^3.0.0",
+        "exceljs": "^4.4.0",
+        "next": "^16.1.6",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4",
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "dotenv": "^17.3.1",
+        "eslint": "^9",
+        "eslint-config-next": "16.0.7",
+        "playwright": "^1.58.2",
+        "prisma": "^6.19.2",
+        "sharp": "^0.34.5",
+        "tailwindcss": "^4",
+        "typescript": "^5"
+    },
+    "overrides": {
+        "effect": "^3.20.1"
+    }
 }
