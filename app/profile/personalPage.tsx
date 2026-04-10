@@ -191,6 +191,7 @@ export default async function Profile(props: ProfilePageProps) {
     { href: '/profile/withdraw', label: '提现' },
     { href: '/profile/point-shop', label: '积分商城' },
     { href: '/recharge', label: '充值中心' },
+    { href: '/accounts/wechat/bind', label: '绑定微信' },
   ];
   const quickEntryLinks = navLinks.filter(
     (link) => link.href !== '/profile' && link.href !== '/recharge' && link.href !== '/profile/withdraw',

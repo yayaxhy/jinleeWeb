@@ -51,6 +51,57 @@ type WithdrawalNotificationRequest = {
   remainingIncome: string;
 };
 
+async function buildWithdrawPagePayload(currentUser: NonNullable<Awaited<ReturnType<typeof getCurrentJinleeUser>>>) {
+  const withdrawCooldownMs = WITHDRAW_COOLDOWN_MS;
+  const [walletSnapshot, lastWithdraw, legacyAccounts] = await Promise.all([
+    prisma.jinleeUser.findUnique({
+      where: { jinleeId: currentUser.jinleeId },
+      select: {
+        totalBalance: true,
+        income: true,
+        withdrawAccount1: true,
+        withdrawAccount2: true,
+        withdrawAccount3: true,
+      },
+    }),
+    prisma.withdraw.findFirst({
+      where: { jinleeId: currentUser.jinleeId },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    }),
+    currentUser.discordUserId &&
+    !currentUser.jinleeUser.withdrawAccount1 &&
+    !currentUser.jinleeUser.withdrawAccount2 &&
+    !currentUser.jinleeUser.withdrawAccount3
+      ? prisma.withdrawalAccount.findUnique({
+          where: { discordUserId: currentUser.discordUserId },
+          select: { account1: true, account2: true, account3: true },
+        })
+      : Promise.resolve(null),
+  ]);
+
+  const totalBalance = currentUser.jinleeUser.member?.totalBalance ?? walletSnapshot?.totalBalance ?? 0;
+  const income = currentUser.jinleeUser.member?.income ?? walletSnapshot?.income ?? 0;
+  const lastWithdrawAt = lastWithdraw?.createdAt ?? null;
+  const nextAvailableAt =
+    lastWithdrawAt !== null ? new Date(lastWithdrawAt.getTime() + withdrawCooldownMs) : null;
+
+  return {
+    ok: true,
+    wallet: {
+      totalBalance: totalBalance.toString(),
+      income: income.toString(),
+    },
+    lastWithdrawAt: lastWithdrawAt?.toISOString() ?? null,
+    nextAvailableAt: nextAvailableAt?.toISOString() ?? null,
+    savedAccounts: {
+      account1: currentUser.jinleeUser.withdrawAccount1 ?? legacyAccounts?.account1 ?? null,
+      account2: currentUser.jinleeUser.withdrawAccount2 ?? legacyAccounts?.account2 ?? null,
+      account3: currentUser.jinleeUser.withdrawAccount3 ?? legacyAccounts?.account3 ?? null,
+    },
+  };
+}
+
 async function notifyBotWithdrawal(payload: WithdrawalNotificationRequest) {
   if (!INTERNAL_API_PORT || !INTERNAL_API_TOKEN) {
     throw new Error('内部接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）');
@@ -89,6 +140,15 @@ async function notifyBotWithdrawal(payload: WithdrawalNotificationRequest) {
   }
 
   return data as { ok: boolean; duplicate?: boolean };
+}
+
+export async function GET(request: Request) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
+    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  }
+
+  return NextResponse.json(await buildWithdrawPagePayload(currentUser));
 }
 
 export async function POST(request: Request) {

@@ -25,10 +25,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
+  const legacyAccounts =
+    currentUser.discordUserId &&
+    !currentUser.jinleeUser.withdrawAccount1 &&
+    !currentUser.jinleeUser.withdrawAccount2 &&
+    !currentUser.jinleeUser.withdrawAccount3
+      ? await prisma.withdrawalAccount.findUnique({
+          where: { discordUserId: currentUser.discordUserId },
+          select: { account1: true, account2: true, account3: true },
+        })
+      : null;
+
   const accounts = {
-    account1: currentUser.jinleeUser.withdrawAccount1,
-    account2: currentUser.jinleeUser.withdrawAccount2,
-    account3: currentUser.jinleeUser.withdrawAccount3,
+    account1: currentUser.jinleeUser.withdrawAccount1 ?? legacyAccounts?.account1 ?? null,
+    account2: currentUser.jinleeUser.withdrawAccount2 ?? legacyAccounts?.account2 ?? null,
+    account3: currentUser.jinleeUser.withdrawAccount3 ?? legacyAccounts?.account3 ?? null,
   };
 
   return NextResponse.json(accounts ?? { account1: null, account2: null, account3: null });

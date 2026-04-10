@@ -46,18 +46,18 @@ export async function GET(request: Request) {
     }),
     prisma.lotteryDraw.findMany({
       where: {
-        requestId: { in: orderIds },
+        consumeOrderId: { in: orderIds },
         status: 'USED',
         prize: { name: { in: DISCOUNT_PRIZE_NAMES } },
       },
-      select: { requestId: true },
+      select: { consumeOrderId: true },
     }),
   ]);
 
   const usedIds = new Set<string>();
   couponUsage.forEach((item) => item.orderId && usedIds.add(item.orderId));
   pointShopUsage.forEach((item) => item.consumeOrderId && usedIds.add(item.consumeOrderId));
-  lotteryUsage.forEach((item) => item.requestId && usedIds.add(item.requestId));
+  lotteryUsage.forEach((item) => item.consumeOrderId && usedIds.add(item.consumeOrderId));
 
   const eligible = orders
     .filter((order) => {

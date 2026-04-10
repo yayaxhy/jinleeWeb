@@ -170,17 +170,23 @@ export async function POST(request: Request) {
       source = 'pointshop';
     }
   } else {
-    const draw = await prisma.lotteryDraw.findUnique({
-      where: { id: lotteryId },
+    const draw = await prisma.lotteryDraw.findFirst({
+      where: {
+        id: lotteryId,
+        jinleeId: currentUser.jinleeId,
+      },
       include: {
         prize: { select: { name: true, type: true } },
       },
     });
 
-    if (!draw || draw.jinleeId !== currentUser.jinleeId) {
+    if (!draw) {
       return NextResponse.json({ error: '记录不存在' }, { status: 404 });
     }
     if (draw.status !== LotteryStatus.UNUSED) {
+      return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
+    }
+    if (draw.consumeAt || (draw.expiresAt && draw.expiresAt.getTime() <= now.getTime())) {
       return NextResponse.json({ error: '已使用或已过期' }, { status: 409 });
     }
     prizeName = draw.prize?.name ?? prizeName;
@@ -270,7 +276,13 @@ export async function POST(request: Request) {
 
     if (source === 'coupon') {
       const updateResult = await prisma.coupon.updateMany({
-        where: { id: couponId, status: CouponStatus.ACTIVE },
+        where: {
+          id: couponId,
+          jinleeId: currentUser.jinleeId,
+          status: CouponStatus.ACTIVE,
+          expiresAt: { gt: now },
+          consumedAt: null,
+        },
         data: {
           status: CouponStatus.USED,
           consumedAt: now,
@@ -305,7 +317,13 @@ export async function POST(request: Request) {
       }
     } else {
       const updateResult = await prisma.lotteryDraw.updateMany({
-        where: { id: lotteryId, status: LotteryStatus.UNUSED },
+        where: {
+          id: lotteryId,
+          jinleeId: currentUser.jinleeId,
+          status: LotteryStatus.UNUSED,
+          consumeAt: null,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
         data: {
           status: LotteryStatus.USED,
           consumeAt: now,

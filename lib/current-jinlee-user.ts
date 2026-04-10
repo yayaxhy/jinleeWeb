@@ -58,8 +58,11 @@ export const getCurrentJinleeUser = async (request?: Request): Promise<CurrentJi
       })
     : null;
 
+  const sessionMatchedJinleeUser =
+    jinleeUser && jinleeUser.discordUserId === webSession.discordId ? jinleeUser : null;
+
   const ensured =
-    jinleeUser ??
+    sessionMatchedJinleeUser ??
     (await prisma.jinleeUser.upsert({
       where: { discordUserId: webSession.discordId },
       update: {
