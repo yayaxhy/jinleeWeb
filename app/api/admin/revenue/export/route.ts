@@ -83,30 +83,6 @@ const buildIdentityExclusion = (
   return clauses.length ? { NOT: { OR: clauses } } : {};
 };
 
-const buildRawIdentityExclusion = (
-  jinleeColumn: string,
-  discordColumn: string | null,
-  excludeJinleeIds: string[],
-  excludeDiscordIds: string[],
-) => {
-  const clauses: Prisma.Sql[] = [];
-  if (excludeJinleeIds.length) {
-    clauses.push(Prisma.sql`${Prisma.raw(jinleeColumn)} IN (${Prisma.join(excludeJinleeIds)})`);
-  }
-  if (discordColumn && excludeDiscordIds.length) {
-    clauses.push(Prisma.sql`${Prisma.raw(discordColumn)} IN (${Prisma.join(excludeDiscordIds)})`);
-  }
-  if (!clauses.length) {
-    return Prisma.empty;
-  }
-
-  const combined = clauses.slice(1).reduce(
-    (sql, clause) => Prisma.sql`${sql} OR ${clause}`,
-    clauses[0],
-  );
-  return Prisma.sql`AND NOT (${combined})`;
-};
-
 type OrderReferralRow = {
   id: string;
   referralId: string;
@@ -127,6 +103,9 @@ type RevertedGiftRow = {
   individualTransactionId: string | null;
   gross: Prisma.Decimal | null;
   payable: Prisma.Decimal | null;
+  feeAmount: Prisma.Decimal | null;
+  bossReferralAmount: Prisma.Decimal | null;
+  workerReferralAmount: Prisma.Decimal | null;
   subsidyAmount: Prisma.Decimal | null;
 };
 
@@ -209,13 +188,6 @@ export async function GET(request: NextRequest) {
   );
 
   const excludeMembers = [...excludeRechargeResolved.preview, ...excludeMemberResolved.preview];
-  const orderRevenueExclusionSql = buildRawIdentityExclusion(
-    'o."hostJinleeId"',
-    'o."hostId"',
-    excludeMemberResolved.excludeJinleeIds,
-    excludeMemberResolved.excludeDiscordIds,
-  );
-
   const rechargeWhere: Prisma.RechargeWhereInput = {
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
@@ -256,23 +228,11 @@ export async function GET(request: NextRequest) {
 
   const commissionWhere: Prisma.CommissionWhereInput = {
     createdAt: { gte: start, lt: end },
-    ...(buildIdentityExclusion(
-      'toJinleeId',
-      'toId',
-      excludeMemberResolved.excludeJinleeIds,
-      excludeMemberResolved.excludeDiscordIds,
-    ) as Prisma.CommissionWhereInput),
   };
 
   const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
     typeOfTransaction: '优惠返利',
     timeCreatedAt: { gte: start, lt: end },
-    ...(buildIdentityExclusion(
-      'jinleeId',
-      'discordId',
-      excludeMemberResolved.excludeJinleeIds,
-      excludeMemberResolved.excludeDiscordIds,
-    ) as Prisma.IndividualTransactionWhereInput),
   };
 
   const [
@@ -291,6 +251,7 @@ export async function GET(request: NextRequest) {
     scratchRows,
     expenseRows,
     revertedGiftRows,
+    revertedOrderRows,
     couponConsumedAgg,
   ] = await Promise.all([
     prisma.blockStackGame.findMany({
@@ -320,12 +281,6 @@ export async function GET(request: NextRequest) {
       where: {
         status: 'ENDED',
         endedAt: { gte: start, lt: end },
-        ...(buildIdentityExclusion(
-          'hostJinleeId',
-          'hostId',
-          excludeMemberResolved.excludeJinleeIds,
-          excludeMemberResolved.excludeDiscordIds,
-        ) as Prisma.OrderWhereInput),
       },
       orderBy: { endedAt: 'desc' },
     }),
@@ -345,7 +300,6 @@ export async function GET(request: NextRequest) {
       WHERE rp."createdAt" >= ${start}
         AND rp."createdAt" < ${end}
         AND o."status" = 'ENDED'
-        ${orderRevenueExclusionSql}
       ORDER BY rp."createdAt" DESC
     `),
     prisma.individualTransaction.findMany({
@@ -391,6 +345,9 @@ export async function GET(request: NextRequest) {
         ga."individualTransactionId",
         ga."gross",
         ga."payable",
+        ga."feeAmount",
+        ga."bossReferralAmount",
+        ga."workerReferralAmount",
         (ga."gross" - ga."payable") AS "subsidyAmount"
       FROM "gift_audit" ga
       JOIN "revert" r
@@ -399,6 +356,17 @@ export async function GET(request: NextRequest) {
         AND ga."createdAt" >= ${start}
         AND ga."createdAt" < ${end}
       ORDER BY ga."createdAt" DESC
+    `),
+    prisma.$queryRaw<{ revertedOrderGross: Prisma.Decimal | null }[]>(Prisma.sql`
+      SELECT COALESCE(SUM(oa."gross"), 0) AS "revertedOrderGross"
+      FROM "order_audit" oa
+      JOIN "Order" o
+        ON o."id" = oa."orderId"
+      JOIN "revert" r
+        ON r."originalTransactionId" = CONCAT('ORDER:', oa."orderId")
+      WHERE r."status" = 'SUCCESS'
+        AND o."endedAt" >= ${start}
+        AND o."endedAt" < ${end}
     `),
     prisma.coupon.aggregate({
       _sum: { consumeAmount: true },
@@ -436,18 +404,31 @@ export async function GET(request: NextRequest) {
   const giftGross = decimalSum(giftAuditRows, 'gross');
   const giftPaid = decimalSum(giftAuditRows, 'payable');
   const giftSubsidy = giftGross.sub(giftPaid);
+  const revertedGiftGross = decimalSum(revertedGiftRows, 'gross');
+  const revertedGiftPaid = decimalSum(revertedGiftRows, 'payable');
   const revertedGiftSubsidy = decimalSum(revertedGiftRows, 'subsidyAmount');
+  const revertedGiftFee = decimalSum(revertedGiftRows, 'feeAmount');
+  const revertedGiftReferral = decimalSum(revertedGiftRows, 'bossReferralAmount').add(
+    decimalSum(revertedGiftRows, 'workerReferralAmount'),
+  );
+  const revertedOrderGross = decimalSum(revertedOrderRows, 'revertedOrderGross');
+  const giftGrossNet = giftGross.sub(revertedGiftGross);
+  const giftPaidNet = giftPaid.sub(revertedGiftPaid);
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = decimalSum(giftAuditRows, 'feeAmount');
+  const giftFeeNet = giftFee.sub(revertedGiftFee);
   const giftReferral = decimalSum(giftAuditRows, 'bossReferralAmount').add(decimalSum(giftAuditRows, 'workerReferralAmount'));
+  const giftReferralNet = giftReferral.sub(revertedGiftReferral);
   const orderReferral = decimalSum(referralPayoutRows, 'amount');
   const orderGross = decimalSum(orderRows, 'grossAmount');
   const orderNet = decimalSum(orderRows, 'netAmount');
   const orderFee = orderGross.sub(orderNet);
-  const totalPaidFlow = giftPaid.add(orderGross);
-  const totalFaceFlow = giftGross.add(orderGross);
-  const feeFromOrderAndGiftModel = giftFee.add(orderFee);
-  const commissionOtherSources = commissionTotal.sub(feeFromOrderAndGiftModel);
+  const totalPaidFlow = giftPaidNet.add(orderGross);
+  const totalFaceFlow = giftGrossNet.add(orderGross);
+  const rawFeeFromOrderAndGiftModel = giftFee.add(orderFee);
+  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee);
+  const commissionOtherSources = commissionTotal.sub(rawFeeFromOrderAndGiftModel);
+  const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee);
   const discountDeductionTotal = decimalSum(discountRebateRows, 'amountChange');
 
   const drawCount = lotteryCreatedRows.length;
@@ -496,16 +477,17 @@ export async function GET(request: NextRequest) {
     { section: 'rows', key: 'Withdraw', value: withdrawRows.length },
     { section: 'rows', key: 'ZPayRechargeOrder(PAID)', value: zpayRows.length },
     { section: 'rows', key: 'JinleeUser(filtered)', value: memberRows.length },
-    { section: 'rows', key: 'Commission(filtered)', value: commissionRows.length },
+    { section: 'rows', key: 'Commission(all)', value: commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: giftAuditRows.length },
-    { section: 'rows', key: 'Order(ENDED)', value: orderRows.length },
-    { section: 'rows', key: 'ReferralPayout', value: referralPayoutRows.length },
-    { section: 'rows', key: 'IndividualTransaction(优惠返利)', value: discountRebateRows.length },
+    { section: 'rows', key: 'Order(ENDED all)', value: orderRows.length },
+    { section: 'rows', key: 'ReferralPayout(all)', value: referralPayoutRows.length },
+    { section: 'rows', key: 'IndividualTransaction(优惠返利 all)', value: discountRebateRows.length },
     { section: 'rows', key: 'LotteryDraw(createdAt window)', value: lotteryCreatedRows.length },
     { section: 'rows', key: 'LotteryDraw(consumeAt window)', value: lotteryConsumeRows.length },
     { section: 'rows', key: 'ScratchTicket(REVEALED)', value: scratchRows.length },
     { section: 'rows', key: 'Expense', value: expenseRows.length },
     { section: 'rows', key: 'RevertedGiftSubsidy(join)', value: revertedGiftRows.length },
+    { section: 'rows', key: 'RevertedOrder(join)', value: revertedOrderRows.length },
     { section: 'rows', key: 'Coupon(used with consumeAmount)', value: couponTableCount },
   ]);
 
@@ -518,7 +500,7 @@ export async function GET(request: NextRequest) {
     { section: '会员余额汇总', key: 'JinleeUser.recharge 合计', value: memberRechargeTotal.toString() },
     { section: '会员余额汇总', key: 'JinleeUser.income 合计', value: memberIncomeTotal.toString() },
     { section: '会员余额汇总', key: 'JinleeUser.totalBalance 合计', value: memberBalanceTotal.toString() },
-    { section: '会员余额汇总', key: '当月 Commission 合计', value: commissionTotal.toString() },
+    { section: '会员余额汇总', key: '当月 Commission 合计', value: commissionTotalNetAll.toString() },
 
     { section: '抽奖收益', key: '抽奖次数', value: drawCount },
     { section: '抽奖收益', key: '毛收入（次数×29）', value: grossIncome.toString() },
@@ -541,10 +523,12 @@ export async function GET(request: NextRequest) {
     { section: '支出记录(Expense)', key: 'Coupon表格金额（送券，彩蛋）', value: couponTableAmount.toString() },
     { section: '支出记录(Expense)', key: 'Coupon表格笔数（送券，彩蛋）', value: couponTableCount },
 
-    { section: '抽成详情', key: '打赏面值流水', value: giftGross.toString() },
-    { section: '抽成详情', key: '打赏实付流水', value: giftPaid.toString() },
-    { section: '抽成详情', key: '打赏抽成', value: giftFee.toString() },
-    { section: '抽成详情', key: '打赏返利', value: giftReferral.toString() },
+    { section: '抽成详情', key: '打赏面值流水', value: giftGrossNet.toString() },
+    { section: '抽成详情', key: '打赏实付流水', value: giftPaidNet.toString() },
+    { section: '抽成详情', key: '打赏抽成', value: giftFeeNet.toString() },
+    { section: '抽成详情', key: '打赏返利', value: giftReferralNet.toString() },
+    { section: '抽成详情', key: '总撤回打赏金额', value: revertedGiftGross.toString() },
+    { section: '抽成详情', key: '总撤回单子金额', value: revertedOrderGross.toString() },
     { section: '抽成详情', key: '订单返利', value: orderReferral.toString() },
     { section: '抽成详情', key: '打赏补贴(代金券原始)', value: giftSubsidy.toString() },
     { section: '抽成详情', key: '打赏补贴回退(打赏撤销)', value: revertedGiftSubsidy.toString() },
@@ -554,7 +538,7 @@ export async function GET(request: NextRequest) {
     { section: '抽成详情', key: '订单流水', value: orderGross.toString() },
     { section: '抽成详情', key: '订单结算', value: orderNet.toString() },
     { section: '抽成详情', key: '订单抽成', value: orderFee.toString() },
-    { section: '抽成详情', key: '总抽成', value: commissionTotal.toString() },
+    { section: '抽成详情', key: '总抽成', value: commissionTotalNetAll.toString() },
     { section: '抽成详情', key: '总面值原价流水', value: totalFaceFlow.toString() },
     { section: '抽成详情', key: '总实付流水', value: totalPaidFlow.toString() },
     { section: '抽成详情', key: '模型抽成合计（订单+打赏）', value: feeFromOrderAndGiftModel.toString() },

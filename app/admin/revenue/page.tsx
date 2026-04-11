@@ -62,30 +62,6 @@ const buildIdentityExclusion = (
   return clauses.length ? { NOT: { OR: clauses } } : {};
 };
 
-const buildRawIdentityExclusion = (
-  jinleeColumn: string,
-  discordColumn: string | null,
-  excludeJinleeIds: string[],
-  excludeDiscordIds: string[],
-) => {
-  const clauses: Prisma.Sql[] = [];
-  if (excludeJinleeIds.length) {
-    clauses.push(Prisma.sql`${Prisma.raw(jinleeColumn)} IN (${Prisma.join(excludeJinleeIds)})`);
-  }
-  if (discordColumn && excludeDiscordIds.length) {
-    clauses.push(Prisma.sql`${Prisma.raw(discordColumn)} IN (${Prisma.join(excludeDiscordIds)})`);
-  }
-  if (!clauses.length) {
-    return Prisma.empty;
-  }
-
-  const combined = clauses.slice(1).reduce(
-    (sql, clause) => Prisma.sql`${sql} OR ${clause}`,
-    clauses[0],
-  );
-  return Prisma.sql`AND NOT (${combined})`;
-};
-
 export default async function AdminRevenuePage(props: PageProps) {
   const session = await getServerSession();
   if (!session?.discordId || !canViewRevenue(session.discordId)) {
@@ -196,20 +172,11 @@ export default async function AdminRevenuePage(props: PageProps) {
     where: jinleeWhere,
   });
 
-  const commissionWhere: Prisma.CommissionWhereInput = {
-    createdAt: { gte: start, lt: end },
-    ...(buildIdentityExclusion(
-      'toJinleeId',
-      'toId',
-      excludeMemberResolved.excludeJinleeIds,
-      excludeMemberResolved.excludeDiscordIds,
-    ) as Prisma.CommissionWhereInput),
-  };
-  const commissionAgg = await prisma.commission.aggregate({
+  const commissionAggAll = await prisma.commission.aggregate({
     _sum: { feeAmount: true },
-    where: commissionWhere,
+    where: { createdAt: { gte: start, lt: end } },
   });
-  const commissionTotal = dec(commissionAgg._sum.feeAmount);
+  const commissionTotalAll = dec(commissionAggAll._sum.feeAmount);
 
   const giftAgg = await prisma.giftAudit.aggregate({
     _sum: {
@@ -223,12 +190,6 @@ export default async function AdminRevenuePage(props: PageProps) {
       createdAt: { gte: start, lt: end },
     },
   });
-  const orderRevenueExclusionSql = buildRawIdentityExclusion(
-    'o."hostJinleeId"',
-    'o."hostId"',
-    excludeMemberResolved.excludeJinleeIds,
-    excludeMemberResolved.excludeDiscordIds,
-  );
   const orderReferralRows = await prisma.$queryRaw<{ order_referral: Prisma.Decimal | null }[]>(
     Prisma.sql`
       SELECT COALESCE(SUM(rp."amount"), 0) AS order_referral
@@ -238,18 +199,11 @@ export default async function AdminRevenuePage(props: PageProps) {
       WHERE rp."createdAt" >= ${start}
         AND rp."createdAt" < ${end}
         AND o."status" = 'ENDED'
-        ${orderRevenueExclusionSql}
     `,
   );
   const orderWhere: Prisma.OrderWhereInput = {
     status: 'ENDED',
     endedAt: { gte: start, lt: end },
-    ...(buildIdentityExclusion(
-      'hostJinleeId',
-      'hostId',
-      excludeMemberResolved.excludeJinleeIds,
-      excludeMemberResolved.excludeDiscordIds,
-    ) as Prisma.OrderWhereInput),
   };
   const orderAgg = await prisma.order.aggregate({
     _sum: {
@@ -309,7 +263,6 @@ export default async function AdminRevenuePage(props: PageProps) {
       WHERE r."status" = 'SUCCESS'
         AND o."endedAt" >= ${start}
         AND o."endedAt" < ${end}
-        ${orderRevenueExclusionSql}
     `,
   );
   const revertedGiftSubsidy = dec(revertedGiftRows[0]?.reverted_subsidy);
@@ -335,18 +288,13 @@ export default async function AdminRevenuePage(props: PageProps) {
   const totalPaidFlow = giftPaidNet.add(orderGross);
   const totalFaceFlow = giftGrossNet.add(orderGross);
   const rawFeeFromOrderAndGiftModel = giftFee.add(orderFee);
-  const commissionOtherSources = commissionTotal.sub(rawFeeFromOrderAndGiftModel);
+  const commissionOtherSources = commissionTotalAll.sub(rawFeeFromOrderAndGiftModel);
   const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee);
-  const commissionTotalNet = feeFromOrderAndGiftModel.add(commissionOtherSources);
+  const commissionTotalNet = commissionTotalAll.sub(revertedGiftFee);
+  const commissionTotalNetAll = commissionTotalAll.sub(revertedGiftFee);
   const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
     typeOfTransaction: '优惠返利',
     timeCreatedAt: { gte: start, lt: end },
-    ...(buildIdentityExclusion(
-      'jinleeId',
-      'discordId',
-      excludeMemberResolved.excludeJinleeIds,
-      excludeMemberResolved.excludeDiscordIds,
-    ) as Prisma.IndividualTransactionWhereInput),
   };
   const discountRebateAgg = await prisma.individualTransaction.aggregate({
     _sum: { amountChange: true },
@@ -593,7 +541,7 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>JinleeUser.recharge 合计：¥{formatNumber(jinleeAgg._sum.recharge)}</p>
             <p>JinleeUser.income 合计：¥{formatNumber(jinleeAgg._sum.income)}</p>
             <p>JinleeUser.totalBalance 合计：¥{formatNumber(jinleeAgg._sum.totalBalance)}</p>
-            <p>当月 Commission 合计：¥{formatNumber(commissionTotalNet)}</p>
+            <p>当月 Commission 合计：¥{formatNumber(commissionTotalNetAll)}</p>
           </div>
         </div>
 
