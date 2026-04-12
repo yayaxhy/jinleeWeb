@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { prisma } from '@/lib/prisma';
 import { createWechatBindToken } from '@/lib/wechat-bind-token';
-import { generateMiniProgramUrlLink } from '@/lib/wechat';
+import { WeChatMiniProgramAuthError, generateMiniProgramUrlLink } from '@/lib/wechat';
 
 const resolveWechatBindingStatus = async (jinleeId: string) => {
   const jinleeUser = await prisma.jinleeUser.findUnique({
@@ -35,6 +35,33 @@ const resolveWechatBindingStatus = async (jinleeId: string) => {
 
 const buildUnsupportedResponse = () =>
   NextResponse.json({ ok: false, error: 'unsupported_session_source' }, { status: 400 });
+
+const buildBindErrorResponse = (error: unknown) => {
+  if (error instanceof WeChatMiniProgramAuthError) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error.code,
+        message: error.message,
+      },
+      { status: error.status },
+    );
+  }
+
+  if (error instanceof Error && error.message === 'SESSION_SECRET (or NEXTAUTH_SECRET) must be set') {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'bind_token_secret_missing',
+        message: error.message,
+      },
+      { status: 500 },
+    );
+  }
+
+  console.error('[wechat.bind] failed', error);
+  return NextResponse.json({ ok: false, error: 'bind_failed' }, { status: 500 });
+};
 
 export async function GET() {
   const currentUser = await getCurrentJinleeUser();
@@ -79,26 +106,30 @@ export async function POST() {
     });
   }
 
-  const { token, expiresAt } = createWechatBindToken(currentUser.jinleeId);
-  const urlLink = await generateMiniProgramUrlLink({
-    path: 'pages/wechat-bind/index',
-    query: `bindToken=${encodeURIComponent(token)}`,
-    expireDays: 1,
-  });
+  try {
+    const { token, expiresAt } = createWechatBindToken(currentUser.jinleeId);
+    const urlLink = await generateMiniProgramUrlLink({
+      path: 'pages/wechat-bind/index',
+      query: `bindToken=${encodeURIComponent(token)}`,
+      expireDays: 1,
+    });
 
-  const qrCodeDataUrl = await QRCode.toDataURL(urlLink, {
-    margin: 1,
-    width: 360,
-  });
+    const qrCodeDataUrl = await QRCode.toDataURL(urlLink, {
+      margin: 1,
+      width: 360,
+    });
 
-  return NextResponse.json({
-    ok: true,
-    bound: false,
-    canUnbind: false,
-    wechatDisplayName: null,
-    qrCodeDataUrl,
-    urlLink,
-    expiresAt: expiresAt.toISOString(),
-    generatedAt: new Date().toISOString(),
-  });
+    return NextResponse.json({
+      ok: true,
+      bound: false,
+      canUnbind: false,
+      wechatDisplayName: null,
+      qrCodeDataUrl,
+      urlLink,
+      expiresAt: expiresAt.toISOString(),
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return buildBindErrorResponse(error);
+  }
 }
