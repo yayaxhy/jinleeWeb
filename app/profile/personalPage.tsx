@@ -187,7 +187,6 @@ export default async function Profile(props: ProfilePageProps) {
     { href: '/profile/bag', label: '我的背包' },
     { href: '/profile/heart', label: '心动值' },
     { href: '/profile/giftwall', label: '礼物墙' },
-    { href: '/farm', label: '锦鲤庄园' },
     { href: '/profile/withdraw', label: '提现' },
     { href: '/profile/point-shop', label: '积分商城' },
     { href: '/recharge', label: '充值中心' },
