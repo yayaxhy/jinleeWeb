@@ -10,7 +10,7 @@ type BindWechatResponse = {
   wechatDisplayName?: string | null;
   qrCodeDataUrl?: string;
   urlLink?: string;
-  fallbackMode?: 'manual_code';
+  fallbackMode?: 'manual_code' | 'mini_program_code';
   bindToken?: string;
   warning?: string;
   expiresAt?: string;
@@ -53,12 +53,12 @@ const extractMessage = (payload?: { error?: string; message?: string } | null) =
       return detail ? `获取微信接口凭证失败：${detail}` : '获取微信接口凭证失败，请稍后再试。';
     case 'wechat_generate_urllink_http_error':
     case 'wechat_generate_urllink_failed':
-      if (detail?.toLowerCase().includes('no scheme permission')) {
-        return '微信绑定链接生成失败：当前小程序未开通 URL Link / Scheme 权限，请在微信后台开通相应能力。';
-      }
       return detail
         ? `微信绑定链接生成失败：${detail}`
         : '微信绑定链接生成失败，请联系管理员检查小程序路径与环境配置。';
+    case 'wechat_generate_wxacode_http_error':
+    case 'wechat_generate_wxacode_failed':
+      return detail ? `微信小程序码生成失败：${detail}` : '微信小程序码生成失败，请稍后再试。';
     case 'last_login_method_forbidden':
       return '至少还要保留一种登录方式，不能解绑最后一个渠道。';
     case 'channel_not_bound':
@@ -81,7 +81,7 @@ export default function BindWechatClient() {
   const [wechatDisplayName, setWechatDisplayName] = useState<string | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [urlLink, setUrlLink] = useState('');
-  const [fallbackMode, setFallbackMode] = useState<'manual_code' | null>(null);
+  const [fallbackMode, setFallbackMode] = useState<'manual_code' | 'mini_program_code' | null>(null);
   const [bindToken, setBindToken] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [notice, setNotice] = useState('');
@@ -251,8 +251,8 @@ export default function BindWechatClient() {
             <p className="text-xs uppercase tracking-[0.45em] text-gray-400">Bind WeChat</p>
             <h1 className="text-3xl font-semibold tracking-wide text-[#8a6000]">网站端绑定微信</h1>
             <p className="text-sm leading-7 text-gray-500">
-              当前页面用于把网站账号和微信小程序账号绑定到同一个 Jinlee 业务用户。系统会优先生成微信可识别的绑定二维码；如果
-              当前小程序账号没有 URL Link 权限，则会自动切换为手动绑定码模式。
+              当前页面用于把网站账号和微信小程序账号绑定到同一个 Jinlee 业务用户。请按照页面提示完成绑定，成功后网站端、
+              Bot 和微信小程序会共用同一个业务账号。
             </p>
           </div>
 
@@ -272,6 +272,8 @@ export default function BindWechatClient() {
                       ? `已绑定微信${wechatDisplayName ? `：${wechatDisplayName}` : '，如果需要可直接解绑渠道，资产不会拆分。'}`
                       : fallbackMode === 'manual_code'
                         ? '当前小程序无法直接扫码拉起，请复制右侧绑定码，在手机端打开小程序绑定页后粘贴完成关联。'
+                        : fallbackMode === 'mini_program_code'
+                          ? '请使用微信扫一扫右侧小程序码，进入 Jinlee 小程序绑定页后确认绑定。'
                         : '扫描右侧二维码后，会进入微信小程序绑定页；确认后当前网站账号和微信账号会合并成同一个 Jinlee 业务用户。'}
                   </p>
                 </div>
@@ -323,6 +325,13 @@ export default function BindWechatClient() {
                       <li>在手机端打开 Jinlee 微信小程序，进入绑定页。</li>
                       <li>把绑定码粘贴到小程序输入框并确认提交。</li>
                       <li>提交成功后，当前网站账号和微信账号会合并成同一个 Jinlee 业务用户。</li>
+                    </ol>
+                  ) : fallbackMode === 'mini_program_code' ? (
+                    <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-gray-600">
+                      <li>使用微信扫一扫右侧小程序码。</li>
+                      <li>微信会直接打开 Jinlee 小程序绑定页。</li>
+                      <li>在小程序里确认绑定当前微信账号。</li>
+                      <li>绑定完成后，网站端刷新即可看到已绑定状态。</li>
                     </ol>
                   ) : (
                     <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-gray-600">
@@ -384,7 +393,9 @@ export default function BindWechatClient() {
                       />
                     </div>
                     <p className="text-xs leading-6 text-gray-500">
-                      如果微信无法直接识别二维码，也可以复制下面的链接在手机微信里打开。
+                      {urlLink
+                        ? '如果微信无法直接识别二维码，也可以复制下面的链接在手机微信里打开。'
+                        : '请使用微信扫一扫识别这个小程序码，进入 Jinlee 小程序绑定页。'}
                     </p>
                     {urlLink ? (
                       <a

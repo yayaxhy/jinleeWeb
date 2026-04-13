@@ -6,6 +6,8 @@ import {
 } from '@/lib/discord-binding';
 import { summarizeJinleeUser } from '@/lib/jinlee-user';
 import { verifyWechatBindToken } from '@/lib/wechat-bind-token';
+import { verifyWechatBindSceneCode } from '@/lib/wechat-bind-scene';
+import { prisma } from '@/lib/prisma';
 
 const statusForBindingError = (code: string) => {
   switch (code) {
@@ -29,15 +31,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'unsupported_session_source' }, { status: 400 });
   }
 
-  const body = (await request.json().catch(() => null)) as { bindToken?: string } | null;
+  const body = (await request.json().catch(() => null)) as { bindToken?: string; bindCode?: string } | null;
   const bindToken = body?.bindToken?.trim();
+  const bindCode = body?.bindCode?.trim();
   const tokenPayload = verifyWechatBindToken(bindToken);
+  const scenePayload = tokenPayload ? null : verifyWechatBindSceneCode(bindCode);
 
-  if (!tokenPayload) {
-    return NextResponse.json({ ok: false, error: 'invalid_bind_token' }, { status: 400 });
+  let canonicalJinleeId: string | null = tokenPayload?.jinleeId ?? null;
+  if (!canonicalJinleeId && scenePayload) {
+    const canonicalUser = await prisma.jinleeUser.findUnique({
+      where: { discordUserId: scenePayload.discordUserId },
+      select: { jinleeId: true },
+    });
+    canonicalJinleeId = canonicalUser?.jinleeId ?? null;
   }
 
-  if (currentUser.jinleeId === tokenPayload.jinleeId) {
+  if (!canonicalJinleeId) {
+    return NextResponse.json({ ok: false, error: bindCode ? 'invalid_bind_code' : 'invalid_bind_token' }, { status: 400 });
+  }
+
+  if (currentUser.jinleeId === canonicalJinleeId) {
     return NextResponse.json({
       ok: true,
       alreadyBound: true,
@@ -47,7 +60,7 @@ export async function POST(request: Request) {
 
   try {
     const mergedUser = await mergeWechatProgramJinleeUserIntoJinleeUser({
-      canonicalJinleeId: tokenPayload.jinleeId,
+      canonicalJinleeId,
       incomingWechatJinleeId: currentUser.jinleeId,
     });
 

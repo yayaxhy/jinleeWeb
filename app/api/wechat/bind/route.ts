@@ -3,8 +3,13 @@ import { AccountProvider } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { prisma } from '@/lib/prisma';
+import { createWechatBindSceneCode } from '@/lib/wechat-bind-scene';
 import { createWechatBindToken } from '@/lib/wechat-bind-token';
-import { WeChatMiniProgramAuthError, generateMiniProgramUrlLink } from '@/lib/wechat';
+import {
+  WeChatMiniProgramAuthError,
+  generateMiniProgramCodeDataUrl,
+  generateMiniProgramUrlLink,
+} from '@/lib/wechat';
 
 const resolveWechatBindingStatus = async (jinleeId: string) => {
   const jinleeUser = await prisma.jinleeUser.findUnique({
@@ -137,6 +142,28 @@ export async function POST() {
       });
     } catch (error) {
       if (isSchemePermissionError(error)) {
+        try {
+          const scene = createWechatBindSceneCode(currentUser.discordUserId ?? '');
+          const qrCodeDataUrl = await generateMiniProgramCodeDataUrl({
+            page: 'pages/wechat-bind/index',
+            scene: scene.code,
+            width: 360,
+          });
+
+          return NextResponse.json({
+            ok: true,
+            bound: false,
+            canUnbind: false,
+            wechatDisplayName: null,
+            fallbackMode: 'mini_program_code',
+            qrCodeDataUrl,
+            expiresAt: scene.expiresAt.toISOString(),
+            generatedAt: new Date().toISOString(),
+          });
+        } catch (codeError) {
+          console.error('[wechat.bind] mini program code fallback failed', codeError);
+        }
+
         return NextResponse.json({
           ok: true,
           bound: false,

@@ -19,6 +19,11 @@ type GenerateUrlLinkResponse = {
   errmsg?: string;
 };
 
+type GenerateCodeResponse = {
+  errcode?: number;
+  errmsg?: string;
+};
+
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 
 export class WeChatMiniProgramAuthError extends Error {
@@ -135,6 +140,58 @@ export const generateMiniProgramUrlLink = async (params: {
   }
 
   return payload.url_link;
+};
+
+export const generateMiniProgramCodeDataUrl = async (params: {
+  page: string;
+  scene: string;
+  envVersion?: 'release' | 'trial' | 'develop';
+  width?: number;
+}) => {
+  const accessToken = await getMiniProgramAccessToken();
+  const response = await fetch(
+    `https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=${encodeURIComponent(accessToken)}`,
+    {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json, image/jpeg',
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+      body: JSON.stringify({
+        page: params.page,
+        scene: params.scene,
+        env_version:
+          params.envVersion ??
+          (process.env.WECHAT_MINIPROGRAM_ENV_VERSION as 'release' | 'trial' | 'develop' | undefined) ??
+          'release',
+        check_path: true,
+        width: Math.min(Math.max(params.width ?? 360, 280), 1280),
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new WeChatMiniProgramAuthError(
+      'wechat_generate_wxacode_http_error',
+      `WeChat getwxacodeunlimit failed with HTTP ${response.status}`,
+      502,
+    );
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json') || contentType.includes('text/plain')) {
+    const payload = (await response.json()) as GenerateCodeResponse;
+    throw new WeChatMiniProgramAuthError(
+      'wechat_generate_wxacode_failed',
+      payload.errmsg ?? `getwxacodeunlimit failed with errcode ${payload.errcode ?? 'unknown'}`,
+      502,
+    );
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const mimeType = contentType || 'image/jpeg';
+  return `data:${mimeType};base64,${buffer.toString('base64')}`;
 };
 
 export const exchangeMiniProgramCode = async (code: string) => {
