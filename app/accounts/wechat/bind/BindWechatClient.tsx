@@ -10,6 +10,9 @@ type BindWechatResponse = {
   wechatDisplayName?: string | null;
   qrCodeDataUrl?: string;
   urlLink?: string;
+  fallbackMode?: 'manual_code';
+  bindToken?: string;
+  warning?: string;
   expiresAt?: string;
   error?: string;
   message?: string;
@@ -24,6 +27,11 @@ const formatDateTime = (value?: string) => {
   return date.toLocaleString('zh-CN', {
     hour12: false,
   });
+};
+
+const formatBindToken = (value?: string) => {
+  if (!value) return '';
+  return value.match(/.{1,4}/g)?.join(' ') ?? value;
 };
 
 const extractMessage = (payload?: { error?: string; message?: string } | null) => {
@@ -73,6 +81,8 @@ export default function BindWechatClient() {
   const [wechatDisplayName, setWechatDisplayName] = useState<string | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [urlLink, setUrlLink] = useState('');
+  const [fallbackMode, setFallbackMode] = useState<'manual_code' | null>(null);
+  const [bindToken, setBindToken] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [notice, setNotice] = useState('');
   const [noticeLevel, setNoticeLevel] = useState<'success' | 'error'>('success');
@@ -95,6 +105,8 @@ export default function BindWechatClient() {
     if (payload.bound) {
       setQrCodeDataUrl('');
       setUrlLink('');
+      setFallbackMode(null);
+      setBindToken('');
       setExpiresAt('');
       if (!preserveNotice) {
         setNotice('');
@@ -122,7 +134,13 @@ export default function BindWechatClient() {
       setWechatDisplayName(payload.wechatDisplayName ?? null);
       setQrCodeDataUrl(payload.qrCodeDataUrl ?? '');
       setUrlLink(payload.urlLink ?? '');
+      setFallbackMode(payload.fallbackMode ?? null);
+      setBindToken(payload.bindToken ?? '');
       setExpiresAt(formatDateTime(payload.expiresAt));
+      if (payload.warning === 'wechat_no_scheme_permission') {
+        setNotice('当前小程序未开通 URL Link / Scheme 权限，已切换为手动绑定码模式。');
+        setNoticeLevel('error');
+      }
     } finally {
       setGenerating(false);
     }
@@ -217,6 +235,18 @@ export default function BindWechatClient() {
     }
   };
 
+  const handleCopyBindToken = async () => {
+    if (!bindToken || !navigator?.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(bindToken);
+      setNotice('绑定码已复制，请在小程序绑定页粘贴使用。');
+      setNoticeLevel('success');
+    } catch {
+      setNotice('绑定码复制失败，请手动复制。');
+      setNoticeLevel('error');
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
       <section className="mx-auto max-w-4xl">
@@ -299,6 +329,25 @@ export default function BindWechatClient() {
                 {bound ? (
                   <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50 px-4 py-12 text-sm text-emerald-600">
                     当前账号已经绑定微信，不需要再扫码。
+                  </div>
+                ) : fallbackMode === 'manual_code' && bindToken ? (
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-4 py-6 text-left">
+                      <div className="text-xs uppercase tracking-[0.3em] text-amber-500">手动绑定码</div>
+                      <div className="mt-3 break-all rounded-xl bg-white px-3 py-3 font-mono text-sm text-[#8a6000]">
+                        {formatBindToken(bindToken)}
+                      </div>
+                    </div>
+                    <p className="text-xs leading-6 text-gray-500">
+                      当前小程序没有 URL Link 权限，不能直接扫码拉起。请在手机端打开 Jinlee 小程序绑定页，并粘贴上面的绑定码完成关联。
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleCopyBindToken}
+                      className="inline-flex items-center justify-center rounded-full border border-[#8a6000]/20 px-4 py-2 text-xs font-medium text-[#8a6000] transition hover:bg-[#8a6000]/5"
+                    >
+                      复制绑定码
+                    </button>
                   </div>
                 ) : qrCodeDataUrl ? (
                   <div className="space-y-3">

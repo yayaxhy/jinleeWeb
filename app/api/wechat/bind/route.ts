@@ -36,6 +36,11 @@ const resolveWechatBindingStatus = async (jinleeId: string) => {
 const buildUnsupportedResponse = () =>
   NextResponse.json({ ok: false, error: 'unsupported_session_source' }, { status: 400 });
 
+const isSchemePermissionError = (error: unknown) =>
+  error instanceof WeChatMiniProgramAuthError &&
+  error.code === 'wechat_generate_urllink_failed' &&
+  error.message.toLowerCase().includes('no scheme permission');
+
 const buildBindErrorResponse = (error: unknown) => {
   if (error instanceof WeChatMiniProgramAuthError) {
     return NextResponse.json(
@@ -108,27 +113,45 @@ export async function POST() {
 
   try {
     const { token, expiresAt } = createWechatBindToken(currentUser.jinleeId);
-    const urlLink = await generateMiniProgramUrlLink({
-      path: 'pages/wechat-bind/index',
-      query: `bindToken=${encodeURIComponent(token)}`,
-      expireDays: 1,
-    });
+    try {
+      const urlLink = await generateMiniProgramUrlLink({
+        path: 'pages/wechat-bind/index',
+        query: `bindToken=${encodeURIComponent(token)}`,
+        expireDays: 1,
+      });
 
-    const qrCodeDataUrl = await QRCode.toDataURL(urlLink, {
-      margin: 1,
-      width: 360,
-    });
+      const qrCodeDataUrl = await QRCode.toDataURL(urlLink, {
+        margin: 1,
+        width: 360,
+      });
 
-    return NextResponse.json({
-      ok: true,
-      bound: false,
-      canUnbind: false,
-      wechatDisplayName: null,
-      qrCodeDataUrl,
-      urlLink,
-      expiresAt: expiresAt.toISOString(),
-      generatedAt: new Date().toISOString(),
-    });
+      return NextResponse.json({
+        ok: true,
+        bound: false,
+        canUnbind: false,
+        wechatDisplayName: null,
+        qrCodeDataUrl,
+        urlLink,
+        expiresAt: expiresAt.toISOString(),
+        generatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      if (isSchemePermissionError(error)) {
+        return NextResponse.json({
+          ok: true,
+          bound: false,
+          canUnbind: false,
+          wechatDisplayName: null,
+          fallbackMode: 'manual_code',
+          bindToken: token,
+          expiresAt: expiresAt.toISOString(),
+          generatedAt: new Date().toISOString(),
+          warning: 'wechat_no_scheme_permission',
+        });
+      }
+
+      throw error;
+    }
   } catch (error) {
     return buildBindErrorResponse(error);
   }
