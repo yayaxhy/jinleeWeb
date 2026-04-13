@@ -137,10 +137,6 @@ export default function BindWechatClient() {
       setFallbackMode(payload.fallbackMode ?? null);
       setBindToken(payload.bindToken ?? '');
       setExpiresAt(formatDateTime(payload.expiresAt));
-      if (payload.warning === 'wechat_no_scheme_permission') {
-        setNotice('当前小程序未开通 URL Link / Scheme 权限，已切换为手动绑定码模式。');
-        setNoticeLevel('error');
-      }
     } finally {
       setGenerating(false);
     }
