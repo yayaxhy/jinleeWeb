@@ -255,8 +255,8 @@ export default function BindWechatClient() {
             <p className="text-xs uppercase tracking-[0.45em] text-gray-400">Bind WeChat</p>
             <h1 className="text-3xl font-semibold tracking-wide text-[#8a6000]">网站端绑定微信</h1>
             <p className="text-sm leading-7 text-gray-500">
-              网站会生成一个二维码。你用微信扫一扫后会直接打开小程序绑定页，确认后当前网站账号和微信账号会合并成同一个
-              Jinlee 业务用户。
+              当前页面用于把网站账号和微信小程序账号绑定到同一个 Jinlee 业务用户。系统会优先生成微信可识别的绑定二维码；如果
+              当前小程序账号没有 URL Link 权限，则会自动切换为手动绑定码模式。
             </p>
           </div>
 
@@ -274,7 +274,9 @@ export default function BindWechatClient() {
                   <p className="text-sm leading-7 text-gray-600">
                     {bound
                       ? `已绑定微信${wechatDisplayName ? `：${wechatDisplayName}` : '，如果需要可直接解绑渠道，资产不会拆分。'}`
-                      : '扫描右侧二维码后，小程序会自动确认当前微信账号并完成绑定。'}
+                      : fallbackMode === 'manual_code'
+                        ? '当前小程序无法直接扫码拉起，请复制右侧绑定码，在手机端打开小程序绑定页后粘贴完成关联。'
+                        : '扫描右侧二维码后，会进入微信小程序绑定页；确认后当前网站账号和微信账号会合并成同一个 Jinlee 业务用户。'}
                   </p>
                 </div>
 
@@ -297,7 +299,7 @@ export default function BindWechatClient() {
                       onClick={handleRegenerate}
                       disabled={generating}
                     >
-                      {generating ? '生成中...' : '重新生成二维码'}
+                      {generating ? '生成中...' : '重新生成绑定信息'}
                     </button>
                   ) : (
                     <button
@@ -308,6 +310,31 @@ export default function BindWechatClient() {
                     >
                       {unbinding ? '解绑中...' : '解绑微信'}
                     </button>
+                  )}
+                </div>
+
+                <div className="rounded-2xl bg-white px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.35em] text-gray-400">详细流程</div>
+                  {bound ? (
+                    <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-gray-600">
+                      <li>当前网站账号已经和微信账号完成绑定。</li>
+                      <li>后续你可以继续使用网站端或微信小程序登录同一个 Jinlee 用户。</li>
+                      <li>如需切换微信账号，可先解绑后重新发起绑定。</li>
+                    </ol>
+                  ) : fallbackMode === 'manual_code' ? (
+                    <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-gray-600">
+                      <li>点击右侧“复制绑定码”。</li>
+                      <li>在手机端打开 Jinlee 微信小程序，进入绑定页。</li>
+                      <li>把绑定码粘贴到小程序输入框并确认提交。</li>
+                      <li>提交成功后，当前网站账号和微信账号会合并成同一个 Jinlee 业务用户。</li>
+                    </ol>
+                  ) : (
+                    <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-gray-600">
+                      <li>使用微信扫描右侧二维码。</li>
+                      <li>微信会打开 Jinlee 小程序绑定页。</li>
+                      <li>在小程序里确认绑定当前微信账号。</li>
+                      <li>绑定完成后，网站端刷新即可看到已绑定状态。</li>
+                    </ol>
                   )}
                 </div>
 
