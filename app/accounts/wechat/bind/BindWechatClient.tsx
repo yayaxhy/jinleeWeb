@@ -45,6 +45,9 @@ const extractMessage = (payload?: { error?: string; message?: string } | null) =
       return detail ? `获取微信接口凭证失败：${detail}` : '获取微信接口凭证失败，请稍后再试。';
     case 'wechat_generate_urllink_http_error':
     case 'wechat_generate_urllink_failed':
+      if (detail?.toLowerCase().includes('no scheme permission')) {
+        return '微信绑定链接生成失败：当前小程序未开通 URL Link / Scheme 权限，请在微信后台开通相应能力。';
+      }
       return detail
         ? `微信绑定链接生成失败：${detail}`
         : '微信绑定链接生成失败，请联系管理员检查小程序路径与环境配置。';
