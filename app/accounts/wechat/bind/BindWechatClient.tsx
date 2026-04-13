@@ -27,6 +27,8 @@ const formatDateTime = (value?: string) => {
 };
 
 const extractMessage = (payload?: { error?: string; message?: string } | null) => {
+  const detail = payload?.message?.trim();
+
   switch (payload?.error) {
     case 'unauthorized':
       return '当前登录态无效，请重新登录后再试。';
@@ -40,10 +42,12 @@ const extractMessage = (payload?: { error?: string; message?: string } | null) =
       return '网站端尚未完成微信小程序配置，请联系管理员。';
     case 'wechat_access_token_http_error':
     case 'wechat_access_token_failed':
-      return '获取微信接口凭证失败，请稍后再试。';
+      return detail ? `获取微信接口凭证失败：${detail}` : '获取微信接口凭证失败，请稍后再试。';
     case 'wechat_generate_urllink_http_error':
     case 'wechat_generate_urllink_failed':
-      return '微信绑定链接生成失败，请联系管理员检查小程序路径与环境配置。';
+      return detail
+        ? `微信绑定链接生成失败：${detail}`
+        : '微信绑定链接生成失败，请联系管理员检查小程序路径与环境配置。';
     case 'last_login_method_forbidden':
       return '至少还要保留一种登录方式，不能解绑最后一个渠道。';
     case 'channel_not_bound':
@@ -53,7 +57,7 @@ const extractMessage = (payload?: { error?: string; message?: string } | null) =
     case 'unbind_failed':
       return '解绑失败，请稍后再试。';
     default:
-      return payload?.message ?? payload?.error ?? '操作失败，请稍后再试。';
+      return detail ?? payload?.error ?? '操作失败，请稍后再试。';
   }
 };
 
