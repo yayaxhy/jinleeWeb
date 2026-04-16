@@ -221,7 +221,7 @@ export default async function Profile(props: ProfilePageProps) {
 
   const peiwan = member?.peiwan ?? null;
   const isPeiwanMember = member?.status === 'PEIWAN';
-  const isLaobanMember = Boolean(member) && member.status !== 'PEIWAN';
+  const isLaobanMember = !!member && member.status !== 'PEIWAN';
   const showPersonalisationTab = isPeiwanMember || isLaobanMember;
   const vipAnnouncementBroadcastEnabled = member?.vipBenefitProfile?.announcementEnabled !== false;
   const now = new Date();
