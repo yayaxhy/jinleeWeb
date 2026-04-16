@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
+import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnouncementPreferenceToggle';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
@@ -203,7 +204,7 @@ export default async function Profile(props: ProfilePageProps) {
 
   const { jinleeUser, jinleeId, discordUserId } = currentUser;
   const member = discordUserId
-    ? await prisma.member.findUnique({
+      ? await prisma.member.findUnique({
         where: { discordUserId },
         include: {
           peiwan: {
@@ -213,13 +214,16 @@ export default async function Profile(props: ProfilePageProps) {
               },
             },
           },
+          vipBenefitProfile: true,
         },
       })
     : null;
 
   const peiwan = member?.peiwan ?? null;
   const isPeiwanMember = member?.status === 'PEIWAN';
-  const isLaobanMember = member?.status !== 'PEIWAN';
+  const isLaobanMember = Boolean(member) && member.status !== 'PEIWAN';
+  const showPersonalisationTab = isPeiwanMember || isLaobanMember;
+  const vipAnnouncementBroadcastEnabled = member?.vipBenefitProfile?.announcementEnabled !== false;
   const now = new Date();
   const level = peiwan?.level ?? '—';
   const displayName =
@@ -453,7 +457,7 @@ export default async function Profile(props: ProfilePageProps) {
   const tabCandidates = [
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-level', label: '升级进度' }] : []),
     { id: 'profile-buff', label: 'Buff 状态' },
-    ...(isPeiwanMember ? [{ id: 'profile-personalisation', label: '个性化' }] : []),
+    ...(showPersonalisationTab ? [{ id: 'profile-personalisation', label: '个性化' }] : []),
     { id: 'profile-info', label: '个人信息' },
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-tx', label: '流水记录' }] : []),
   ] as const;
@@ -730,25 +734,37 @@ export default async function Profile(props: ProfilePageProps) {
                   </div>
                 )}
 
-                {activeTab === 'profile-personalisation' && isPeiwanMember && (
+                {activeTab === 'profile-personalisation' && showPersonalisationTab && (
                   <div id="profile-personalisation" className="space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">老板评语</h2>
-                        <p className="text-sm text-gray-500">选择是否展示到你的名片中</p>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">个性化</h2>
+                        <p className="text-sm text-gray-500">管理播报偏好与名片展示内容</p>
                       </div>
-                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {peiwanReviews.length} 条</span>
+                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PROFILE</span>
                     </div>
-                    <PeiwanReviewManager
-                      reviews={peiwanReviews.map((review) => ({
-                        id: review.id,
-                        reviewerDiscordId: review.reviewerDiscordId,
-                        reviewerName: review.reviewerName ?? null,
-                        content: review.content,
-                        displayMode: review.displayMode,
-                        createdAtLabel: formatDate(review.createdAt),
-                      }))}
-                    />
+                    <VipAnnouncementPreferenceToggle enabled={vipAnnouncementBroadcastEnabled} />
+                    {isPeiwanMember ? (
+                      <div className="space-y-6 border-t border-dashed border-black/10 pt-6">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h3 className="text-xl font-semibold tracking-wide text-[#8a6000]">老板评语</h3>
+                            <p className="text-sm text-gray-500">选择是否展示到你的名片中</p>
+                          </div>
+                          <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {peiwanReviews.length} 条</span>
+                        </div>
+                        <PeiwanReviewManager
+                          reviews={peiwanReviews.map((review) => ({
+                            id: review.id,
+                            reviewerDiscordId: review.reviewerDiscordId,
+                            reviewerName: review.reviewerName ?? null,
+                            content: review.content,
+                            displayMode: review.displayMode,
+                            createdAtLabel: formatDate(review.createdAt),
+                          }))}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 )}
 
