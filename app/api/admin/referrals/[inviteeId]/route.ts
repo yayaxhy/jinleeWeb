@@ -47,9 +47,10 @@ export async function PATCH(
   const body = await request.json().catch(() => null);
   const type = parseReferralType(body?.type);
   const inviterId = normalizeId(body?.inviterId);
+  const enabled = body?.enabled === undefined ? undefined : Boolean(body.enabled);
 
-  if (!type && !inviterId) {
-    return NextResponse.json({ error: '至少需要提供 type 或 inviterDiscordId' }, { status: 400 });
+  if (!type && !inviterId && enabled === undefined) {
+    return NextResponse.json({ error: '至少需要提供 type、inviterDiscordId 或 enabled' }, { status: 400 });
   }
   if (inviterId && inviterId === inviteeId) {
     return NextResponse.json({ error: '禁止自邀' }, { status: 400 });
@@ -63,7 +64,7 @@ export async function PATCH(
 
   const existingReferral = await prisma.referral.findUnique({
     where: { inviteeId },
-    select: { type: true, inviterId: true },
+    select: { type: true, inviterId: true, enabled: true },
   });
   if (!existingReferral) {
     return NextResponse.json({ error: '记录不存在' }, { status: 404 });
@@ -83,7 +84,8 @@ export async function PATCH(
 
   const nextInviterId = inviterId || existingReferral.inviterId;
   const nextType = type || existingReferral.type;
-  const snapshot = await getReferralSnapshotForBinding(nextInviterId, nextType);
+  const shouldRefreshSnapshot = Boolean(type || inviterId);
+  const snapshot = shouldRefreshSnapshot ? await getReferralSnapshotForBinding(nextInviterId, nextType) : null;
 
   try {
     const updated = await prisma.referral.update({
@@ -91,11 +93,16 @@ export async function PATCH(
       data: {
         ...(type ? { type } : {}),
         ...(inviterId ? { inviterId } : {}),
-        payoutRate: snapshot.payoutRate,
-        payoutCap: snapshot.payoutCap,
-        policyApplied: snapshot.policyApplied,
-        policyRuleId: snapshot.policyRuleId,
-        policyBoundAt: snapshot.policyBoundAt,
+        ...(enabled !== undefined ? { enabled } : {}),
+        ...(snapshot
+          ? {
+              payoutRate: snapshot.payoutRate,
+              payoutCap: snapshot.payoutCap,
+              policyApplied: snapshot.policyApplied,
+              policyRuleId: snapshot.policyRuleId,
+              policyBoundAt: snapshot.policyBoundAt,
+            }
+          : {}),
       },
     });
     return NextResponse.json({ referral: updated }, { status: 200 });

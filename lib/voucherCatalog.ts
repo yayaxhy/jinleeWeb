@@ -40,6 +40,7 @@ export const COUPON_VOUCHER_META: Record<CouponType, CouponVoucherMeta> = {
   [CouponType.COMMISSION_MINUS1_VOUCHER]: { prizeName: '抽成降1%券', prizeType: LotteryPrizeType.COUPON },
   [CouponType.DOUBLE_FLOW_5000_VOUCHER]: { prizeName: '双倍流水5000券', prizeType: LotteryPrizeType.COUPON },
   [CouponType.DOUBLE_SPEND_5000_VOUCHER]: { prizeName: '双倍消费5000券', prizeType: LotteryPrizeType.COUPON },
+  [CouponType.SCRATCH_TICKET_VOUCHER]: { prizeName: '刮刮乐代金券', prizeType: LotteryPrizeType.COUPON },
   [CouponType.RENAME_CARD_3]: { prizeName: '3位数靓号卡', prizeType: LotteryPrizeType.SELFUSE, isVanityCard: true },
   [CouponType.RENAME_CARD]: { prizeName: '4位数靓号卡', prizeType: LotteryPrizeType.SELFUSE, isVanityCard: true },
   [CouponType.RENAME_CARD_5]: { prizeName: '5位数靓号卡', prizeType: LotteryPrizeType.SELFUSE, isVanityCard: true },

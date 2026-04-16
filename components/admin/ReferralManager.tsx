@@ -9,6 +9,7 @@ type ReferralRecord = {
   inviteeDisplayName?: string | null;
   inviterDisplayName?: string | null;
   type: ReferralType;
+  enabled: boolean;
   createdAt: string;
 };
 
@@ -23,10 +24,11 @@ const ROME_TIMEZONE = 'Europe/Rome';
 const DISCORD_ID_PATTERN = /^\d+$/;
 
 export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
-  const [createForm, setCreateForm] = useState<{ inviteeId: string; inviterId: string; type: ReferralType }>({
+  const [createForm, setCreateForm] = useState<{ inviteeId: string; inviterId: string; type: ReferralType; enabled: boolean }>({
     inviteeId: '',
     inviterId: '',
     type: 'LAOBAN',
+    enabled: true,
   });
   const [filters, setFilters] = useState<FilterState>({ inviteeId: '', inviterId: '', type: '' });
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({ inviteeId: '', inviterId: '', type: '' });
@@ -115,6 +117,7 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
     const inviteeId = createForm.inviteeId.trim();
     const inviterId = createForm.inviterId.trim();
     const type = createForm.type;
+    const enabled = createForm.enabled;
 
     if (!inviteeId || !inviterId) {
       setGlobalMessage({ type: 'error', text: 'inviteeDiscordId、inviterDiscordId 均为必填' });
@@ -137,7 +140,7 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
       const response = await fetch('/api/admin/referrals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteeId, inviterId, type }),
+        body: JSON.stringify({ inviteeId, inviterId, type, enabled }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -145,7 +148,7 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
         setGlobalMessage({ type: 'error', text: message });
       } else {
         setGlobalMessage({ type: 'success', text: '邀请关系已保存' });
-        setCreateForm((prev) => ({ ...prev, inviteeId: '', inviterId: '' }));
+        setCreateForm((prev) => ({ ...prev, inviteeId: '', inviterId: '', enabled: true }));
         await fetchReferrals(appliedFilters);
       }
     } catch (error) {
@@ -218,6 +221,36 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
     }
   };
 
+  const handleToggleEnabled = async (inviteeId: string, currentEnabled: boolean) => {
+    if (readOnly) {
+      setGlobalMessage({ type: 'error', text: '当前账号为只读权限，无法修改邀请关系。' });
+      return;
+    }
+
+    const nextEnabled = !currentEnabled;
+    setRowBusyId(inviteeId);
+    setGlobalMessage(null);
+    try {
+      const response = await fetch(`/api/admin/referrals/${encodeURIComponent(inviteeId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: nextEnabled }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = typeof data?.error === 'string' ? data.error : '更新启用状态失败，请稍后重试';
+        setGlobalMessage({ type: 'error', text: message });
+      } else {
+        setGlobalMessage({ type: 'success', text: nextEnabled ? '绑定已启用' : '绑定已停用' });
+        await fetchReferrals(appliedFilters);
+      }
+    } catch (error) {
+      setGlobalMessage({ type: 'error', text: (error as Error).message });
+    } finally {
+      setRowBusyId(null);
+    }
+  };
+
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-6" id="referral-manager">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -280,6 +313,15 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
               ))}
             </select>
           </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white">
+            <input
+              type="checkbox"
+              checked={createForm.enabled}
+              onChange={(event) => setCreateForm((prev) => ({ ...prev, enabled: event.target.checked }))}
+              disabled={readOnly}
+            />
+            新建后立即启用
+          </label>
           <button
             type="submit"
             disabled={isCreating || readOnly}
@@ -333,7 +375,7 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
               清空
             </button>
           </div>
-          <p className="text-xs text-white/60">默认返回最新 100 条，仅支持按纯数字 Discord ID 过滤。</p>
+          <p className="text-xs text-white/60">默认显示全部匹配绑定，仅支持按纯数字 Discord ID 过滤。</p>
         </form>
       </div>
 
@@ -353,6 +395,7 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
               <th className="px-4 py-3">Invitee Discord ID</th>
               <th className="px-4 py-3">Inviter Discord ID</th>
               <th className="px-4 py-3">类型</th>
+              <th className="px-4 py-3">状态</th>
               <th className="px-4 py-3">创建时间</th>
               <th className="px-4 py-3 text-right">操作</th>
             </tr>
@@ -360,13 +403,13 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
           <tbody>
             {isLoading ? (
               <tr>
-                <td className="px-4 py-3 text-white/60" colSpan={5}>
+                <td className="px-4 py-3 text-white/60" colSpan={6}>
                   加载中…
                 </td>
               </tr>
             ) : referrals.length === 0 ? (
               <tr>
-                <td className="px-4 py-3 text-white/60" colSpan={5}>
+                <td className="px-4 py-3 text-white/60" colSpan={6}>
                   暂无数据，尝试调整搜索条件。
                 </td>
               </tr>
@@ -404,11 +447,34 @@ export function ReferralManager({ readOnly = false }: { readOnly?: boolean }) {
                       ))}
                     </select>
                   </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-xs ${
+                        record.enabled
+                          ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
+                          : 'border-white/15 bg-white/5 text-white/60'
+                      }`}
+                    >
+                      {record.enabled ? '已启用' : '未启用'}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-white/70">
                     {new Date(record.createdAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleToggleEnabled(record.inviteeId, record.enabled)}
+                        disabled={rowBusyId === record.inviteeId || readOnly}
+                        className={`rounded-full border px-3 py-2 text-xs disabled:opacity-60 ${
+                          record.enabled
+                            ? 'border-amber-400/40 text-amber-200 hover:bg-amber-400/10'
+                            : 'border-emerald-400/40 text-emerald-300 hover:bg-emerald-400/10'
+                        }`}
+                      >
+                        {record.enabled ? '停用' : '启用'}
+                      </button>
                       <button
                         type="button"
                         onClick={() => void handleUpdateType(record.inviteeId)}

@@ -62,7 +62,6 @@ export async function GET(request: NextRequest) {
     prisma.referral.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: 100,
       include: {
         invitee: { select: { serverDisplayName: true } },
         inviter: { select: { serverDisplayName: true } },
@@ -74,6 +73,7 @@ export async function GET(request: NextRequest) {
     inviteeId: row.inviteeId,
     inviterId: row.inviterId,
     type: row.type,
+    enabled: row.enabled,
     payoutRate: row.payoutRate,
     payoutCap: row.payoutCap,
     policyApplied: row.policyApplied,
@@ -97,6 +97,7 @@ export async function POST(request: Request) {
   const inviteeId = normalizeId(body?.inviteeId);
   const inviterId = normalizeId(body?.inviterId);
   const type = parseReferralType(body?.type);
+  const enabled = body?.enabled === undefined ? true : Boolean(body.enabled);
 
   if (!inviteeId || !inviterId || !type) {
     return NextResponse.json({ error: 'inviteeDiscordId、inviterDiscordId、type 均为必填' }, { status: 400 });
@@ -133,6 +134,7 @@ export async function POST(request: Request) {
       inviteeId,
       inviterId,
       type,
+      enabled,
       payoutRate: snapshot.payoutRate,
       payoutCap: snapshot.payoutCap,
       policyApplied: snapshot.policyApplied,

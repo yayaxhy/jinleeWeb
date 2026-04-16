@@ -81,6 +81,7 @@ export async function GET(request: NextRequest) {
     { header: '邀请人昵称', key: 'inviterName', width: 18 },
     { header: '邀请人Discord ID', key: 'inviterId', width: 24 },
     { header: '类型', key: 'type', width: 12 },
+    { header: '启用状态', key: 'enabled', width: 12 },
     { header: '创建时间(罗马)', key: 'createdAt', width: 22 },
   ];
   worksheet.getRow(1).font = { bold: true };
@@ -93,6 +94,7 @@ export async function GET(request: NextRequest) {
       inviterName: row.inviter?.serverDisplayName ?? '未知用户',
       inviterId: row.inviterId,
       type: row.type,
+      enabled: row.enabled ? '已启用' : '未启用',
       createdAt: formatDate(row.createdAt),
     });
   }

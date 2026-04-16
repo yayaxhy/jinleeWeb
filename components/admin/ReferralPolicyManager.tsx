@@ -203,6 +203,35 @@ export function ReferralPolicyManager({ readOnly = false }: { readOnly?: boolean
     }
   };
 
+  const handleToggleEnabled = async (policy: ReferralPolicyRecord) => {
+    if (readOnly) {
+      setMessage({ type: 'error', text: '当前账号为只读权限，无法修改规则。' });
+      return;
+    }
+
+    const nextEnabled = !(drafts[policy.id]?.enabled ?? policy.enabled);
+    setBusyId(policy.id);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/admin/referral-policies/${encodeURIComponent(policy.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: nextEnabled }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage({ type: 'error', text: typeof data?.error === 'string' ? data.error : '更新启用状态失败' });
+        return;
+      }
+      setMessage({ type: 'success', text: nextEnabled ? '规则已启用' : '规则已停用' });
+      await loadPolicies();
+    } catch (error) {
+      setMessage({ type: 'error', text: (error as Error).message });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-6">
       <div className="space-y-1">
@@ -265,7 +294,7 @@ export function ReferralPolicyManager({ readOnly = false }: { readOnly?: boolean
               <th className="px-4 py-3">上限</th>
               <th className="px-4 py-3">开始</th>
               <th className="px-4 py-3">结束</th>
-              <th className="px-4 py-3">启用</th>
+              <th className="px-4 py-3">状态</th>
               <th className="px-4 py-3">备注</th>
               <th className="px-4 py-3 text-right">操作</th>
             </tr>
@@ -292,10 +321,32 @@ export function ReferralPolicyManager({ readOnly = false }: { readOnly?: boolean
                     <td className="px-4 py-3"><input value={draft.capAmount} onChange={(e) => updateDraft(policy.id, { capAmount: e.target.value })} className="w-28 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white" disabled={busyId === policy.id || readOnly} /></td>
                     <td className="px-4 py-3"><input type="datetime-local" value={draft.startsAt} onChange={(e) => updateDraft(policy.id, { startsAt: e.target.value })} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white" disabled={busyId === policy.id || readOnly} /></td>
                     <td className="px-4 py-3"><input type="datetime-local" value={draft.endsAt} onChange={(e) => updateDraft(policy.id, { endsAt: e.target.value })} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white" disabled={busyId === policy.id || readOnly} /></td>
-                    <td className="px-4 py-3 text-center"><input type="checkbox" checked={draft.enabled} onChange={(e) => updateDraft(policy.id, { enabled: e.target.checked })} disabled={busyId === policy.id || readOnly} /></td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-1 text-xs ${
+                          draft.enabled
+                            ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
+                            : 'border-white/15 bg-white/5 text-white/60'
+                        }`}
+                      >
+                        {draft.enabled ? '已启用' : '未启用'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3"><input value={draft.note} onChange={(e) => updateDraft(policy.id, { note: e.target.value })} className="w-40 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white" disabled={busyId === policy.id || readOnly} /></td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleToggleEnabled(policy)}
+                          disabled={busyId === policy.id || readOnly}
+                          className={`rounded-full border px-3 py-2 text-xs disabled:opacity-60 ${
+                            draft.enabled
+                              ? 'border-amber-400/40 text-amber-200'
+                              : 'border-emerald-400/40 text-emerald-300'
+                          }`}
+                        >
+                          {draft.enabled ? '停用' : '启用'}
+                        </button>
                         <button type="button" onClick={() => void handleSave(policy)} disabled={busyId === policy.id || readOnly} className="rounded-full border border-white/20 px-3 py-2 text-xs text-white disabled:opacity-60">保存</button>
                         <button type="button" onClick={() => void handleDelete(policy.id)} disabled={busyId === policy.id || readOnly} className="rounded-full border border-rose-400/40 px-3 py-2 text-xs text-rose-300 disabled:opacity-60">删除</button>
                       </div>
@@ -310,4 +361,3 @@ export function ReferralPolicyManager({ readOnly = false }: { readOnly?: boolean
     </div>
   );
 }
-
