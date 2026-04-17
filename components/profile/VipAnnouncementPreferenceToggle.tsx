@@ -40,7 +40,6 @@ export function VipAnnouncementPreferenceToggle({ enabled }: Props) {
   return (
     <div className="rounded-2xl border border-[#d4b24c]/25 bg-gradient-to-br from-[#fff9e8] to-[#fff1c6] p-5 space-y-4 shadow-[0_8px_30px_rgba(17,24,39,0.05)]">
       <div className="space-y-1">
-        <p className="text-xs uppercase tracking-[0.4em] text-gray-400">VIP Broadcast</p>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-lg font-semibold text-[#171717]">VIP 等级播报</h3>
           <span
@@ -48,10 +47,10 @@ export function VipAnnouncementPreferenceToggle({ enabled }: Props) {
               enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'
             }`}
           >
-            {enabled ? '已参与' : '未参与'}
+            {enabled ? '已开启' : '未开启'}
           </span>
         </div>
-        <p className="text-sm text-gray-600">控制你在升级 VIP 时是否参与频道等级播报，不影响 VIP 身份组。</p>
+        <p className="text-sm text-gray-600">在升级到新的 VIP 等级时是否允许进行频道播报</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
