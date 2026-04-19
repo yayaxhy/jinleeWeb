@@ -10,7 +10,7 @@ RUN npx prisma generate
 
 RUN npm run build
 
-EXPOSE 80
-ENV PORT=80
+EXPOSE 3000
+ENV PORT=3000
 
 CMD ["npm", "start"]
