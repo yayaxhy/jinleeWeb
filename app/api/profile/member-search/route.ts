@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
+const MAX_INT32 = 2147483647;
+
 export async function GET(request: Request) {
   const session = await getServerSession();
   if (!session?.discordId) {
@@ -15,12 +17,14 @@ export async function GET(request: Request) {
   }
 
   const keyword = keywordRaw.slice(0, 64);
-  const parsedPeiwanId = Number.parseInt(keyword, 10);
+  const parsedPeiwanId = /^\d+$/.test(keyword) ? Number(keyword) : Number.NaN;
+  const hasValidPeiwanId =
+    Number.isSafeInteger(parsedPeiwanId) && parsedPeiwanId >= 0 && parsedPeiwanId <= MAX_INT32;
   const orFilters = [
     { discordUserId: { contains: keyword, mode: 'insensitive' as const } },
     { serverDisplayName: { contains: keyword, mode: 'insensitive' as const } },
     { peiwan: { is: { serverDisplayName: { contains: keyword, mode: 'insensitive' as const } } } },
-    Number.isInteger(parsedPeiwanId) ? { peiwan: { is: { PEIWANID: parsedPeiwanId } } } : undefined,
+    hasValidPeiwanId ? { peiwan: { is: { PEIWANID: parsedPeiwanId } } } : undefined,
   ].filter(Boolean) as Array<Record<string, unknown>>;
 
   const rows = await prisma.member.findMany({
