@@ -127,6 +127,7 @@ export async function GET(request: Request) {
       username: discordUser.global_name ?? discordUser.username,
       discriminator: discordUser.discriminator && discordUser.discriminator !== '0' ? discordUser.discriminator : null,
       avatar: discordUser.avatar ?? null,
+      sessionVersion: jinleeUser.sessionVersion,
     });
 
     clearLoginRedirectCookie(response);

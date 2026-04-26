@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { BlacklistManager } from '@/components/profile/BlacklistManager';
 import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
 import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnouncementPreferenceToggle';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
@@ -152,6 +153,20 @@ export type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+type ProfileBlacklistEntry = {
+  blockedId: string;
+  createdAt: Date;
+  blocked: {
+    discordUserId: string;
+    serverDisplayName: string | null;
+    status: 'LAOBAN' | 'PEIWAN';
+    peiwan: {
+      PEIWANID: number;
+      serverDisplayName: string | null;
+    } | null;
+  };
+};
+
 const formatUtcDate = (value?: Date | string | null) => {
   if (!value) return '—';
   const date = value instanceof Date ? value : new Date(value);
@@ -285,6 +300,29 @@ export default async function Profile(props: ProfilePageProps) {
         take: 200,
       })
     : Promise.resolve([]);
+  const blacklistEntriesPromise: Promise<ProfileBlacklistEntry[]> = showPersonalisationTab && discordUserId
+    ? prisma.blacklist.findMany({
+        where: { blockerId: discordUserId },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          blockedId: true,
+          createdAt: true,
+          blocked: {
+            select: {
+              discordUserId: true,
+              serverDisplayName: true,
+              status: true,
+              peiwan: {
+                select: {
+                  PEIWANID: true,
+                  serverDisplayName: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    : Promise.resolve([]);
   type TransactionRecord = Awaited<typeof transactionsPromise>[number];
 
   const [
@@ -297,6 +335,7 @@ export default async function Profile(props: ProfilePageProps) {
     spendBuff,
     loyaltyPoint,
     peiwanReviews,
+    blacklistEntries,
   ] = await Promise.all([
     couponsPromise,
     totalTransactionsPromise,
@@ -307,7 +346,15 @@ export default async function Profile(props: ProfilePageProps) {
     spendBuffPromise,
     loyaltyPointPromise,
     peiwanReviewsPromise,
+    blacklistEntriesPromise,
   ]);
+  const blacklistItems = blacklistEntries.map((entry) => ({
+    discordUserId: entry.blockedId,
+    displayName: entry.blocked.peiwan?.serverDisplayName ?? entry.blocked.serverDisplayName ?? entry.blocked.discordUserId,
+    statusLabel: entry.blocked.status === 'PEIWAN' ? '陪玩' : '老板',
+    peiwanId: entry.blocked.peiwan?.PEIWANID ?? null,
+    createdAtLabel: formatUtcDate(entry.createdAt),
+  }));
   const autoCommissionActiveUntil = autoCommissionBuff?.activeUntil ?? null;
   const autoCommissionActive =
     isPeiwanMember &&
@@ -744,11 +791,12 @@ export default async function Profile(props: ProfilePageProps) {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">个性化</h2>
-                        <p className="text-sm text-gray-500">管理播报偏好与名片展示内容</p>
+                        <p className="text-sm text-gray-500">管理播报偏好、黑名单与名片展示内容</p>
                       </div>
                       <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PROFILE</span>
                     </div>
                     <VipAnnouncementPreferenceToggle enabled={vipAnnouncementBroadcastEnabled} />
+                    <BlacklistManager initialEntries={blacklistItems} />
                     {isPeiwanMember ? (
                       <div className="space-y-6 border-t border-dashed border-black/10 pt-6">
                         <div className="flex flex-wrap items-center justify-between gap-3">

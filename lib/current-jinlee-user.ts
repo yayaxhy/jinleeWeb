@@ -58,41 +58,46 @@ export const getCurrentJinleeUser = async (request?: Request): Promise<CurrentJi
       })
     : null;
 
-  const sessionMatchedJinleeUser =
-    jinleeUser && jinleeUser.discordUserId === webSession.discordId ? jinleeUser : null;
+  if (webSession.jinleeId && !jinleeUser) {
+    return null;
+  }
 
-  const ensured =
-    sessionMatchedJinleeUser ??
-    (await prisma.jinleeUser.upsert({
-      where: { discordUserId: webSession.discordId },
-      update: {
-        discordDisplayName: member?.serverDisplayName ?? webSession.username,
-        discordAvatarUrl: fallbackDiscordAvatar,
-        ...(member
-          ? {
-              totalBalance: member.totalBalance,
-              income: member.income,
-              recharge: member.recharge,
-              totalSpent: member.totalSpent,
-            }
-          : {}),
-      },
-      create: {
-        jinleeId: generateJinleeId(),
-        discordUserId: webSession.discordId,
-        discordDisplayName: member?.serverDisplayName ?? webSession.username,
-        discordAvatarUrl: fallbackDiscordAvatar,
-        ...(member
-          ? {
-              totalBalance: member.totalBalance,
-              income: member.income,
-              recharge: member.recharge,
-              totalSpent: member.totalSpent,
-            }
-          : {}),
-      },
-      include: jinleeUserWithMember,
-    }));
+  const walletMirrorPatch = member
+    ? {
+        totalBalance: member.totalBalance,
+        income: member.income,
+        recharge: member.recharge,
+        totalSpent: member.totalSpent,
+      }
+    : {};
+
+  const ensured = jinleeUser
+    ? await prisma.jinleeUser.update({
+        where: { jinleeId: jinleeUser.jinleeId },
+        data: {
+          discordUserId: webSession.discordId,
+          discordDisplayName: member?.serverDisplayName ?? webSession.username,
+          discordAvatarUrl: fallbackDiscordAvatar,
+          ...walletMirrorPatch,
+        },
+        include: jinleeUserWithMember,
+      })
+    : await prisma.jinleeUser.upsert({
+        where: { discordUserId: webSession.discordId },
+        update: {
+          discordDisplayName: member?.serverDisplayName ?? webSession.username,
+          discordAvatarUrl: fallbackDiscordAvatar,
+          ...walletMirrorPatch,
+        },
+        create: {
+          jinleeId: generateJinleeId(),
+          discordUserId: webSession.discordId,
+          discordDisplayName: member?.serverDisplayName ?? webSession.username,
+          discordAvatarUrl: fallbackDiscordAvatar,
+          ...walletMirrorPatch,
+        },
+        include: jinleeUserWithMember,
+      });
 
   return {
     sessionSource: 'web',

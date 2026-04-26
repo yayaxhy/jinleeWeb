@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { DISCORD_ID_PATTERN, isDiscordSnowflake } from '@/lib/discord-id';
 
 type Status = { type: 'success' | 'error'; text: string };
 
@@ -24,12 +25,19 @@ export function MigrateDiscordClient() {
     setIsSubmitting(true);
 
     try {
+      const normalizedOldId = oldId.trim();
+      const normalizedNewId = newId.trim();
+      if (!isDiscordSnowflake(normalizedOldId) || !isDiscordSnowflake(normalizedNewId)) {
+        setStatus({ type: 'error', text: '请输入 17-20 位纯数字 Discord 雪花 ID' });
+        return;
+      }
+
       const response = await fetch('/api/admin/migrate-discord', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          oldDiscordId: oldId.trim(),
-          newDiscordId: newId.trim(),
+          oldDiscordId: normalizedOldId,
+          newDiscordId: normalizedNewId,
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -65,6 +73,9 @@ export function MigrateDiscordClient() {
               type="text"
               value={oldId}
               onChange={(event) => setOldId(event.target.value)}
+              inputMode="numeric"
+              pattern={DISCORD_ID_PATTERN}
+              maxLength={20}
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
               placeholder="请输入旧账号 ID"
             />
@@ -75,11 +86,15 @@ export function MigrateDiscordClient() {
               type="text"
               value={newId}
               onChange={(event) => setNewId(event.target.value)}
+              inputMode="numeric"
+              pattern={DISCORD_ID_PATTERN}
+              maxLength={20}
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
               placeholder="请输入新账号 ID"
             />
           </label>
         </div>
+        <p className="text-xs text-white/50">仅支持 17-20 位纯数字 Discord 雪花 ID。</p>
 
         <button
           type="submit"

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { prisma } from '@/lib/prisma';
 import type { SessionSnapshot } from '@/types/session';
 
 export type AppSession = SessionSnapshot;
@@ -64,18 +65,44 @@ export const getServerSession = async (): Promise<AppSession | null> => {
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   const payload = decodeSessionToken(token);
   if (!payload) return null;
+  if (payload.jinleeId) {
+    const jinleeUser = await prisma.jinleeUser.findUnique({
+      where: { jinleeId: payload.jinleeId },
+      select: { jinleeId: true, discordUserId: true, sessionVersion: true },
+    });
+    if (!jinleeUser?.discordUserId) {
+      return null;
+    }
+
+    const tokenSessionVersion = payload.sessionVersion ?? 1;
+    if (tokenSessionVersion !== jinleeUser.sessionVersion) {
+      return null;
+    }
+
+    return {
+      jinleeId: jinleeUser.jinleeId,
+      discordId: jinleeUser.discordUserId,
+      username: payload.username,
+      discriminator: payload.discriminator ?? null,
+      avatar: payload.avatar ?? null,
+      sessionVersion: jinleeUser.sessionVersion,
+    };
+  }
+
   return {
     jinleeId: payload.jinleeId ?? null,
     discordId: payload.discordId,
     username: payload.username,
     discriminator: payload.discriminator ?? null,
     avatar: payload.avatar ?? null,
+    sessionVersion: payload.sessionVersion ?? null,
   };
 };
 
 export const attachSessionToResponse = (response: NextResponse, session: AppSession) => {
   const payload: SessionPayload = {
     ...session,
+    sessionVersion: session.sessionVersion ?? 1,
     issuedAt: Date.now(),
     expiresAt: Date.now() + SESSION_TTL_MS,
     version: 1,
@@ -167,6 +194,6 @@ export const normalizeRedirectTarget = (value?: string | null, fallback = '/prof
 
 export const summarizeSession = (session: AppSession | null) => {
   if (!session) return null;
-  const { jinleeId, discordId, username, discriminator, avatar } = session;
-  return { jinleeId: jinleeId ?? null, discordId, username, discriminator, avatar };
+  const { jinleeId, discordId, username, discriminator, avatar, sessionVersion } = session;
+  return { jinleeId: jinleeId ?? null, discordId, username, discriminator, avatar, sessionVersion: sessionVersion ?? null };
 };

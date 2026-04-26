@@ -4,5 +4,5 @@ export type SessionSnapshot = {
   username: string;
   discriminator?: string | null;
   avatar?: string | null;
+  sessionVersion?: number | null;
 };
-
