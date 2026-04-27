@@ -255,9 +255,6 @@ export default async function BagPage() {
                                       );
                                     }
                                     if (special?.kind === 'peiwan_review') {
-                                      if (item.source !== 'pointshop') {
-                                        return null;
-                                      }
                                       return (
                                         <PeiwanReviewVoucherButton
                                           prizeName={prizeName}

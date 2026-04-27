@@ -21,7 +21,6 @@ type VoucherSelectionParams = {
   prizeName: string;
   couponId?: string;
   lotteryId?: string;
-  requirePointShopOnly?: boolean;
   now: Date;
 };
 
@@ -100,34 +99,32 @@ async function callInternal(path: string, payload: Record<string, unknown>) {
 }
 
 async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<string | null> {
-  const { currentUser, prizeName, couponId = '', lotteryId = '', requirePointShopOnly = false, now } = params;
+  const { currentUser, prizeName, couponId = '', lotteryId = '', now } = params;
   const couponType = SPECIAL_ACTION_COUPON_TYPE_BY_PRIZE[prizeName];
 
   if (couponType) {
-    if (!requirePointShopOnly) {
-      const coupon = couponId
-        ? await prisma.coupon.findFirst({
-            where: {
-              id: couponId,
-              jinleeId: currentUser.jinleeId,
-              type: couponType,
-              status: CouponStatus.ACTIVE,
-              expiresAt: { gt: now },
-            },
-            select: { id: true },
-          })
-        : await prisma.coupon.findFirst({
-            where: {
-              jinleeId: currentUser.jinleeId,
-              type: couponType,
-              status: CouponStatus.ACTIVE,
-              expiresAt: { gt: now },
-            },
-            orderBy: [{ expiresAt: 'asc' }, { issuedAt: 'asc' }, { id: 'asc' }],
-            select: { id: true },
-          });
-      if (coupon) return coupon.id;
-    }
+    const coupon = couponId
+      ? await prisma.coupon.findFirst({
+          where: {
+            id: couponId,
+            jinleeId: currentUser.jinleeId,
+            type: couponType,
+            status: CouponStatus.ACTIVE,
+            expiresAt: { gt: now },
+          },
+          select: { id: true },
+        })
+      : await prisma.coupon.findFirst({
+          where: {
+            jinleeId: currentUser.jinleeId,
+            type: couponType,
+            status: CouponStatus.ACTIVE,
+            expiresAt: { gt: now },
+          },
+          orderBy: [{ expiresAt: 'asc' }, { issuedAt: 'asc' }, { id: 'asc' }],
+          select: { id: true },
+        });
+    if (coupon) return coupon.id;
 
     const pointShopGrant = couponId
       ? await prisma.pointShopGrant.findFirst({
@@ -210,7 +207,6 @@ export async function POST(request: Request) {
       prizeName,
       couponId,
       lotteryId,
-      requirePointShopOnly: special.kind === 'peiwan_review',
       now,
     });
     if (!voucherId) {
