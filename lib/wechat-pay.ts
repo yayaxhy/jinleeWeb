@@ -58,14 +58,40 @@ type WechatPayResource = {
 export class WechatPayApiError extends Error {
   readonly status: number;
   readonly body: string;
+  readonly code?: string;
+  readonly apiMessage?: string;
 
-  constructor(message: string, status: number, body: string) {
+  constructor(message: string, status: number, body: string, code?: string, apiMessage?: string) {
     super(message);
     this.name = 'WechatPayApiError';
     this.status = status;
     this.body = body;
+    this.code = code;
+    this.apiMessage = apiMessage;
   }
 }
+
+const ASTRAL_SYMBOL_REGEX = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g;
+const CONTROL_CHAR_REGEX = /[\u0000-\u001F\u007F-\u009F]/g;
+
+const sanitizeWechatPayText = (value: string, fallback: string) => {
+  const base = (value || '').trim() || fallback;
+  const cleaned = base.replace(ASTRAL_SYMBOL_REGEX, '').replace(CONTROL_CHAR_REGEX, '').trim();
+  return cleaned || fallback;
+};
+
+const truncateUtf8 = (value: string, maxBytes: number) => {
+  const buffer = Buffer.from(value, 'utf8');
+  if (buffer.length <= maxBytes) {
+    return value;
+  }
+
+  let truncated = buffer.subarray(0, maxBytes).toString('utf8');
+  while (Buffer.from(truncated, 'utf8').length > maxBytes) {
+    truncated = truncated.slice(0, -1);
+  }
+  return truncated.trim();
+};
 
 const resolveAbsoluteUrl = (raw: string | undefined, fallback: string) => {
   const base = process.env.SITE_ORIGIN ?? 'https://jinlee.vip';
@@ -222,10 +248,22 @@ const requestWechatPay = async <T>(
   });
 
   if (!response.ok) {
+    let apiCode: string | undefined;
+    let apiMessage: string | undefined;
+    try {
+      const parsed = parseJsonBody<{ code?: string; message?: string }>(responseBody);
+      apiCode = parsed.code;
+      apiMessage = parsed.message;
+    } catch {}
+
     throw new WechatPayApiError(
-      `Wechat Pay API request failed with status ${response.status}`,
+      apiCode || apiMessage
+        ? `Wechat Pay API request failed with status ${response.status}: ${apiCode ?? 'UNKNOWN'} ${apiMessage ?? ''}`.trim()
+        : `Wechat Pay API request failed with status ${response.status}`,
       response.status,
       responseBody,
+      apiCode,
+      apiMessage,
     );
   }
 
@@ -233,10 +271,11 @@ const requestWechatPay = async <T>(
 };
 
 export const buildWechatPayOrderDescription = (name?: string | null) => {
-  const base = (name ?? '').trim();
+  const base = sanitizeWechatPayText(name ?? '', '');
   const prefix = process.env.WECHAT_PAY_ORDER_DESCRIPTION_PREFIX ?? '锦鲤俱乐部账户充值';
-  const description = base ? `${prefix}-${base}` : prefix;
-  return description.slice(0, 127);
+  const safePrefix = sanitizeWechatPayText(prefix, '账户充值');
+  const description = base ? `${safePrefix}-${base}` : safePrefix;
+  return truncateUtf8(description, 127);
 };
 
 export const createNativeRechargeOrder = async (params: {

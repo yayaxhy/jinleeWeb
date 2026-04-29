@@ -83,7 +83,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const failureMessage =
       error instanceof WechatPayApiError
-        ? `微信支付下单失败（${error.status}）`
+        ? `微信支付下单失败（${error.status}${error.code ? ` ${error.code}` : ''}${error.apiMessage ? `：${error.apiMessage}` : ''}）`
         : error instanceof Error
           ? error.message
           : '微信支付下单失败';
