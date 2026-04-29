@@ -1,8 +1,6 @@
-import type { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import { prisma } from '@/lib/prisma';
-import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
 import { buildSignaturePayload, buildZPaySignature, requiredZPayConfig, verifyZPaySignature } from '@/lib/zpay';
+import { settleRechargeOrderPayment } from '@/lib/recharge-order';
 
 type PlainObject = Record<string, string>;
 
@@ -87,88 +85,40 @@ async function handleNotify(params: PlainObject) {
     return failResponse('invalid_status', { outTradeNo: params.out_trade_no, tradeStatus });
   }
 
-  const order = await prisma.zPayRechargeOrder.findUnique({
-    where: { outTradeNo: params.out_trade_no },
+  const settlement = await settleRechargeOrderPayment({
+    outTradeNo: params.out_trade_no,
+    amount: new Decimal(params.money).toDecimalPlaces(2),
+    gatewayTradeNo: params.trade_no ?? params.tradeNo ?? null,
+    notifyPayload: params,
+    payerReference: params.buyer ?? params.openid ?? params.trade_no ?? 'zpay_gateway',
+    transactionType: '网站充值',
   });
-  if (!order) {
+
+  if (settlement.kind === 'not_found') {
     return failResponse('order_not_found', { outTradeNo: params.out_trade_no });
   }
 
-  if (order.status === 'PAID') {
-    console.log('[zpay.notify] already_paid', { outTradeNo: order.outTradeNo });
-    return successResponse();
-  }
-  if (!order.jinleeId) {
-    return failResponse('missing_jinlee_id', { outTradeNo: params.out_trade_no });
-  }
-  const orderJinleeId = order.jinleeId;
-
-  const amountDecimal = new Decimal(params.money).toDecimalPlaces(2);
-  if (!order.amount.equals(amountDecimal)) {
+  if (settlement.kind === 'amount_mismatch') {
     return failResponse('amount_mismatch', {
       outTradeNo: params.out_trade_no,
-      expected: order.amount.toString(),
-      received: params.money,
+      expected: settlement.expected,
+      received: settlement.received,
     });
   }
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    await tx.zPayRechargeOrder.update({
-      where: { outTradeNo: order.outTradeNo },
-      data: {
-        status: 'PAID',
-        gatewayTradeNo: params.trade_no ?? params.tradeNo ?? null,
-        notifyPayload: params,
-        paidAt: new Date(),
-      },
+  if (settlement.kind === 'invalid_order') {
+    return failResponse('invalid_order', {
+      outTradeNo: params.out_trade_no,
+      reason: settlement.reason,
     });
+  }
 
-    if (order.discordUserId) {
-      await tx.member.upsert({
-        where: { discordUserId: order.discordUserId },
-        create: {
-          discordUserId: order.discordUserId,
-          recharge: 0,
-          totalBalance: 0,
-        },
-        update: {},
-      });
-    }
+  if (settlement.kind === 'already_paid') {
+    console.log('[zpay.notify] already_paid', { outTradeNo: params.out_trade_no });
+    return successResponse();
+  }
 
-    const walletBefore = await getJinleeWalletSnapshotTx(tx, {
-      jinleeId: orderJinleeId,
-      discordUserId: order.discordUserId ?? null,
-    });
-    const walletAfter = await applyJinleeWalletDeltaTx(tx, {
-      jinleeId: orderJinleeId,
-      discordUserId: order.discordUserId ?? null,
-      rechargeDelta: amountDecimal,
-      totalBalanceDelta: amountDecimal,
-    });
-
-    await tx.recharge.create({
-      data: {
-        amount: amountDecimal,
-        toWhom: order.discordUserId ?? null,
-        jinleeId: orderJinleeId,
-        fromWhom: params.buyer ?? params.openid ?? 'zpay_gateway',
-      },
-    });
-
-    await tx.individualTransaction.create({
-      data: {
-        discordId: order.discordUserId ?? null,
-        jinleeId: orderJinleeId,
-        thirdPartydiscordId: params.trade_no ?? 'zpay_gateway',
-        balanceBefore: new Decimal(walletBefore.totalBalance),
-        amountChange: amountDecimal,
-        balanceAfter: new Decimal(walletAfter.totalBalance),
-        typeOfTransaction: '网站充值',
-      },
-    });
-  });
-
-  console.log('[zpay.notify] success', { outTradeNo: order.outTradeNo });
+  console.log('[zpay.notify] success', { outTradeNo: params.out_trade_no });
   return successResponse();
 }
 

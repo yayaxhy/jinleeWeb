@@ -1,28 +1,12 @@
 "use client";
 
 import Image from 'next/image';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-
-const ROME_TIMEZONE = 'Europe/Rome';
-
-const PAYMENT_CHANNELS = [
-  {
-    id: 'alipay',
-    label: '支付宝',
-    description: '使用支付宝扫一扫完成支付，系统确认成功后自动加款。',
-    accent: 'from-[#bfdbfe] to-[#93c5fd]',
-  },
-  {
-    id: 'wxpay',
-    label: '微信支付',
-    description: '使用微信扫一扫完成支付，无需上传凭证，系统确认成功后自动加款。',
-    accent: 'from-[#bbf7d0] to-[#86efac]',
-  },
-] as const;
+import { useEffect, useState, type FormEvent } from 'react';
 
 const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
+const ROME_TIMEZONE = 'Europe/Rome';
 
-type RechargeClientProps = {
+type WechatNativePayClientProps = {
   username?: string | null;
 };
 
@@ -33,7 +17,6 @@ type CreatedOrder = {
   status: 'PENDING' | 'PAID';
   amount: string;
   channel: string;
-  displayMode?: 'qrcode' | 'redirect';
   paidAt?: string | null;
 };
 
@@ -49,18 +32,12 @@ const formatCurrency = (value?: string) => {
   return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(numeric);
 };
 
-export default function RechargeClient({ username }: RechargeClientProps) {
-  const [channel, setChannel] = useState<(typeof PAYMENT_CHANNELS)[number]['id']>('alipay');
+export default function WechatNativePayClient({ username }: WechatNativePayClientProps) {
   const [amount, setAmount] = useState<string>(String(AMOUNT_OPTIONS[0]));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [order, setOrder] = useState<CreatedOrder | null>(null);
-
-  const selectedChannel = useMemo(
-    () => PAYMENT_CHANNELS.find((item) => item.id === channel) ?? PAYMENT_CHANNELS[0],
-    [channel],
-  );
 
   useEffect(() => {
     if (!order || order.status === 'PAID') return;
@@ -76,7 +53,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
           setHint('系统已确认到账，刷新个人中心即可看到最新余额。');
         }
       } catch (pollError) {
-        console.error('[recharge] poll error', pollError);
+        console.error('[wechat.native.pay] poll error', pollError);
       }
     }, 4000);
     return () => clearInterval(timer);
@@ -88,10 +65,10 @@ export default function RechargeClient({ username }: RechargeClientProps) {
     setError(null);
     setHint(null);
     try {
-      const response = await fetch('/api/recharge/order', {
+      const response = await fetch('/api/wechat/pay/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: Number(amount), channel }),
+        body: JSON.stringify({ amount: Number(amount) }),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -104,13 +81,8 @@ export default function RechargeClient({ username }: RechargeClientProps) {
         status: 'PENDING',
         amount: payload.amount,
         channel: payload.channel,
-        displayMode: payload.displayMode ?? 'redirect',
       });
-      setHint(
-        payload.displayMode === 'qrcode'
-          ? '订单已创建，请使用微信扫一扫完成支付，系统会自动更新余额。'
-          : '订单已创建，请在 15 分钟内完成支付，系统会自动更新余额。',
-      );
+      setHint('订单已创建，请使用微信扫一扫完成支付，系统会自动更新余额。');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '创建订单失败';
       setError(message);
@@ -123,71 +95,35 @@ export default function RechargeClient({ username }: RechargeClientProps) {
     if (typeof window === 'undefined' || !order?.payUrl || !navigator?.clipboard) return;
     try {
       await navigator.clipboard.writeText(order.payUrl);
-      setHint('支付链接已复制，可在浏览器中打开继续支付。');
+      setHint('二维码链接已复制，可在其他设备中打开继续生成二维码。');
     } catch {
-      setError('无法复制链接，请手动打开支付页面。');
+      setError('无法复制链接，请手动重试。');
     }
   };
 
   return (
     <div className="grid gap-8 lg:grid-cols-[320px,1fr]">
       <div className="space-y-6">
-        <div className="rounded-[32px] border border-black/5 bg-white p-6 space-y-5">
+        <div className="space-y-6 rounded-[32px] border border-black/5 bg-white p-6">
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">选择支付方式</p>
-            <div className="flex flex-wrap gap-3">
-              {PAYMENT_CHANNELS.map((item) => {
-                const active = item.id === channel;
-                return (
-                  <button
-                    type="button"
-                    key={item.id}
-                    className={`flex-1 min-w-[140px] rounded-2xl border px-4 py-3 text-l transition ${
-                      active
-                        ? 'border-black text-black bg-black/10'
-                        : 'border-black/10 text-gray-500 hover:text-black hover:border-orange/50'
-                    }`}
-                    onClick={() => {
-                      setChannel(item.id);
-                      setHint(null);
-                      setError(null);
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">支付方式</p>
+            <div className="rounded-2xl border border-black/10 bg-black/5 px-4 py-3 text-sm">
+              微信 Native 扫码支付
             </div>
-            <p className="text-sm text-gray-500">{selectedChannel.description}</p>
+            <p className="text-sm text-gray-500">
+              该页面直接对接微信官方 Native 支付接口，生成的二维码由本站后端下单返回。
+            </p>
             <p className="text-xs text-gray-500">
-              转账备注建议填写当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
+              当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
             </p>
           </div>
 
-          {/* <div
-            className={`rounded-3xl border border-dashed border-black/15 bg-gradient-to-br ${selectedChannel.accent} p-6 text-center space-y-4`}
-          >
-            <p className="text-xl uppercase tracking-[0.4em] text-gray-600">扫码支付</p>
-            {order && qrImage ? (
-              <div className="mx-auto w-48 h-48 rounded-[30px] border border-black/10 bg-white/80 flex items-center justify-center p-3">
-                <img src={qrImage} alt="支付二维码" className="h-full w-full object-contain" />
-              </div>
-            ) : (
-              <div className="mx-auto h-48 w-48 rounded-[30px] border border-black/10 bg-white/70 flex items-center justify-center text-xs text-gray-400">
-                创建订单后会显示二维码
-              </div>
-            )}
-            <p className="text-xs text-gray-600">
-              转账备注建议填写 Discord ID：<span className="font-mono text-sm">{username ?? '未登录'}</span>
-            </p>
-          </div> */}
-
-          <div className="rounded-[24px] border border-black/5 bg-white p-5 space-y-3 text-left">
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">充值说明</p>
-            <ol className="space-y-2 text-sm text-gray-600 list-decimal list-inside">
-              <li>下方选择充值金额点击生成订单，系统会按支付方式生成二维码或支付链接。</li>
-              <li>使用支付宝或微信完成支付，无需上传凭证。</li>
-              <li>支付成功后，余额将自动增加。</li>
+          <div className="rounded-[24px] border border-black/5 bg-white p-5 text-left">
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">支付说明</p>
+            <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-gray-600">
+              <li>选择充值金额并创建订单。</li>
+              <li>使用微信扫一扫页面二维码完成支付。</li>
+              <li>支付成功后页面会自动更新到账状态。</li>
             </ol>
           </div>
         </div>
@@ -195,11 +131,11 @@ export default function RechargeClient({ username }: RechargeClientProps) {
 
       <form
         onSubmit={createOrder}
-        className="rounded-[32px] border border-black/5 bg-white p-8 space-y-6"
+        className="space-y-6 rounded-[32px] border border-black/5 bg-white p-8"
       >
         <div className="space-y-3">
           <label className="text-xs uppercase tracking-[0.4em] text-gray-500">充值金额 *</label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {AMOUNT_OPTIONS.map((value) => {
               const active = amount === String(value);
               return (
@@ -228,17 +164,17 @@ export default function RechargeClient({ username }: RechargeClientProps) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-black px-6 py-3 text-sm uppercase tracking-[0.4em] text-white hover:bg-black/80 transition disabled:opacity-60"
+          className="w-full rounded-full bg-black px-6 py-3 text-sm uppercase tracking-[0.4em] text-white transition hover:bg-black/80 disabled:opacity-60"
         >
-          {loading ? '创建订单中…' : '生成支付二维码'}
+          {loading ? '创建订单中…' : '生成微信二维码'}
         </button>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        {hint && <p className="text-sm text-emerald-600">{hint}</p>}
+        {error ? <p className="text-sm text-red-500">{error}</p> : null}
+        {hint ? <p className="text-sm text-emerald-600">{hint}</p> : null}
 
-        {order && (
+        {order ? (
           <div className="space-y-4 rounded-[24px] border border-black/5 bg-black/5 p-5">
-            {order.displayMode === 'qrcode' && order.qrCodeDataUrl ? (
+            {order.qrCodeDataUrl ? (
               <div className="space-y-3">
                 <p className="text-xs uppercase tracking-[0.4em] text-gray-500">微信扫码支付</p>
                 <div className="mx-auto w-56 rounded-[28px] border border-black/10 bg-white p-4">
@@ -256,6 +192,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
                 </p>
               </div>
             ) : null}
+
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">订单号</span>
               <span className="font-mono text-xs">{order.id}</span>
@@ -276,33 +213,19 @@ export default function RechargeClient({ username }: RechargeClientProps) {
                 {new Date(order.paidAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
               </p>
             ) : (
-              <p className="text-xs text-gray-500">
-                支付完成后请耐心等待 1-2 分钟，系统会自动确认。
-              </p>
+              <p className="text-xs text-gray-500">支付完成后请耐心等待 1-2 分钟，系统会自动确认。</p>
             )}
             <div className="flex flex-wrap gap-3 pt-2">
-              {order.displayMode !== 'qrcode' ? (
-                <a
-                  href={order.payUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex-1 rounded-full border border-black/20 px-4 py-2 text-xs uppercase tracking-[0.4em] text-center hover:bg-black/5 transition"
-                >
-                  打开支付页面
-                </a>
-              ) : null}
               <button
                 type="button"
                 onClick={copyLink}
-                className="flex-1 rounded-full border border-black/20 px-4 py-2 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition"
+                className="flex-1 rounded-full border border-black/20 px-4 py-2 text-xs uppercase tracking-[0.4em] transition hover:bg-black/5"
               >
-                {order.displayMode === 'qrcode' ? '复制二维码链接' : '复制链接'}
+                复制二维码链接
               </button>
             </div>
           </div>
-        )}
-
-       
+        ) : null}
       </form>
     </div>
   );

@@ -44,8 +44,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
-  const { merchantId, secret } = requiredZPayConfig();
-
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -69,19 +67,6 @@ export async function POST(request: Request) {
   const amountText = amountDecimal.toFixed(2);
 
   const outTradeNo = buildOutTradeNo(currentUser.jinleeId);
-  const notifyUrl = resolveAbsoluteUrl(process.env.ZPAY_NOTIFY_URL, '/api/payment/zpay/notify').toString();
-  const returnUrlObject = resolveAbsoluteUrl(process.env.ZPAY_RETURN_URL, '/recharge/result');
-  returnUrlObject.searchParams.set('order', outTradeNo);
-  const returnUrl = returnUrlObject.toString();
-
-  console.log('[zpay.order.create]', {
-    pid: merchantId,
-    type: requestedChannel,
-    notify_url: notifyUrl,
-    return_url: returnUrl,
-    out_trade_no: outTradeNo,
-    amount: amountText,
-  });
 
   await prisma.zPayRechargeOrder.create({
     data: {
@@ -98,6 +83,22 @@ export async function POST(request: Request) {
     currentUser.jinleeUser.member?.serverDisplayName ??
     currentUser.jinleeUser.wechatDisplayName ??
     currentUser.jinleeId;
+
+  const { merchantId, secret } = requiredZPayConfig();
+  const notifyUrl = resolveAbsoluteUrl(process.env.ZPAY_NOTIFY_URL, '/api/payment/zpay/notify').toString();
+  const returnUrlObject = resolveAbsoluteUrl(process.env.ZPAY_RETURN_URL, '/recharge/result');
+  returnUrlObject.searchParams.set('order', outTradeNo);
+  const returnUrl = returnUrlObject.toString();
+
+  console.log('[zpay.order.create]', {
+    pid: merchantId,
+    type: requestedChannel,
+    notify_url: notifyUrl,
+    return_url: returnUrl,
+    out_trade_no: outTradeNo,
+    amount: amountText,
+  });
+
   const orderTitle = sanitizeZPayText(
     `账户充值-${orderDisplayName}`,
     `账户充值-${currentUser.jinleeId}`,
@@ -130,5 +131,6 @@ export async function POST(request: Request) {
     channel: requestedChannel,
     amount: amountText,
     returnUrl,
+    displayMode: 'redirect',
   });
 }
