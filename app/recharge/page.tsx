@@ -25,12 +25,6 @@ export default async function RechargePage() {
           >
             返回个人中心
           </Link>
-          <Link
-            href="/wechat/pay"
-            className="rounded-full border border-black/10 px-5 py-2 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition"
-          >
-            微信 Native 支付
-          </Link>
           </div>
         <div className="flex flex-col items-center gap-4 text-center">
           
@@ -38,7 +32,7 @@ export default async function RechargePage() {
             
             <h1 className="text-3xl font-semibold tracking-wide">余额充值</h1>
             <p className="text-sm text-gray-500">
-              此页面继续使用原有 zpay 充值通道；如需微信官方 Native 扫码，请使用上方入口
+              网页支持支付宝与微信自动充值，如需外币或其他方式请联系客服
             </p>
           </div>
         </div>
