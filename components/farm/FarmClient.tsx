@@ -1036,7 +1036,7 @@ export function FarmClient({ initialDashboard }: Props) {
           <div className="pointer-events-none absolute inset-[8px] rounded-[10px] border-[2px] border-[#ffeeb7]/42" />
           <div className="pointer-events-none absolute -left-[8%] top-[16%] h-[62%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(130,41,28,0.18),_rgba(130,41,28,0.02)_68%,_transparent_74%)] blur-2xl" />
           <div className="pointer-events-none absolute -right-[8%] top-[18%] h-[60%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(220,181,92,0.2),_rgba(220,181,92,0.02)_68%,_transparent_74%)] blur-2xl" />
-          <Image src={FARM_SCENE_ASSETS.manorBase} alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+          <Image src={FARM_SCENE_ASSETS.manorBase} alt="庄园底图" fill priority unoptimized className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(127,20,17,0.38),_rgba(127,20,17,0.06),_transparent)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[44%] bg-[radial-gradient(circle_at_50%_8%,_rgba(255,248,224,0.88),_rgba(255,248,224,0.12)_46%,_transparent_62%)]" />
           <div className="pointer-events-none absolute inset-x-[12%] bottom-[5%] h-[26%] rounded-[50%] bg-[radial-gradient(circle,_rgba(245,223,159,0.14),_rgba(245,223,159,0.01)_72%,_transparent_76%)]" />

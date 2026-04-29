@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   distDir: '.next',
   images: {
+    localPatterns: [
+      {
+        pathname: '/farm/**',
+      },
+    ],
     remotePatterns: [
       {
         protocol: 'https',
