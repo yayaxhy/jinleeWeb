@@ -1,0 +1,6 @@
+[
+  {
+    "type": "console.error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:3000/_next/webpack-hmr?id=a4F-VIRNjF8KtMeb1Rd_v' failed: Error during WebSocket handshake: net::ERR_INVALID_HTTP_RESPONSE"
+  }
+]

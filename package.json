@@ -12,13 +12,7 @@
         "farm:generate:all-crops": "node scripts/generate-farm-asset.mjs --all-crops",
         "farm:generate:field-overlays": "node scripts/generate-field-overlays.mjs",
         "farm:derive-plots": "node scripts/derive-plot-states.mjs",
-        "farm:normalize-crops": "node scripts/normalize-farm-crops.mjs",
-        "farm:rasterize-pixel-assets": "node scripts/rasterize-farm-pixel-assets.mjs",
-        "farm:generate-pixel-field-tiles": "node scripts/generate-pixel-field-tiles.mjs",
-        "farm:generate-front-scene-assets": "node scripts/generate-pixel-front-scene-assets.mjs",
-        "farm:generate-pixel-crops": "node scripts/generate-pixel-crop-sprites.mjs",
-        "farm:generate-pixel-scene-fx": "node scripts/generate-pixel-scene-fx.mjs",
-        "farm:generate:prototype-assets": "npm run farm:generate-front-scene-assets && npm run farm:generate-pixel-field-tiles && npm run farm:generate-pixel-crops && npm run farm:generate-pixel-scene-fx"
+        "farm:normalize-crops": "node scripts/normalize-farm-crops.mjs"
     },
     "dependencies": {
         "@prisma/client": "^6.19.2",

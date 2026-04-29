@@ -2,13 +2,21 @@ export const BALANCE_TO_COINS_RATE = 100;
 export const POINTS_TO_COINS_RATE = 10;
 export const COINS_TO_POINTS_RATE = 0.01;
 export const INITIAL_PLOTS = 4;
-export const MAX_PLOTS = 8;
+export const MAX_PLOTS = 16;
 
 export const PLOT_UNLOCK_COSTS: Record<number, number> = {
   5: 3000,
   6: 6000,
-  7: 12000,
-  8: 24000,
+  7: 9000,
+  8: 12000,
+  9: 15000,
+  10: 18000,
+  11: 22000,
+  12: 26000,
+  13: 30000,
+  14: 34000,
+  15: 38000,
+  16: 42000,
 };
 
 export const FARM_SEED_ORDER = ['WHEAT', 'ROSE', 'KOI_FLOWER', 'MYSTERY_FRUIT'] as const;

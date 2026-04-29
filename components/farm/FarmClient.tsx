@@ -5,6 +5,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MAX_PLOTS, getFarmSeedDurationLabel, type FarmSeedTypeValue } from '@/lib/farmConfig';
 import { FARM_CROP_ASSETS, FARM_SCENE_ASSETS } from '@/lib/farmArt';
+import {
+  SCENE_BASE_WIDTH,
+  SCENE_BASE_HEIGHT,
+  FIELD_GUIDE_CORNERS as FIELD_GUIDE_CORNERS_DATA,
+  FIELD_GUIDE_ROWS as FIELD_GUIDE_ROWS_DATA,
+  FIELD_GUIDE_COLS as FIELD_GUIDE_COLS_DATA,
+  buildCellCenter as buildCellCenterData,
+  buildCellPolygon as buildCellPolygonData,
+} from '@/lib/farmFieldGeometry';
 import type { FarmCompanionEntry, FarmCompanionLists, FarmDashboard } from '@/lib/farm';
 
 const actionLabelMap: Record<string, string> = {
@@ -82,17 +91,118 @@ type PlotCard = {
   highlight: 'locked' | 'idle' | 'growing' | 'ready';
 };
 
-const plotScenePositions: Record<number, { left: string; top: string; depth: number }> = {
-  // 4x2 proportional lattice fitted to the terrace parallelogram.
-  1: { left: '668px', top: '438px', depth: 10 },
-  2: { left: '766px', top: '458px', depth: 11 },
-  3: { left: '864px', top: '478px', depth: 12 },
-  4: { left: '962px', top: '498px', depth: 13 },
-  5: { left: '612px', top: '492px', depth: 20 },
-  6: { left: '710px', top: '512px', depth: 21 },
-  7: { left: '808px', top: '532px', depth: 22 },
-  8: { left: '906px', top: '552px', depth: 23 },
+type SceneDebugPoint = {
+  sceneX: number;
+  sceneY: number;
+  overlayX: number | null;
+  overlayY: number | null;
 };
+
+type ScenePoint = readonly [number, number];
+type GuideLine = {
+  from: ScenePoint;
+  to: ScenePoint;
+  boundary: boolean;
+};
+
+const FIELD_GUIDE_BOX = {
+  left: 0,
+  top: 0,
+  width: SCENE_BASE_WIDTH,
+  height: SCENE_BASE_HEIGHT,
+};
+
+const FIELD_GUIDE_CORNERS = FIELD_GUIDE_CORNERS_DATA as unknown as {
+  top: ScenePoint;
+  right: ScenePoint;
+  bottom: ScenePoint;
+  left: ScenePoint;
+};
+
+const FIELD_GUIDE_ROWS = FIELD_GUIDE_ROWS_DATA as unknown as GuideLine[];
+const FIELD_GUIDE_COLS = FIELD_GUIDE_COLS_DATA as unknown as GuideLine[];
+
+const buildCellCenter = (row: number, col: number): ScenePoint =>
+  buildCellCenterData(row, col) as unknown as ScenePoint;
+
+const buildCellPolygon = (row: number, col: number): ScenePoint[] =>
+  buildCellPolygonData(row, col) as unknown as ScenePoint[];
+
+const toSvgPoints = (points: ScenePoint[]) => points.map(([x, y]) => `${x},${y}`).join(' ');
+
+const lerpScenePoint = (from: ScenePoint, to: ScenePoint, t: number): ScenePoint =>
+  [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+
+const pointAlongScene = (from: ScenePoint, to: ScenePoint, distance: number): ScenePoint => {
+  const dx = to[0] - from[0];
+  const dy = to[1] - from[1];
+  const length = Math.hypot(dx, dy) || 1;
+  const t = Math.min(distance / length, 0.45);
+  return [from[0] + dx * t, from[1] + dy * t];
+};
+
+const centroidOfPoints = (points: ScenePoint[]): ScenePoint => {
+  const total = points.reduce(
+    (acc, [x, y]) => [acc[0] + x, acc[1] + y] as [number, number],
+    [0, 0],
+  );
+  return [total[0] / points.length, total[1] / points.length];
+};
+
+const insetPolygon = (points: ScenePoint[], factor: number): ScenePoint[] => {
+  const center = centroidOfPoints(points);
+  return points.map(([x, y]) => [
+    center[0] + (x - center[0]) * factor,
+    center[1] + (y - center[1]) * factor,
+  ] as ScenePoint);
+};
+
+const roundedQuadPath = (points: ScenePoint[], radius: number) => {
+  const total = points.length;
+  const enter = points.map((curr, index) => {
+    const prev = points[(index - 1 + total) % total] as ScenePoint;
+    return pointAlongScene(curr, prev, radius);
+  });
+  const leave = points.map((curr, index) => {
+    const next = points[(index + 1) % total] as ScenePoint;
+    return pointAlongScene(curr, next, radius);
+  });
+
+  const segments = [`M ${leave[0][0]} ${leave[0][1]}`];
+  for (let index = 1; index < total; index += 1) {
+    segments.push(`L ${enter[index][0]} ${enter[index][1]}`);
+    segments.push(`Q ${points[index][0]} ${points[index][1]} ${leave[index][0]} ${leave[index][1]}`);
+  }
+  segments.push(`L ${enter[0][0]} ${enter[0][1]}`);
+  segments.push(`Q ${points[0][0]} ${points[0][1]} ${leave[0][0]} ${leave[0][1]}`);
+  segments.push('Z');
+  return segments.join(' ');
+};
+
+const plotScenePositions = Object.fromEntries(
+  Array.from({ length: MAX_PLOTS }, (_, index) => {
+    const row = Math.floor(index / 4);
+    const col = index % 4;
+    const [x, y] = buildCellCenter(row, col);
+    return [
+      index + 1,
+      {
+        left: `${x}px`,
+        top: `${y}px`,
+        depth: (row + 1) * 10 + col,
+      },
+    ];
+  }),
+) as Record<number, { left: string; top: string; depth: number }>;
+
+const FIELD_OUTER_POINTS: ScenePoint[] = [
+  FIELD_GUIDE_CORNERS.top,
+  FIELD_GUIDE_CORNERS.right,
+  FIELD_GUIDE_CORNERS.bottom,
+  FIELD_GUIDE_CORNERS.left,
+];
+
+const FIELD_OUTER_PATH = roundedQuadPath(FIELD_OUTER_POINTS, 26);
 
 const drawerMeta: Record<Exclude<DrawerKey, 'none'>, { icon: string; label: string }> = {
   seeds: { icon: '🌱', label: '种子袋' },
@@ -108,8 +218,24 @@ const stageLabelMap = {
 } as const;
 
 const seedPageSize = 2;
-const SCENE_BASE_WIDTH = 1536;
-const SCENE_BASE_HEIGHT = 1024;
+
+function toSceneDebugPoint(clientX: number, clientY: number, rect: DOMRect): SceneDebugPoint {
+  const sceneX = ((clientX - rect.left) / rect.width) * SCENE_BASE_WIDTH;
+  const sceneY = ((clientY - rect.top) / rect.height) * SCENE_BASE_HEIGHT;
+
+  const insideOverlay =
+    sceneX >= FIELD_GUIDE_BOX.left &&
+    sceneX <= FIELD_GUIDE_BOX.left + FIELD_GUIDE_BOX.width &&
+    sceneY >= FIELD_GUIDE_BOX.top &&
+    sceneY <= FIELD_GUIDE_BOX.top + FIELD_GUIDE_BOX.height;
+
+  return {
+    sceneX,
+    sceneY,
+    overlayX: insideOverlay ? sceneX - FIELD_GUIDE_BOX.left : null,
+    overlayY: insideOverlay ? sceneY - FIELD_GUIDE_BOX.top : null,
+  };
+}
 
 function getSeedRarity(seed: FarmDashboard['seeds'][number]) {
   switch (seed.code) {
@@ -146,7 +272,7 @@ function getSeedRarity(seed: FarmDashboard['seeds'][number]) {
 
 function getPlotAsset(entry: PlotCard) {
   if (!entry.unlocked) {
-    return { asset: FARM_SCENE_ASSETS.plotLocked, className: 'scale-[0.78] opacity-82 drop-shadow-[0_4px_6px_rgba(59,37,12,0.12)]' };
+    return { asset: FARM_SCENE_ASSETS.plotLocked, className: 'scale-[0.72] opacity-42 grayscale-[0.18] drop-shadow-[0_2px_4px_rgba(59,37,12,0.08)]' };
   }
   if (!entry.plot || entry.status === 'EMPTY' || !entry.plot.seedType) {
     return { asset: null, className: '' };
@@ -163,55 +289,111 @@ function getPlotAsset(entry: PlotCard) {
   return { asset, className };
 }
 
-function getPlotSurfaceTone(entry: PlotCard) {
+function getPlotBaseAsset(entry: PlotCard) {
   if (!entry.unlocked) {
     return {
-      fill: 'from-[rgba(119,94,56,0.32)] to-[rgba(96,72,39,0.22)]',
-      border: 'border-[rgba(135,111,75,0.3)]',
-      furrow: 'bg-[rgba(90,71,42,0.18)]',
+      asset: FARM_SCENE_ASSETS.plotLocked,
+      className: 'object-contain opacity-48 grayscale-[0.2] saturate-[0.72]',
     };
   }
-  if (!entry.plot || entry.status === 'EMPTY' || !entry.plot.seedType) {
-    return {
-      fill: 'from-[rgba(141,100,39,0.2)] to-[rgba(112,79,30,0.12)]',
-      border: 'border-[rgba(136,99,44,0.24)]',
-      furrow: 'bg-[rgba(104,75,33,0.12)]',
-    };
-  }
-  if (entry.status === 'READY') {
-    return {
-      fill: 'from-[rgba(118,78,26,0.32)] to-[rgba(90,60,20,0.2)]',
-      border: 'border-[rgba(157,117,49,0.34)]',
-      furrow: 'bg-[rgba(92,60,20,0.22)]',
-    };
-  }
+
   return {
-    fill: 'from-[rgba(124,84,31,0.28)] to-[rgba(94,65,24,0.16)]',
-    border: 'border-[rgba(146,106,42,0.28)]',
-    furrow: 'bg-[rgba(93,64,25,0.18)]',
+    asset: FARM_SCENE_ASSETS.plotEmpty,
+    className:
+      entry.status === 'READY'
+        ? 'object-contain opacity-[0.96] saturate-[1.02] brightness-[1.02]'
+        : entry.status === 'GROWING'
+          ? 'object-contain opacity-[0.94] saturate-[0.98]'
+          : 'object-contain opacity-[0.9] saturate-[0.92]',
   };
 }
 
-function ToolButton({ icon, label, active, onClick, muted = false }: { icon: string; label: string; active: boolean; onClick: () => void; muted?: boolean }) {
+function ToolButton({
+  icon,
+  label,
+  active,
+  onClick,
+  muted = false,
+  compact = false,
+}: {
+  icon: string;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  muted?: boolean;
+  compact?: boolean;
+}) {
   return (
     <button
       type="button"
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={`group relative flex h-16 w-16 items-center justify-center rounded-[26px] border transition ${
+      className={`group relative flex flex-col items-center justify-center gap-1 rounded-[10px] border-[3px] transition ${
         active
-          ? 'border-[#f4d17a] bg-[linear-gradient(180deg,_#a66d28,_#6a3b12)] text-white shadow-[0_18px_28px_rgba(53,30,9,0.3)]'
+          ? 'border-[#7a3e14] bg-[#ffd46a] text-[#5f2f0d] shadow-[0_4px_0_#b36e19,0_14px_24px_rgba(76,51,17,0.2)]'
           : muted
-            ? 'border-[#f0d7a0]/18 bg-[linear-gradient(180deg,_rgba(113,69,30,0.58),_rgba(59,34,13,0.62))] text-[#efd7ad]/70 opacity-70'
-            : 'border-[#f0d7a0]/35 bg-[linear-gradient(180deg,_rgba(176,117,51,0.92),_rgba(94,53,18,0.94))] text-[#fff1d0] hover:border-[#f0ca72]/7 hover:brightness-105'
-      }`}
+            ? 'border-[#bea37a]/35 bg-[#f3e0b0] text-[#ab8b50] opacity-70'
+            : 'border-[#7a4f1c] bg-[#fff1c7] text-[#6a4315] shadow-[0_4px_0_#c58e3a,0_12px_20px_rgba(76,51,17,0.14)] hover:-translate-y-0.5 hover:brightness-105'
+      } ${compact ? 'h-[74px] w-[74px] px-2 py-2' : 'h-[86px] w-[90px] px-2 py-3'}`}
     >
-      <span className="absolute inset-[5px] rounded-[20px] border border-[#f9e5b6]/25" />
-      <span className="text-[28px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.22)]">{icon}</span>
-      <span className="pointer-events-none absolute right-[calc(100%+12px)] top-1/2 hidden -translate-y-1/2 whitespace-nowrap rounded-full border border-[#e5cb8d]/45 bg-[#2f1908]/92 px-3 py-1 text-xs tracking-[0.18em] text-[#ffe3a5] shadow-[0_10px_20px_rgba(19,10,2,0.25)] lg:group-hover:block">
+      <span className="absolute inset-[5px] rounded-[6px] border border-[#fff7db]/70" />
+      <span className={`flex items-center justify-center rounded-[8px] border-[2px] border-[#8a5818] bg-[#fff8df] shadow-[inset_0_2px_0_rgba(255,255,255,0.75)] ${compact ? 'h-10 w-10 text-[22px]' : 'h-11 w-11 text-[24px]'}`}>
+        {icon}
+      </span>
+      <span className={`pointer-events-none font-black tracking-[0.08em] ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
         {label}
       </span>
+      <span className="pointer-events-none absolute bottom-1 left-1/2 hidden h-[4px] w-8 -translate-x-1/2 rounded-[2px] bg-[#cb8a24] group-hover:block" />
+    </button>
+  );
+}
+
+function MetricChip({ label, value, icon }: { label: string; value: string; icon: string }) {
+  return (
+    <div className="relative rounded-[8px] border-[3px] border-[#7b4a14] bg-[#fff1c4] px-3 py-2 text-[#59340d] shadow-[0_4px_0_#a66d22,0_10px_18px_rgba(80,46,11,0.14)]">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[9px] uppercase tracking-[0.18em] text-[#a77c1c]">{label}</p>
+          <p className="mt-1 text-base font-black tracking-[0.02em]">{value}</p>
+        </div>
+        <span className="flex h-8 w-8 items-center justify-center rounded-[8px] border-[2px] border-[#8b5b1f] bg-[#fff8dd] text-base shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+          {icon}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function TopStripButton({
+  icon,
+  label,
+  active,
+  onClick,
+  muted = false,
+}: {
+  icon: string;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  muted?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group flex w-[88px] flex-col items-center gap-1 rounded-[10px] border-[3px] px-2 py-2 transition ${
+        active
+          ? 'border-[#7a3f15] bg-[#ffd86d] shadow-[0_4px_0_#b87521,0_14px_24px_rgba(105,74,22,0.16)]'
+          : muted
+            ? 'border-[#d3bb8a]/35 bg-[#f0e1bc] opacity-45'
+            : 'border-[#7a4f1c] bg-[#fff3d0] shadow-[0_4px_0_#cca15d,0_12px_18px_rgba(105,74,22,0.12)] hover:-translate-y-0.5'
+      }`}
+    >
+      <span className={`flex h-14 w-14 items-center justify-center rounded-[8px] border-[2px] ${active ? 'border-[#8a5616] bg-[#fff6d7]' : 'border-[#9c6c25] bg-[#fff8df]'} text-[26px] shadow-[inset_0_2px_0_rgba(255,255,255,0.75)]`}>
+        {icon}
+      </span>
+      <span className="text-[11px] font-black tracking-[0.06em] text-[#6f4b18]">{label}</span>
     </button>
   );
 }
@@ -220,33 +402,16 @@ function OverlayDrawer({ title, open, onClose, children }: { title: string; open
   return (
     <div className={`fixed inset-0 z-50 transition ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}>
       <div className={`absolute inset-0 bg-[#1d0f03]/55 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
-      <aside className={`absolute inset-y-0 right-0 flex w-full max-w-[460px] flex-col border-l border-[#d6bc84]/40 bg-[linear-gradient(180deg,_rgba(255,249,232,0.98),_rgba(246,228,186,0.98))] shadow-[0_24px_60px_rgba(32,18,6,0.26)] transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="flex items-center justify-between border-b border-[#d6bc84]/35 px-5 py-4">
+      <aside className={`absolute inset-y-0 right-0 flex w-full max-w-[460px] flex-col border-l-[4px] border-[#714615] bg-[#f8efcf] shadow-[0_0_0_4px_rgba(255,241,194,0.45)_inset,0_24px_60px_rgba(32,18,6,0.26)] transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex items-center justify-between border-b-[4px] border-[#d0a25e] bg-[#f5ddab] px-5 py-4">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.32em] text-[#a17615]">Koi Manor</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-[0.05em] text-[#35210a]">{title}</h2>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[#a17615]">Koi Manor</p>
+            <h2 className="mt-1 text-2xl font-black tracking-[0.03em] text-[#35210a]">{title}</h2>
           </div>
-          <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d8bc83]/45 bg-white/55 text-xl text-[#734d17] transition hover:bg-white/75">×</button>
+          <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-[8px] border-[3px] border-[#7a4c18] bg-[#fff5d7] text-xl text-[#734d17] shadow-[0_3px_0_#c18b39] transition hover:brightness-105">×</button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
       </aside>
-    </div>
-  );
-}
-
-function MetricChip({ label, value, icon }: { label: string; value: string; icon: string }) {
-  return (
-    <div className="relative rounded-[22px] border border-[#f3d59b]/28 bg-[linear-gradient(180deg,_rgba(141,88,33,0.9),_rgba(78,44,15,0.9))] px-4 py-3 text-[#fff5dc] shadow-[0_12px_22px_rgba(0,0,0,0.16)] backdrop-blur-sm">
-      <div className="pointer-events-none absolute inset-[3px] hidden rounded-[18px] border border-[#f8e7be]/12 lg:block" />
-      <div className="relative flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[#f2d797]">{label}</p>
-          <p className="mt-1 text-lg font-semibold tracking-[0.03em]">{value}</p>
-        </div>
-        <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f7ddb0]/28 bg-[linear-gradient(180deg,_rgba(255,246,221,0.22),_rgba(255,214,120,0.12))] text-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]">
-          {icon}
-        </span>
-      </div>
     </div>
   );
 }
@@ -279,6 +444,32 @@ export function FarmClient({ initialDashboard }: Props) {
   const [frequentVisitSort, setFrequentVisitSort] = useState<FrequentVisitSort>('count');
   const [seedPage, setSeedPage] = useState(0);
   const [sceneScale, setSceneScale] = useState(1);
+  const [bagDrawerOpen, setBagDrawerOpen] = useState(false);
+  const [bottomDockOpen, setBottomDockOpen] = useState(false);
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [hoverDebugPoint, setHoverDebugPoint] = useState<SceneDebugPoint | null>(null);
+  const [lockedDebugPoint, setLockedDebugPoint] = useState<SceneDebugPoint | null>(null);
+  const [debugCopied, setDebugCopied] = useState<string | null>(null);
+
+  const toggleBottomDock = () => {
+    setBottomDockOpen((current) => {
+      const next = !current;
+      if (!next) {
+        setBagDrawerOpen(false);
+      }
+      return next;
+    });
+  };
+
+  const toggleSeedTray = () => {
+    if (isVisiting) return;
+    if (!bottomDockOpen) {
+      setBottomDockOpen(true);
+      setBagDrawerOpen(true);
+      return;
+    }
+    setBagDrawerOpen((current) => !current);
+  };
 
   const isVisiting = viewDashboard.owner.discordUserId !== homeDashboard.owner.discordUserId;
   const currentSeed = homeDashboard.seeds.find((seed) => seed.code === selectedSeed) ?? null;
@@ -300,15 +491,31 @@ export function FarmClient({ initialDashboard }: Props) {
 
   useEffect(() => {
     const syncSceneScale = () => {
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const scale = Math.min(viewportWidth / SCENE_BASE_WIDTH, viewportHeight / SCENE_BASE_HEIGHT);
-      setSceneScale(scale);
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const horizontalPadding = 40;
+      const verticalPadding = 40;
+      const scale = Math.min(
+        (viewportWidth - horizontalPadding) / SCENE_BASE_WIDTH,
+        (viewportHeight - verticalPadding) / SCENE_BASE_HEIGHT,
+      );
+      setSceneScale(Math.max(0.35, scale));
     };
 
     syncSceneScale();
     window.addEventListener('resize', syncSceneScale);
-    return () => window.removeEventListener('resize', syncSceneScale);
+    window.visualViewport?.addEventListener('resize', syncSceneScale);
+    return () => {
+      window.removeEventListener('resize', syncSceneScale);
+      window.visualViewport?.removeEventListener('resize', syncSceneScale);
+    };
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('debug') === 'coords') {
+      setDebugEnabled(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -325,6 +532,18 @@ export function FarmClient({ initialDashboard }: Props) {
       setActiveDrawer('none');
     }
   }, [activeDrawer, isVisiting]);
+
+  useEffect(() => {
+    if (!bottomDockOpen && bagDrawerOpen) {
+      setBagDrawerOpen(false);
+    }
+  }, [bottomDockOpen, bagDrawerOpen]);
+
+  useEffect(() => {
+    if (isVisiting) {
+      setBagDrawerOpen(false);
+    }
+  }, [isVisiting]);
 
   useEffect(() => {
     if (!friendModalOpen) return;
@@ -426,10 +645,41 @@ export function FarmClient({ initialDashboard }: Props) {
   }, [plotsByIndex, viewDashboard.seeds, viewDashboard.owner.isSelf, currentSeed, homeDashboard.summary.nextPlotCost]);
 
   const activePlot = plotCards.find((entry) => entry.plotIndex === activePlotIndex) ?? null;
+  const plotPolygons = useMemo(
+    () =>
+      plotCards.map((entry) => {
+        const row = Math.floor((entry.plotIndex - 1) / 4);
+        const col = (entry.plotIndex - 1) % 4;
+        return {
+          plotIndex: entry.plotIndex,
+          points: buildCellPolygon(row, col),
+          unlocked: entry.unlocked,
+          status: entry.status,
+          active: activePlotIndex === entry.plotIndex,
+          hover: hoveredPlotIndex === entry.plotIndex,
+        };
+      }),
+    [plotCards, activePlotIndex, hoveredPlotIndex],
+  );
   const activePlotPreview = activePlot ? getPlotAsset(activePlot) : null;
+  const activePlotBase = activePlot ? getPlotBaseAsset(activePlot) : null;
+  const activeDebugPoint = lockedDebugPoint ?? hoverDebugPoint;
   const nextLevelProgress = homeDashboard.summary.nextLevelExperience && homeDashboard.summary.nextLevelExperience > 0
     ? Math.min(100, (homeDashboard.summary.experience / homeDashboard.summary.nextLevelExperience) * 100)
     : 100;
+
+  const copyDebugPoint = async () => {
+    if (!activeDebugPoint || typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return;
+    const payload = [
+      `sceneX=${activeDebugPoint.sceneX.toFixed(1)}`,
+      `sceneY=${activeDebugPoint.sceneY.toFixed(1)}`,
+      activeDebugPoint.overlayX != null ? `overlayX=${activeDebugPoint.overlayX.toFixed(1)}` : 'overlayX=outside',
+      activeDebugPoint.overlayY != null ? `overlayY=${activeDebugPoint.overlayY.toFixed(1)}` : 'overlayY=outside',
+    ].join(', ');
+    await navigator.clipboard.writeText(payload);
+    setDebugCopied('坐标已复制');
+    window.setTimeout(() => setDebugCopied(null), 1200);
+  };
   const pushFloatingReward = (text: string, variant: FloatingReward['variant']) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setFloatingRewards((current) => [...current, { id, text, variant }]);
@@ -666,6 +916,25 @@ export function FarmClient({ initialDashboard }: Props) {
 
   const drawerTitle = activeDrawer === 'none' ? '' : drawerMeta[activeDrawer].label;
 
+  const handleScenePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    if (!debugEnabled) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    setHoverDebugPoint(toSceneDebugPoint(event.clientX, event.clientY, rect));
+  };
+
+  const handleScenePointerLeave = () => {
+    if (!debugEnabled) return;
+    setHoverDebugPoint(null);
+  };
+
+  const handleSceneClickCapture = (event: React.MouseEvent<HTMLElement>) => {
+    if (!debugEnabled || !event.shiftKey) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    setLockedDebugPoint(toSceneDebugPoint(event.clientX, event.clientY, rect));
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#fff9e4,_#f4e6bf_28%,_#a9bf7f_74%,_#7f8d52_100%)] text-[#2f1d09]">
       <style jsx global>{`
@@ -742,7 +1011,7 @@ export function FarmClient({ initialDashboard }: Props) {
         }
       `}</style>
 
-      <div className="relative h-dvh w-screen overflow-hidden bg-[linear-gradient(180deg,_#f3dec2_0%,_#e6cda4_18%,_#97b18a_52%,_#5f7045_100%)]">
+      <div className="relative h-dvh w-screen overflow-hidden bg-[linear-gradient(180deg,_#f3e0b8_0%,_#d6c17f_18%,_#91b957_54%,_#6f9137_100%)]">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute inset-x-0 top-0 h-[34%] bg-[radial-gradient(circle_at_50%_12%,_rgba(255,248,228,0.96),_rgba(255,248,228,0.16)_48%,_transparent_70%)]" />
           <div className="absolute left-[-8%] top-[10%] h-[46%] w-[28%] rounded-[50%] bg-[radial-gradient(circle,_rgba(143,52,34,0.2),_rgba(143,52,34,0.02)_68%,_transparent_74%)] blur-3xl" />
@@ -752,25 +1021,25 @@ export function FarmClient({ initialDashboard }: Props) {
           <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(61,27,12,0.06),_transparent_22%,_transparent_78%,_rgba(37,19,8,0.18))]" />
         </div>
         <section
-          className="absolute left-1/2 top-1/2 overflow-hidden rounded-[44px] border border-[#f2d492]/70 bg-[linear-gradient(180deg,_#f4dfd1_0%,_#eed0b6_20%,_#8aa15d_48%,_#66773d_100%)] shadow-[0_30px_80px_rgba(55,23,11,0.28)]"
+          id="farm-scene"
+          className="absolute left-1/2 top-1/2 overflow-hidden rounded-[18px] border-[5px] border-[#7b4f1c] bg-[#d7c078] shadow-[0_0_0_6px_rgba(255,241,190,0.38)_inset,0_30px_80px_rgba(55,23,11,0.28)]"
           style={{
             width: `${SCENE_BASE_WIDTH}px`,
             height: `${SCENE_BASE_HEIGHT}px`,
             transform: `translate(-50%, -50%) scale(${sceneScale})`,
             transformOrigin: 'center center',
           }}
+          onPointerMove={handleScenePointerMove}
+          onPointerLeave={handleScenePointerLeave}
+          onClickCapture={handleSceneClickCapture}
         >
-          <div className="pointer-events-none absolute inset-[-18px] rounded-[56px] border border-[#fff0c7]/26" />
-          <div className="pointer-events-none absolute inset-[10px] rounded-[34px] border border-[#fff1c5]/22" />
+          <div className="pointer-events-none absolute inset-[8px] rounded-[10px] border-[2px] border-[#ffeeb7]/42" />
           <div className="pointer-events-none absolute -left-[8%] top-[16%] h-[62%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(130,41,28,0.18),_rgba(130,41,28,0.02)_68%,_transparent_74%)] blur-2xl" />
           <div className="pointer-events-none absolute -right-[8%] top-[18%] h-[60%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(220,181,92,0.2),_rgba(220,181,92,0.02)_68%,_transparent_74%)] blur-2xl" />
           <Image src={FARM_SCENE_ASSETS.manorBase} alt="庄园底图" fill priority className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(127,20,17,0.38),_rgba(127,20,17,0.06),_transparent)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[44%] bg-[radial-gradient(circle_at_50%_8%,_rgba(255,248,224,0.88),_rgba(255,248,224,0.12)_46%,_transparent_62%)]" />
           <div className="pointer-events-none absolute inset-x-[12%] bottom-[5%] h-[26%] rounded-[50%] bg-[radial-gradient(circle,_rgba(245,223,159,0.14),_rgba(245,223,159,0.01)_72%,_transparent_76%)]" />
-          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={250} height={120} className="pointer-events-none absolute left-[8%] top-[5%] w-[250px] opacity-95 [animation:farmCloudDrift_18s_ease-in-out_infinite]" />
-          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={210} height={110} className="pointer-events-none absolute right-[14%] top-[9%] w-[210px] opacity-90 [animation:farmCloudDrift_21s_ease-in-out_infinite_reverse]" />
-          <Image src={FARM_SCENE_ASSETS.cloud} alt="" width={180} height={100} className="pointer-events-none absolute left-[26%] top-[14%] w-[180px] opacity-80 [animation:farmCloudDrift_24s_ease-in-out_infinite]" />
           <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={58} height={58} className="pointer-events-none absolute left-[34%] top-[26%] w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
           <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={52} height={52} className="pointer-events-none absolute left-[62%] top-[34%] w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
           <div className="pointer-events-none absolute inset-0">
@@ -785,103 +1054,259 @@ export function FarmClient({ initialDashboard }: Props) {
           <div className="pointer-events-none absolute inset-x-[14%] bottom-[4.5%] h-[2px] bg-[linear-gradient(90deg,_transparent,_rgba(255,235,183,0.45),_transparent)]" />
 
           <div className="relative z-10 h-full">
-            <div className="absolute left-[34px] top-[28px] z-20 w-[438px] rounded-[34px] border border-[#f4d18b]/42 bg-[linear-gradient(180deg,_rgba(126,24,20,0.96),_rgba(79,18,15,0.93))] px-5 py-4 text-[#fff6df] shadow-[0_20px_42px_rgba(69,18,15,0.24)] backdrop-blur-sm">
-              <div className="rounded-[24px] border border-[#ffd9a7]/18 px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.44em] text-[#f7d58c]">Jinli Manor</p>
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <h1 className="text-[34px] font-semibold tracking-[0.12em]">锦鲤庄园</h1>
-                  <span className="rounded-full border border-[#f7e3b2]/30 bg-[rgba(255,243,216,0.12)] px-3 py-1 text-xs tracking-[0.22em] text-[#ffe6af]">{isVisiting ? `拜访 ${viewDashboard.owner.displayName}` : '我的庄园'}</span>
-                </div>
-                <p className="mt-3 text-sm leading-7 text-[#fff0cb]/90">按老游戏场景坐标放置 HUD、工具和背包，不再走普通页面流布局。</p>
+            <div className="absolute left-[24px] top-[20px] z-20 w-[252px] rounded-[10px] border-[4px] border-[#7a4a18] bg-[#fff4d0] px-4 py-4 text-[#6d4d1a] shadow-[0_6px_0_#c8943f,0_16px_28px_rgba(116,80,21,0.16)]">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#aa7d1e]">Jinli Manor</p>
+              <div className="mt-2 flex items-center gap-2">
+                <h1 className="text-[30px] font-black tracking-[0.03em] text-[#7a4117]">锦鲤庄园</h1>
+                <span className="rounded-[8px] border-[2px] border-[#d7a85f] bg-[#fff8e1] px-3 py-1 text-[10px] font-black tracking-[0.06em] text-[#9a6d16]">
+                  {isVisiting ? `拜访 ${viewDashboard.owner.displayName}` : '我的庄园'}
+                </span>
               </div>
-            </div>
-
-            <div className="absolute left-1/2 top-[34px] z-20 w-[470px] -translate-x-1/2 rounded-[26px] border border-[#f5d9a3]/25 bg-[linear-gradient(180deg,_rgba(122,25,18,0.84),_rgba(81,21,15,0.82))] px-5 py-4 text-[#fff4d4] shadow-[0_16px_32px_rgba(69,18,15,0.2)] backdrop-blur-sm">
-              <div className="pointer-events-none absolute inset-[4px] rounded-[20px] border border-[#f8e6bb]/12" />
-              <div className="flex items-center justify-between gap-3 text-xs uppercase tracking-[0.24em] text-[#f5d388]">
-                <span>升级进度</span>
-                <span>{homeDashboard.summary.nextLevelExperience ? `${homeDashboard.summary.experience}/${homeDashboard.summary.nextLevelExperience}` : 'MAX'}</span>
-              </div>
-              <div className="mt-2 h-4 overflow-hidden rounded-full bg-black/18 p-[2px]">
-                <div className="h-full rounded-full bg-[linear-gradient(90deg,_#b67510,_#eabf4d,_#ffe8b6)] transition-all duration-500" style={{ width: `${nextLevelProgress}%` }} />
-              </div>
-            </div>
-
-            <div className="absolute right-[38px] top-[28px] z-20 w-[420px] rounded-[30px] border border-[#f3d59b]/28 bg-[linear-gradient(180deg,_rgba(141,88,33,0.92),_rgba(78,44,15,0.92))] px-4 py-4 text-[#fff5dc] shadow-[0_12px_22px_rgba(0,0,0,0.16)] backdrop-blur-sm">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="mt-4 grid grid-cols-2 gap-2">
                 <MetricChip label="等级" value={`Lv.${homeDashboard.summary.level}`} icon="⭐" />
                 <MetricChip label="金币" value={formatAmount(homeDashboard.summary.coins)} icon="🪙" />
                 <MetricChip label="积分" value={formatAmount(homeDashboard.summary.loyaltyPoints)} icon="🎟️" />
                 <MetricChip label="余额" value={`¥ ${formatAmount(homeDashboard.summary.totalBalance)}`} icon="💰" />
-                <MetricChip label="地块" value={`${viewDashboard.summary.unlockedPlots}/${MAX_PLOTS}`} icon="🌾" />
-                <div className="relative rounded-[22px] border border-[#f3d59b]/24 bg-[linear-gradient(180deg,_rgba(108,66,24,0.88),_rgba(63,36,11,0.88))] px-4 py-3 text-[#fff5dc] shadow-[0_12px_22px_rgba(0,0,0,0.16)]">
-                  <div className="pointer-events-none absolute inset-[3px] rounded-[18px] border border-[#f8e7be]/10" />
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-[#f2d797]">兑换</p>
-                  <p className="mt-1 text-sm font-semibold tracking-[0.06em] text-[#ffe7ab]">1 余额 = 100 金币</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#f3ddb0]">1 积分 = 10 金币</p>
-                </div>
               </div>
-              <div className="mt-3 flex items-center justify-end gap-2">
-                {isVisiting ? (
-                  <button type="button" disabled={loadingKey === 'visit-home'} onClick={() => loadTargetFarm()} className="rounded-full border border-[#e5cb8d]/38 bg-[linear-gradient(180deg,_rgba(58,31,9,0.92),_rgba(40,21,7,0.92))] px-4 py-3 text-sm font-semibold tracking-[0.12em] text-[#ffe3a4] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60">{loadingKey === 'visit-home' ? '返回中…' : '回到我的庄园'}</button>
-                ) : null}
-                <Link href="/profile" className="rounded-full border border-[#e5cb8d]/38 bg-[linear-gradient(180deg,_rgba(58,31,9,0.92),_rgba(40,21,7,0.92))] px-4 py-3 text-sm font-semibold tracking-[0.12em] text-[#ffe3a4] transition hover:brightness-105">返回个人主页</Link>
+              <div className="mt-3 rounded-[8px] border-[3px] border-[#d4a25e] bg-[#fff8de] px-3 py-3 shadow-[inset_0_2px_0_rgba(255,255,255,0.78)]">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.1em] text-[#9d7521]">
+                  <span>农地进度</span>
+                  <span>{viewDashboard.summary.unlockedPlots}/{MAX_PLOTS}</span>
+                </div>
+                <div className="mt-2 h-3 overflow-hidden rounded-[4px] border border-[#8b5c1f] bg-[#d6b56b] p-[1px]">
+                  <div className="h-full rounded-[2px] bg-[linear-gradient(90deg,_#ca8618,_#ffe06f)] transition-all duration-500" style={{ width: `${nextLevelProgress}%` }} />
+                </div>
+                <div className="mt-3 flex items-center justify-between text-xs text-[#79551f]">
+                  <span>{currentSeed ? `已选：${currentSeed.name}` : '暂未选种'}</span>
+                  <span>{homeDashboard.summary.nextPlotCost ? `下块 ¥${formatAmount(homeDashboard.summary.nextPlotCost)}` : '地块已全开'}</span>
+                </div>
               </div>
             </div>
 
-            <div className="absolute left-[40px] top-[176px] z-20 rounded-[22px] border border-[#f6ddb0]/28 bg-[linear-gradient(180deg,_rgba(87,20,14,0.82),_rgba(54,17,12,0.72))] px-4 py-3 text-xs tracking-[0.18em] text-[#fbe5b0] shadow-[0_12px_28px_rgba(69,18,15,0.18)] backdrop-blur-sm">
-              {isVisiting ? '访客视角 · 主庄园工具已收起' : currentSeed ? `已选种子 · ${currentSeed.name}` : '点击下方种子袋先选种子'}
+            <div className="absolute left-1/2 top-[18px] z-20 -translate-x-1/2">
+              <div className="flex items-start gap-3 rounded-[10px] border-[4px] border-[#7a4d1a] bg-[#fff0c7] px-4 py-3 shadow-[0_5px_0_#ca9a47,0_16px_28px_rgba(111,76,20,0.16)]">
+                <TopStripButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
+                <TopStripButton icon="🌱" label="种子袋" active={bottomDockOpen && bagDrawerOpen} onClick={toggleSeedTray} muted={isVisiting} />
+                <TopStripButton icon="💰" label="兑换所" active={activeDrawer === 'exchange'} onClick={() => setActiveDrawer((current) => (current === 'exchange' ? 'none' : 'exchange'))} muted={isVisiting} />
+                <TopStripButton icon="📜" label="庄园日志" active={activeDrawer === 'logs'} onClick={() => setActiveDrawer((current) => (current === 'logs' ? 'none' : 'logs'))} muted={isVisiting} />
+              </div>
+            </div>
+
+            <div className="absolute right-[28px] top-[32px] z-20 flex items-center gap-2">
+              {isVisiting ? (
+                <button
+                  type="button"
+                  disabled={loadingKey === 'visit-home'}
+                  onClick={() => loadTargetFarm()}
+                  className="rounded-[8px] border-[3px] border-[#7b4d18] bg-[#fff2cc] px-5 py-3 text-xs font-black tracking-[0.08em] text-[#7b5a20] shadow-[0_4px_0_#c7943c,0_14px_24px_rgba(110,78,24,0.14)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loadingKey === 'visit-home' ? '返回中…' : '回到我的庄园'}
+                </button>
+              ) : null}
+              <Link href="/profile" className="rounded-[8px] border-[3px] border-[#7b4d18] bg-[#fff2cc] px-5 py-3 text-xs font-black tracking-[0.08em] text-[#7b5a20] shadow-[0_4px_0_#c7943c,0_14px_24px_rgba(110,78,24,0.14)] transition hover:-translate-y-0.5 hover:brightness-105">
+                返回个人主页
+              </Link>
             </div>
 
             {isVisiting ? (
-              <div className="absolute left-1/2 top-[128px] z-20 w-[420px] -translate-x-1/2 rounded-[24px] border border-[#f6ddb0]/38 bg-[linear-gradient(180deg,_rgba(125,24,18,0.92),_rgba(86,18,14,0.88))] px-5 py-3 text-center text-[#fff4d3] shadow-[0_18px_34px_rgba(69,18,15,0.22)] backdrop-blur-sm">
-                <p className="text-[10px] uppercase tracking-[0.32em] text-[#f7d58c]">Visitor Mode</p>
-                <p className="mt-1 text-sm font-semibold tracking-[0.12em]">正在拜访 {viewDashboard.owner.displayName}</p>
-                <p className="mt-1 text-xs text-[#ffe7b3]/80">当前只能偷成熟地块，所有操作不会改动你的庄园布局。</p>
+              <div className="absolute left-1/2 top-[120px] z-20 w-[360px] -translate-x-1/2 rounded-[10px] border-[4px] border-[#7b4c19] bg-[#fff0c8] px-5 py-3 text-center text-[#7d5c22] shadow-[0_4px_0_#c8953d,0_14px_28px_rgba(111,76,20,0.14)]">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[#a67a1d]">Visitor Mode</p>
+                <p className="mt-1 text-sm font-black tracking-[0.04em]">正在拜访 {viewDashboard.owner.displayName}</p>
               </div>
             ) : null}
 
             {(message || error) && (
-              <div className={`absolute left-1/2 top-[120px] z-20 w-[480px] -translate-x-1/2 rounded-[22px] border px-4 py-3 text-sm shadow-[0_12px_24px_rgba(0,0,0,0.12)] ${error ? 'border-rose-200/80 bg-rose-50/92 text-rose-700' : 'border-emerald-200/80 bg-emerald-50/92 text-emerald-700'}`}>{error ?? message}</div>
+              <div className={`absolute left-1/2 top-[150px] z-20 w-[420px] -translate-x-1/2 rounded-[18px] border px-4 py-3 text-sm shadow-[0_12px_24px_rgba(94,67,20,0.1)] ${error ? 'border-rose-200/80 bg-rose-50/92 text-rose-700' : 'border-emerald-200/80 bg-emerald-50/92 text-emerald-700'}`}>{error ?? message}</div>
             )}
 
-            <div className="absolute right-[34px] top-[250px] z-20 flex flex-col gap-3">
-              <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} muted={isVisiting} />
-              {!isVisiting ? (
-                (Object.keys(drawerMeta) as Array<Exclude<DrawerKey, 'none'>>).map((key) => <ToolButton key={key} icon={drawerMeta[key].icon} label={drawerMeta[key].label} active={activeDrawer === key} onClick={() => setActiveDrawer((current) => (current === key ? 'none' : key))} />)
-              ) : (
-                <div className="w-28 rounded-[22px] border border-[#efd7a4]/18 bg-[linear-gradient(180deg,_rgba(67,35,14,0.62),_rgba(40,21,7,0.72))] px-3 py-3 text-center text-[10px] uppercase tracking-[0.24em] text-[#ffe5b5]/70">
-                  主庄园工具
-                  <div className="mt-1 text-[9px] tracking-[0.16em] text-[#f4ddb3]/55">访客模式收起</div>
+            {debugEnabled ? (
+              <>
+                <div className="absolute left-[34px] top-[244px] z-30 w-[320px] rounded-[24px] border border-[#f0d39a]/45 bg-[linear-gradient(180deg,_rgba(57,31,11,0.94),_rgba(30,17,7,0.94))] px-4 py-4 text-[#ffe7b2] shadow-[0_16px_34px_rgba(14,8,3,0.28)] backdrop-blur-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-[#f0ce84]">Farm Debug</p>
+                      <h3 className="mt-1 text-base font-semibold tracking-[0.08em] text-[#fff1cb]">场景坐标</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDebugEnabled(false)}
+                      className="rounded-full border border-[#f0d39a]/24 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#ffe1a0] transition hover:bg-white/10"
+                    >
+                      关闭
+                    </button>
+                  </div>
+                  <div className="mt-3 space-y-2 text-sm leading-6">
+                    <p>实时 scene：{activeDebugPoint ? `${activeDebugPoint.sceneX.toFixed(1)}, ${activeDebugPoint.sceneY.toFixed(1)}` : '移动鼠标查看'}</p>
+                    <p>辅助线 overlay：{activeDebugPoint?.overlayX != null && activeDebugPoint?.overlayY != null ? `${activeDebugPoint.overlayX.toFixed(1)}, ${activeDebugPoint.overlayY.toFixed(1)}` : '当前不在辅助线区域内'}</p>
+                    <p className="text-xs text-[#eed9ab]/78">提示：按住 Shift 再点击场景，可以锁定当前位置参数。</p>
+                  </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void copyDebugPoint()}
+                      disabled={!activeDebugPoint}
+                      className="rounded-full border border-[#f0d39a]/28 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#ffe3a6] transition hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      复制坐标
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLockedDebugPoint(null)}
+                      className="rounded-full border border-[#f0d39a]/18 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-[#f0d39a] transition hover:bg-white/8"
+                    >
+                      清除锁定
+                    </button>
+                    {debugCopied ? <span className="text-[11px] text-[#ffe3a6]">{debugCopied}</span> : null}
+                  </div>
                 </div>
-              )}
-            </div>
+                {activeDebugPoint ? (
+                  <div
+                    className="pointer-events-none absolute z-30"
+                    style={{
+                      left: `${activeDebugPoint.sceneX}px`,
+                      top: `${activeDebugPoint.sceneY}px`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    <div className="relative h-5 w-5">
+                      <div className="absolute inset-0 rounded-full border border-[#fff3c7]/85 bg-[radial-gradient(circle,_rgba(255,219,120,0.5),_rgba(255,219,120,0.06)_70%)]" />
+                      <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-[#fff0ba]/80" />
+                      <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-[#fff0ba]/80" />
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
 
-            <div className="absolute inset-x-0 top-[224px] bottom-[176px]">
-                <div className="pointer-events-none absolute left-[560px] top-[398px] z-[1] h-[220px] w-[488px] opacity-45">
-                  <svg viewBox="0 0 488 220" className="h-full w-full overflow-visible">
-                    <g stroke="rgba(110,63,17,0.28)" strokeWidth="2.8" strokeLinecap="round" fill="none">
-                      <path d="M84 44 L378 104" />
-                      <path d="M56 98 L350 158" />
-                      <path d="M28 152 L322 212" />
-                      <path d="M154 22 L70 170" />
-                      <path d="M252 42 L168 190" />
-                      <path d="M350 62 L266 210" />
-                      <path d="M448 82 L364 220" />
-                    </g>
-                  </svg>
-                </div>
+            <div className="absolute inset-0">
+                  <div className="pointer-events-none absolute inset-0 z-[1]">
+                    <Image
+                      src={FARM_SCENE_ASSETS.fieldSurface}
+                      alt=""
+                      fill
+                      className="object-cover opacity-100"
+                    />
+                    <Image
+                      src={FARM_SCENE_ASSETS.fieldRim}
+                      alt=""
+                      fill
+                      className="object-cover opacity-100"
+                    />
+                  </div>
+                  <div className="pointer-events-none absolute inset-0 z-[2]">
+                    <svg viewBox={`0 0 ${SCENE_BASE_WIDTH} ${SCENE_BASE_HEIGHT}`} className="h-full w-full overflow-visible">
+                      <defs>
+                        <filter id="farmCellShadow" x="-10%" y="-10%" width="120%" height="120%">
+                          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(88,56,16,0.10)" />
+                        </filter>
+                        <clipPath id="farmFieldStateClip">
+                          <path d={FIELD_OUTER_PATH} />
+                        </clipPath>
+                        <linearGradient id="farmCellUnlockedFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="rgba(206,156,74,0.30)" />
+                          <stop offset="55%" stopColor="rgba(167,117,49,0.18)" />
+                          <stop offset="100%" stopColor="rgba(126,84,31,0.20)" />
+                        </linearGradient>
+                        <linearGradient id="farmCellGrowingFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="rgba(195,148,68,0.26)" />
+                          <stop offset="55%" stopColor="rgba(158,109,43,0.16)" />
+                          <stop offset="100%" stopColor="rgba(116,78,28,0.18)" />
+                        </linearGradient>
+                        <linearGradient id="farmCellReadyFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="rgba(214,162,76,0.34)" />
+                          <stop offset="55%" stopColor="rgba(170,118,47,0.22)" />
+                          <stop offset="100%" stopColor="rgba(130,86,31,0.24)" />
+                        </linearGradient>
+                        <linearGradient id="farmCellLockedFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="rgba(137,186,79,0.38)" />
+                          <stop offset="55%" stopColor="rgba(113,164,63,0.28)" />
+                          <stop offset="100%" stopColor="rgba(89,138,43,0.34)" />
+                        </linearGradient>
+                      </defs>
+                      <g clipPath="url(#farmFieldStateClip)">
+                        {plotPolygons.map((cell) => {
+                          const visualPoints = insetPolygon(cell.points, 0.94);
+                          const fill = !cell.unlocked
+                            ? 'url(#farmCellLockedFill)'
+                            : cell.status === 'READY'
+                              ? 'url(#farmCellReadyFill)'
+                              : cell.status === 'GROWING'
+                                ? 'url(#farmCellGrowingFill)'
+                                : 'url(#farmCellUnlockedFill)';
+                          const stroke = cell.active || cell.hover
+                            ? (!cell.unlocked ? 'rgba(96,138,47,0.20)' : 'rgba(207,148,55,0.24)')
+                            : 'none';
+                          const strokeWidth = cell.active || cell.hover ? 1.8 : 0;
+                          const [p0, p1, p2, p3] = visualPoints;
+                          const roundedPath = roundedQuadPath(visualPoints, 9);
+                          const bevelTopLeft = `${p3[0]},${p3[1]} ${p0[0]},${p0[1]} ${p1[0]},${p1[1]}`;
+                          const bevelBottomRight = `${p1[0]},${p1[1]} ${p2[0]},${p2[1]} ${p3[0]},${p3[1]}`;
+                          return (
+                            <g key={`cell-${cell.plotIndex}`} filter="url(#farmCellShadow)">
+                              <path
+                                d={roundedPath}
+                                fill={fill}
+                                stroke={stroke}
+                                strokeWidth={strokeWidth}
+                                strokeLinejoin="round"
+                              />
+                              <polyline
+                                points={bevelTopLeft}
+                                fill="none"
+                                stroke={!cell.unlocked ? 'rgba(225,255,214,0.08)' : 'rgba(255,232,182,0.08)'}
+                                strokeWidth={1.2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <polyline
+                                points={bevelBottomRight}
+                                fill="none"
+                                stroke={!cell.unlocked ? 'rgba(56,95,27,0.08)' : 'rgba(93,60,24,0.08)'}
+                                strokeWidth={1.2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </g>
+                          );
+                        })}
+                      </g>
+                    </svg>
+                  </div>
+
+                {debugEnabled ? (
+                  <div className="pointer-events-none absolute inset-0 z-[3] opacity-45">
+                    <svg viewBox={`0 0 ${SCENE_BASE_WIDTH} ${SCENE_BASE_HEIGHT}`} className="h-full w-full overflow-visible">
+                      <g strokeLinecap="round" fill="none">
+                        {FIELD_GUIDE_ROWS.map((line, index) => (
+                          <path
+                            key={`row-${index}`}
+                            d={`M${line.from[0]} ${line.from[1]} L${line.to[0]} ${line.to[1]}`}
+                            stroke={line.boundary ? 'rgba(121,74,24,0.44)' : 'rgba(110,63,17,0.28)'}
+                            strokeWidth={line.boundary ? 3.4 : 2.4}
+                          />
+                        ))}
+                        {FIELD_GUIDE_COLS.map((line, index) => (
+                          <path
+                            key={`col-${index}`}
+                            d={`M${line.from[0]} ${line.from[1]} L${line.to[0]} ${line.to[1]}`}
+                            stroke={line.boundary ? 'rgba(121,74,24,0.44)' : 'rgba(110,63,17,0.28)'}
+                            strokeWidth={line.boundary ? 3.4 : 2.4}
+                          />
+                        ))}
+                      </g>
+                    </svg>
+                  </div>
+                ) : null}
                 {plotCards.map((entry) => {
                   const scene = plotScenePositions[entry.plotIndex];
                   const preview = getPlotAsset(entry);
-                  const surfaceTone = getPlotSurfaceTone(entry);
                   const harvestTransition = harvestTransitions.find((item) => item.plotIndex === entry.plotIndex) ?? null;
                   const plantTransition = plantTransitions.find((item) => item.plotIndex === entry.plotIndex) ?? null;
                   const actionKey = entry.status === 'EMPTY' ? `plant:${entry.plotIndex}` : entry.status === 'READY' && viewDashboard.owner.isSelf ? `harvest:${entry.plotIndex}` : `steal:${entry.plotIndex}`;
                   const loading = loadingKey === actionKey || (!entry.unlocked && loadingKey === 'expand');
                   const tooltipVisible = hoveredPlotIndex === entry.plotIndex;
                   return (
-                    <div key={entry.plotIndex} className="absolute" style={{ left: scene.left, top: scene.top, zIndex: scene.depth * 10, transform: 'translate(-50%, -50%)' }}>
+                    <div key={entry.plotIndex} className="absolute" style={{ left: scene.left, top: scene.top, zIndex: scene.depth * 10 + 10, transform: 'translate(-50%, -50%)' }}>
                       <div className="group relative">
                         <button
                           type="button"
@@ -890,13 +1315,12 @@ export function FarmClient({ initialDashboard }: Props) {
                           onFocus={() => setHoveredPlotIndex(entry.plotIndex)}
                           onBlur={() => setHoveredPlotIndex((current) => (current === entry.plotIndex ? null : current))}
                           onClick={() => setActivePlotIndex(entry.plotIndex)}
-                          className={`relative flex h-[96px] w-[112px] items-end justify-center px-1 pb-1 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] sm:h-[104px] sm:w-[122px] ${entry.highlight === 'ready' ? 'animate-[farmPlotBob_2.2s_ease-in-out_infinite] hover:brightness-105' : 'hover:brightness-105'} ${entry.highlight === 'locked' ? 'opacity-90' : ''}`}
+                          className={`relative flex h-[72px] w-[88px] items-end justify-center px-1 pb-1 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] sm:h-[80px] sm:w-[96px] ${entry.highlight === 'ready' ? 'animate-[farmPlotBob_2.2s_ease-in-out_infinite] hover:brightness-105' : 'hover:brightness-105'} ${entry.highlight === 'locked' ? 'opacity-62 saturate-[0.74]' : 'opacity-100 saturate-[1.02]'}`}
                         >
                           <div className={`pointer-events-none absolute inset-0 ${entry.highlight === 'ready' ? 'bg-[radial-gradient(circle_at_50%_52%,_rgba(255,224,138,0.18),_rgba(255,224,138,0.02)_68%,_transparent_76%)]' : entry.highlight === 'growing' ? 'bg-[radial-gradient(circle_at_50%_52%,_rgba(245,215,140,0.12),_rgba(245,215,140,0.01)_68%,_transparent_76%)]' : 'bg-transparent'}`} />
-                          <div className="pointer-events-none absolute inset-x-4 bottom-1 h-3 rounded-[50%] bg-[radial-gradient(circle,_rgba(73,48,16,0.14),_rgba(73,48,16,0.01)_72%)] blur-[5px]" />
                           {(tooltipVisible || activePlotIndex === entry.plotIndex) ? (
-                            <div className="pointer-events-none absolute inset-x-[12%] -top-5 flex justify-center">
-                              <div className="relative h-9 w-9 sm:h-10 sm:w-10">
+                            <div className="pointer-events-none absolute inset-x-[12%] -top-4 flex justify-center">
+                              <div className="relative h-8 w-8 sm:h-9 sm:w-9">
                                 <Image src={FARM_SCENE_ASSETS.woodSign} alt="" fill className="object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.16)]" />
                                 <span className="absolute inset-x-0 top-[28%] text-center text-[9px] font-black tracking-[0.16em] text-[#583514] sm:text-[10px]">{String(entry.plotIndex).padStart(2, '0')}</span>
                               </div>
@@ -904,21 +1328,7 @@ export function FarmClient({ initialDashboard }: Props) {
                           ) : null}
                           {entry.status === 'READY' ? <span className="absolute right-0 top-0 rounded-full border border-[#ffe8b6]/38 bg-[linear-gradient(180deg,_rgba(255,227,153,0.94),_rgba(243,186,62,0.94))] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#684108]">READY</span> : null}
                           {entry.status === 'READY' && !viewDashboard.owner.isSelf && !entry.plot?.canSteal ? <span className="absolute left-1/2 top-0 -translate-x-1/2 rounded-full border border-[#ffd9b3]/32 bg-[linear-gradient(180deg,_rgba(131,63,23,0.94),_rgba(89,38,12,0.94))] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#ffe6c9]">已偷</span> : null}
-                          <div className="pointer-events-none absolute inset-x-[10%] top-[24px] flex justify-center">
-                            <div
-                              className={`relative h-[42px] w-[92px] border bg-gradient-to-b ${surfaceTone.fill} ${surfaceTone.border}`}
-                              style={{
-                                clipPath: 'polygon(20% 0%, 82% 0%, 100% 34%, 80% 100%, 18% 100%, 0% 66%)',
-                                transform: 'skewX(-24deg)',
-                              }}
-                            >
-                              <div className="absolute inset-[2px] border border-white/8 opacity-40" style={{ clipPath: 'inherit' }} />
-                              <div className={`absolute left-[20%] right-[16%] top-[10px] h-[2px] ${surfaceTone.furrow}`} />
-                              <div className={`absolute left-[16%] right-[20%] top-[18px] h-[2px] ${surfaceTone.furrow}`} />
-                              <div className={`absolute left-[20%] right-[16%] top-[26px] h-[2px] ${surfaceTone.furrow}`} />
-                            </div>
-                          </div>
-                          <div className="relative flex h-[76px] w-[76px] items-end justify-center sm:h-[84px] sm:w-[84px]">
+                          <div className="relative flex h-[58px] w-[58px] items-end justify-center sm:h-[64px] sm:w-[64px]">
                             {entry.status === 'READY' ? <div className={`absolute inset-1 rounded-full ${viewDashboard.owner.isSelf ? 'bg-[radial-gradient(circle,_rgba(255,224,138,0.56),_rgba(255,224,138,0.06)_70%)]' : 'bg-[radial-gradient(circle,_rgba(255,174,120,0.42),_rgba(255,174,120,0.05)_70%)]'} animate-pulse`} /> : null}
                             {harvestTransition ? (
                               <>
@@ -987,54 +1397,91 @@ export function FarmClient({ initialDashboard }: Props) {
                     </div>
                   );
                 })}
-                <div className="pointer-events-none absolute inset-x-[16%] bottom-[4%] z-0 h-[16%] rounded-[50%] border border-white/10 bg-[radial-gradient(circle,_rgba(248,228,161,0.18),_rgba(248,228,161,0.02)_72%,_transparent_76%)]" />
+                {bottomDockOpen ? (
+                  <div className="pointer-events-none absolute inset-x-[16%] bottom-[4%] z-0 h-[16%] rounded-[50%] border border-white/10 bg-[radial-gradient(circle,_rgba(248,228,161,0.18),_rgba(248,228,161,0.02)_72%,_transparent_76%)]" />
+                ) : null}
               </div>
 
-            <div className="absolute inset-x-[148px] bottom-[28px] z-20 flex items-center justify-center">
-              <div className={`w-full rounded-[30px] border px-4 py-4 shadow-[0_18px_36px_rgba(14,8,3,0.24)] backdrop-blur-sm ${isVisiting ? 'border-[#f1d59f]/14 bg-[linear-gradient(180deg,_rgba(76,41,14,0.54),_rgba(39,20,6,0.58))]' : 'border-[#f1d59f]/28 bg-[linear-gradient(180deg,_rgba(89,50,17,0.92),_rgba(46,24,7,0.9))]'}`}>
-                <div className="rounded-[24px] border border-[#f8e5bc]/12 px-4 py-3">
-                  {isVisiting ? (
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]/80">访客模式</p>
-                        <p className="mt-1 text-sm text-[#fff2c7]/72">已收起你的种子袋和兑换入口。当前只保留拜访、观察与偷菜相关操作。</p>
-                      </div>
-                      <button type="button" onClick={() => loadTargetFarm()} className="rounded-full border border-[#e4ca8f]/28 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/16">
-                        返回主庄园
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="w-[240px]">
-                        <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]">庄园背包</p>
-                        <p className="mt-1 text-sm text-[#fff2c7]/82">点击物品栏切换当前种子，再对地块执行播种。</p>
-                      </div>
-                      <div className="flex flex-1 items-center justify-center gap-3">
-                        {pagedSeeds.map((seed) => {
-                          const rarity = getSeedRarity(seed);
-                          const selected = seed.code === selectedSeed;
-                          return (
-                            <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[84px] w-[84px] items-center justify-center rounded-[24px] border transition ${selected ? 'border-[#f6cf77]/80 bg-[linear-gradient(180deg,_rgba(255,239,192,0.95),_rgba(235,190,79,0.95))] shadow-[0_18px_28px_rgba(53,30,9,0.26)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-[linear-gradient(180deg,_rgba(255,248,227,0.15),_rgba(255,230,162,0.08))] hover:border-[#f2cb74]/55 hover:bg-white/16` : 'border-dashed border-white/10 bg-black/12 opacity-45'}`}>
-                              <span className="absolute inset-[4px] rounded-[20px] border border-[#f8e7bf]/12" />
-                              {seed.unlocked ? <span className={`absolute right-2 top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.14em] ${rarity.badge}`}>{rarity.label}</span> : null}
-                              <div className="relative h-12 w-12"><Image src={FARM_CROP_ASSETS[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
-                              <span className="absolute left-2 top-2 rounded-full bg-black/24 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.18em] text-[#ffe4a5]">{seed.unlockLevel}</span>
-                              {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[24px] bg-black/24 text-xs font-semibold text-[#ffe2a5]">Lv.{seed.unlockLevel}</span> : null}
-                              {selected ? <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-[#fff2ae] shadow-[0_0_12px_rgba(255,242,174,0.9)]" /> : null}
-                              <span className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-full border border-[#e4ca8f]/35 bg-[#2a1606]/94 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffe4a5] group-hover:block">{seed.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" disabled={visibleSeedPage === 0} onClick={() => setSeedPage((current) => Math.max(0, current - 1))} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18 disabled:opacity-40">‹</button>
-                        <span className="text-[11px] uppercase tracking-[0.24em] text-[#f4d38a]">{visibleSeedPage + 1}/{totalSeedPages}</span>
-                        <button type="button" disabled={visibleSeedPage >= totalSeedPages - 1} onClick={() => setSeedPage((current) => Math.min(totalSeedPages - 1, current + 1))} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18 disabled:opacity-40">›</button>
-                        <button type="button" onClick={() => setActiveDrawer('seeds')} className="rounded-full border border-[#e4ca8f]/35 bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#ffe3a5] transition hover:bg-white/18">打开种子袋</button>
-                      </div>
-                    </div>
-                  )}
+            {!isVisiting && bottomDockOpen && bagDrawerOpen ? (
+              <div className="absolute left-1/2 bottom-[148px] z-20 w-[612px] -translate-x-1/2 rounded-[10px] border-[4px] border-[#7a4b18] bg-[#fff2ce] px-5 py-4 shadow-[0_5px_0_#cb9a48,0_22px_40px_rgba(105,74,22,0.18)]">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#a9791b]">种子背包</p>
+                    <p className="mt-1 text-sm text-[#73511b]">选择当前种子后，再点击农田格进行播种。</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" disabled={visibleSeedPage === 0} onClick={() => setSeedPage((current) => Math.max(0, current - 1))} className="rounded-[8px] border-[3px] border-[#7b4b18] bg-[#fff8df] px-3 py-2 text-xs font-black tracking-[0.08em] text-[#8d6713] shadow-[0_3px_0_#d0a057] transition hover:brightness-105 disabled:opacity-40">‹</button>
+                    <span className="text-[11px] uppercase tracking-[0.12em] text-[#9f7420]">{visibleSeedPage + 1}/{totalSeedPages}</span>
+                    <button type="button" disabled={visibleSeedPage >= totalSeedPages - 1} onClick={() => setSeedPage((current) => Math.min(totalSeedPages - 1, current + 1))} className="rounded-[8px] border-[3px] border-[#7b4b18] bg-[#fff8df] px-3 py-2 text-xs font-black tracking-[0.08em] text-[#8d6713] shadow-[0_3px_0_#d0a057] transition hover:brightness-105 disabled:opacity-40">›</button>
+                  </div>
                 </div>
+                <div className="mt-4 flex items-center justify-center gap-4">
+                  {pagedSeeds.map((seed) => {
+                    const rarity = getSeedRarity(seed);
+                    const selected = seed.code === selectedSeed;
+                    return (
+                      <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[96px] w-[96px] items-center justify-center rounded-[10px] border-[3px] transition ${selected ? 'border-[#7a3f15] bg-[#ffd86d] shadow-[0_4px_0_#b87521,0_18px_28px_rgba(105,74,22,0.18)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-[#fff7dc] hover:border-[#efca78]/70 shadow-[0_4px_0_#d8b06d]` : 'border-dashed border-[#e2c48d]/35 bg-white/20 opacity-45'}`}>
+                        <span className="absolute inset-[5px] rounded-[6px] border border-[#fff7dc]/75" />
+                        {seed.unlocked ? <span className={`absolute right-2 top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.14em] ${rarity.badge}`}>{rarity.label}</span> : null}
+                        <div className="relative h-12 w-12"><Image src={FARM_CROP_ASSETS[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
+                        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.16em] text-[#775722]">{seed.name}</span>
+                        {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[26px] bg-[rgba(92,66,26,0.26)] text-xs font-semibold text-[#7c5b24]">Lv.{seed.unlockLevel}</span> : null}
+                        {selected ? <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-[#fff0a4] shadow-[0_0_12px_rgba(255,240,164,0.9)]" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="absolute left-1/2 bottom-[22px] z-20 -translate-x-1/2">
+              <div className="flex flex-col items-center gap-3">
+                {bottomDockOpen ? (
+                  <div className="flex items-end gap-4 rounded-[12px] border-[4px] border-[#6e4316] bg-[#8f5a22] px-6 py-4 shadow-[0_6px_0_#56300d,0_22px_40px_rgba(43,24,7,0.28)]">
+                    <div className="flex min-w-[196px] items-center gap-3 rounded-[10px] border-[3px] border-[#e2c27f]/45 bg-[#6d4317] px-4 py-3 text-[#fff2cb]">
+                      <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[8px] border-[3px] border-[#7b4c18] bg-[#fff4d2] shadow-[0_3px_0_#c8943f]">
+                        {currentSeed ? <Image src={FARM_CROP_ASSETS[currentSeed.code].READY} alt={currentSeed.name} fill className="object-contain p-2" /> : <span className="text-2xl">🌱</span>}
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-[#f4d38a]">当前作物</p>
+                        <p className="mt-1 text-sm font-black tracking-[0.04em]">{currentSeed ? currentSeed.name : '未选择'}</p>
+                        <p className="mt-1 text-[11px] text-[#f7e6bb]/78">{isVisiting ? '访客模式仅可观察与偷菜' : '点击种子袋切换当前播种作物'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-end gap-3">
+                      <ToolButton icon="🌱" label="种子袋" active={bagDrawerOpen} onClick={toggleSeedTray} muted={isVisiting} />
+                      <ToolButton icon="💰" label="兑换所" active={activeDrawer === 'exchange'} onClick={() => !isVisiting && setActiveDrawer((current) => (current === 'exchange' ? 'none' : 'exchange'))} muted={isVisiting} />
+                      <ToolButton icon="📜" label="日志" active={activeDrawer === 'logs'} onClick={() => !isVisiting && setActiveDrawer((current) => (current === 'logs' ? 'none' : 'logs'))} muted={isVisiting} />
+                      <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
+                      {isVisiting ? (
+                        <button
+                          type="button"
+                          onClick={() => loadTargetFarm()}
+                          className="group relative flex h-[88px] w-[92px] flex-col items-center justify-center gap-1 rounded-[10px] border-[3px] border-[#7a4f1c] bg-[#fff1c7] px-2 py-3 text-[#7a5c23] shadow-[0_4px_0_#c48e39] transition hover:-translate-y-0.5 hover:border-[#efcc77]/80 hover:brightness-105"
+                        >
+                          <span className="absolute inset-[5px] rounded-[6px] border border-[#fff7db]/70" />
+                          <span className="flex h-11 w-11 items-center justify-center rounded-[8px] border-[2px] border-[#8a5818] bg-[#fff8df] text-[24px] shadow-[inset_0_2px_0_rgba(255,255,255,0.75)]">🏡</span>
+                          <span className="text-[11px] font-black tracking-[0.06em]">回庄园</span>
+                        </button>
+                      ) : (
+                        <Link href="/profile" className="group relative flex h-[88px] w-[92px] flex-col items-center justify-center gap-1 rounded-[10px] border-[3px] border-[#7a4f1c] bg-[#fff1c7] px-2 py-3 text-[#7a5c23] shadow-[0_4px_0_#c48e39] transition hover:-translate-y-0.5 hover:border-[#efcc77]/80 hover:brightness-105">
+                          <span className="absolute inset-[5px] rounded-[6px] border border-[#fff7db]/70" />
+                          <span className="flex h-11 w-11 items-center justify-center rounded-[8px] border-[2px] border-[#8a5818] bg-[#fff8df] text-[24px] shadow-[inset_0_2px_0_rgba(255,255,255,0.75)]">👤</span>
+                          <span className="text-[11px] font-black tracking-[0.06em]">个人页</span>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={toggleBottomDock}
+                  className="group rounded-[10px] border-[4px] border-[#6e4316] bg-[#8f5a22] px-6 py-2.5 text-[11px] font-black tracking-[0.08em] text-[#f6e3b2] shadow-[0_5px_0_#56300d,0_14px_24px_rgba(43,24,7,0.24)] transition hover:-translate-y-0.5 hover:brightness-105"
+                >
+                  {bottomDockOpen ? '收起工具栏' : '展开工具栏'}
+                </button>
               </div>
             </div>
 
@@ -1277,7 +1724,7 @@ export function FarmClient({ initialDashboard }: Props) {
                 <div className="relative flex h-full min-h-[300px] flex-col items-center justify-center text-center">
                   <div className="rounded-full border border-white/35 bg-white/18 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8d6509]">地块 {activePlot.plotIndex}</div>
                   <div className="relative mt-5 flex h-56 w-56 items-center justify-center">
-                    <Image src={FARM_SCENE_ASSETS.plotFrame} alt="" fill className="object-contain opacity-95" />
+                    {activePlotBase ? <Image src={activePlotBase.asset} alt="" fill className={activePlotBase.className} /> : null}
                     {activePlotPreview?.asset ? <Image src={activePlotPreview.asset} alt={activePlot.title} fill className={`object-contain ${activePlotPreview.className}`} /> : null}
                   </div>
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">

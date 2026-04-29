@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { resolveFarmSession } from '@/lib/farmDevSession';
 import { getServerSession } from '@/lib/session';
 import { FARM_SEEDS, type FarmSeedTypeValue } from '@/lib/farmConfig';
 import {
@@ -19,7 +20,8 @@ const isFarmSeedType = (value: unknown): value is FarmSeedTypeValue =>
   typeof value === 'string' && value in FARM_SEEDS;
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
+  const baseSession = await getServerSession().catch(() => null);
+  const session = await resolveFarmSession(baseSession, request.headers.get('host'));
   if (!session?.discordId) {
     return NextResponse.json({ error: '请先登录' }, { status: 401 });
   }
@@ -102,7 +104,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
+  const baseSession = await getServerSession().catch(() => null);
+  const session = await resolveFarmSession(baseSession, request.headers.get('host'));
   if (!session?.discordId) {
     return NextResponse.json({ error: '请先登录' }, { status: 401 });
   }
