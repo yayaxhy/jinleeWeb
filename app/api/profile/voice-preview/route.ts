@@ -49,6 +49,19 @@ const normalizeContentType = (contentType?: string | null) =>
 const sanitizeFilename = (filename?: string | null) =>
   path.basename(String(filename ?? '').trim()).replace(/[^\w.\-]+/g, '_').replace(/^_+|_+$/g, '');
 
+const resolveStoredFileNameFromUrl = (rawUrl?: string | null) => {
+  const value = String(rawUrl ?? '').trim();
+  if (!value) return '';
+  try {
+    return sanitizeFilename(path.basename(new URL(value).pathname));
+  } catch {
+    if (value.startsWith('/')) {
+      return sanitizeFilename(path.basename(value));
+    }
+    return '';
+  }
+};
+
 const ensurePeiwan = async (request?: Request) => {
   const currentUser = await getCurrentJinleeUser(request);
   const discordUserId = currentUser?.discordUserId?.trim();
@@ -92,10 +105,15 @@ const resolveStoredFileName = (discordUserId: string, ext: string) => {
   return `voice_${discordUserId}_${hash}${ext}`;
 };
 
-const removeStoredFile = async (filename?: string | null) => {
-  const sanitized = sanitizeFilename(filename);
-  if (!sanitized) return;
-  await fs.unlink(path.join(TARGET_DIR, sanitized)).catch(() => {});
+const removeStoredFile = async (params: { filename?: string | null; url?: string | null }) => {
+  const candidates = new Set<string>();
+  const fromFilename = sanitizeFilename(params.filename);
+  const fromUrl = resolveStoredFileNameFromUrl(params.url);
+  if (fromFilename) candidates.add(fromFilename);
+  if (fromUrl) candidates.add(fromUrl);
+  await Promise.all(
+    [...candidates].map((candidate) => fs.unlink(path.join(TARGET_DIR, candidate)).catch(() => {})),
+  );
 };
 
 export async function POST(request: Request) {
@@ -128,29 +146,34 @@ export async function POST(request: Request) {
 
     const safeExt = ALLOWED_EXTS.has(ext) ? ext : CONTENT_TYPE_EXTENSION_MAP[contentType] ?? '.mp3';
     const fileName = resolveStoredFileName(current.discordUserId, safeExt);
+    const originalFilename = sanitizeFilename(file.name) || `voice_preview${safeExt}`;
     uploadedFileName = fileName;
     const targetPath = path.join(TARGET_DIR, fileName);
-    const publicUrl = new URL(`/peiwan-voice-preview/${fileName}`, request.url).toString();
+    const origin = process.env.NEXTAUTH_URL?.trim() || new URL(request.url).origin;
+    const publicUrl = new URL(`/peiwan-voice-preview/${fileName}`, origin).toString();
     await fs.writeFile(targetPath, Buffer.from(await file.arrayBuffer()));
 
     await prisma.pEIWAN.update({
       where: { discordUserId: current.discordUserId },
       data: {
         voicePreviewUrl: publicUrl,
-        voicePreviewFilename: fileName,
+        voicePreviewFilename: originalFilename,
       },
     });
 
-    await removeStoredFile(current.peiwan.voicePreviewFilename);
+    await removeStoredFile({
+      filename: current.peiwan.voicePreviewFilename,
+      url: current.peiwan.voicePreviewUrl,
+    });
 
     return NextResponse.json({
       ok: true,
       voicePreviewUrl: publicUrl,
-      voicePreviewFilename: fileName,
+      voicePreviewFilename: originalFilename,
     });
   } catch (error) {
     if (uploadedFileName) {
-      await removeStoredFile(uploadedFileName);
+      await removeStoredFile({ filename: uploadedFileName });
     }
     const message = error instanceof Error ? error.message : '上传失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
@@ -172,7 +195,10 @@ export async function DELETE(request: Request) {
       },
     });
 
-    await removeStoredFile(current.peiwan.voicePreviewFilename);
+    await removeStoredFile({
+      filename: current.peiwan.voicePreviewFilename,
+      url: current.peiwan.voicePreviewUrl,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

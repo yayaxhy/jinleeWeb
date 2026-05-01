@@ -17,6 +17,35 @@ type Notice = {
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_TYPES_TEXT = '支持 mp3、m4a、wav、ogg、opus、webm、flac、aac，大小不超过 10MB。';
 
+const resolvePreviewSrc = (rawUrl: string | null) => {
+  const value = String(rawUrl ?? '').trim();
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    if (parsed.pathname.startsWith('/peiwan-voice-preview/')) {
+      return parsed.pathname;
+    }
+    return value;
+  } catch {
+    return value;
+  }
+};
+
+const deriveFriendlyFilename = (filename: string | null, url: string | null) => {
+  const rawFilename = String(filename ?? '').trim();
+  if (rawFilename && !/^voice_\d+_[a-f0-9]{12}\.[a-z0-9]+$/i.test(rawFilename)) {
+    return rawFilename;
+  }
+  const value = String(url ?? '').trim();
+  if (!value) return rawFilename;
+  try {
+    const parsed = new URL(value);
+    return parsed.pathname.split('/').pop() || rawFilename;
+  } catch {
+    return value.split('/').pop() || rawFilename;
+  }
+};
+
 export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -24,6 +53,8 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, startUpload] = useTransition();
   const [isDeleting, setIsDeleting] = useState(false);
+  const previewSrc = resolvePreviewSrc(initialUrl);
+  const displayFilename = deriveFriendlyFilename(initialFilename, initialUrl);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -95,9 +126,8 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-xl font-semibold tracking-wide text-[#8a6000]">试音管理</h3>
-          <p className="text-sm text-gray-500">上传一段代表音频，机器人在派单名片里会一起发给老板。</p>
+          <p className="text-sm text-gray-500">上传一段试音音频，机器人会在派单名片里一起发给老板。</p>
         </div>
-        <span className="text-xs uppercase tracking-[0.4em] text-gray-400">VOICE PREVIEW</span>
       </div>
 
       <div className="mt-4 space-y-4 rounded-3xl border border-black/5 bg-[#faf7f2] p-4">
@@ -111,15 +141,15 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
             <p className="text-xs text-gray-500">{SUPPORTED_TYPES_TEXT}</p>
           </div>
 
-          {initialUrl ? (
+          {previewSrc ? (
             <div className="space-y-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
               <audio controls preload="none" className="w-full">
-                <source src={initialUrl} />
+                <source src={previewSrc} />
                 你的浏览器暂不支持音频播放。
               </audio>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="min-w-0 flex-1 truncate text-xs text-gray-500">
-                  当前文件：{initialFilename ?? initialUrl}
+                  当前文件：{displayFilename || '试音音频'}
                 </p>
                 <button
                   type="button"
