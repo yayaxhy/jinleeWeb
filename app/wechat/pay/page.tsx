@@ -35,9 +35,9 @@ export default async function WechatPayPage() {
 
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-wide">微信 Native 支付</h1>
+            <h1 className="text-3xl font-semibold tracking-wide">微信支付</h1>
             <p className="text-sm text-gray-500">
-              此页面使用微信官方 Native 扫码支付，创建订单后请直接使用微信扫一扫。
+              使用微信官方扫码支付，创建订单后请直接使用微信扫一扫。
             </p>
           </div>
         </div>

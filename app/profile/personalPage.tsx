@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation';
 import { BlacklistManager } from '@/components/profile/BlacklistManager';
 import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
 import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnouncementPreferenceToggle';
+import { VoicePreviewManager } from '@/components/profile/VoicePreviewManager';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { canAccessVoicePreview } from '@/lib/voice-preview-access';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
@@ -240,6 +242,7 @@ export default async function Profile(props: ProfilePageProps) {
   const peiwan = member?.peiwan ?? null;
   const isPeiwanMember = member?.status === 'PEIWAN';
   const isLaobanMember = !!member && member.status !== 'PEIWAN';
+  const canManageVoicePreview = isPeiwanMember && canAccessVoicePreview(discordUserId);
   const showPersonalisationTab = isPeiwanMember || isLaobanMember;
   const vipAnnouncementBroadcastEnabled = member?.vipBenefitProfile?.announcementEnabled !== false;
   const now = new Date();
@@ -791,7 +794,7 @@ export default async function Profile(props: ProfilePageProps) {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">个性化</h2>
-                        <p className="text-sm text-gray-500">管理播报偏好、黑名单与名片展示内容</p>
+                        <p className="text-sm text-gray-500">个性化展示内容</p>
                       </div>
                       <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PROFILE</span>
                     </div>
@@ -799,6 +802,12 @@ export default async function Profile(props: ProfilePageProps) {
                     <BlacklistManager initialEntries={blacklistItems} />
                     {isPeiwanMember ? (
                       <div className="space-y-6 border-t border-dashed border-black/10 pt-6">
+                        {canManageVoicePreview ? (
+                          <VoicePreviewManager
+                            initialUrl={peiwan?.voicePreviewUrl ?? null}
+                            initialFilename={peiwan?.voicePreviewFilename ?? null}
+                          />
+                        ) : null}
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
                             <h3 className="text-xl font-semibold tracking-wide text-[#8a6000]">老板评语</h3>

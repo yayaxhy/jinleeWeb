@@ -48,6 +48,9 @@ export const COUPON_VOUCHER_META: Record<CouponType, CouponVoucherMeta> = {
 };
 
 const prizeEntries = Object.entries(COUPON_VOUCHER_META) as Array<[CouponType, CouponVoucherMeta]>;
+const LOTTERY_ONLY_GIFT_NAME_BY_PRIZE_NAME: Record<string, string> = {
+  一日冠95折券: '一日冠',
+};
 
 export const COUPON_TYPE_BY_PRIZE_NAME: Record<string, CouponType> = prizeEntries.reduce(
   (acc, [couponType, meta]) => {
@@ -64,7 +67,7 @@ export const GIFT_NAME_BY_PRIZE_NAME: Record<string, string> = prizeEntries.redu
     }
     return acc;
   },
-  {} as Record<string, string>,
+  { ...LOTTERY_ONLY_GIFT_NAME_BY_PRIZE_NAME } as Record<string, string>,
 );
 
 const LEGACY_VANITY_CARD_PRIZE_NAMES = ['3位数靓号券', '4位数靓号券', '5位数靓号券'] as const;

@@ -108,11 +108,9 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
           <div className="space-y-3">
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">支付方式</p>
             <div className="rounded-2xl border border-black/10 bg-black/5 px-4 py-3 text-sm">
-              微信 Native 扫码支付
+              微信扫码支付
             </div>
-            <p className="text-sm text-gray-500">
-              该页面直接对接微信官方 Native 支付接口，生成的二维码由本站后端下单返回。
-            </p>
+            
             <p className="text-xs text-gray-500">
               当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
             </p>
