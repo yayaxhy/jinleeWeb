@@ -5,11 +5,16 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { canAccessVoicePreview } from '@/lib/voice-preview-access';
+import {
+  buildVoicePreviewAudioResponse,
+  resolveStoredVoicePreviewFileNameFromUrl,
+  sanitizeVoicePreviewFilename,
+  VOICE_PREVIEW_TARGET_DIR,
+} from '@/lib/voice-preview-file';
 
 export const runtime = 'nodejs';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const TARGET_DIR = path.join(process.cwd(), 'public', 'peiwan-voice-preview');
 const ALLOWED_EXTS = new Set(['.aac', '.flac', '.m4a', '.mp3', '.ogg', '.opus', '.wav', '.webm']);
 const ALLOWED_CONTENT_TYPES = new Set([
   'audio/aac',
@@ -45,22 +50,6 @@ const normalizeContentType = (contentType?: string | null) =>
     .split(';', 1)[0]
     .trim()
     .toLowerCase();
-
-const sanitizeFilename = (filename?: string | null) =>
-  path.basename(String(filename ?? '').trim()).replace(/[^\w.\-]+/g, '_').replace(/^_+|_+$/g, '');
-
-const resolveStoredFileNameFromUrl = (rawUrl?: string | null) => {
-  const value = String(rawUrl ?? '').trim();
-  if (!value) return '';
-  try {
-    return sanitizeFilename(path.basename(new URL(value).pathname));
-  } catch {
-    if (value.startsWith('/')) {
-      return sanitizeFilename(path.basename(value));
-    }
-    return '';
-  }
-};
 
 const ensurePeiwan = async (request?: Request) => {
   const currentUser = await getCurrentJinleeUser(request);
@@ -107,14 +96,38 @@ const resolveStoredFileName = (discordUserId: string, ext: string) => {
 
 const removeStoredFile = async (params: { filename?: string | null; url?: string | null }) => {
   const candidates = new Set<string>();
-  const fromFilename = sanitizeFilename(params.filename);
-  const fromUrl = resolveStoredFileNameFromUrl(params.url);
+  const fromFilename = sanitizeVoicePreviewFilename(params.filename);
+  const fromUrl = resolveStoredVoicePreviewFileNameFromUrl(params.url);
   if (fromFilename) candidates.add(fromFilename);
   if (fromUrl) candidates.add(fromUrl);
   await Promise.all(
-    [...candidates].map((candidate) => fs.unlink(path.join(TARGET_DIR, candidate)).catch(() => {})),
+    [...candidates].map((candidate) => fs.unlink(path.join(VOICE_PREVIEW_TARGET_DIR, candidate)).catch(() => {})),
   );
 };
+
+export async function GET(request: Request) {
+  try {
+    const current = await ensurePeiwan(request);
+    if ('error' in current) {
+      return current.error;
+    }
+
+    const storedFileName = resolveStoredVoicePreviewFileNameFromUrl(current.peiwan.voicePreviewUrl);
+    if (!storedFileName) {
+      return NextResponse.json({ error: '暂无试音文件' }, { status: 404 });
+    }
+
+    const filePath = path.join(VOICE_PREVIEW_TARGET_DIR, storedFileName);
+    const downloadName = sanitizeVoicePreviewFilename(current.peiwan.voicePreviewFilename) || storedFileName;
+    return await buildVoicePreviewAudioResponse(request, filePath, downloadName);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+      return NextResponse.json({ error: '试音文件不存在' }, { status: 404 });
+    }
+    const message = error instanceof Error ? error.message : '读取试音失败，请稍后再试';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   let uploadedFileName: string | null = null;
@@ -142,13 +155,13 @@ export async function POST(request: Request) {
       );
     }
 
-    await fs.mkdir(TARGET_DIR, { recursive: true });
+    await fs.mkdir(VOICE_PREVIEW_TARGET_DIR, { recursive: true });
 
     const safeExt = ALLOWED_EXTS.has(ext) ? ext : CONTENT_TYPE_EXTENSION_MAP[contentType] ?? '.mp3';
     const fileName = resolveStoredFileName(current.discordUserId, safeExt);
-    const originalFilename = sanitizeFilename(file.name) || `voice_preview${safeExt}`;
+    const originalFilename = sanitizeVoicePreviewFilename(file.name) || `voice_preview${safeExt}`;
     uploadedFileName = fileName;
-    const targetPath = path.join(TARGET_DIR, fileName);
+    const targetPath = path.join(VOICE_PREVIEW_TARGET_DIR, fileName);
     const origin = process.env.NEXTAUTH_URL?.trim() || new URL(request.url).origin;
     const publicUrl = new URL(`/peiwan-voice-preview/${fileName}`, origin).toString();
     await fs.writeFile(targetPath, Buffer.from(await file.arrayBuffer()));

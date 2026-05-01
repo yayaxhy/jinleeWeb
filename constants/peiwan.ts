@@ -43,6 +43,19 @@ export const PEIWAN_GAME_TIER_LABEL = Object.fromEntries(
 export const QUOTATION_CODES = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7', 'Q8', 'Q9', 'Q10'] as const;
 export type QuotationCodeValue = (typeof QUOTATION_CODES)[number];
 
+export const QUOTATION_CODE_LABEL = {
+  Q1: 'Q1',
+  Q2: 'LoL',
+  Q3: 'Val',
+  Q4: '三角洲',
+  Q5: 'CSGO',
+  Q6: '永劫',
+  Q7: 'Apex',
+  Q8: 'OW',
+  Q9: 'TFT',
+  Q10: 'Steam',
+} as const satisfies Record<QuotationCodeValue, string>;
+
 export const QUOTATION_CODE_TO_FIELD = {
   Q1: 'quotation_Q1',
   Q2: 'lolPrice',

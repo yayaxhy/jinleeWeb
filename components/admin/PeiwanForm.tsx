@@ -6,6 +6,7 @@ import {
   PEIWAN_QUOTATION_FIELDS,
   PEIWAN_SEX_OPTIONS,
   PEIWAN_TYPE_OPTIONS,
+  QUOTATION_CODE_LABEL,
   QUOTATION_CODES,
   QUOTATION_CODE_TO_FIELD,
   type PeiwanGameCodeValue,
@@ -49,18 +50,12 @@ const createDefaultState = (): PeiwanFormState => ({
   gameProfiles: [],
 });
 
-const QUOTATION_LABEL_MAP: Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], string> = {
-  quotation_Q1: 'Q1',
-  lolPrice: 'LoL单价',
-  valPrice: 'Val单价',
-  deltaPrice: '三角洲单价',
-  csgoPrice: 'CSGO单价',
-  narakaPrice: '永劫单价',
-  apexPrice: 'Apex单价',
-  owPrice: 'OW单价',
-  tftPrice: 'TFT单价',
-  steamPrice: 'Steam单价',
-};
+const QUOTATION_LABEL_MAP = Object.fromEntries(
+  Object.entries(QUOTATION_CODE_TO_FIELD).map(([code, field]) => [
+    field,
+    QUOTATION_CODE_LABEL[code as keyof typeof QUOTATION_CODE_LABEL],
+  ]),
+) as Record<(typeof PEIWAN_QUOTATION_FIELDS)[number], string>;
 
 type PeiwanFormProps = {
   mode: 'create' | 'edit';
@@ -112,6 +107,7 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
 
   const isReadOnly = readOnly;
   const syncReady = !isReadOnly && !!persistedTarget?.discordUserId;
+  const getQuotationCodeLabel = (code: PeiwanFormState['defaultQuotationCode']) => QUOTATION_CODE_LABEL[code] ?? code;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -146,11 +142,14 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
     const requiredQuotationField =
       QUOTATION_CODE_TO_FIELD[formState.defaultQuotationCode] as (typeof PEIWAN_QUOTATION_FIELDS)[number];
     if (formState.quotationsClear[requiredQuotationField]) {
-      setStatusMessage({ type: 'error', text: `${formState.defaultQuotationCode} 档位不可清空，请先更换默认档位` });
+      setStatusMessage({
+        type: 'error',
+        text: `${getQuotationCodeLabel(formState.defaultQuotationCode)} 报价不可清空，请先更换默认报价档位`,
+      });
       return;
     }
     if (formState.quotations[requiredQuotationField] === '') {
-      setStatusMessage({ type: 'error', text: `${formState.defaultQuotationCode} 档位不能为空` });
+      setStatusMessage({ type: 'error', text: `${getQuotationCodeLabel(formState.defaultQuotationCode)} 报价不能为空` });
       return;
     }
 
@@ -277,10 +276,11 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
       const nextProfiles = Array.isArray(result?.profiles)
         ? sortPeiwanGameProfiles(
             result.profiles.filter(
-              (item: any): item is PeiwanGameProfileView =>
-                item &&
-                typeof item.gameCode === 'string' &&
-                typeof item.tier === 'string',
+              (item: unknown): item is PeiwanGameProfileView => {
+                if (!item || typeof item !== 'object') return false;
+                const candidate = item as Record<string, unknown>;
+                return typeof candidate.gameCode === 'string' && typeof candidate.tier === 'string';
+              },
             ),
           )
         : [];
@@ -356,7 +356,7 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
             >
               {QUOTATION_CODES.map((code) => (
                 <option key={code} value={code} className="bg-[#0f0f0f] text-white">
-                  {code}
+                  {QUOTATION_CODE_LABEL[code]}
                 </option>
               ))}
             </select>

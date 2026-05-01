@@ -20,15 +20,7 @@ const SUPPORTED_TYPES_TEXT = '支持 mp3、m4a、wav、ogg、opus、webm、flac�
 const resolvePreviewSrc = (rawUrl: string | null) => {
   const value = String(rawUrl ?? '').trim();
   if (!value) return null;
-  try {
-    const parsed = new URL(value);
-    if (parsed.pathname.startsWith('/peiwan-voice-preview/')) {
-      return parsed.pathname;
-    }
-    return value;
-  } catch {
-    return value;
-  }
+  return `/api/profile/voice-preview?v=${encodeURIComponent(value)}`;
 };
 
 const deriveFriendlyFilename = (filename: string | null, url: string | null) => {
@@ -143,8 +135,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
 
           {previewSrc ? (
             <div className="space-y-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-              <audio controls preload="none" className="w-full">
-                <source src={previewSrc} />
+              <audio controls preload="metadata" className="w-full" src={previewSrc}>
                 你的浏览器暂不支持音频播放。
               </audio>
               <div className="flex flex-wrap items-center justify-between gap-3">
