@@ -81,13 +81,13 @@ const ensurePeiwan = async (request?: Request) => {
   };
 };
 
-const resolveStoredFileName = (discordUserId: string, ext: string) => {
+const resolveStoredFileName = (peiwanId: number, ext: string) => {
   const hash = crypto
     .createHash('sha1')
-    .update(`${discordUserId}:${Date.now()}:${Math.random()}`)
+    .update(`${peiwanId}:${Date.now()}:${Math.random()}`)
     .digest('hex')
     .slice(0, 12);
-  return `voice_${discordUserId}_${hash}${ext}`;
+  return `voice_${peiwanId}_${hash}${ext}`;
 };
 
 const removeStoredFile = async (params: { filename?: string | null; url?: string | null }) => {
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
     await fs.mkdir(VOICE_PREVIEW_TARGET_DIR, { recursive: true });
 
     const safeExt = ALLOWED_EXTS.has(ext) ? ext : CONTENT_TYPE_EXTENSION_MAP[contentType] ?? '.mp3';
-    const fileName = resolveStoredFileName(current.discordUserId, safeExt);
+    const fileName = resolveStoredFileName(current.peiwan.PEIWANID, safeExt);
     const originalFilename = sanitizeVoicePreviewFilename(file.name) || `voice_preview${safeExt}`;
     uploadedFileName = fileName;
     const targetPath = path.join(VOICE_PREVIEW_TARGET_DIR, fileName);
