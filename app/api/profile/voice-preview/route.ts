@@ -4,7 +4,6 @@ import path from 'path';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { canAccessVoicePreview } from '@/lib/voice-preview-access';
 import {
   buildVoicePreviewAudioResponse,
   resolveStoredVoicePreviewFileNameFromUrl,
@@ -56,9 +55,6 @@ const ensurePeiwan = async (request?: Request) => {
   const discordUserId = currentUser?.discordUserId?.trim();
   if (!discordUserId) {
     return { error: NextResponse.json({ error: '未登录' }, { status: 401 }) };
-  }
-  if (!canAccessVoicePreview(discordUserId)) {
-    return { error: NextResponse.json({ error: '试音功能当前仅对白名单测试用户开放' }, { status: 403 }) };
   }
 
   const member = await prisma.member.findUnique({

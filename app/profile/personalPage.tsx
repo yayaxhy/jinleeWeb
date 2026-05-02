@@ -6,7 +6,6 @@ import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
 import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnouncementPreferenceToggle';
 import { VoicePreviewManager } from '@/components/profile/VoicePreviewManager';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { canAccessVoicePreview } from '@/lib/voice-preview-access';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
@@ -242,7 +241,7 @@ export default async function Profile(props: ProfilePageProps) {
   const peiwan = member?.peiwan ?? null;
   const isPeiwanMember = member?.status === 'PEIWAN';
   const isLaobanMember = !!member && member.status !== 'PEIWAN';
-  const canManageVoicePreview = isPeiwanMember && canAccessVoicePreview(discordUserId);
+  const canManageVoicePreview = isPeiwanMember;
   const showPersonalisationTab = isPeiwanMember || isLaobanMember;
   const vipAnnouncementBroadcastEnabled = member?.vipBenefitProfile?.announcementEnabled !== false;
   const now = new Date();
