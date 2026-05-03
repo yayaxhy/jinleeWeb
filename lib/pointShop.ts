@@ -10,6 +10,7 @@ import {
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx, type JinleeWalletIdentity } from '@/lib/jinlee-wallet';
+import { GIFT_NAME_BY_PRIZE_NAME } from '@/lib/voucherCatalog';
 
 const DEC = (value: Prisma.Decimal | number | string) =>
   value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value);
@@ -128,6 +129,7 @@ export type CheckoutCartResult =
 
 const normalizeSku = (input: string) => input.trim().toUpperCase();
 const isBlockStackVoucherSku = (sku: string) => BLOCK_STACK_VOUCHER_SKUS.has(normalizeSku(sku));
+const isAutoDeliveredGiftVoucherPrize = (prizeName: string) => !!GIFT_NAME_BY_PRIZE_NAME[prizeName.trim()];
 
 const normalizeRequestKey = (input?: string | null) => {
   const value = (input ?? '').trim();
@@ -532,6 +534,41 @@ async function deliverOrderItemTx(
       data: {
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
         deliveryNote: `自动发放 ${quantity} 张（积分商城券）`,
+      },
+    });
+    return;
+  }
+
+  if (deliveryType === PointShopDeliveryType.COUPON && isAutoDeliveredGiftVoucherPrize(itemName)) {
+    const days = couponExpireDays && couponExpireDays > 0 ? couponExpireDays : DEFAULT_COUPON_EXPIRE_DAYS;
+    const issuedAt = new Date();
+    const expiresAt = new Date(issuedAt.getTime() + days * 24 * 60 * 60 * 1000);
+
+    await tx.pointShopGrant.createMany({
+      data: Array.from({ length: quantity }, () => ({
+        orderId,
+        orderItemId,
+        discordUserId: owner.discordUserId ?? null,
+        jinleeId: owner.jinleeId,
+        deliveryType: PointShopDeliveryType.COUPON,
+        itemSku,
+        itemName,
+        quantity: 1,
+        unitPoints,
+        subtotalPoints: unitPoints,
+        deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+        deliveryNote: '自动发放（积分商城礼物券）',
+        couponStatus: CouponStatus.ACTIVE,
+        issuedAt,
+        expiresAt,
+      })),
+    });
+
+    await tx.pointShopOrderItem.update({
+      where: { id: orderItemId },
+      data: {
+        deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+        deliveryNote: `自动发放 ${quantity} 张（积分商城礼物券）`,
       },
     });
     return;

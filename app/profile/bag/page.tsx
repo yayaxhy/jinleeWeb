@@ -15,6 +15,7 @@ import { resolveSpecialVoucher } from '@/lib/voucher';
 import {
   COUPON_VOUCHER_META,
   DISCOUNT_COUPON_PRIZE_NAMES,
+  inferPrizeTypeByPrizeName,
   VANITY_CARD_PRIZE_NAMES,
 } from '@/lib/voucherCatalog';
 import { CouponStatus, CouponType, LotteryPrizeType, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
@@ -138,7 +139,7 @@ export default async function BagPage() {
       source: 'pointshop',
       status,
       prizeName: meta?.prizeName ?? grant.itemName ?? '积分商城券',
-      prizeType: meta?.prizeType ?? LotteryPrizeType.COUPON,
+      prizeType: meta?.prizeType ?? inferPrizeTypeByPrizeName(grant.itemName),
       expiresAt: grant.expiresAt,
       consumeAt: grant.consumedAt,
       couponId: grant.id,

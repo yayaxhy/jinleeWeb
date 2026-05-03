@@ -50,6 +50,9 @@ export const COUPON_VOUCHER_META: Record<CouponType, CouponVoucherMeta> = {
 const prizeEntries = Object.entries(COUPON_VOUCHER_META) as Array<[CouponType, CouponVoucherMeta]>;
 const LOTTERY_ONLY_GIFT_NAME_BY_PRIZE_NAME: Record<string, string> = {
   一日冠95折券: '一日冠',
+  一日冠92折券: '一日冠',
+  三日冠92折券: '三日冠',
+  一周冠92折券: '一周冠',
 };
 
 export const COUPON_TYPE_BY_PRIZE_NAME: Record<string, CouponType> = prizeEntries.reduce(
@@ -69,6 +72,14 @@ export const GIFT_NAME_BY_PRIZE_NAME: Record<string, string> = prizeEntries.redu
   },
   { ...LOTTERY_ONLY_GIFT_NAME_BY_PRIZE_NAME } as Record<string, string>,
 );
+
+export const inferPrizeTypeByPrizeName = (prizeName?: string | null): LotteryPrizeType => {
+  const normalized = prizeName?.trim();
+  if (!normalized) return LotteryPrizeType.COUPON;
+  if (GIFT_NAME_BY_PRIZE_NAME[normalized]) return LotteryPrizeType.GIFT;
+  if (VANITY_CARD_PRIZE_NAMES.has(normalized)) return LotteryPrizeType.SELFUSE;
+  return LotteryPrizeType.COUPON;
+};
 
 const LEGACY_VANITY_CARD_PRIZE_NAMES = ['3位数靓号券', '4位数靓号券', '5位数靓号券'] as const;
 

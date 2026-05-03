@@ -8,7 +8,12 @@ import {
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { COUPON_VOUCHER_META, GIFT_NAME_BY_PRIZE_NAME, VANITY_CARD_PRIZE_NAMES } from '@/lib/voucherCatalog';
+import {
+  COUPON_VOUCHER_META,
+  GIFT_NAME_BY_PRIZE_NAME,
+  inferPrizeTypeByPrizeName,
+  VANITY_CARD_PRIZE_NAMES,
+} from '@/lib/voucherCatalog';
 
 type UsePayload =
   | { lotteryId?: string; couponId?: string; mode: 'gift'; target: string; prizeName?: string }
@@ -152,22 +157,26 @@ export async function POST(request: Request) {
           deliveryStatus: PointShopDeliveryStatus.DELIVERED,
           couponStatus: CouponStatus.ACTIVE,
           OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-          couponType: { not: null },
         },
-        select: { id: true, couponType: true },
+        select: { id: true, couponType: true, itemName: true },
       });
 
       if (!pointShopGrant?.couponType) {
-        return NextResponse.json({ error: '券已使用或已过期' }, { status: 409 });
+        if (!pointShopGrant?.itemName) {
+          return NextResponse.json({ error: '券已使用或已过期' }, { status: 409 });
+        }
+        prizeName = pointShopGrant.itemName.trim();
+        prizeType = inferPrizeTypeByPrizeName(prizeName);
+        source = 'pointshop';
+      } else {
+        const mapped = COUPON_VOUCHER_META[pointShopGrant.couponType];
+        if (!mapped) {
+          return NextResponse.json({ error: '该券不支持在此处使用' }, { status: 400 });
+        }
+        prizeName = mapped.prizeName;
+        prizeType = mapped.prizeType;
+        source = 'pointshop';
       }
-
-      const mapped = COUPON_VOUCHER_META[pointShopGrant.couponType];
-      if (!mapped) {
-        return NextResponse.json({ error: '该券不支持在此处使用' }, { status: 400 });
-      }
-      prizeName = mapped.prizeName;
-      prizeType = mapped.prizeType;
-      source = 'pointshop';
     }
   } else {
     const draw = await prisma.lotteryDraw.findFirst({
