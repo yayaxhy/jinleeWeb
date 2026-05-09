@@ -21,6 +21,7 @@ import {
 import { CouponStatus, CouponType, LotteryPrizeType, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
 
 const ROME_TIMEZONE = 'Europe/Rome';
+const BLOCK_STACK_PRIZE_NAMES = new Set(['积木游戏代金券', '抽积木代金券']);
 
 const formatDateOnly = (value?: Date | string | null) => {
   if (!value) return '—';
@@ -159,7 +160,7 @@ export default async function BagPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.6em] text-gray-500">My Bag</p>
             <h1 className="text-3xl font-semibold tracking-wide">我的背包</h1>
-            <p className="text-sm text-gray-500">展示你在 LotteryDraw 中的全部资产。</p>
+            <p className="text-sm text-gray-500">展示你在背包中的全部资产。</p>
           </div>
           <Link
             href="/profile"
@@ -200,6 +201,7 @@ export default async function BagPage() {
                         const prizeType = item.prizeType ?? LotteryPrizeType.COUPON;
                         const isUsed = item.status === 'USED';
                         const isVanityCard = VANITY_CARD_PRIZE_NAMES.has(prizeName);
+                        const isBlockStackVoucher = BLOCK_STACK_PRIZE_NAMES.has(prizeName);
                         const status = item.status === 'UNUSED' ? '未使用' : item.status === 'USED' ? '已使用' : '已过期';
                         const metaTime =
                           item.status === 'UNUSED'
@@ -310,6 +312,9 @@ export default async function BagPage() {
                               </div>
                               <p className="text-lg font-semibold text-[#171717]">{prizeName}</p>
                               <p className="text-sm text-gray-500">{isUsed ? '使用时间' : '到期时间'}：{metaTime}</p>
+                              {isBlockStackVoucher ? (
+                                <p className="text-xs text-[#7a5b14]">使用方式：在 Discord 频道发送 `!抽积木` 消耗该代金券。</p>
+                              ) : null}
                             </div>
                             </div>
                           );

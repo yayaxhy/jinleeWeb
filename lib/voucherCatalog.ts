@@ -35,6 +35,7 @@ export const COUPON_VOUCHER_META: Record<CouponType, CouponVoucherMeta> = {
   [CouponType.CROWN_WEEK_90_VOUCHER]: { prizeName: '一周冠9折券', prizeType: LotteryPrizeType.GIFT, giftName: '一周冠' },
   [CouponType.CROWN_MONTH_90_VOUCHER]: { prizeName: '月冠名9折券', prizeType: LotteryPrizeType.GIFT, giftName: '月冠名' },
   [CouponType.LOTTERY_VOUCHER]: { prizeName: '抽奖代金券', prizeType: LotteryPrizeType.COUPON },
+  [CouponType.BLOCK_STACK_VOUCHER]: { prizeName: '积木游戏代金券', prizeType: LotteryPrizeType.COUPON },
   [CouponType.CUSTOM_GIFT_VOUCHER]: { prizeName: '自定义礼物券', prizeType: LotteryPrizeType.COUPON },
   [CouponType.CUSTOM_TAG_VOUCHER]: { prizeName: '自定义tag券', prizeType: LotteryPrizeType.COUPON },
   [CouponType.COMMISSION_MINUS1_VOUCHER]: { prizeName: '抽成降1%券', prizeType: LotteryPrizeType.COUPON },

@@ -488,6 +488,7 @@ async function deliverOrderItemTx(
         subtotalPoints: unitPoints,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
         deliveryNote: '自动发放（积木游戏代金券）',
+        couponType: CouponType.BLOCK_STACK_VOUCHER,
         couponStatus: CouponStatus.ACTIVE,
         issuedAt,
         expiresAt,

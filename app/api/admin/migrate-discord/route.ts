@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { AccountProvider, Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminDiscordId } from '@/lib/admin';
@@ -12,6 +13,8 @@ const ensureAdminSession = async () => {
   }
   return session;
 };
+
+type ManualDiscordIdSqlOperation = { label: string; sql: string };
 
 const MANUAL_DISCORD_ID_UPDATES = [
   {
@@ -65,6 +68,10 @@ const MANUAL_DISCORD_ID_UPDATES = [
     sql: 'UPDATE "IndividualTransaction" SET "thirdPartydiscordId" = $1 WHERE "thirdPartydiscordId" = $2',
   },
   { label: 'Coupon.discordId', sql: 'UPDATE "Coupon" SET "discordId" = $1 WHERE "discordId" = $2' },
+  {
+    label: 'RedEnvelopeClaim.claimerDiscordId',
+    sql: 'UPDATE "RedEnvelopeClaim" SET "claimerDiscordId" = $1 WHERE "claimerDiscordId" = $2',
+  },
   { label: 'InteractionLog.memberId', sql: 'UPDATE "InteractionLog" SET "memberId" = $1 WHERE "memberId" = $2' },
   { label: 'CommissionBuff', sql: 'UPDATE "commission_buff" SET "user_id" = $1 WHERE "user_id" = $2' },
   { label: 'FlowBuff', sql: 'UPDATE "flow_buff" SET "user_id" = $1 WHERE "user_id" = $2' },
@@ -94,13 +101,175 @@ const MANUAL_DISCORD_ID_UPDATES = [
     label: 'BlockStackGame.collapseRewardUserId',
     sql: 'UPDATE "BlockStackGame" SET "collapseRewardUserId" = $1 WHERE "collapseRewardUserId" = $2',
   },
-] satisfies ReadonlyArray<{ label: string; sql: string }>;
+] satisfies ReadonlyArray<ManualDiscordIdSqlOperation>;
 
-type MigrateBody = { oldDiscordId?: string; newDiscordId?: string };
+type MigrateBody = { oldDiscordId?: string; newDiscordId?: string; forceTakeover?: boolean };
+
+type TakeoverClient = Pick<typeof prisma, 'member' | 'jinleeUser' | 'accountBinding'>;
+
+type TakeoverSummary = {
+  occupied: boolean;
+  occupiedJinleeIds: string[];
+  member: {
+    discordUserId: string;
+    linkedJinleeId: string | null;
+    status: string;
+    totalBalance: string;
+    income: string;
+    recharge: string;
+    totalSpent: string;
+    serverDisplayName: string | null;
+  } | null;
+  jinleeUser: {
+    jinleeId: string;
+    discordUserId: string | null;
+    sessionVersion: number;
+    totalBalance: string;
+    income: string;
+    recharge: string;
+    totalSpent: string;
+    loyaltyPoints: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+  discordBinding: {
+    id: string;
+    jinleeId: string;
+    providerUserId: string;
+    lastLoginAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+};
 
 const toChangedCount = (value: unknown) => {
   if (typeof value === 'bigint') return Number(value);
   return Number(value ?? 0);
+};
+
+const toIsoString = (value: Date | null) => value?.toISOString() ?? null;
+
+const buildArchivedDiscordId = (discordId: string) =>
+  `archived_${discordId}_${Date.now()}_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
+
+const collectTakeoverJinleeIds = (summary: TakeoverSummary) =>
+  Array.from(
+    new Set(
+      [
+        summary.member?.linkedJinleeId ?? null,
+        summary.jinleeUser?.jinleeId ?? null,
+        summary.discordBinding?.jinleeId ?? null,
+      ].filter((value): value is string => Boolean(value)),
+    ),
+  );
+
+const loadTakeoverSummary = async (client: TakeoverClient, discordId: string): Promise<TakeoverSummary> => {
+  const [member, jinleeUser, discordBinding] = await Promise.all([
+    client.member.findUnique({
+      where: { discordUserId: discordId },
+      select: {
+        discordUserId: true,
+        status: true,
+        totalBalance: true,
+        income: true,
+        recharge: true,
+        totalSpent: true,
+        serverDisplayName: true,
+        jinleeUser: {
+          select: { jinleeId: true },
+        },
+      },
+    }),
+    client.jinleeUser.findUnique({
+      where: { discordUserId: discordId },
+      select: {
+        jinleeId: true,
+        discordUserId: true,
+        sessionVersion: true,
+        totalBalance: true,
+        income: true,
+        recharge: true,
+        totalSpent: true,
+        loyaltyPoints: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    client.accountBinding.findUnique({
+      where: {
+        provider_providerUserId: {
+          provider: AccountProvider.DISCORD,
+          providerUserId: discordId,
+        },
+      },
+      select: {
+        id: true,
+        jinleeId: true,
+        providerUserId: true,
+        lastLoginAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+  ]);
+
+  const summary: TakeoverSummary = {
+    occupied: Boolean(member || jinleeUser || discordBinding),
+    occupiedJinleeIds: [],
+    member: member
+      ? {
+          discordUserId: member.discordUserId,
+          linkedJinleeId: member.jinleeUser?.jinleeId ?? null,
+          status: member.status,
+          totalBalance: member.totalBalance.toString(),
+          income: member.income.toString(),
+          recharge: member.recharge.toString(),
+          totalSpent: member.totalSpent.toString(),
+          serverDisplayName: member.serverDisplayName ?? null,
+        }
+      : null,
+    jinleeUser: jinleeUser
+      ? {
+          jinleeId: jinleeUser.jinleeId,
+          discordUserId: jinleeUser.discordUserId ?? null,
+          sessionVersion: jinleeUser.sessionVersion,
+          totalBalance: jinleeUser.totalBalance.toString(),
+          income: jinleeUser.income.toString(),
+          recharge: jinleeUser.recharge.toString(),
+          totalSpent: jinleeUser.totalSpent.toString(),
+          loyaltyPoints: jinleeUser.loyaltyPoints.toString(),
+          createdAt: jinleeUser.createdAt.toISOString(),
+          updatedAt: jinleeUser.updatedAt.toISOString(),
+        }
+      : null,
+    discordBinding: discordBinding
+      ? {
+          id: discordBinding.id,
+          jinleeId: discordBinding.jinleeId,
+          providerUserId: discordBinding.providerUserId,
+          lastLoginAt: toIsoString(discordBinding.lastLoginAt),
+          createdAt: discordBinding.createdAt.toISOString(),
+          updatedAt: discordBinding.updatedAt.toISOString(),
+        }
+      : null,
+  };
+
+  summary.occupiedJinleeIds = collectTakeoverJinleeIds(summary);
+  return summary;
+};
+
+const runManualDiscordIdSql = async (
+  tx: Prisma.TransactionClient,
+  operations: ReadonlyArray<ManualDiscordIdSqlOperation>,
+  toDiscordId: string,
+  fromDiscordId: string,
+  changed: Record<string, number>,
+  labelPrefix = '',
+) => {
+  for (const operation of operations) {
+    const result = await tx.$executeRawUnsafe(operation.sql, toDiscordId, fromDiscordId);
+    changed[`${labelPrefix}${operation.label}`] = toChangedCount(result);
+  }
 };
 
 export async function POST(request: NextRequest) {
@@ -118,6 +287,7 @@ export async function POST(request: NextRequest) {
 
   const oldId = String(body?.oldDiscordId ?? '').trim();
   const newId = String(body?.newDiscordId ?? '').trim();
+  const forceTakeover = body?.forceTakeover === true;
   if (!oldId || !newId) {
     return NextResponse.json({ error: 'oldDiscordId 与 newDiscordId 均不能为空' }, { status: 400 });
   }
@@ -133,31 +303,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '未找到旧账号，无法迁移' }, { status: 404 });
   }
 
-  const newMember = await prisma.member.findUnique({ where: { discordUserId: newId }, select: { discordUserId: true } });
-  if (newMember) {
-    return NextResponse.json({ error: '新 Discord ID 已存在，不能覆盖' }, { status: 409 });
-  }
-
-  const newJinleeUser = await prisma.jinleeUser.findUnique({ where: { discordUserId: newId }, select: { jinleeId: true } });
-  if (newJinleeUser) {
-    return NextResponse.json({ error: '新 Discord ID 已绑定到 Jinlee 用户，不能覆盖' }, { status: 409 });
-  }
-
-  const newDiscordBinding = await prisma.accountBinding.findUnique({
-    where: {
-      provider_providerUserId: {
-        provider: AccountProvider.DISCORD,
-        providerUserId: newId,
+  const takeover = await loadTakeoverSummary(prisma, newId);
+  if (takeover.occupied && !forceTakeover) {
+    return NextResponse.json(
+      {
+        error: '目标 Discord ID 已被占用。确认后会先归档当前目标账号，再将旧账号迁移过去。',
+        requiresForceTakeover: true,
+        takeover,
       },
-    },
-    select: { id: true },
-  });
-  if (newDiscordBinding) {
-    return NextResponse.json({ error: '新 Discord ID 已存在绑定记录，不能覆盖' }, { status: 409 });
+      { status: 409 },
+    );
   }
 
   try {
     const changed: Record<string, number> = {};
+    let archiveDiscordId: string | null = null;
+    let finalTakeover: TakeoverSummary | null = takeover.occupied ? takeover : null;
 
     await prisma.$transaction(
       async (tx) => {
@@ -165,6 +326,39 @@ export async function POST(request: NextRequest) {
           where: { discordUserId: oldId },
           select: { jinleeId: true },
         });
+
+        const targetTakeover = await loadTakeoverSummary(tx as TakeoverClient, newId);
+        if (targetTakeover.occupied) {
+          if (!forceTakeover) {
+            throw new Error('目标 Discord ID 已被占用，请确认覆盖迁移');
+          }
+
+          finalTakeover = targetTakeover;
+          archiveDiscordId = buildArchivedDiscordId(newId);
+
+          for (const jinleeId of targetTakeover.occupiedJinleeIds) {
+            await tx.jinleeUser.update({
+              where: { jinleeId },
+              data: { sessionVersion: { increment: 1 } },
+            });
+          }
+          changed['ArchivedTarget.JinleeUser.sessionVersion'] = targetTakeover.occupiedJinleeIds.length;
+
+          const archivedMemberChanged = await tx.$executeRaw`UPDATE "Member" SET "discordUserId" = ${archiveDiscordId} WHERE "discordUserId" = ${newId}`;
+          changed['ArchivedTarget.Member.discordUserId'] = toChangedCount(archivedMemberChanged);
+
+          const archivedJinleeUsers = await tx.jinleeUser.updateMany({
+            where: { discordUserId: newId },
+            data: { discordUserId: archiveDiscordId },
+          });
+          changed['ArchivedTarget.JinleeUser.discordUserId'] = archivedJinleeUsers.count;
+
+          await runManualDiscordIdSql(tx, MANUAL_DISCORD_ID_UPDATES, archiveDiscordId, newId, changed, 'ArchivedTarget.');
+        } else {
+          changed['ArchivedTarget.JinleeUser.sessionVersion'] = 0;
+          changed['ArchivedTarget.Member.discordUserId'] = 0;
+          changed['ArchivedTarget.JinleeUser.discordUserId'] = 0;
+        }
 
         const memberChanged = await tx.$executeRaw`UPDATE "Member" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`;
         changed['Member.discordUserId'] = toChangedCount(memberChanged);
@@ -182,10 +376,20 @@ export async function POST(request: NextRequest) {
           changed['JinleeUser.sessionVersion'] = 0;
         }
 
-        for (const update of MANUAL_DISCORD_ID_UPDATES) {
-          const result = await tx.$executeRawUnsafe(update.sql, newId, oldId);
-          changed[update.label] = toChangedCount(result);
-        }
+        await runManualDiscordIdSql(tx, MANUAL_DISCORD_ID_UPDATES, newId, oldId, changed);
+
+        await tx.discordMigrationAudit.create({
+          data: {
+            operatorDiscordId: session.discordId ?? null,
+            oldDiscordId: oldId,
+            newDiscordId: newId,
+            archiveDiscordId,
+            sourceJinleeId: oldJinleeUser?.jinleeId ?? null,
+            forceTakeover: Boolean(archiveDiscordId),
+            takeoverSnapshot: finalTakeover ? (finalTakeover as Prisma.InputJsonValue) : undefined,
+            changed: changed as Prisma.InputJsonValue,
+          },
+        });
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
@@ -193,8 +397,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: '账号迁移完成',
+        message: archiveDiscordId ? '账号覆盖迁移完成，原目标账号已归档' : '账号迁移完成',
         changed,
+        archiveDiscordId,
       },
       { status: 200 },
     );

@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { BlacklistManager } from '@/components/profile/BlacklistManager';
+import { AuditionInvitePreferenceToggle } from '@/components/profile/AuditionInvitePreferenceToggle';
 import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
 import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnouncementPreferenceToggle';
 import { VoicePreviewManager } from '@/components/profile/VoicePreviewManager';
@@ -210,7 +211,6 @@ export default async function Profile(props: ProfilePageProps) {
     { href: '/profile/withdraw', label: '提现' },
     { href: '/profile/point-shop', label: '积分商城' },
     { href: '/recharge', label: '充值中心' },
-    { href: '/accounts/wechat/bind', label: '绑定微信' },
   ];
   const quickEntryLinks = navLinks.filter(
     (link) => link.href !== '/profile' && link.href !== '/recharge' && link.href !== '/profile/withdraw',
@@ -433,6 +433,7 @@ export default async function Profile(props: ProfilePageProps) {
     CROWN_WEEK_90_VOUCHER: '一周冠9折券',
     CROWN_MONTH_90_VOUCHER: '月冠名9折券',
     LOTTERY_VOUCHER: '抽奖代金券',
+    BLOCK_STACK_VOUCHER: '积木游戏代金券',
     CUSTOM_GIFT_VOUCHER: '自定义礼物券',
     CUSTOM_TAG_VOUCHER: '自定义tag券',
     COMMISSION_MINUS1_VOUCHER: '抽成降1%券',
@@ -464,12 +465,18 @@ export default async function Profile(props: ProfilePageProps) {
     Math.min(100, (autoCommissionCurrentAmount / AUTO_COMMISSION_THRESHOLD) * 100),
   );
   const autoCommissionWindowLabel = `${formatUtcDate(autoCommissionWindowStart)} ~ ${formatUtcDate(autoCommissionWindowEnd)}`;
-  const autoCommissionStatusMeta = getBuffStatusMeta(autoCommissionActiveUntil);
+  const autoCommissionEligibleNow =
+    isPeiwanMember && !autoCommissionActive && autoCommissionCurrentAmount >= AUTO_COMMISSION_THRESHOLD;
+  const autoCommissionStatusMeta = autoCommissionEligibleNow
+    ? { label: '已达标', badgeClass: 'bg-amber-50 text-amber-600' }
+    : getBuffStatusMeta(autoCommissionActiveUntil);
   const autoCommissionCardTitle = autoCommissionActive ? '锦鲤福星陪玩保级进度' : '锦鲤福星陪玩进度';
   const autoCommissionDeadlineLabel = formatUtcDate(autoCommissionWindowEnd);
   const autoCommissionShortfall = Math.max(0, AUTO_COMMISSION_THRESHOLD - autoCommissionCurrentAmount);
   const autoCommissionHint = autoCommissionActive
     ? `在 ${autoCommissionDeadlineLabel} 前累计收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，当前还差 ${formatNumber(autoCommissionShortfall)} 完成保级`
+    : autoCommissionEligibleNow
+      ? `最近30天累计实际收入已达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，福星状态等待同步`
     : `最近30天累计实际收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)} 即可晋升锦鲤福星陪玩`;
   const profileCommissionRate =
     autoCommissionActive && autoCommissionBuff?.targetShare != null
@@ -802,10 +809,15 @@ export default async function Profile(props: ProfilePageProps) {
                     {isPeiwanMember ? (
                       <div className="space-y-6 border-t border-dashed border-black/10 pt-6">
                         {canManageVoicePreview ? (
-                          <VoicePreviewManager
-                            initialUrl={peiwan?.voicePreviewUrl ?? null}
-                            initialFilename={peiwan?.voicePreviewFilename ?? null}
-                          />
+                          <>
+                            <AuditionInvitePreferenceToggle
+                              enabled={peiwan?.auditionInviteEnabled === true}
+                            />
+                            <VoicePreviewManager
+                              initialUrl={peiwan?.voicePreviewUrl ?? null}
+                              initialFilename={peiwan?.voicePreviewFilename ?? null}
+                            />
+                          </>
                         ) : null}
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>

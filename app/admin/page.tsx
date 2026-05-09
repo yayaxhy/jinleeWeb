@@ -187,14 +187,14 @@ export default async function AdminHomePage() {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-white/70">账号迁移</p>
-              <p className="text-xs text-white/50">将旧 Discord ID 的全部数据迁移到新 ID</p>
+              <p className="text-sm text-white/70">资产转移</p>
+              <p className="text-xs text-white/50">只转余额、累计消费、积分、VIP / 心动 / 抽成等固定资产</p>
             </div>
             <Link
-              href="/admin/migrate-discord"
+              href="/admin/asset-transfer"
               className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
             >
-              前往迁移
+              前往转移
             </Link>
           </div>
         </div>
