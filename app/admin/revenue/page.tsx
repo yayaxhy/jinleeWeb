@@ -351,7 +351,7 @@ export default async function AdminRevenuePage(props: PageProps) {
   };
   const couponWhere: Prisma.CouponWhereInput = {
     status: CouponStatus.USED,
-    source: { in: [CouponSource.MANUAL_GRANT, CouponSource.CHAT_DROP] },
+    source: { in: [CouponSource.MANUAL_GRANT, CouponSource.VIP_BENEFIT, CouponSource.CHAT_DROP] },
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...(buildIdentityExclusion(
@@ -393,9 +393,12 @@ export default async function AdminRevenuePage(props: PageProps) {
     (a, b) => (parseNumber(b._sum.amount) ?? 0) - (parseNumber(a._sum.amount) ?? 0)
   );
   const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
+  const vipBenefitCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.VIP_BENEFIT);
   const chatDropCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.CHAT_DROP);
   const manualGrantCouponAmount = dec(manualGrantCouponRow?._sum.consumeAmount);
   const manualGrantCouponCount = manualGrantCouponRow?._count.id ?? 0;
+  const vipBenefitCouponAmount = dec(vipBenefitCouponRow?._sum.consumeAmount);
+  const vipBenefitCouponCount = vipBenefitCouponRow?._count.id ?? 0;
   const chatDropCouponAmount = dec(chatDropCouponRow?._sum.consumeAmount);
   const chatDropCouponCount = chatDropCouponRow?._count.id ?? 0;
 
@@ -605,7 +608,8 @@ export default async function AdminRevenuePage(props: PageProps) {
           <div className="space-y-1 text-sm text-white/70">
             <p>笔数：{expenseAgg._count.id}</p>
             <p>总额：¥{formatNumber(expenseAgg._sum.amount, 4)}</p>
-            <p>Coupon表格金额（送券）：{manualGrantCouponCount}笔，¥{formatNumber(manualGrantCouponAmount, 4)}</p>
+            <p>Coupon表格金额（手动送券）：{manualGrantCouponCount}笔，¥{formatNumber(manualGrantCouponAmount, 4)}</p>
+            <p>Coupon表格金额（VIP福利）：{vipBenefitCouponCount}笔，¥{formatNumber(vipBenefitCouponAmount, 4)}</p>
             <p>Coupon表格金额（彩蛋）：{chatDropCouponCount}笔，¥{formatNumber(chatDropCouponAmount, 4)}</p>
             <p>总扣款金额(收入）：¥{formatNumber(pureProfitAgg._sum.amount, 4)}</p>
           </div>

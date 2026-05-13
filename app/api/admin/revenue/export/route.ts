@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
   };
   const couponWhere: Prisma.CouponWhereInput = {
     status: CouponStatus.USED,
-    source: { in: [CouponSource.MANUAL_GRANT, CouponSource.CHAT_DROP] },
+    source: { in: [CouponSource.MANUAL_GRANT, CouponSource.VIP_BENEFIT, CouponSource.CHAT_DROP] },
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...(buildIdentityExclusion(
@@ -446,9 +446,12 @@ export async function GET(request: NextRequest) {
 
   const expenseTotal = decimalSum(expenseRows, 'amount');
   const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
+  const vipBenefitCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.VIP_BENEFIT);
   const chatDropCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.CHAT_DROP);
   const manualGrantCouponAmount = dec(manualGrantCouponRow?._sum.consumeAmount);
   const manualGrantCouponCount = manualGrantCouponRow?._count.id ?? 0;
+  const vipBenefitCouponAmount = dec(vipBenefitCouponRow?._sum.consumeAmount);
+  const vipBenefitCouponCount = vipBenefitCouponRow?._count.id ?? 0;
   const chatDropCouponAmount = dec(chatDropCouponRow?._sum.consumeAmount);
   const chatDropCouponCount = chatDropCouponRow?._count.id ?? 0;
   const expenseByReasonMap = new Map<string, { count: number; amount: Prisma.Decimal }>();
@@ -496,6 +499,7 @@ export async function GET(request: NextRequest) {
     { section: 'rows', key: 'RevertedGiftSubsidy(join)', value: revertedGiftRows.length },
     { section: 'rows', key: 'RevertedOrder(join)', value: revertedOrderRows.length },
     { section: 'rows', key: 'Coupon(used MANUAL_GRANT)', value: manualGrantCouponCount },
+    { section: 'rows', key: 'Coupon(used VIP_BENEFIT)', value: vipBenefitCouponCount },
     { section: 'rows', key: 'Coupon(used CHAT_DROP)', value: chatDropCouponCount },
   ]);
 
@@ -528,8 +532,10 @@ export async function GET(request: NextRequest) {
 
     { section: '支出记录(Expense)', key: '笔数', value: expenseRows.length },
     { section: '支出记录(Expense)', key: '总额', value: expenseTotal.toString() },
-    { section: '支出记录(Expense)', key: 'Coupon表格金额（送券）', value: manualGrantCouponAmount.toString() },
-    { section: '支出记录(Expense)', key: 'Coupon表格笔数（送券）', value: manualGrantCouponCount },
+    { section: '支出记录(Expense)', key: 'Coupon表格金额（手动送券）', value: manualGrantCouponAmount.toString() },
+    { section: '支出记录(Expense)', key: 'Coupon表格笔数（手动送券）', value: manualGrantCouponCount },
+    { section: '支出记录(Expense)', key: 'Coupon表格金额（VIP福利）', value: vipBenefitCouponAmount.toString() },
+    { section: '支出记录(Expense)', key: 'Coupon表格笔数（VIP福利）', value: vipBenefitCouponCount },
     { section: '支出记录(Expense)', key: 'Coupon表格金额（彩蛋）', value: chatDropCouponAmount.toString() },
     { section: '支出记录(Expense)', key: 'Coupon表格笔数（彩蛋）', value: chatDropCouponCount },
 
