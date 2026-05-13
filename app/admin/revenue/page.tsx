@@ -1,6 +1,6 @@
 ﻿import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { CouponStatus, Prisma } from '@prisma/client';
+import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewRevenue } from '@/lib/admin';
@@ -349,11 +349,23 @@ export default async function AdminRevenuePage(props: PageProps) {
   const expenseWhere: Prisma.ExpenseWhereInput = {
     createdAt: { gte: start, lt: end },
   };
+  const couponWhere: Prisma.CouponWhereInput = {
+    status: CouponStatus.USED,
+    source: { in: [CouponSource.MANUAL_GRANT, CouponSource.CHAT_DROP] },
+    consumedAt: { gte: start, lt: end },
+    consumeAmount: { not: null },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordId',
+      excludeMemberResolved.excludeJinleeIds,
+      excludeMemberResolved.excludeDiscordIds,
+    ) as Prisma.CouponWhereInput),
+  };
   const [
     expenseAgg,
     pureProfitAgg,
     expenseByReason,
-    couponConsumedAgg,
+    couponConsumedBySource,
   ] = await Promise.all([
     prisma.expense.aggregate({
       _sum: { amount: true },
@@ -370,27 +382,22 @@ export default async function AdminRevenuePage(props: PageProps) {
       _count: { id: true },
       where: expenseWhere,
     }),
-    prisma.coupon.aggregate({
+    prisma.coupon.groupBy({
+      by: ['source'],
       _sum: { consumeAmount: true },
       _count: { id: true },
-      where: {
-        status: CouponStatus.USED,
-        consumedAt: { gte: start, lt: end },
-        consumeAmount: { not: null },
-        ...(buildIdentityExclusion(
-          'jinleeId',
-          'discordId',
-          excludeMemberResolved.excludeJinleeIds,
-          excludeMemberResolved.excludeDiscordIds,
-        ) as Prisma.CouponWhereInput),
-      },
+      where: couponWhere,
     }),
   ]);
   const expenseByReasonSorted = [...expenseByReason].sort(
     (a, b) => (parseNumber(b._sum.amount) ?? 0) - (parseNumber(a._sum.amount) ?? 0)
   );
-  const couponTableAmount = dec(couponConsumedAgg._sum.consumeAmount);
-  const couponTableCount = couponConsumedAgg._count.id;
+  const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
+  const chatDropCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.CHAT_DROP);
+  const manualGrantCouponAmount = dec(manualGrantCouponRow?._sum.consumeAmount);
+  const manualGrantCouponCount = manualGrantCouponRow?._count.id ?? 0;
+  const chatDropCouponAmount = dec(chatDropCouponRow?._sum.consumeAmount);
+  const chatDropCouponCount = chatDropCouponRow?._count.id ?? 0;
 
   const pointShopOrderWhere: Prisma.PointShopOrderWhereInput = {
     createdAt: { gte: start, lt: end },
@@ -598,8 +605,8 @@ export default async function AdminRevenuePage(props: PageProps) {
           <div className="space-y-1 text-sm text-white/70">
             <p>笔数：{expenseAgg._count.id}</p>
             <p>总额：¥{formatNumber(expenseAgg._sum.amount, 4)}</p>
-            <p>Coupon表格金额（送券，彩蛋）：¥{formatNumber(couponTableAmount, 4)}</p>
-            <p>Coupon表格笔数（送券，彩蛋）：{couponTableCount}</p>
+            <p>Coupon表格金额（送券）：{manualGrantCouponCount}笔，¥{formatNumber(manualGrantCouponAmount, 4)}</p>
+            <p>Coupon表格金额（彩蛋）：{chatDropCouponCount}笔，¥{formatNumber(chatDropCouponAmount, 4)}</p>
             <p>总扣款金额(收入）：¥{formatNumber(pureProfitAgg._sum.amount, 4)}</p>
           </div>
           <div className="space-y-1 text-sm text-white/70">

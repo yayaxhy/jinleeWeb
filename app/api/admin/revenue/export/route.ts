@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { CouponStatus, Prisma } from '@prisma/client';
+import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { canViewRevenue } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
@@ -234,6 +234,18 @@ export async function GET(request: NextRequest) {
     typeOfTransaction: '优惠返利',
     timeCreatedAt: { gte: start, lt: end },
   };
+  const couponWhere: Prisma.CouponWhereInput = {
+    status: CouponStatus.USED,
+    source: { in: [CouponSource.MANUAL_GRANT, CouponSource.CHAT_DROP] },
+    consumedAt: { gte: start, lt: end },
+    consumeAmount: { not: null },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordId',
+      excludeMemberResolved.excludeJinleeIds,
+      excludeMemberResolved.excludeDiscordIds,
+    ) as Prisma.CouponWhereInput),
+  };
 
   const [
     blockStackRows,
@@ -252,7 +264,7 @@ export async function GET(request: NextRequest) {
     expenseRows,
     revertedGiftRows,
     revertedOrderRows,
-    couponConsumedAgg,
+    couponConsumedBySource,
   ] = await Promise.all([
     prisma.blockStackGame.findMany({
       where: { createdAt: { gte: start, lt: end } },
@@ -368,20 +380,11 @@ export async function GET(request: NextRequest) {
         AND o."endedAt" >= ${start}
         AND o."endedAt" < ${end}
     `),
-    prisma.coupon.aggregate({
+    prisma.coupon.groupBy({
+      by: ['source'],
       _sum: { consumeAmount: true },
       _count: { id: true },
-      where: {
-        status: CouponStatus.USED,
-        consumedAt: { gte: start, lt: end },
-        consumeAmount: { not: null },
-        ...(buildIdentityExclusion(
-          'jinleeId',
-          'discordId',
-          excludeMemberResolved.excludeJinleeIds,
-          excludeMemberResolved.excludeDiscordIds,
-        ) as Prisma.CouponWhereInput),
-      },
+      where: couponWhere,
     }),
   ]);
 
@@ -442,8 +445,12 @@ export async function GET(request: NextRequest) {
   const scratchNet = scratchGross.sub(scratchReward);
 
   const expenseTotal = decimalSum(expenseRows, 'amount');
-  const couponTableAmount = dec(couponConsumedAgg._sum.consumeAmount);
-  const couponTableCount = couponConsumedAgg._count.id;
+  const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
+  const chatDropCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.CHAT_DROP);
+  const manualGrantCouponAmount = dec(manualGrantCouponRow?._sum.consumeAmount);
+  const manualGrantCouponCount = manualGrantCouponRow?._count.id ?? 0;
+  const chatDropCouponAmount = dec(chatDropCouponRow?._sum.consumeAmount);
+  const chatDropCouponCount = chatDropCouponRow?._count.id ?? 0;
   const expenseByReasonMap = new Map<string, { count: number; amount: Prisma.Decimal }>();
   for (const row of expenseRows) {
     const key = String(row.reason ?? '未分类');
@@ -488,7 +495,8 @@ export async function GET(request: NextRequest) {
     { section: 'rows', key: 'Expense', value: expenseRows.length },
     { section: 'rows', key: 'RevertedGiftSubsidy(join)', value: revertedGiftRows.length },
     { section: 'rows', key: 'RevertedOrder(join)', value: revertedOrderRows.length },
-    { section: 'rows', key: 'Coupon(used with consumeAmount)', value: couponTableCount },
+    { section: 'rows', key: 'Coupon(used MANUAL_GRANT)', value: manualGrantCouponCount },
+    { section: 'rows', key: 'Coupon(used CHAT_DROP)', value: chatDropCouponCount },
   ]);
 
   addKeyValueSheet(workbook, '收益汇总', [
@@ -520,8 +528,10 @@ export async function GET(request: NextRequest) {
 
     { section: '支出记录(Expense)', key: '笔数', value: expenseRows.length },
     { section: '支出记录(Expense)', key: '总额', value: expenseTotal.toString() },
-    { section: '支出记录(Expense)', key: 'Coupon表格金额（送券，彩蛋）', value: couponTableAmount.toString() },
-    { section: '支出记录(Expense)', key: 'Coupon表格笔数（送券，彩蛋）', value: couponTableCount },
+    { section: '支出记录(Expense)', key: 'Coupon表格金额（送券）', value: manualGrantCouponAmount.toString() },
+    { section: '支出记录(Expense)', key: 'Coupon表格笔数（送券）', value: manualGrantCouponCount },
+    { section: '支出记录(Expense)', key: 'Coupon表格金额（彩蛋）', value: chatDropCouponAmount.toString() },
+    { section: '支出记录(Expense)', key: 'Coupon表格笔数（彩蛋）', value: chatDropCouponCount },
 
     { section: '抽成详情', key: '打赏面值流水', value: giftGrossNet.toString() },
     { section: '抽成详情', key: '打赏实付流水', value: giftPaidNet.toString() },
