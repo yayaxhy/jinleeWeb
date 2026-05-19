@@ -201,6 +201,7 @@ export async function DELETE(request: Request) {
       data: {
         voicePreviewUrl: null,
         voicePreviewFilename: null,
+        auditionInviteEnabled: false,
       },
     });
 

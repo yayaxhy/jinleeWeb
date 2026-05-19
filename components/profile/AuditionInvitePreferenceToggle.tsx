@@ -5,17 +5,22 @@ import { useRouter } from 'next/navigation';
 
 type Props = {
   enabled: boolean;
+  hasVoicePreview: boolean;
 };
 
 const actionBtn =
   'inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] transition disabled:cursor-not-allowed disabled:opacity-60';
 
-export function AuditionInvitePreferenceToggle({ enabled }: Props) {
+export function AuditionInvitePreferenceToggle({ enabled, hasVoicePreview }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const applyPreference = async (nextEnabled: boolean) => {
+    if (nextEnabled && !hasVoicePreview) {
+      setMessage('请先上传试音音频，再开启真人试音邀请。');
+      return;
+    }
     setPending(true);
     setMessage(null);
     try {
@@ -45,6 +50,9 @@ export function AuditionInvitePreferenceToggle({ enabled }: Props) {
           <p className="text-sm text-gray-600">
             开启真人试音邀请，允许老板通过名片邀请你进行真人试音，试音完成后您将会获得5块打赏。
           </p>
+          {!hasVoicePreview ? (
+            <p className="text-xs text-[#b45309]">请先上传试音音频，才能开启真人试音邀请。</p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-3 md:items-end">
@@ -59,7 +67,7 @@ export function AuditionInvitePreferenceToggle({ enabled }: Props) {
           <div className="flex flex-wrap gap-2 md:justify-end">
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !hasVoicePreview}
               onClick={() => void applyPreference(true)}
               className={`${actionBtn} ${
                 enabled

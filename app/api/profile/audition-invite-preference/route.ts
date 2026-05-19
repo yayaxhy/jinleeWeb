@@ -29,6 +29,7 @@ const ensureEditablePeiwan = async (request?: Request) => {
 
   return {
     discordUserId,
+    peiwan: member.peiwan,
   };
 };
 
@@ -43,6 +44,9 @@ export async function POST(request: Request) {
     const enabled = body?.enabled;
     if (typeof enabled !== 'boolean') {
       return NextResponse.json({ error: '缺少有效的 enabled 参数' }, { status: 400 });
+    }
+    if (enabled && !current.peiwan.voicePreviewUrl) {
+      return NextResponse.json({ error: '请先上传试音音频，再开启真人试音邀请' }, { status: 400 });
     }
 
     await prisma.pEIWAN.update({

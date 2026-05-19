@@ -817,6 +817,7 @@ export default async function Profile(props: ProfilePageProps) {
                           <>
                             <AuditionInvitePreferenceToggle
                               enabled={peiwan?.auditionInviteEnabled === true}
+                              hasVoicePreview={Boolean(peiwan?.voicePreviewUrl)}
                             />
                             <VoicePreviewManager
                               initialUrl={peiwan?.voicePreviewUrl ?? null}
