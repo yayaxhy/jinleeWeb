@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from '@prisma/client';
+import { MemberStatus, OrderStatus, PeiwanStatus, Prisma, type PrismaClient } from '@prisma/client';
 import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
 import { getHighestVipLevelByTotalSpent } from '@/lib/vip-levels';
 
@@ -22,6 +22,21 @@ type CommissionSummary = {
   baseRate: string;
   isPeiwan: boolean;
   peiwanId: number | null;
+};
+
+type PeiwanSummary = {
+  exists: boolean;
+  peiwanId: number | null;
+  totalEarn: string;
+  balance: string;
+  hasMpUrl: boolean;
+  hasVoicePreview: boolean;
+  auditionInviteEnabled: boolean;
+  status: string | null;
+  exclusive: boolean;
+  type: string | null;
+  level: string | null;
+  gameProfileCount: number;
 };
 
 type HeartSummary = {
@@ -57,6 +72,7 @@ export type AssetAccountSummary = {
   };
   heart: HeartSummary;
   commission: CommissionSummary;
+  peiwan: PeiwanSummary;
   buffs: BuffSummary;
   hasTransferableData: boolean;
 };
@@ -72,6 +88,9 @@ export type AssetTransferExecutionResult = {
     totalSpent: string;
     loyaltyPoints: string;
     vipLevelAfter: number;
+    peiwanTransferred: boolean;
+    peiwanId: number | null;
+    peiwanTotalEarn: string | null;
   };
   changed: Record<string, number>;
   warnings: string[];
@@ -105,7 +124,21 @@ export const loadAssetAccountSummary = async (
 ): Promise<AssetAccountSummary> => {
   const now = new Date();
 
-  const [member, jinleeUser, loyaltyPoint, vipProfile, commissionBuff, flowBuff, spendBuff, autoCommissionBuff, outgoingPairs, incomingPairs, maxSent, maxReceived] =
+  const [
+    member,
+    jinleeUser,
+    loyaltyPoint,
+    vipProfile,
+    commissionBuff,
+    flowBuff,
+    spendBuff,
+    autoCommissionBuff,
+    peiwan,
+    outgoingPairs,
+    incomingPairs,
+    maxSent,
+    maxReceived,
+  ] =
     await Promise.all([
       client.member.findUnique({
         where: { discordUserId: discordId },
@@ -166,6 +199,27 @@ export const loadAssetAccountSummary = async (
         where: { userId: discordId },
         select: { activeUntil: true },
       }),
+      client.pEIWAN.findUnique({
+        where: { discordUserId: discordId },
+        select: {
+          PEIWANID: true,
+          totalEarn: true,
+          balance: true,
+          MP_url: true,
+          voicePreviewUrl: true,
+          voicePreviewFilename: true,
+          auditionInviteEnabled: true,
+          status: true,
+          exclusive: true,
+          type: true,
+          level: true,
+          _count: {
+            select: {
+              gameProfiles: true,
+            },
+          },
+        },
+      }),
       client.heartCounter.count({ where: { fromMemberId: discordId } }),
       client.heartCounter.count({ where: { toMemberId: discordId } }),
       client.heartCounter.aggregate({
@@ -202,6 +256,21 @@ export const loadAssetAccountSummary = async (
     maxReceived: Number(maxReceived._max.total ?? 0),
   };
 
+  const peiwanSummary = {
+    exists: Boolean(peiwan),
+    peiwanId: peiwan?.PEIWANID ?? null,
+    totalEarn: DEC(peiwan?.totalEarn).toString(),
+    balance: DEC(peiwan?.balance).toString(),
+    hasMpUrl: Boolean(peiwan?.MP_url),
+    hasVoicePreview: Boolean(peiwan?.voicePreviewUrl || peiwan?.voicePreviewFilename),
+    auditionInviteEnabled: peiwan?.auditionInviteEnabled === true,
+    status: peiwan?.status ?? null,
+    exclusive: peiwan?.exclusive === true,
+    type: peiwan?.type ?? null,
+    level: peiwan?.level ?? null,
+    gameProfileCount: peiwan?._count.gameProfiles ?? 0,
+  } satisfies PeiwanSummary;
+
   const buffs = {
     commissionBoostExpiresAt: commissionBuff?.expiresAt && commissionBuff.expiresAt > now ? commissionBuff.expiresAt.toISOString() : null,
     flowRemaining:
@@ -226,7 +295,8 @@ export const loadAssetAccountSummary = async (
     !DEC(member?.baseCommissionRate ?? DEFAULT_COMMISSION_RATE).eq(DEFAULT_COMMISSION_RATE) ||
     Boolean(buffs.commissionBoostExpiresAt) ||
     DEC(buffs.flowRemaining).gt(0) ||
-    DEC(buffs.spendRemaining).gt(0);
+    DEC(buffs.spendRemaining).gt(0) ||
+    peiwanSummary.exists;
 
   return {
     discordId,
@@ -244,9 +314,37 @@ export const loadAssetAccountSummary = async (
       isPeiwan: Boolean(member?.peiwan),
       peiwanId: member?.peiwan?.PEIWANID ?? null,
     },
+    peiwan: peiwanSummary,
     buffs,
     hasTransferableData,
   };
+};
+
+const movePeiwanUniqueRowsTx = async <Row extends { id: string }, Key extends string>(
+  rows: readonly Row[],
+  existingKeys: ReadonlySet<Key>,
+  keyOf: (row: Row) => Key,
+  move: (row: Row) => Promise<unknown>,
+  drop: (row: Row) => Promise<unknown>,
+) => {
+  const targetKeys = new Set(existingKeys);
+  let moved = 0;
+  let deduped = 0;
+
+  for (const row of rows) {
+    const key = keyOf(row);
+    if (targetKeys.has(key)) {
+      await drop(row);
+      deduped += 1;
+      continue;
+    }
+
+    await move(row);
+    targetKeys.add(key);
+    moved += 1;
+  }
+
+  return { moved, deduped };
 };
 
 const mergeHeartCountersTx = async (
@@ -321,6 +419,159 @@ const mergeHeartCountersTx = async (
     createdPairs,
     mergedPairs,
     selfLoopsDropped,
+  };
+};
+
+const transferPeiwanIdentityTx = async (
+  tx: Prisma.TransactionClient,
+  sourceDiscordId: string,
+  targetDiscordId: string,
+  targetBalanceAfter: Prisma.Decimal,
+) => {
+  const [sourcePeiwan, targetPeiwan, activeWorkerOrders, workerLockCount] = await Promise.all([
+    tx.pEIWAN.findUnique({
+      where: { discordUserId: sourceDiscordId },
+      select: {
+        PEIWANID: true,
+        discordUserId: true,
+        status: true,
+      },
+    }),
+    tx.pEIWAN.findUnique({
+      where: { discordUserId: targetDiscordId },
+      select: { PEIWANID: true },
+    }),
+    tx.order.count({
+      where: {
+        workerId: sourceDiscordId,
+        status: { in: [OrderStatus.PENDING, OrderStatus.RUNNING] },
+      },
+    }),
+    tx.workerLock.count({
+      where: { workerId: sourceDiscordId },
+    }),
+  ]);
+
+  if (!sourcePeiwan) {
+    return {
+      transferred: false,
+      peiwanId: null,
+      totalEarn: null as string | null,
+      sourceStatusReset: 0,
+      targetStatusUpdated: 0,
+      mainRecordMoved: 0,
+      gameProfilesReassigned: 0,
+      giftUnlocksMoved: 0,
+      giftUnlocksDeduped: 0,
+      giftRewardClaimsMoved: 0,
+      giftRewardClaimsDeduped: 0,
+      reviewsReassigned: 0,
+      deletionRecordsReassigned: 0,
+    };
+  }
+
+  if (targetPeiwan) {
+    throw new Error('源账号存在陪玩身份，但目标账号已经有独立陪玩档案，当前不支持自动合并两套陪玩身份。');
+  }
+
+  if (sourcePeiwan.status !== PeiwanStatus.free || activeWorkerOrders > 0 || workerLockCount > 0) {
+    throw new Error('源账号当前存在进行中的陪玩订单或锁定状态，请先结束相关业务后再执行资产转移。');
+  }
+
+  const [sourceUnlocks, targetUnlocks, sourceRewardClaims, targetRewardClaims] = await Promise.all([
+    tx.peiwanGiftUnlock.findMany({
+      where: { discordUserId: sourceDiscordId },
+      select: { id: true, giftName: true },
+    }),
+    tx.peiwanGiftUnlock.findMany({
+      where: { discordUserId: targetDiscordId },
+      select: { giftName: true },
+    }),
+    tx.peiwanGiftRewardClaim.findMany({
+      where: { discordUserId: sourceDiscordId },
+      select: { id: true, rewardKey: true },
+    }),
+    tx.peiwanGiftRewardClaim.findMany({
+      where: { discordUserId: targetDiscordId },
+      select: { rewardKey: true },
+    }),
+  ]);
+
+  const unlockMoveSummary = await movePeiwanUniqueRowsTx(
+    sourceUnlocks,
+    new Set(targetUnlocks.map((row) => row.giftName)),
+    (row) => row.giftName,
+    (row) =>
+      tx.peiwanGiftUnlock.update({
+        where: { id: row.id },
+        data: { discordUserId: targetDiscordId },
+      }),
+    (row) => tx.peiwanGiftUnlock.delete({ where: { id: row.id } }),
+  );
+
+  const rewardClaimMoveSummary = await movePeiwanUniqueRowsTx(
+    sourceRewardClaims,
+    new Set(targetRewardClaims.map((row) => row.rewardKey)),
+    (row) => row.rewardKey,
+    (row) =>
+      tx.peiwanGiftRewardClaim.update({
+        where: { id: row.id },
+        data: { discordUserId: targetDiscordId },
+      }),
+    (row) => tx.peiwanGiftRewardClaim.delete({ where: { id: row.id } }),
+  );
+
+  const [movedPeiwan, gameProfiles, reviews, deletions] = await Promise.all([
+    tx.pEIWAN.update({
+      where: { PEIWANID: sourcePeiwan.PEIWANID },
+      data: {
+        discordUserId: targetDiscordId,
+        balance: targetBalanceAfter,
+      },
+      select: {
+        PEIWANID: true,
+        totalEarn: true,
+      },
+    }),
+    tx.peiwanGameProfile.updateMany({
+      where: { peiwanId: sourcePeiwan.PEIWANID },
+      data: { discordUserId: targetDiscordId },
+    }),
+    tx.peiwanReview.updateMany({
+      where: { peiwanDiscordId: sourceDiscordId },
+      data: { peiwanDiscordId: targetDiscordId },
+    }),
+    tx.peiwanDeletion.updateMany({
+      where: { peiwanId: sourcePeiwan.PEIWANID },
+      data: { discordUserId: targetDiscordId },
+    }),
+  ]);
+
+  await Promise.all([
+    tx.member.update({
+      where: { discordUserId: sourceDiscordId },
+        data: { status: MemberStatus.LAOBAN },
+    }),
+    tx.member.update({
+      where: { discordUserId: targetDiscordId },
+        data: { status: MemberStatus.PEIWAN },
+    }),
+  ]);
+
+  return {
+    transferred: true,
+    peiwanId: movedPeiwan.PEIWANID,
+    totalEarn: DEC(movedPeiwan.totalEarn).toString(),
+    sourceStatusReset: 1,
+    targetStatusUpdated: 1,
+    mainRecordMoved: 1,
+    gameProfilesReassigned: gameProfiles.count,
+    giftUnlocksMoved: unlockMoveSummary.moved,
+    giftUnlocksDeduped: unlockMoveSummary.deduped,
+    giftRewardClaimsMoved: rewardClaimMoveSummary.moved,
+    giftRewardClaimsDeduped: rewardClaimMoveSummary.deduped,
+    reviewsReassigned: reviews.count,
+    deletionRecordsReassigned: deletions.count,
   };
 };
 
@@ -610,6 +861,13 @@ export const executeAssetTransfer = async (
     loyaltyPointsDelta: sourceWalletBefore.loyaltyPoints.negated(),
   });
 
+  const peiwanChanged = await transferPeiwanIdentityTx(
+    tx,
+    params.sourceDiscordId,
+    params.targetDiscordId,
+    targetWalletAfter.totalBalance,
+  );
+
   await tx.loyaltyPoint.upsert({
     where: { discordUserId: params.targetDiscordId },
     create: {
@@ -716,6 +974,17 @@ export const executeAssetTransfer = async (
     loyaltyPointRowReset: sourceLoyaltyPoint ? 1 : 0,
     vipTargetUpdated: sourceVipProfile || targetVipProfile || derivedTargetVipLevel > 0 ? 1 : 0,
     vipSourceReset: sourceVipProfile ? 1 : 0,
+    peiwanIdentityTransferred: peiwanChanged.transferred ? 1 : 0,
+    peiwanSourceStatusReset: peiwanChanged.sourceStatusReset,
+    peiwanTargetStatusUpdated: peiwanChanged.targetStatusUpdated,
+    peiwanMainRecordMoved: peiwanChanged.mainRecordMoved,
+    peiwanGameProfilesReassigned: peiwanChanged.gameProfilesReassigned,
+    peiwanGiftUnlocksMoved: peiwanChanged.giftUnlocksMoved,
+    peiwanGiftUnlocksDeduped: peiwanChanged.giftUnlocksDeduped,
+    peiwanGiftRewardClaimsMoved: peiwanChanged.giftRewardClaimsMoved,
+    peiwanGiftRewardClaimsDeduped: peiwanChanged.giftRewardClaimsDeduped,
+    peiwanReviewsReassigned: peiwanChanged.reviewsReassigned,
+    peiwanDeletionRecordsReassigned: peiwanChanged.deletionRecordsReassigned,
     heartSourceRowsProcessed: heartChanged.sourceRows,
     heartPairsCreated: heartChanged.createdPairs,
     heartPairsMerged: heartChanged.mergedPairs,
@@ -741,6 +1010,9 @@ export const executeAssetTransfer = async (
         totalSpent: sourceWalletBefore.totalSpent.toString(),
         loyaltyPoints: sourceWalletBefore.loyaltyPoints.toString(),
         vipLevelAfter: derivedTargetVipLevel,
+        peiwanTransferred: peiwanChanged.transferred,
+        peiwanId: peiwanChanged.peiwanId,
+        peiwanTotalEarn: peiwanChanged.totalEarn,
         sourceWalletAfter: {
           totalBalance: sourceWalletAfter.totalBalance.toString(),
           income: sourceWalletAfter.income.toString(),
@@ -773,6 +1045,9 @@ export const executeAssetTransfer = async (
       totalSpent: sourceWalletBefore.totalSpent.toString(),
       loyaltyPoints: sourceWalletBefore.loyaltyPoints.toString(),
       vipLevelAfter: derivedTargetVipLevel,
+      peiwanTransferred: peiwanChanged.transferred,
+      peiwanId: peiwanChanged.peiwanId,
+      peiwanTotalEarn: peiwanChanged.totalEarn,
     },
     changed,
     warnings,

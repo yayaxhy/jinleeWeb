@@ -29,10 +29,15 @@ export const COUPON_VOUCHER_META: Record<CouponType, CouponVoucherMeta> = {
     giftName: '南瓜车',
   },
   [CouponType.PHONOGRAPH_VOUCHER]: { prizeName: '留声机代金券', prizeType: LotteryPrizeType.GIFT, giftName: '留声机' },
+  [CouponType.CROWN_DAY_95_VOUCHER]: { prizeName: '一日冠95折券', prizeType: LotteryPrizeType.GIFT, giftName: '一日冠' },
+  [CouponType.CROWN_DAY_92_VOUCHER]: { prizeName: '一日冠92折券', prizeType: LotteryPrizeType.GIFT, giftName: '一日冠' },
   [CouponType.CROWN_75_VOUCHER]: { prizeName: '一日冠75折券', prizeType: LotteryPrizeType.GIFT, giftName: '一日冠' },
   [CouponType.CROWN_DAY_90_VOUCHER]: { prizeName: '一日冠9折券', prizeType: LotteryPrizeType.GIFT, giftName: '一日冠' },
+  [CouponType.CROWN_3DAY_92_VOUCHER]: { prizeName: '三日冠92折券', prizeType: LotteryPrizeType.GIFT, giftName: '三日冠' },
   [CouponType.CROWN_3DAY_90_VOUCHER]: { prizeName: '三日冠9折券', prizeType: LotteryPrizeType.GIFT, giftName: '三日冠' },
+  [CouponType.CROWN_WEEK_92_VOUCHER]: { prizeName: '一周冠92折券', prizeType: LotteryPrizeType.GIFT, giftName: '一周冠' },
   [CouponType.CROWN_WEEK_90_VOUCHER]: { prizeName: '一周冠9折券', prizeType: LotteryPrizeType.GIFT, giftName: '一周冠' },
+  [CouponType.CROWN_MONTH_92_VOUCHER]: { prizeName: '月冠名92折券', prizeType: LotteryPrizeType.GIFT, giftName: '月冠名' },
   [CouponType.CROWN_MONTH_90_VOUCHER]: { prizeName: '月冠名9折券', prizeType: LotteryPrizeType.GIFT, giftName: '月冠名' },
   [CouponType.LOTTERY_VOUCHER]: { prizeName: '抽奖代金券', prizeType: LotteryPrizeType.COUPON },
   [CouponType.BLOCK_STACK_VOUCHER]: { prizeName: '积木游戏代金券', prizeType: LotteryPrizeType.COUPON },
@@ -54,6 +59,7 @@ const LOTTERY_ONLY_GIFT_NAME_BY_PRIZE_NAME: Record<string, string> = {
   一日冠92折券: '一日冠',
   三日冠92折券: '三日冠',
   一周冠92折券: '一周冠',
+  月冠名92折券: '月冠名',
 };
 
 export const COUPON_TYPE_BY_PRIZE_NAME: Record<string, CouponType> = prizeEntries.reduce(

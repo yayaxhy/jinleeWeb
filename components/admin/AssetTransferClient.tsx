@@ -39,6 +39,20 @@ type AccountSummary = {
     isPeiwan: boolean;
     peiwanId: number | null;
   };
+  peiwan: {
+    exists: boolean;
+    peiwanId: number | null;
+    totalEarn: string;
+    balance: string;
+    hasMpUrl: boolean;
+    hasVoicePreview: boolean;
+    auditionInviteEnabled: boolean;
+    status: string | null;
+    exclusive: boolean;
+    type: string | null;
+    level: string | null;
+    gameProfileCount: number;
+  };
   buffs: {
     commissionBoostExpiresAt: string | null;
     flowRemaining: string;
@@ -57,6 +71,9 @@ type TransferResult = {
   totalSpent: string;
   loyaltyPoints: string;
   vipLevelAfter: number;
+  peiwanTransferred: boolean;
+  peiwanId: number | null;
+  peiwanTotalEarn: string | null;
 };
 
 const SummaryCard = ({ title, summary }: { title: string; summary: AccountSummary | null }) => {
@@ -84,6 +101,8 @@ const SummaryCard = ({ title, summary }: { title: string; summary: AccountSummar
         <p>心动收到关系：{summary.heart.incomingPairs}</p>
         <p>基础抽成：{summary.commission.baseRate}</p>
         <p>当前抽成：{summary.commission.currentRate}</p>
+        <p>陪玩档案：{summary.peiwan.exists ? `是 #${summary.peiwan.peiwanId ?? '—'}` : '否'}</p>
+        <p>陪玩累计流水：{summary.peiwan.totalEarn}</p>
       </div>
     </div>
   );
@@ -175,7 +194,7 @@ export function AssetTransferClient() {
         <p className="text-sm uppercase tracking-[0.4em] text-white/50">资产转移</p>
         <h1 className="text-3xl font-semibold">转移固定资产资料</h1>
         <p className="text-sm text-white/70">
-          转移余额、累计消费、积分、VIP 结算状态、心动值关系、基础抽成与手动 Buff。不会转移流水明细、未消耗权益、订单历史，也不会转移自动 91% 抽成状态。
+          转移余额、累计消费、积分、VIP 结算状态、心动值关系、基础抽成与手动 Buff。若源账号当前是陪玩，会整体迁移陪玩档案（PEIWANID、报价、语音预览、评语、礼物解锁等）到目标账号。不会转移流水明细、未消耗权益、订单历史，也不会转移福星陪玩身份。
         </p>
       </div>
 
@@ -217,7 +236,7 @@ export function AssetTransferClient() {
 
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/65 space-y-1">
           <p>1. 钱包类资产按源账号全部划转到目标账号，源账号同步清零。</p>
-          <p>2. 目标账号若已有资产，会先弹出预览并要求确认，再按规则合并。</p>
+          <p>2. 如果源账号是陪玩，会整套迁移陪玩身份；目标账号不能已有独立陪玩档案。</p>
           <p>3. 个人流水会新增“资产转出 / 资产转入”两条余额记录，完整明细写入审计表。</p>
         </div>
 
@@ -226,7 +245,7 @@ export function AssetTransferClient() {
             <div className="space-y-1">
               <p className="font-medium text-amber-50">目标账号已经有可转移资产</p>
               <p className="text-amber-100/80">
-                确认后会合并钱包/累计消费/积分/心动值，并用源账号覆盖目标账号的基础抽成与 VIP 配置。
+                确认后会合并钱包/累计消费/积分/心动值，并用源账号覆盖目标账号的基础抽成与 VIP 配置；若源账号是陪玩，还会把整套陪玩身份迁过去。
               </p>
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
@@ -276,6 +295,8 @@ export function AssetTransferClient() {
             <p>累计消费：{transferred.totalSpent}</p>
             <p>积分：{transferred.loyaltyPoints}</p>
             <p>目标 VIP：{transferred.vipLevelAfter}</p>
+            <p>陪玩身份：{transferred.peiwanTransferred ? `已迁移 #${transferred.peiwanId ?? '—'}` : '未迁移'}</p>
+            <p>陪玩累计流水：{transferred.peiwanTotalEarn ?? '—'}</p>
           </div>
         </div>
       ) : null}

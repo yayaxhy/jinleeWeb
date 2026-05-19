@@ -89,6 +89,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '源账号不存在，或尚未建立 Jinlee 身份' }, { status: 404 });
   }
 
+  if (sourceSummary.peiwan.exists && targetSummary.peiwan.exists) {
+    return NextResponse.json(
+      { error: '源账号和目标账号都存在独立陪玩档案，当前不支持自动合并两套陪玩身份。' },
+      { status: 400 },
+    );
+  }
+
   if (!sourceSummary.hasTransferableData) {
     return NextResponse.json({ error: '源账号当前没有可转移的资产' }, { status: 400 });
   }
