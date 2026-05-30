@@ -1,12 +1,13 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 
 const SOURCE_ORIGIN = 'https://warhol-arts.webflow.io';
 const SOURCE_HOST = 'warhol-arts.webflow.io';
-const PUBLIC_ROOT = path.join(process.cwd(), 'public', 'newhome');
+const FINAL_PUBLIC_ROOT = path.join(process.cwd(), 'public', 'newhome');
+const PUBLIC_ROOT = path.join(process.cwd(), 'public', 'newhome.__staging');
 const ASSET_ROOT = path.join(PUBLIC_ROOT, 'assets');
 
 const PAGES = [
@@ -333,10 +334,13 @@ async function downloadWithCurl(url) {
       'curl',
       [
         '-LfsS',
+        '--http1.1',
         '--retry',
-        '6',
+        '20',
+        '--retry-all-errors',
+        '--retry-connrefused',
         '--retry-delay',
-        '1',
+        '2',
         '--connect-timeout',
         '20',
         '--user-agent',
@@ -524,6 +528,9 @@ async function main() {
   } else {
     console.log(`Mirrored ${pagePayloads.length} pages and ${resources.size} assets with local references only.`);
   }
+
+  await rm(FINAL_PUBLIC_ROOT, { recursive: true, force: true });
+  await rename(PUBLIC_ROOT, FINAL_PUBLIC_ROOT);
 }
 
 await main();
