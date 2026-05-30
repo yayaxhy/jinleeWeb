@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { promisify } from 'node:util';
 
 const SOURCE_ORIGIN = 'https://warhol-arts.webflow.io';
 const SOURCE_HOST = 'warhol-arts.webflow.io';
@@ -18,6 +20,10 @@ const PAGES = [
     outputFile: path.join(PUBLIC_ROOT, '404', 'index.html'),
     routePath: '/newhome/404',
   },
+];
+
+const SEEDED_ASSET_URLS = [
+  'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/runtime.js',
 ];
 
 const FALLBACK_TEXT_RESOURCES = new Map([
@@ -48,7 +54,10 @@ const ALLOWED_HOSTS = new Set([
   'd3e54v103j8qbb.cloudfront.net',
   'cdnjs.cloudflare.com',
   'cdn.jsdelivr.net',
+  'unpkg.com',
   'ajax.googleapis.com',
+  'prod.spline.design',
+  'raw.githubusercontent.com',
 ]);
 
 const TEXT_EXTENSIONS = new Set([
@@ -76,6 +85,7 @@ const ASSET_EXTENSIONS = new Set([
   '.ogg',
   '.otf',
   '.png',
+  '.splinecode',
   '.svg',
   '.ttf',
   '.txt',
@@ -90,6 +100,7 @@ const ASSET_EXTENSIONS = new Set([
 const resources = new Map();
 const queue = [];
 const queuedUrls = new Set();
+const execFileAsync = promisify(execFile);
 
 function hash(input) {
   return crypto.createHash('sha1').update(input).digest('hex').slice(0, 10);
@@ -149,6 +160,68 @@ function shouldDiscoverNestedAssets(remoteUrl, contentType) {
   return normalizedType.startsWith('text/html') || normalizedType.startsWith('text/css');
 }
 
+function guessContentType(remoteUrl) {
+  const extension = path.posix.extname(new URL(remoteUrl).pathname).toLowerCase();
+
+  switch (extension) {
+    case '.avif':
+      return 'image/avif';
+    case '.css':
+      return 'text/css; charset=utf-8';
+    case '.eot':
+      return 'application/vnd.ms-fontobject';
+    case '.gif':
+      return 'image/gif';
+    case '.html':
+      return 'text/html; charset=utf-8';
+    case '.ico':
+      return 'image/x-icon';
+    case '.jpeg':
+    case '.jpg':
+      return 'image/jpeg';
+    case '.js':
+      return 'application/javascript; charset=utf-8';
+    case '.json':
+      return 'application/json; charset=utf-8';
+    case '.mp3':
+      return 'audio/mpeg';
+    case '.mp4':
+      return 'video/mp4';
+    case '.ogg':
+      return 'audio/ogg';
+    case '.otf':
+      return 'font/otf';
+    case '.png':
+      return 'image/png';
+    case '.splinecode':
+      return 'application/octet-stream';
+    case '.svg':
+      return 'image/svg+xml';
+    case '.ttf':
+      return 'font/ttf';
+    case '.txt':
+      return 'text/plain; charset=utf-8';
+    case '.wav':
+      return 'audio/wav';
+    case '.webm':
+      return 'video/webm';
+    case '.webp':
+      return 'image/webp';
+    case '.woff':
+      return 'font/woff';
+    case '.woff2':
+      return 'font/woff2';
+    case '.xml':
+      return 'application/xml; charset=utf-8';
+    default:
+      if (new URL(remoteUrl).hostname === 'unpkg.com' && new URL(remoteUrl).pathname === '/split-type') {
+        return 'application/javascript; charset=utf-8';
+      }
+
+      return 'application/octet-stream';
+  }
+}
+
 function normalizeCandidate(rawValue, baseUrl) {
   if (!rawValue) {
     return null;
@@ -190,6 +263,10 @@ function isMirrorableAsset(remoteUrl) {
 
   const extension = path.posix.extname(url.pathname).toLowerCase();
   if (ASSET_EXTENSIONS.has(extension)) {
+    return true;
+  }
+
+  if (url.hostname === 'unpkg.com' && url.pathname === '/split-type') {
     return true;
   }
 
@@ -246,37 +323,41 @@ function enqueue(remoteUrl) {
 }
 
 async function fetchText(url) {
-  const response = await fetchWithRetry(url);
-
-  if (!response.ok) {
-    throw new Error(`Request failed for ${url}: ${response.status} ${response.statusText}`);
-  }
-
-  return response.text();
+  const buffer = await downloadWithCurl(url);
+  return buffer.toString('utf8');
 }
 
-async function fetchWithRetry(url, attempts = 4) {
-  let lastError = null;
+async function downloadWithCurl(url) {
+  try {
+    const { stdout } = await execFileAsync(
+      'curl',
+      [
+        '-LfsS',
+        '--retry',
+        '6',
+        '--retry-delay',
+        '1',
+        '--connect-timeout',
+        '20',
+        '--user-agent',
+        'jinlee-club local vendor',
+        url,
+      ],
+      {
+        encoding: 'buffer',
+        maxBuffer: 64 * 1024 * 1024,
+      },
+    );
 
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      return await fetch(url, {
-        headers: {
-          'user-agent': 'jinlee-club local vendor',
-        },
-      });
-    } catch (error) {
-      lastError = error;
-
-      if (attempt < attempts) {
-        const delay = 500 * attempt;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
-      }
+    return stdout;
+  } catch (error) {
+    const fallbackResource = buildFallbackResource(url);
+    if (fallbackResource) {
+      return Buffer.from(fallbackResource.body, 'utf8');
     }
-  }
 
-  throw lastError ?? new Error(`Request failed for ${url}`);
+    throw error;
+  }
 }
 
 function buildFallbackResource(remoteUrl) {
@@ -319,6 +400,11 @@ function rewriteTextContent(input) {
   output = output.replace(/(["'])\/\1/g, `"${
     PAGES.find((page) => page.sourceUrl.endsWith('/'))?.routePath ?? '/newhome'
   }"`);
+  output = output.replaceAll('data-wf-domain="warhol-arts.webflow.io"', 'data-wf-domain="newhome.local"');
+  output = output.replace(
+    /<link[^>]+href="https:\/\/cdn\.prod\.website-files\.com"[^>]+rel="preconnect"[^>]*\/?>/g,
+    '',
+  );
 
   return output;
 }
@@ -337,25 +423,18 @@ async function main() {
     }
   }
 
+  for (const remoteUrl of SEEDED_ASSET_URLS) {
+    enqueue(remoteUrl);
+  }
+
   while (queue.length > 0) {
     const remoteUrl = queue.shift();
     if (!remoteUrl || resources.has(remoteUrl)) {
       continue;
     }
 
-    const response = await fetchWithRetry(remoteUrl);
-
-    if (!response.ok) {
-      const fallbackResource = buildFallbackResource(remoteUrl);
-      if (fallbackResource) {
-        resources.set(remoteUrl, fallbackResource);
-        continue;
-      }
-
-      throw new Error(`Request failed for ${remoteUrl}: ${response.status} ${response.statusText}`);
-    }
-
-    const contentType = response.headers.get('content-type') ?? 'application/octet-stream';
+    const body = await downloadWithCurl(remoteUrl);
+    const contentType = guessContentType(remoteUrl);
     const { filePath, publicPath } = buildAssetTarget(remoteUrl);
     const resource = {
       remoteUrl,
@@ -367,7 +446,7 @@ async function main() {
     };
 
     if (resource.isText) {
-      const text = await response.text();
+      const text = body.toString('utf8');
       resource.body = text;
 
       if (shouldDiscoverNestedAssets(remoteUrl, contentType)) {
@@ -376,8 +455,7 @@ async function main() {
         }
       }
     } else {
-      const arrayBuffer = await response.arrayBuffer();
-      resource.body = Buffer.from(arrayBuffer);
+      resource.body = body;
     }
 
     resources.set(remoteUrl, resource);
