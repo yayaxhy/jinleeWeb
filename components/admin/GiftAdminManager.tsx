@@ -203,8 +203,9 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
         return next;
       });
       setFiles((prev) => {
-        const { [giftName]: _removed, ...rest } = prev;
-        return { ...rest, [nextName]: null };
+        const next = { ...prev };
+        delete next[giftName];
+        return { ...next, [nextName]: null };
       });
       setInputKeys((prev) => {
         const next = { ...prev, [nextName]: (prev[giftName] ?? 0) + 1 };
