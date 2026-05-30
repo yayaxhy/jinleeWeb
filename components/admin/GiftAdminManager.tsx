@@ -8,6 +8,7 @@ type GiftItem = {
   urlLink: string;
   rate: string;
   active: boolean;
+  staffOnlyGift: boolean;
   category: string;
   imageUrl: string | null;
 };
@@ -18,6 +19,7 @@ type ApiGift = {
   urlLink: string;
   rate: string;
   active: boolean;
+  staffOnlyGift: boolean;
   category: string;
   imageUrl: string | null;
 };
@@ -39,6 +41,7 @@ type GiftSnapshot = {
   rate: string;
   category: string;
   active: boolean;
+  staffOnlyGift: boolean;
 };
 
 const normalizeCategory = (value: string) => {
@@ -52,6 +55,7 @@ const normalizeSnapshot = (gift: GiftItem): GiftSnapshot => ({
   rate: gift.rate.trim(),
   category: normalizeCategory(gift.category),
   active: gift.active,
+  staffOnlyGift: gift.staffOnlyGift,
 });
 
 export function GiftAdminManager({ initialGifts, endpoint }: Props) {
@@ -84,6 +88,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
     rate: '1',
     category: '默认',
     active: true,
+    staffOnlyGift: false,
     file: null as File | null,
   });
   const [createMessage, setCreateMessage] = useState('');
@@ -128,7 +133,8 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       snapshot.urlLink !== normalized.urlLink ||
       snapshot.rate !== normalized.rate ||
       snapshot.category !== normalized.category ||
-      snapshot.active !== normalized.active;
+      snapshot.active !== normalized.active ||
+      snapshot.staffOnlyGift !== normalized.staffOnlyGift;
     const renameValue = (renameInputs[giftName] ?? '').trim();
     const hasRename = !!renameValue && renameValue !== giftName;
     const hasFile = !!files[giftName];
@@ -161,6 +167,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       formData.append('rate', current.rate.trim());
       formData.append('category', normalizeCategory(current.category));
       formData.append('active', current.active ? 'true' : 'false');
+      formData.append('staffOnlyGift', current.staffOnlyGift ? 'true' : 'false');
       const renameValue = (renameInputs[giftName] ?? '').trim();
       if (renameValue && renameValue !== giftName) {
         formData.append('newGiftName', renameValue);
@@ -243,6 +250,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       formData.append('rate', createForm.rate.trim());
       formData.append('category', normalizeCategory(createForm.category));
       formData.append('active', createForm.active ? 'true' : 'false');
+      formData.append('staffOnlyGift', createForm.staffOnlyGift ? 'true' : 'false');
       if (createForm.file) {
         formData.append('file', createForm.file);
       }
@@ -270,6 +278,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
         rate: '1',
         category: '默认',
         active: true,
+        staffOnlyGift: false,
         file: null,
       });
       setCreateInputKey((prev) => prev + 1);
@@ -348,6 +357,15 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
               className="h-4 w-4"
             />
             上架可打赏
+          </label>
+          <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80">
+            <input
+              type="checkbox"
+              checked={createForm.staffOnlyGift}
+              onChange={(event) => setCreateForm((prev) => ({ ...prev, staffOnlyGift: event.target.checked }))}
+              className="h-4 w-4"
+            />
+            仅客服可打赏
           </label>
         </div>
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
@@ -506,6 +524,17 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
                               className="h-4 w-4"
                             />
                             {current?.active ? '上架中' : '已下架'}
+                          </label>
+                          <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80">
+                            <input
+                              type="checkbox"
+                              checked={current?.staffOnlyGift ?? false}
+                              onChange={(event) =>
+                                handleGiftFieldChange(gift.name, 'staffOnlyGift', event.target.checked)
+                              }
+                              className="h-4 w-4"
+                            />
+                            仅客服可打赏
                           </label>
                         </div>
 

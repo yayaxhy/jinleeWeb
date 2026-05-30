@@ -63,6 +63,7 @@ const serializeGift = (
     url_link: string | null;
     rate: Prisma.Decimal | null;
     active: boolean;
+    staffOnlyGift: boolean;
   },
   image: {
   fileName: string;
@@ -73,6 +74,7 @@ const serializeGift = (
   urlLink: gift.url_link ?? '',
   rate: gift.rate?.toString() ?? '',
   active: gift.active,
+  staffOnlyGift: gift.staffOnlyGift,
   category: image?.category ?? '默认',
   imageUrl: image?.fileName ? `/gift-wall/${image.fileName}` : null,
 });
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
   const rateRaw = formData.get('rate');
   const categoryRaw = formData.get('category');
   const activeRaw = formData.get('active');
+  const staffOnlyGiftRaw = formData.get('staffOnlyGift');
   const file = formData.get('file');
 
   const giftName = typeof giftNameRaw === 'string' ? giftNameRaw.trim() : '';
@@ -130,6 +133,10 @@ export async function POST(request: NextRequest) {
 
   const active =
     typeof activeRaw === 'string' ? activeRaw === 'true' || activeRaw === '1' || activeRaw === 'on' : true;
+  const staffOnlyGift =
+    typeof staffOnlyGiftRaw === 'string'
+      ? staffOnlyGiftRaw === 'true' || staffOnlyGiftRaw === '1' || staffOnlyGiftRaw === 'on'
+      : false;
   const category =
     typeof categoryRaw === 'string' ? normalizeCategory(categoryRaw) : '默认';
   const urlLink = typeof urlLinkRaw === 'string' ? urlLinkRaw.trim() : '';
@@ -141,6 +148,7 @@ export async function POST(request: NextRequest) {
       url_link: urlLink ? urlLink : null,
       rate: rateValue.rate ?? undefined,
       active,
+      staffOnlyGift,
     },
   });
   const giftImage = await prisma.giftImage.create({
@@ -162,6 +170,7 @@ export async function PATCH(request: NextRequest) {
   const rateRaw = formData.get('rate');
   const categoryRaw = formData.get('category');
   const activeRaw = formData.get('active');
+  const staffOnlyGiftRaw = formData.get('staffOnlyGift');
   const newGiftNameRaw = formData.get('newGiftName');
   const file = formData.get('file');
 
@@ -222,6 +231,10 @@ export async function PATCH(request: NextRequest) {
 
   if (typeof activeRaw === 'string') {
     updates.active = activeRaw === 'true' || activeRaw === '1' || activeRaw === 'on';
+  }
+
+  if (typeof staffOnlyGiftRaw === 'string') {
+    updates.staffOnlyGift = staffOnlyGiftRaw === 'true' || staffOnlyGiftRaw === '1' || staffOnlyGiftRaw === 'on';
   }
 
   let gift = existing;

@@ -22,6 +22,7 @@ export default async function AdminGiftManagementPage() {
       url_link: true,
       rate: true,
       active: true,
+      staffOnlyGift: true,
       giftImage: { select: { fileName: true, category: true } },
     },
     orderBy: { GiftName: 'asc' },
@@ -35,6 +36,7 @@ export default async function AdminGiftManagementPage() {
     urlLink: gift.url_link ?? '',
     rate: gift.rate?.toString() ?? '',
     active: gift.active,
+    staffOnlyGift: gift.staffOnlyGift,
     category: gift.giftImage?.category ?? '默认',
     imageUrl: gift.giftImage?.fileName ? `/gift-wall/${gift.giftImage.fileName}` : null,
   }));
@@ -46,7 +48,7 @@ export default async function AdminGiftManagementPage() {
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
             <h1 className="text-3xl font-semibold">礼物管理</h1>
-            <p className="text-sm text-white/60">创建礼物、更新价格、上架状态与分类，并上传礼物图片。</p>
+            <p className="text-sm text-white/60">创建礼物、更新价格、上架状态、客服专属限制与分类，并上传礼物图片。</p>
           </div>
           <Link
             href="/admin"
