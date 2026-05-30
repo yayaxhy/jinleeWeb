@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 export const dynamic = 'force-static';
 export const runtime = 'nodejs';
 
-const HTML_FILE = path.join(process.cwd(), 'public', 'newhome', 'index.html');
+const HTML_FILE = path.join(process.cwd(), 'public', 'newhome', '404', 'index.html');
 
 export async function GET() {
   try {
@@ -21,7 +21,7 @@ export async function GET() {
     const message =
       error instanceof Error ? error.message : 'Unknown error while loading vendored page';
 
-    return new Response(`Failed to load /newhome: ${message}`, {
+    return new Response(`Failed to load /newhome/404: ${message}`, {
       status: 500,
       headers: {
         'content-type': 'text/plain; charset=utf-8',
