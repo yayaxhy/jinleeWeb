@@ -186,15 +186,14 @@ const getAutoCommissionWindow = (now = new Date()) => {
   return { windowStart, windowEnd: now };
 };
 
-const getUtcStartOfNextDay = (value: Date) =>
-  new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate() + 1, 0, 0, 0, 0));
+const getPostQualificationStart = (value: Date) => new Date(value.getTime() + 1);
 
 const getAutoCommissionRetentionWindow = (lastQualifiedAt: Date | null | undefined, now = new Date()) => {
   if (!lastQualifiedAt) return getAutoCommissionWindow(now);
   const qualifiedAt = lastQualifiedAt instanceof Date ? lastQualifiedAt : new Date(lastQualifiedAt);
   if (Number.isNaN(qualifiedAt.getTime())) return getAutoCommissionWindow(now);
-  const windowStart = getUtcStartOfNextDay(qualifiedAt);
-  const windowEnd = new Date(windowStart.getTime() + AUTO_COMMISSION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const windowStart = getPostQualificationStart(qualifiedAt);
+  const windowEnd = new Date(qualifiedAt.getTime() + AUTO_COMMISSION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   return { windowStart, windowEnd };
 };
 

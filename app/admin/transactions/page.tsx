@@ -82,18 +82,30 @@ export default async function AdminTransactionsPage(props: PageProps) {
   }
 
   const searchParams = (await props.searchParams) ?? {};
+  const fromIdParam = searchParams.fromId;
+  const toIdParam = searchParams.toId;
   const userIdParam = searchParams.userId;
   const discordIdParam = searchParams.discordId;
-  const userId =
-    typeof userIdParam === 'string'
-      ? userIdParam.trim()
-      : Array.isArray(userIdParam)
-        ? userIdParam[0]?.trim()
-        : typeof discordIdParam === 'string'
-          ? discordIdParam.trim()
-          : Array.isArray(discordIdParam)
-            ? discordIdParam[0]?.trim()
-            : '';
+  const fromId =
+    typeof fromIdParam === 'string'
+      ? fromIdParam.trim()
+      : Array.isArray(fromIdParam)
+        ? fromIdParam[0]?.trim() ?? ''
+        : typeof userIdParam === 'string'
+          ? userIdParam.trim()
+          : Array.isArray(userIdParam)
+            ? userIdParam[0]?.trim() ?? ''
+            : typeof discordIdParam === 'string'
+              ? discordIdParam.trim()
+              : Array.isArray(discordIdParam)
+                ? discordIdParam[0]?.trim() ?? ''
+                : '';
+  const toId =
+    typeof toIdParam === 'string'
+      ? toIdParam.trim()
+      : Array.isArray(toIdParam)
+        ? toIdParam[0]?.trim() ?? ''
+        : '';
   const startParam = Array.isArray(searchParams.startDate) ? searchParams.startDate[0] : searchParams.startDate;
   const endParam = Array.isArray(searchParams.endDate) ? searchParams.endDate[0] : searchParams.endDate;
   const parsedStart = startParam ? new Date(startParam) : null;
@@ -106,8 +118,11 @@ export default async function AdminTransactionsPage(props: PageProps) {
   const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (currentPage - 1) * PAGE_SIZE;
   const whereClause: Prisma.IndividualTransactionWhereInput = {};
-  if (userId) {
-    whereClause.OR = [{ discordId: userId }, { jinleeId: userId }];
+  if (fromId) {
+    whereClause.OR = [{ discordId: fromId }, { jinleeId: fromId }];
+  }
+  if (toId) {
+    whereClause.thirdPartydiscordId = toId;
   }
   if (startDate || endDate) {
     whereClause.timeCreatedAt = {
@@ -117,10 +132,10 @@ export default async function AdminTransactionsPage(props: PageProps) {
   }
   const hasFilters = Object.keys(whereClause).length > 0;
 
-  const userSummary = userId
+  const userSummary = fromId
     ? await prisma.jinleeUser.findFirst({
         where: {
-          OR: [{ jinleeId: userId }, { discordUserId: userId }],
+          OR: [{ jinleeId: fromId }, { discordUserId: fromId }],
         },
         select: {
           jinleeId: true,
@@ -197,11 +212,13 @@ export default async function AdminTransactionsPage(props: PageProps) {
   const hasNext = currentPage < totalPages;
   const prevPage = Math.max(1, currentPage - 1);
   const nextPage = Math.min(totalPages, currentPage + 1);
-  const exportParams = new URLSearchParams({
-    ...(userId ? { userId } : {}),
+  const persistentQueryParams = {
+    ...(fromId ? { fromId } : {}),
+    ...(toId ? { toId } : {}),
     ...(startParam ? { startDate: startParam } : {}),
     ...(endParam ? { endDate: endParam } : {}),
-  });
+  };
+  const exportParams = new URLSearchParams(persistentQueryParams);
   const exportQuery = exportParams.toString();
   const exportUrl = exportQuery ? `/api/admin/transactions/export?${exportQuery}` : '/api/admin/transactions/export';
 
@@ -212,7 +229,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
             <h1 className="text-3xl font-semibold">查询流水</h1>
-            <p className="text-sm text-white/60">默认展示全部流水，可按 Jinlee ID / Discord ID 与日期区间筛选。</p>
+            <p className="text-sm text-white/60">默认展示全部流水，可按主用户ID、第三方关联ID与日期区间筛选。</p>
           </div>
           <Link
             href="/admin"
@@ -224,15 +241,33 @@ export default async function AdminTransactionsPage(props: PageProps) {
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
           <form className="space-y-3" action="/admin/transactions" method="get">
-            <label className="text-sm text-white/80">用户 ID</label>
             <div className="flex flex-col gap-3">
-              <input
-                type="text"
-                name="userId"
-                defaultValue={userId}
-                placeholder="请输入 Jinlee ID 或 Discord ID"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-              />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-sm text-white/80">主用户ID</label>
+                  <input
+                    type="text"
+                    name="fromId"
+                    defaultValue={fromId}
+                    placeholder="请输入 Jinlee ID 或 Discord ID"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-white/80">第三方关联ID（陪玩ID）</label>
+                  <input
+                    type="text"
+                    name="toId"
+                    defaultValue={toId}
+                    placeholder="请输入第三方关联 Discord ID"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/65">
+                <p>*查特定用户的所有流水：填写主用户ID即可</p>
+                <p>*查特定用户对特定用户的所有流水：填写主用户ID（老板ID）和第三方关联ID（陪玩ID）</p>
+              </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div className="space-y-1">
                   <label className="text-xs text-white/60">开始日期</label>
@@ -269,15 +304,16 @@ export default async function AdminTransactionsPage(props: PageProps) {
             <div>
               <h2 className="text-xl font-semibold">查询结果</h2>
               <p className="text-sm text-white/60">
-                {userId
-                  ? `用户：${
+                {fromId
+                  ? `主用户ID：${
                       userSummary?.discordDisplayName ??
                       userSummary?.wechatDisplayName ??
                       userSummary?.discordUserId ??
                       userSummary?.jinleeId ??
                       '—'
-                    }（${userSummary?.jinleeId ?? userId}）`
+                    }（${userSummary?.jinleeId ?? fromId}）`
                   : '全部流水'}
+                {toId ? ` · 第三方关联ID：${toId}` : null}
                 {startDate || endDate ? (
                   <>
                     {' '}
@@ -362,9 +398,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
                   <Link
                     prefetch={false}
                     href={`/admin/transactions?${new URLSearchParams({
-                      ...(userId ? { userId } : {}),
-                      ...(startParam ? { startDate: startParam } : {}),
-                      ...(endParam ? { endDate: endParam } : {}),
+                      ...persistentQueryParams,
                       page: String(prevPage),
                     }).toString()}`}
                     className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.3em] ${
@@ -379,7 +413,8 @@ export default async function AdminTransactionsPage(props: PageProps) {
                     action="/admin/transactions"
                     className="flex items-center gap-2 text-xs uppercase tracking-[0.3em]"
                   >
-                    {userId ? <input type="hidden" name="userId" value={userId} /> : null}
+                    {fromId ? <input type="hidden" name="fromId" value={fromId} /> : null}
+                    {toId ? <input type="hidden" name="toId" value={toId} /> : null}
                     {startParam ? <input type="hidden" name="startDate" value={startParam} /> : null}
                     {endParam ? <input type="hidden" name="endDate" value={endParam} /> : null}
                     <label className="text-white/60">跳转页</label>
@@ -401,9 +436,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
                   <Link
                     prefetch={false}
                     href={`/admin/transactions?${new URLSearchParams({
-                      ...(userId ? { userId } : {}),
-                      ...(startParam ? { startDate: startParam } : {}),
-                      ...(endParam ? { endDate: endParam } : {}),
+                      ...persistentQueryParams,
                       page: String(nextPage),
                     }).toString()}`}
                     className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.3em] ${

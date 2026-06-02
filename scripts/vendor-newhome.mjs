@@ -25,6 +25,21 @@ const PAGES = [
 
 const SEEDED_ASSET_URLS = [
   'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/runtime.js',
+  'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/boolean.js',
+  'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/gaussian-splat-compression.js',
+  'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/howler.js',
+  'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/navmesh.js',
+  'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/opentype.js',
+  'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/physics.js',
+  'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/process.js',
+  'https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/ui.js',
+  'https://unpkg.com/@splinetool/navmesh-wasm@1.12.95/build/navmesh.wasm',
+  'https://unpkg.com/@splinetool/modelling-wasm@1.12.95/build/process.wasm',
+  'https://unpkg.com/@splinetool/boolean-wasm@1.12.95/build/boolean.wasm',
+  'https://unpkg.com/@splinetool/ui-wasm@1.12.95/build/ui.wasm',
+  'https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_decoder.js',
+  'https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_wasm_wrapper.js',
+  'https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_decoder.wasm',
 ];
 
 const FALLBACK_TEXT_RESOURCES = new Map([
@@ -59,6 +74,7 @@ const ALLOWED_HOSTS = new Set([
   'ajax.googleapis.com',
   'prod.spline.design',
   'raw.githubusercontent.com',
+  'www.gstatic.com',
 ]);
 
 const TEXT_EXTENSIONS = new Set([
@@ -90,6 +106,7 @@ const ASSET_EXTENSIONS = new Set([
   '.svg',
   '.ttf',
   '.txt',
+  '.wasm',
   '.wav',
   '.webm',
   '.webp',
@@ -153,12 +170,16 @@ function isTextContent(remoteUrl, contentType) {
 
 function shouldDiscoverNestedAssets(remoteUrl, contentType) {
   const extension = path.posix.extname(new URL(remoteUrl).pathname).toLowerCase();
-  if (extension === '.css' || extension === '.html') {
+  if (extension === '.css' || extension === '.html' || extension === '.js') {
     return true;
   }
 
   const normalizedType = contentType.toLowerCase();
-  return normalizedType.startsWith('text/html') || normalizedType.startsWith('text/css');
+  return (
+    normalizedType.startsWith('text/html') ||
+    normalizedType.startsWith('text/css') ||
+    normalizedType.includes('javascript')
+  );
 }
 
 function guessContentType(remoteUrl) {
@@ -202,6 +223,8 @@ function guessContentType(remoteUrl) {
       return 'font/ttf';
     case '.txt':
       return 'text/plain; charset=utf-8';
+    case '.wasm':
+      return 'application/wasm';
     case '.wav':
       return 'audio/wav';
     case '.webm':
@@ -314,6 +337,23 @@ function collectCandidates(text, baseUrl) {
   return normalized;
 }
 
+function collectSpecialJsAssets(text, remoteUrl) {
+  const extra = new Set();
+  const baseUrl = new URL(remoteUrl);
+
+  for (const match of text.matchAll(/webflow\.achunk\.[a-z0-9]+\.(?:js)/gi)) {
+    extra.add(new URL(match[0], baseUrl).toString());
+  }
+
+  for (const match of text.matchAll(/webflow\.achunk\."\+\(\{([\s\S]*?)\}\)\[e\]\+"\.js"/g)) {
+    for (const hashMatch of match[1].matchAll(/:"([a-z0-9]+)"/gi)) {
+      extra.add(new URL(`webflow.achunk.${hashMatch[1]}.js`, baseUrl).toString());
+    }
+  }
+
+  return extra;
+}
+
 function enqueue(remoteUrl) {
   if (queuedUrls.has(remoteUrl)) {
     return;
@@ -381,7 +421,8 @@ function buildFallbackResource(remoteUrl) {
   };
 }
 
-function rewriteTextContent(input) {
+function rewriteTextContent(input, options = {}) {
+  const { isHtml = false } = options;
   let output = input;
 
   const replacements = [...resources.values()]
@@ -392,22 +433,40 @@ function rewriteTextContent(input) {
     output = output.split(remoteUrl).join(localPublicPath);
   }
 
-  for (const page of PAGES) {
-    const canonicalSource = page.sourceUrl.endsWith('/') ? page.sourceUrl.slice(0, -1) : page.sourceUrl;
-    output = output.split(page.sourceUrl).join(page.routePath);
-    output = output.split(canonicalSource).join(page.routePath);
+  if (isHtml) {
+    for (const page of PAGES) {
+      const canonicalSource = page.sourceUrl.endsWith('/') ? page.sourceUrl.slice(0, -1) : page.sourceUrl;
+      output = output.split(page.sourceUrl).join(page.routePath);
+      output = output.split(canonicalSource).join(page.routePath);
+    }
+
+    output = output.replace(/(["'])\/404\1/g, `"${
+      PAGES.find((page) => page.sourceUrl.endsWith('/404'))?.routePath ?? '/newhome/404'
+    }"`);
+    output = output.replace(/(["'])\/\1/g, `"${
+      PAGES.find((page) => page.sourceUrl.endsWith('/'))?.routePath ?? '/newhome'
+    }"`);
+    output = output.replaceAll('data-wf-domain="warhol-arts.webflow.io"', 'data-wf-domain="newhome.local"');
+    output = output.replaceAll('<link href="https://cdn.prod.website-files.com" rel="preconnect" crossorigin="anonymous"/>', '');
+    output = output.replaceAll('<link rel="preconnect" href="https://cdn.prod.website-files.com">', '');
+    output = output.replace(/\s+integrity="[^"]*"/g, '');
   }
 
-  output = output.replace(/(["'])\/404\1/g, `"${
-    PAGES.find((page) => page.sourceUrl.endsWith('/404'))?.routePath ?? '/newhome/404'
-  }"`);
-  output = output.replace(/(["'])\/\1/g, `"${
-    PAGES.find((page) => page.sourceUrl.endsWith('/'))?.routePath ?? '/newhome'
-  }"`);
-  output = output.replaceAll('data-wf-domain="warhol-arts.webflow.io"', 'data-wf-domain="newhome.local"');
-  output = output.replace(
-    /<link[^>]+href="https:\/\/cdn\.prod\.website-files\.com"[^>]+rel="preconnect"[^>]*\/?>/g,
-    '',
+  output = output.replaceAll(
+    'https://unpkg.com/@splinetool/navmesh-wasm@1.12.95/build',
+    '/newhome/assets/unpkg.com/_splinetool/navmesh-wasm_1.12.95/build',
+  );
+  output = output.replaceAll(
+    'https://unpkg.com/@splinetool/modelling-wasm@1.12.95/build',
+    '/newhome/assets/unpkg.com/_splinetool/modelling-wasm_1.12.95/build',
+  );
+  output = output.replaceAll(
+    'https://unpkg.com/@splinetool/boolean-wasm@1.12.95/build',
+    '/newhome/assets/unpkg.com/_splinetool/boolean-wasm_1.12.95/build',
+  );
+  output = output.replaceAll(
+    'https://www.gstatic.com/draco/versioned/decoders/1.5.2/',
+    '/newhome/assets/www.gstatic.com/draco/versioned/decoders/1.5.2/',
   );
 
   return output;
@@ -458,6 +517,12 @@ async function main() {
           enqueue(candidate);
         }
       }
+
+      if (path.posix.extname(new URL(remoteUrl).pathname).toLowerCase() === '.js') {
+        for (const candidate of collectSpecialJsAssets(text, remoteUrl)) {
+          enqueue(candidate);
+        }
+      }
     } else {
       resource.body = body;
     }
@@ -481,7 +546,7 @@ async function main() {
 
   for (const page of pagePayloads) {
     await mkdir(path.dirname(page.outputFile), { recursive: true });
-    await writeFile(page.outputFile, rewriteTextContent(page.html), 'utf8');
+    await writeFile(page.outputFile, rewriteTextContent(page.html, { isHtml: true }), 'utf8');
   }
 
   const summary = {
@@ -496,12 +561,18 @@ async function main() {
   );
 
   const remainingChecks = [
-    'warhol-arts.webflow.io',
-    'cdn.prod.website-files.com',
-    'cdnjs.cloudflare.com',
-    'cdn.jsdelivr.net',
-    'ajax.googleapis.com',
-    'd3e54v103j8qbb.cloudfront.net',
+    'https://warhol-arts.webflow.io',
+    'http://warhol-arts.webflow.io',
+    'https://cdn.prod.website-files.com',
+    'http://cdn.prod.website-files.com',
+    'https://cdnjs.cloudflare.com',
+    'http://cdnjs.cloudflare.com',
+    'https://cdn.jsdelivr.net',
+    'http://cdn.jsdelivr.net',
+    'https://ajax.googleapis.com',
+    'http://ajax.googleapis.com',
+    'https://d3e54v103j8qbb.cloudfront.net',
+    'http://d3e54v103j8qbb.cloudfront.net',
   ];
 
   const scanTargets = [
@@ -531,6 +602,30 @@ async function main() {
 
   await rm(FINAL_PUBLIC_ROOT, { recursive: true, force: true });
   await rename(PUBLIC_ROOT, FINAL_PUBLIC_ROOT);
+
+  const librariesRoot = path.join(process.cwd(), 'public', '_libraries');
+  await rm(librariesRoot, { recursive: true, force: true });
+  await mkdir(librariesRoot, { recursive: true });
+  await writeFile(
+    path.join(librariesRoot, 'navmesh.js'),
+    await readFile(
+      path.join(FINAL_PUBLIC_ROOT, 'assets', 'cdn.jsdelivr.net', 'npm', '_splinetool', 'runtime', 'build', 'navmesh.js'),
+    ),
+  );
+  await writeFile(
+    path.join(librariesRoot, 'navmesh.wasm'),
+    await readFile(
+      path.join(
+        FINAL_PUBLIC_ROOT,
+        'assets',
+        'unpkg.com',
+        '_splinetool',
+        'navmesh-wasm_1.12.95',
+        'build',
+        'navmesh.wasm',
+      ),
+    ),
+  );
 }
 
 await main();

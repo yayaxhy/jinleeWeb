@@ -71,8 +71,8 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId')?.trim() ?? '';
-  const discordId = searchParams.get('discordId')?.trim() ?? '';
+  const fromId = searchParams.get('fromId')?.trim() ?? searchParams.get('userId')?.trim() ?? searchParams.get('discordId')?.trim() ?? '';
+  const toId = searchParams.get('toId')?.trim() ?? '';
   const startParam = searchParams.get('startDate');
   const endParam = searchParams.get('endDate');
   const parsedStart = startParam ? new Date(startParam) : null;
@@ -81,9 +81,11 @@ export async function GET(request: NextRequest) {
   const endDate = parsedEnd && !Number.isNaN(parsedEnd.getTime()) ? parsedEnd : null;
 
   const whereClause: Prisma.IndividualTransactionWhereInput = {};
-  const identityFilter = userId || discordId;
-  if (identityFilter) {
-    whereClause.OR = [{ discordId: identityFilter }, { jinleeId: identityFilter }];
+  if (fromId) {
+    whereClause.OR = [{ discordId: fromId }, { jinleeId: fromId }];
+  }
+  if (toId) {
+    whereClause.thirdPartydiscordId = toId;
   }
   if (startDate || endDate) {
     whereClause.timeCreatedAt = {
