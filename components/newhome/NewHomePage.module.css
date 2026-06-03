@@ -1,0 +1,1026 @@
+@font-face {
+  font-family: "Tomato Grotesk Local";
+  src: url("/newhome/assets/cdn.prod.website-files.com/6718c8afa78e156621f3a2ed/6718d7297fe7fbe31a7e3efe_Tomato_Grotesk_Regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Mango Grotesque Local";
+  src: url("/newhome/assets/cdn.prod.website-files.com/6718c8afa78e156621f3a2ed/6718d57888ded80f8478379a_MangoGrotesque-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Mango Grotesque Local";
+  src: url("/newhome/assets/cdn.prod.website-files.com/6718c8afa78e156621f3a2ed/6718d578331bfcadfc41bf79_MangoGrotesque-Thin.otf") format("opentype");
+  font-weight: 250;
+  font-display: swap;
+}
+
+.page {
+  --paper: #f4e6d5;
+  --paper-strong: #ead5bd;
+  --ink: #1d160f;
+  --ink-soft: rgba(29, 22, 15, 0.72);
+  --line: rgba(29, 22, 15, 0.14);
+  --red: #ad3e26;
+  --gold: #d0a14f;
+  --olive: #4b613d;
+  --card: rgba(255, 248, 241, 0.76);
+  --shadow: 0 24px 70px rgba(47, 25, 11, 0.12);
+  position: relative;
+  overflow: clip;
+  background:
+    radial-gradient(circle at top left, rgba(208, 161, 79, 0.22), transparent 30%),
+    radial-gradient(circle at 85% 10%, rgba(173, 62, 38, 0.18), transparent 22%),
+    linear-gradient(180deg, #f8ecdf 0%, #f3e5d3 48%, #efe0cc 100%);
+  color: var(--ink);
+  font-family: "Tomato Grotesk Local", "Helvetica Neue", sans-serif;
+}
+
+.page,
+.page * {
+  box-sizing: border-box;
+}
+
+.page a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.page main {
+  display: block;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  backdrop-filter: blur(20px);
+  background: rgba(248, 236, 223, 0.74);
+  border-bottom: 1px solid rgba(29, 22, 15, 0.08);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  font-family: "Mango Grotesque Local", sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.brandMark {
+  font-size: clamp(1.15rem, 2vw, 1.75rem);
+}
+
+.brandMeta {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.navLink,
+.utilityLink,
+.buttonPrimary,
+.buttonGhost {
+  border-radius: 999px;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.navLink,
+.utilityLink {
+  padding: 0.6rem 0.95rem;
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.navLink:hover,
+.utilityLink:hover {
+  border-color: rgba(29, 22, 15, 0.14);
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--ink);
+}
+
+.navLink[data-active="true"] {
+  border-color: rgba(29, 22, 15, 0.18);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--ink);
+}
+
+.utilityLink {
+  border-color: rgba(29, 22, 15, 0.1);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 700ms ease,
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal[data-revealed="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+.interactiveSurface {
+  transform-style: preserve-3d;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+  will-change: transform;
+}
+
+.interactiveSurface:hover {
+  border-color: rgba(29, 22, 15, 0.18);
+  box-shadow: 0 26px 74px rgba(47, 25, 11, 0.18);
+}
+
+.section {
+  position: relative;
+  padding: clamp(4rem, 8vw, 7rem) 1.5rem;
+  scroll-margin-top: 6rem;
+}
+
+.sectionShell {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.sectionLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  color: var(--ink-soft);
+}
+
+.sectionNumber {
+  font-family: "Mango Grotesque Local", sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.sectionTitle {
+  font-family: "Mango Grotesque Local", sans-serif;
+  font-size: clamp(1.8rem, 4vw, 3.8rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 0.95;
+}
+
+.hero {
+  padding-top: clamp(2rem, 4vw, 4rem);
+}
+
+.heroGrid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: clamp(2rem, 4vw, 3.5rem);
+  align-items: end;
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 1;
+  padding: clamp(1.5rem, 3vw, 2rem);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 2.5rem;
+  height: 1px;
+  background: currentColor;
+}
+
+.heroTitle {
+  margin: 0;
+  max-width: 12ch;
+  font-family: "Mango Grotesque Local", sans-serif;
+  font-weight: 250;
+  font-size: clamp(3.6rem, 9vw, 8.4rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.heroText,
+.storyBody,
+.sectionIntro,
+.ctaText,
+.notFoundText {
+  max-width: 62ch;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 1.75rem;
+}
+
+.buttonPrimary,
+.buttonGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 1.25rem;
+  border: 1px solid transparent;
+  font-size: 0.92rem;
+}
+
+.buttonPrimary {
+  background: var(--red);
+  color: #fff7f2;
+}
+
+.buttonPrimary:hover,
+.buttonGhost:hover {
+  transform: translateY(-1px);
+}
+
+.buttonGhost {
+  border-color: rgba(29, 22, 15, 0.12);
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.statList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.statCard {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: var(--shadow);
+}
+
+.statValue {
+  display: block;
+  font-family: "Mango Grotesque Local", sans-serif;
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  text-transform: uppercase;
+}
+
+.statLabel {
+  margin-top: 0.2rem;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.heroArt {
+  position: relative;
+  min-height: 760px;
+  border-radius: 2.1rem;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.heroBackdrop,
+.mediaFill {
+  position: absolute;
+  inset: 0;
+}
+
+.heroBackdrop {
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.heroBackdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(20, 12, 8, 0.16), rgba(20, 12, 8, 0.72)),
+    linear-gradient(90deg, rgba(20, 12, 8, 0.18), transparent 40%);
+}
+
+.heroLogo {
+  position: absolute;
+  top: 1.35rem;
+  left: 1.35rem;
+  z-index: 1;
+  opacity: 0.9;
+}
+
+.wordGrid {
+  position: absolute;
+  inset: auto 1.25rem 1.25rem 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.95rem;
+}
+
+.heroCard {
+  position: relative;
+  min-height: 210px;
+  padding: 1rem;
+  border-radius: 1.35rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 14px 40px rgba(13, 8, 5, 0.22);
+}
+
+.heroCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 6, 5, 0.04), rgba(8, 6, 5, 0.72));
+}
+
+.toneRed {
+  color: #fff2eb;
+}
+
+.toneRed::before,
+.toneGold::before,
+.toneInk::before,
+.toneOlive::before {
+  content: "";
+  position: absolute;
+  inset: auto auto 1rem 1rem;
+  width: 3rem;
+  height: 0.32rem;
+  border-radius: 999px;
+  z-index: 1;
+}
+
+.toneRed::before {
+  background: var(--red);
+}
+
+.toneGold::before {
+  background: var(--gold);
+}
+
+.toneInk::before {
+  background: var(--ink);
+}
+
+.toneOlive::before {
+  background: var(--olive);
+}
+
+.heroCardMedia {
+  position: absolute;
+  inset: 0;
+}
+
+.heroCardMedia::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(17, 11, 8, 0.12), rgba(17, 11, 8, 0.72)),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 34%);
+}
+
+.mediaImage,
+.mediaVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mediaVideo {
+  display: block;
+}
+
+.heroCardContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.heroLetter {
+  font-family: "Mango Grotesque Local", sans-serif;
+  font-size: clamp(2.3rem, 5vw, 4rem);
+  line-height: 0.9;
+}
+
+.heroCardTitle {
+  margin: 0;
+  font-size: 0.98rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.heroCardText {
+  margin: 0.35rem 0 0;
+  max-width: 28ch;
+  color: rgba(255, 248, 241, 0.86);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.splitGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 1.5rem;
+}
+
+.contentPanel,
+.storyCard,
+.quotePanel,
+.galleryCard,
+.labPanel,
+.metricCard,
+.scheduleCard,
+.expoCard,
+.ticketCard,
+.ctaPanel,
+.notFoundPanel {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.contentPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.panelMedia {
+  position: relative;
+  min-height: 100%;
+}
+
+.panelBody {
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.kicker {
+  display: inline-flex;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(173, 62, 38, 0.08);
+  color: var(--red);
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.panelHeading,
+.quoteText,
+.labHeading,
+.ctaHeading,
+.notFoundTitle {
+  margin: 1rem 0 0.9rem;
+  font-family: "Mango Grotesque Local", sans-serif;
+  font-weight: 250;
+  line-height: 0.95;
+}
+
+.panelHeading {
+  font-size: clamp(2.35rem, 5vw, 4.9rem);
+}
+
+.bulletList {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bulletItem {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  color: var(--ink-soft);
+}
+
+.bulletItem::before {
+  content: "+";
+  color: var(--red);
+}
+
+.storyCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.storyCard,
+.galleryCard,
+.expoCard,
+.ticketCard {
+  overflow: hidden;
+}
+
+.storyMedia,
+.galleryMedia,
+.expoMedia,
+.ticketMedia,
+.labPoster,
+.notFoundMedia {
+  position: relative;
+  min-height: 260px;
+}
+
+.storyCopy,
+.galleryCopy,
+.expoCopy,
+.ticketCopy {
+  padding: 1.2rem 1.25rem 1.35rem;
+}
+
+.cardEyebrow {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cardTitle {
+  margin: 0.7rem 0 0.4rem;
+  font-family: "Mango Grotesque Local", sans-serif;
+  font-size: 1.65rem;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.cardText {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.quotePanel {
+  padding: clamp(2rem, 4vw, 3rem);
+}
+
+.quoteText {
+  max-width: 16ch;
+  font-size: clamp(2.8rem, 7vw, 6rem);
+}
+
+.quoteMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  align-items: baseline;
+  margin-top: 1.2rem;
+}
+
+.quoteAuthor {
+  color: var(--red);
+  font-size: 0.88rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.quoteSupport {
+  max-width: 34ch;
+  color: var(--ink-soft);
+}
+
+.sectionIntro {
+  margin: 0 0 1.75rem;
+}
+
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.galleryMedia {
+  min-height: 340px;
+}
+
+.labGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 1rem;
+}
+
+.labPanel {
+  overflow: hidden;
+}
+
+.labPoster {
+  min-height: 100%;
+}
+
+.labInner {
+  position: relative;
+  min-height: 100%;
+  padding: clamp(1.5rem, 3vw, 2.4rem);
+}
+
+.labHeading {
+  font-size: clamp(2.3rem, 5vw, 4.8rem);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+}
+
+.chip {
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(29, 22, 15, 0.06);
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.sticker,
+.stickerSecondary,
+.paintA,
+.paintB,
+.paintC {
+  position: absolute;
+  filter: drop-shadow(0 16px 30px rgba(29, 22, 15, 0.12));
+}
+
+.sticker {
+  right: -0.8rem;
+  top: 1rem;
+  width: clamp(9rem, 18vw, 14rem);
+  transform: rotate(9deg);
+}
+
+.stickerSecondary {
+  left: 1rem;
+  bottom: -1.25rem;
+  width: clamp(10rem, 18vw, 14rem);
+  transform: rotate(-8deg);
+}
+
+.paintA {
+  right: 16%;
+  top: 20%;
+  width: 5.5rem;
+}
+
+.paintB {
+  right: 8%;
+  bottom: 17%;
+  width: 6.5rem;
+}
+
+.paintC {
+  left: 8%;
+  top: 18%;
+  width: 4.75rem;
+}
+
+.expoGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+  gap: 1rem;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.metricCard {
+  padding: 1.2rem;
+}
+
+.metricValue {
+  display: block;
+  font-family: "Mango Grotesque Local", sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.metricLabel {
+  margin-top: 0.35rem;
+  color: var(--ink-soft);
+}
+
+.scheduleList {
+  display: grid;
+  gap: 1rem;
+}
+
+.scheduleCard {
+  padding: 1.2rem 1.25rem;
+}
+
+.scheduleTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scheduleText {
+  margin: 0.55rem 0 0;
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+
+.expoFeatureGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.expoMedia {
+  min-height: 340px;
+}
+
+.ticketGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.ticketMedia {
+  min-height: 220px;
+}
+
+.ticketAudience {
+  margin-top: 0.55rem;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ticketPrice {
+  display: block;
+  margin-top: 1rem;
+  font-family: "Mango Grotesque Local", sans-serif;
+  font-size: clamp(2.3rem, 4vw, 3.1rem);
+  line-height: 0.9;
+}
+
+.ticketNote {
+  margin: 0.65rem 0 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.featureList {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.featureItem {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  color: var(--ink-soft);
+}
+
+.featureItem::before {
+  content: "•";
+  color: var(--red);
+}
+
+.ctaPanel {
+  overflow: hidden;
+}
+
+.ctaGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 0;
+}
+
+.ctaMedia {
+  position: relative;
+  min-height: 360px;
+}
+
+.ctaBody {
+  padding: clamp(1.6rem, 3vw, 2.5rem);
+}
+
+.ctaHeading,
+.notFoundTitle {
+  font-size: clamp(2.5rem, 6vw, 5.2rem);
+}
+
+.footer {
+  padding: 2rem 1.5rem 3rem;
+}
+
+.footerInner {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(29, 22, 15, 0.12);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  align-items: flex-end;
+}
+
+.footerText {
+  max-width: 38ch;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.footerLink {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid rgba(29, 22, 15, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.footerLink:hover {
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.notFoundPage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.notFoundSection {
+  display: flex;
+  align-items: center;
+  min-height: calc(100vh - 88px);
+}
+
+.notFoundPanel {
+  overflow: hidden;
+}
+
+.notFoundGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.notFoundMedia {
+  min-height: 520px;
+}
+
+.notFoundBody {
+  padding: clamp(1.8rem, 4vw, 2.8rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.notFoundCode {
+  color: var(--red);
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1120px) {
+  .heroGrid,
+  .splitGrid,
+  .labGrid,
+  .expoGrid,
+  .ctaGrid,
+  .notFoundGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .contentPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .heroArt {
+    min-height: 680px;
+  }
+}
+
+@media (max-width: 900px) {
+  .wordGrid,
+  .storyCardGrid,
+  .galleryGrid,
+  .ticketGrid,
+  .metricGrid,
+  .expoFeatureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statList {
+    grid-template-columns: 1fr;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .header {
+    gap: 0.75rem;
+  }
+
+  .heroArt {
+    min-height: 980px;
+  }
+}
+
+@media (max-width: 640px) {
+  .header,
+  .section,
+  .footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .heroTitle,
+  .panelHeading,
+  .quoteText,
+  .labHeading,
+  .ctaHeading,
+  .notFoundTitle {
+    max-width: none;
+  }
+
+  .heroArt {
+    min-height: 1180px;
+  }
+
+  .wordGrid {
+    inset: auto 0.85rem 0.85rem 0.85rem;
+  }
+
+  .heroCard {
+    min-height: 190px;
+  }
+
+  .labInner {
+    padding-bottom: 12rem;
+  }
+
+  .footerInner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

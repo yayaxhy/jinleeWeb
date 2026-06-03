@@ -198,6 +198,21 @@ export default async function AdminHomePage() {
             </Link>
           </div>
         </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-white/70">Newhome 内容编辑</p>
+              <p className="text-xs text-white/50">编辑 /newhome 与 /newhome/404 的 JSON 内容与资源路径</p>
+            </div>
+            <Link
+              href="/admin/newhome"
+              className="inline-flex items-center justify-center rounded-full bg-[#c5512f] px-4 py-2 text-sm text-white hover:bg-[#af4527]"
+            >
+              前往编辑
+            </Link>
+          </div>
+        </div>
       </div>
 
       <AdminPeiwanActions />
