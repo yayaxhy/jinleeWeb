@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 
+import { defaultNewHomeContent } from '@/app/newhome/content';
 import { NewHomePage } from '@/components/newhome/NewHomePage';
-import { defaultNewHomeContent } from './content';
 import { readNewHomeContentDocument } from '@/lib/newhome-content';
 
 export const metadata: Metadata = {
-  title: defaultNewHomeContent.seo.title,
+  title: `${defaultNewHomeContent.seo.title} / Editable`,
   description: defaultNewHomeContent.seo.description,
 };
 

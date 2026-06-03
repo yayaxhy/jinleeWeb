@@ -24,7 +24,8 @@ export default async function AdminNewHomePage() {
           <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
           <h2 className="text-2xl font-semibold">Newhome 内容编辑器</h2>
           <p className="max-w-3xl text-sm text-white/60">
-            这里编辑的是 `/newhome` 和 `/newhome/404` 的运行时内容 JSON。保存后页面会直接从本地内容文件读取，不再依赖镜像 HTML。
+            这里编辑的是 `/newhome-editable` 和 `/newhome-editable/404` 的运行时内容 JSON。`/newhome`
+            现在恢复成原站本地镜像，用来保证 1:1 显示；可维护版保留在 editable 路由继续改内容和布局。
           </p>
         </div>
         <Link

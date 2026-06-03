@@ -4,8 +4,8 @@ import { NewHome404Page } from '@/components/newhome/NewHomePage';
 import { readNewHomeContentDocument } from '@/lib/newhome-content';
 
 export const metadata: Metadata = {
-  title: 'Warhol Arts Rebuilt / 404',
-  description: 'Component-based local 404 page for the rebuilt newhome route.',
+  title: 'Warhol Arts Rebuilt / Editable 404',
+  description: 'Component-based editable 404 page for the newhome editorial rebuild.',
 };
 
 export const dynamic = 'force-dynamic';
