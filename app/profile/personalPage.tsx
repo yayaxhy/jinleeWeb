@@ -80,21 +80,6 @@ const formatDate = (value?: Date | string | null) => {
   return date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
-const formatDateTime = (value?: Date | string | null) => {
-  if (!value) return '—';
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleString('zh-CN', {
-    timeZone: ROME_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-};
-
 const getBuffStatusMeta = (expiresAt?: Date | string | null) => {
   if (!expiresAt) {
     return { label: '未激活', badgeClass: 'bg-gray-100 text-gray-500' };
@@ -325,12 +310,10 @@ export default async function Profile(props: ProfilePageProps) {
         take: 200,
         select: {
           id: true,
-          peiwanDiscordId: true,
           peiwanName: true,
           peiwanId: true,
           content: true,
           displayMode: true,
-          createdAt: true,
           peiwan: {
             select: {
               serverDisplayName: true,
@@ -397,16 +380,14 @@ export default async function Profile(props: ProfilePageProps) {
   ]);
   const authoredPeiwanReviewItems = authoredPeiwanReviews.map((review) => ({
     id: review.id,
-    peiwanDiscordId: review.peiwanDiscordId,
     peiwanName:
       review.peiwan.peiwan?.serverDisplayName ??
       review.peiwan.serverDisplayName ??
       review.peiwanName ??
-      review.peiwanDiscordId,
+      '未知陪玩',
     peiwanId: review.peiwan.peiwan?.PEIWANID ?? review.peiwanId ?? null,
     content: review.content,
     displayMode: review.displayMode,
-    createdAtLabel: formatDateTime(review.createdAt),
   }));
   const blacklistItems = blacklistEntries.map((entry) => ({
     discordUserId: entry.blockedId,
@@ -952,18 +933,6 @@ export default async function Profile(props: ProfilePageProps) {
 
                 {activeTab === 'profile-sent-reviews' && canViewSentPeiwanReviews && (
                   <div id="profile-sent-reviews" className="space-y-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">已发评语</h2>
-                        <p className="text-sm text-gray-500">查看你提交给陪玩的评语和对方当前的展示状态</p>
-                      </div>
-                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">
-                        共 {authoredPeiwanReviewItems.length} 条
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-400">
-                      评语提交后不可修改，是否展示到陪玩名片由对方自行决定。
-                    </p>
                     <SentPeiwanReviewHistory reviews={authoredPeiwanReviewItems} />
                   </div>
                 )}
