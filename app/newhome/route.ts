@@ -1,15 +1,11 @@
-import { newhomeHoverFixScript } from '@/lib/newhome-hover-fix';
 import { renderHtmlDocument } from '@/lib/render-html-document';
-import { newhomeDocument } from './_generated/index';
+import { newhomeDocument } from './_source/document';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
-  const html = renderHtmlDocument({
-    ...newhomeDocument,
-    bodyAppendHtml: newhomeHoverFixScript,
-  });
+  const html = renderHtmlDocument(newhomeDocument);
 
   return new Response(html, {
     headers: {

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { BlacklistManager } from '@/components/profile/BlacklistManager';
 import { AuditionInvitePreferenceToggle } from '@/components/profile/AuditionInvitePreferenceToggle';
 import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
+import { SentPeiwanReviewHistory } from '@/components/profile/SentPeiwanReviewHistory';
 import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnouncementPreferenceToggle';
 import { VoicePreviewManager } from '@/components/profile/VoicePreviewManager';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
@@ -77,6 +78,21 @@ const formatDate = (value?: Date | string | null) => {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
+};
+
+const formatDateTime = (value?: Date | string | null) => {
+  if (!value) return '—';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('zh-CN', {
+    timeZone: ROME_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 };
 
 const getBuffStatusMeta = (expiresAt?: Date | string | null) => {
@@ -240,6 +256,7 @@ export default async function Profile(props: ProfilePageProps) {
   const peiwan = member?.peiwan ?? null;
   const isPeiwanMember = member?.status === 'PEIWAN';
   const isLaobanMember = !!member && member.status !== 'PEIWAN';
+  const canViewSentPeiwanReviews = Boolean(discordUserId) && !isPeiwanMember;
   const canManageVoicePreview = isPeiwanMember;
   const showPersonalisationTab = isPeiwanMember || isLaobanMember;
   const vipAnnouncementBroadcastEnabled = member?.vipBenefitProfile?.announcementEnabled !== false;
@@ -301,6 +318,33 @@ export default async function Profile(props: ProfilePageProps) {
         take: 200,
       })
     : Promise.resolve([]);
+  const authoredPeiwanReviewsPromise = canViewSentPeiwanReviews && discordUserId
+    ? prisma.peiwanReview.findMany({
+        where: { reviewerDiscordId: discordUserId },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        select: {
+          id: true,
+          peiwanDiscordId: true,
+          peiwanName: true,
+          peiwanId: true,
+          content: true,
+          displayMode: true,
+          createdAt: true,
+          peiwan: {
+            select: {
+              serverDisplayName: true,
+              peiwan: {
+                select: {
+                  PEIWANID: true,
+                  serverDisplayName: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    : Promise.resolve([]);
   const blacklistEntriesPromise: Promise<ProfileBlacklistEntry[]> = showPersonalisationTab && discordUserId
     ? prisma.blacklist.findMany({
         where: { blockerId: discordUserId },
@@ -336,6 +380,7 @@ export default async function Profile(props: ProfilePageProps) {
     spendBuff,
     loyaltyPoint,
     peiwanReviews,
+    authoredPeiwanReviews,
     blacklistEntries,
   ] = await Promise.all([
     couponsPromise,
@@ -347,8 +392,22 @@ export default async function Profile(props: ProfilePageProps) {
     spendBuffPromise,
     loyaltyPointPromise,
     peiwanReviewsPromise,
+    authoredPeiwanReviewsPromise,
     blacklistEntriesPromise,
   ]);
+  const authoredPeiwanReviewItems = authoredPeiwanReviews.map((review) => ({
+    id: review.id,
+    peiwanDiscordId: review.peiwanDiscordId,
+    peiwanName:
+      review.peiwan.peiwan?.serverDisplayName ??
+      review.peiwan.serverDisplayName ??
+      review.peiwanName ??
+      review.peiwanDiscordId,
+    peiwanId: review.peiwan.peiwan?.PEIWANID ?? review.peiwanId ?? null,
+    content: review.content,
+    displayMode: review.displayMode,
+    createdAtLabel: formatDateTime(review.createdAt),
+  }));
   const blacklistItems = blacklistEntries.map((entry) => ({
     discordUserId: entry.blockedId,
     displayName: entry.blocked.peiwan?.serverDisplayName ?? entry.blocked.serverDisplayName ?? entry.blocked.discordUserId,
@@ -523,6 +582,7 @@ export default async function Profile(props: ProfilePageProps) {
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-level', label: '升级进度' }] : []),
     { id: 'profile-buff', label: 'Buff 状态' },
     ...(showPersonalisationTab ? [{ id: 'profile-personalisation', label: '个性化' }] : []),
+    ...(canViewSentPeiwanReviews ? [{ id: 'profile-sent-reviews', label: '已发评语' }] : []),
     { id: 'profile-info', label: '个人信息' },
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-tx', label: '流水记录' }] : []),
   ] as const;
@@ -887,6 +947,24 @@ export default async function Profile(props: ProfilePageProps) {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {activeTab === 'profile-sent-reviews' && canViewSentPeiwanReviews && (
+                  <div id="profile-sent-reviews" className="space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">已发评语</h2>
+                        <p className="text-sm text-gray-500">查看你提交给陪玩的评语和对方当前的展示状态</p>
+                      </div>
+                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">
+                        共 {authoredPeiwanReviewItems.length} 条
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      评语提交后不可修改，是否展示到陪玩名片由对方自行决定。
+                    </p>
+                    <SentPeiwanReviewHistory reviews={authoredPeiwanReviewItems} />
                   </div>
                 )}
 

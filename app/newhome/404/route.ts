@@ -1,5 +1,5 @@
 import { renderHtmlDocument } from '@/lib/render-html-document';
-import { newhomeDocument } from './_generated/index';
+import { newhomeDocument } from './_source/document';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

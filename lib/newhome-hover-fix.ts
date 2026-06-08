@@ -1,5 +1,4 @@
-export const newhomeHoverFixScript = String.raw`<script>
-(function () {
+const newhomeHoverVideoScriptContent = String.raw`(function () {
   const VIDEO_MAP = {
     "letter-w": {
       mp4: "/newhome/assets/cdn.prod.website-files.com/6718c8afa78e156621f3a2ed/6919ccd90a94a7e0a7915eec_Pete-Rose_video-new_mp4.mp4",
@@ -122,4 +121,8 @@ export const newhomeHoverFixScript = String.raw`<script>
 
   window.addEventListener("load", setupHoverVideos, { once: true });
 })();
-</script>`;
+`;
+
+export const newhomeHoverVideoScriptHtml = `<script>${newhomeHoverVideoScriptContent}</script>`;
+
+export const newhomeHoverVideoEmbedHtml = String.raw`<div class="warhol_hover-video w-embed w-script">${newhomeHoverVideoScriptHtml}</div>`;

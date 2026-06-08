@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const projectRoot = process.cwd();
@@ -142,61 +142,123 @@ function buildBodyParts(bodyHtml, sourceKind) {
   ];
 }
 
-function renderModule({ htmlAttributes, preambleHtml, postambleHtml, headHtml, bodyParts, title, description }) {
-  return `export const newhomeDocument = {
+function toCamelCase(value) {
+  return value
+    .replace(/^[^a-zA-Z]+/, '')
+    .replace(/[-_]+([a-zA-Z0-9])/g, (_match, letter) => letter.toUpperCase())
+    .replace(/^[A-Z]/, (letter) => letter.toLowerCase());
+}
+
+function toKebabCase(value) {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+}
+
+function renderPartModule(part, sourceKind) {
+  const constName = `${toCamelCase(part.id)}Part`;
+
+  if (sourceKind === 'index' && part.id === 'hero') {
+    const hoverStartMarker = '<div class="warhol_hover-video w-embed w-script"><script>';
+    const hoverEndMarker = '<div class="hero_display-wrapper">';
+    const hoverStartIndex = part.html.indexOf(hoverStartMarker);
+    const hoverEndIndex = part.html.indexOf(hoverEndMarker, hoverStartIndex);
+
+    if (hoverStartIndex === -1 || hoverEndIndex === -1) {
+      throw new Error('Failed to locate hover video boundaries in hero section.');
+    }
+
+    const beforeHover = part.html.slice(0, hoverStartIndex);
+    const afterHover = part.html.slice(hoverEndIndex);
+
+    return `import { newhomeHoverVideoEmbedHtml } from '@/lib/newhome-hover-fix';
+
+export const ${constName} = {
+  id: ${JSON.stringify(part.id)},
+  html:
+    String.raw\`${escapeTemplateLiteral(beforeHover)}\` +
+    newhomeHoverVideoEmbedHtml +
+    String.raw\`${escapeTemplateLiteral(afterHover)}\`,
+} as const;
+`;
+  }
+
+  return `export const ${constName} = {
+  id: ${JSON.stringify(part.id)},
+  html: String.raw\`${escapeTemplateLiteral(part.html)}\`,
+} as const;
+`;
+}
+
+function renderDocumentModule({ htmlAttributes, preambleHtml, postambleHtml, headHtml, bodyParts, title, description }) {
+  const imports = bodyParts
+    .map((part) => {
+      const fileName = toKebabCase(part.id);
+      const constName = `${toCamelCase(part.id)}Part`;
+      return `import { ${constName} } from './parts/${fileName}';`;
+    })
+    .join('\n');
+
+  const bodyPartList = bodyParts.map((part) => `${toCamelCase(part.id)}Part`).join(', ');
+
+  return `${imports}
+
+export const newhomeDocument = {
   htmlAttributes: ${JSON.stringify(htmlAttributes, null, 2)} as const,
   title: ${JSON.stringify(title)},
   description: ${JSON.stringify(description)},
   preambleHtml: String.raw\`${escapeTemplateLiteral(preambleHtml)}\`,
   postambleHtml: String.raw\`${escapeTemplateLiteral(postambleHtml)}\`,
   headHtml: String.raw\`${escapeTemplateLiteral(headHtml)}\`,
-  bodyParts: [
-${bodyParts
-  .map(
-    (part) => `    {
-      id: ${JSON.stringify(part.id)},
-      html: String.raw\`${escapeTemplateLiteral(part.html)}\`,
-    },`,
-  )
-  .join('\n')}
-  ] as const,
+  bodyParts: [${bodyPartList}] as const,
 } as const;
 `;
 }
 
-async function generateOne({ inputPath, outputPath, sourceKind }) {
+async function writeDocumentModules({ inputPath, outputDir, sourceKind }) {
   const html = await readFile(inputPath, 'utf8');
   const headHtml = extractSection(html, 'head');
   const bodyHtml = extractSection(html, 'body');
+  const bodyParts = buildBodyParts(bodyHtml, sourceKind);
+  const partsDir = path.join(outputDir, 'parts');
 
-  const moduleSource = renderModule({
+  await rm(outputDir, { force: true, recursive: true });
+  await mkdir(partsDir, { recursive: true });
+
+  for (const part of bodyParts) {
+    const fileName = `${toKebabCase(part.id)}.ts`;
+    await writeFile(path.join(partsDir, fileName), renderPartModule(part, sourceKind), 'utf8');
+  }
+
+  const documentSource = renderDocumentModule({
     htmlAttributes: extractHtmlAttributes(html),
     title: extractTitle(headHtml),
     description: extractDescription(headHtml),
     preambleHtml: extractPreambleHtml(html),
     postambleHtml: extractPostambleHtml(html),
     headHtml,
-    bodyParts: buildBodyParts(bodyHtml, sourceKind),
+    bodyParts,
   });
 
-  await mkdir(path.dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, moduleSource, 'utf8');
+  await writeFile(path.join(outputDir, 'document.ts'), documentSource, 'utf8');
 }
 
 async function main() {
-  await generateOne({
+  await writeDocumentModules({
     inputPath: path.join(projectRoot, 'public', 'newhome', 'index.html'),
-    outputPath: path.join(projectRoot, 'app', 'newhome', '_generated', 'index.ts'),
+    outputDir: path.join(projectRoot, 'app', 'newhome', '_source'),
     sourceKind: 'index',
   });
 
-  await generateOne({
+  await writeDocumentModules({
     inputPath: path.join(projectRoot, 'public', 'newhome', '404', 'index.html'),
-    outputPath: path.join(projectRoot, 'app', 'newhome', '404', '_generated', 'index.ts'),
+    outputDir: path.join(projectRoot, 'app', 'newhome', '404', '_source'),
     sourceKind: '404',
   });
 
-  console.log('Generated code-backed newhome documents.');
+  console.log('Generated source-backed newhome document modules.');
 }
 
 await main();
