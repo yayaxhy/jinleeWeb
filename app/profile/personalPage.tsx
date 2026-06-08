@@ -563,7 +563,7 @@ export default async function Profile(props: ProfilePageProps) {
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-level', label: '升级进度' }] : []),
     { id: 'profile-buff', label: 'Buff 状态' },
     ...(showPersonalisationTab ? [{ id: 'profile-personalisation', label: '个性化' }] : []),
-    ...(canViewSentPeiwanReviews ? [{ id: 'profile-sent-reviews', label: '已发评语' }] : []),
+    ...(canViewSentPeiwanReviews ? [{ id: 'profile-sent-reviews', label: '评语' }] : []),
     { id: 'profile-info', label: '个人信息' },
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-tx', label: '流水记录' }] : []),
   ] as const;
@@ -865,23 +865,6 @@ export default async function Profile(props: ProfilePageProps) {
                             />
                           </>
                         ) : null}
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <h3 className="text-xl font-semibold tracking-wide text-[#8a6000]">老板评语</h3>
-                            <p className="text-sm text-gray-500">选择是否展示到你的名片中</p>
-                          </div>
-                          <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {peiwanReviews.length} 条</span>
-                        </div>
-                        <PeiwanReviewManager
-                          reviews={peiwanReviews.map((review) => ({
-                            id: review.id,
-                            reviewerDiscordId: review.reviewerDiscordId,
-                            reviewerName: review.reviewerName ?? null,
-                            content: review.content,
-                            displayMode: review.displayMode,
-                            createdAtLabel: formatDate(review.createdAt),
-                          }))}
-                        />
                       </div>
                     ) : null}
                   </div>
@@ -933,6 +916,27 @@ export default async function Profile(props: ProfilePageProps) {
 
                 {activeTab === 'profile-sent-reviews' && canViewSentPeiwanReviews && (
                   <div id="profile-sent-reviews" className="space-y-6">
+                    {isPeiwanMember ? (
+                      <div className="space-y-4 rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_10px_30px_rgba(17,24,39,0.04)]">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">收到的评语</h2>
+                            <p className="text-sm text-gray-500">选择是否展示到你的名片中</p>
+                          </div>
+                          <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {peiwanReviews.length} 条</span>
+                        </div>
+                        <PeiwanReviewManager
+                          reviews={peiwanReviews.map((review) => ({
+                            id: review.id,
+                            reviewerDiscordId: review.reviewerDiscordId,
+                            reviewerName: review.reviewerName ?? null,
+                            content: review.content,
+                            displayMode: review.displayMode,
+                            createdAtLabel: formatDate(review.createdAt),
+                          }))}
+                        />
+                      </div>
+                    ) : null}
                     <SentPeiwanReviewHistory reviews={authoredPeiwanReviewItems} />
                   </div>
                 )}
