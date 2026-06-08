@@ -256,7 +256,7 @@ export default async function Profile(props: ProfilePageProps) {
   const peiwan = member?.peiwan ?? null;
   const isPeiwanMember = member?.status === 'PEIWAN';
   const isLaobanMember = !!member && member.status !== 'PEIWAN';
-  const canViewSentPeiwanReviews = Boolean(discordUserId) && !isPeiwanMember;
+  const canViewSentPeiwanReviews = true;
   const canManageVoicePreview = isPeiwanMember;
   const showPersonalisationTab = isPeiwanMember || isLaobanMember;
   const vipAnnouncementBroadcastEnabled = member?.vipBenefitProfile?.announcementEnabled !== false;
