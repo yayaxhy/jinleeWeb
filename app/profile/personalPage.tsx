@@ -561,11 +561,11 @@ export default async function Profile(props: ProfilePageProps) {
   );
   const tabCandidates = [
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-level', label: '升级进度' }] : []),
+    ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-tx', label: '流水记录' }] : []),
     { id: 'profile-buff', label: 'Buff 状态' },
     ...(showPersonalisationTab ? [{ id: 'profile-personalisation', label: '个性化' }] : []),
     ...(canViewSentPeiwanReviews ? [{ id: 'profile-sent-reviews', label: '评语' }] : []),
     { id: 'profile-info', label: '个人信息' },
-    ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-tx', label: '流水记录' }] : []),
   ] as const;
   const tabParam = resolvedSearchParams?.tab;
   const requestedTab = typeof tabParam === 'string' ? tabParam : tabParam?.[0];
