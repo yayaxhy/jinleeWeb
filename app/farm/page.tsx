@@ -7,6 +7,10 @@ import { getServerSession } from '@/lib/session';
 
 export const metadata = {
   title: '锦鲤庄园',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = 'force-dynamic';

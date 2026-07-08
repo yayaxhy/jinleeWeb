@@ -6,6 +6,10 @@ import { isIriaDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: 'Iria 工作台',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = 'force-dynamic';

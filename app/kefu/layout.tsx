@@ -6,6 +6,10 @@ import { isKefuDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: '客服后台',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = 'force-dynamic';

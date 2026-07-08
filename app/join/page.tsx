@@ -3,6 +3,10 @@ import Link from 'next/link';
 
 export const metadata = {
   title: '加入我们 - Jinlee Club',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function JoinPage() {

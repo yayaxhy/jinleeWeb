@@ -1,4 +1,11 @@
-import type { Viewport } from 'next';
+import type { Metadata, Viewport } from 'next';
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export const viewport: Viewport = {
   width: 'device-width',

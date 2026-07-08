@@ -6,6 +6,10 @@ import { isHowardDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: 'Howard 工作台',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = 'force-dynamic';
