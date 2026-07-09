@@ -99,7 +99,7 @@ export default function Home() {
               锦鲤公会游戏陪玩社区
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/90 sm:text-base">
-              浏览 Valorant、Overwatch 等游戏的陪玩信息，认识锦鲤公会推荐的游戏伙伴。
+              来认识锦鲤公会小伙伴们吧。
             </p>
           </div>
         </div>
