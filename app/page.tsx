@@ -7,6 +7,9 @@ import {
   SITE_ALTERNATE_NAME,
   SITE_DESCRIPTION,
   SITE_NAME,
+  SITE_OG_IMAGE,
+  SITE_OG_IMAGE_HEIGHT,
+  SITE_OG_IMAGE_WIDTH,
   SITE_URL,
 } from '@/lib/site';
 
@@ -27,10 +30,10 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: '/bg.png',
-        width: 1490,
-        height: 936,
-        alt: `${SITE_NAME}游戏陪玩社区`,
+        url: SITE_OG_IMAGE,
+        width: SITE_OG_IMAGE_WIDTH,
+        height: SITE_OG_IMAGE_HEIGHT,
+        alt: `${SITE_NAME}锦鲤 logo`,
       },
     ],
   },
@@ -38,7 +41,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: homeTitle,
     description: SITE_DESCRIPTION,
-    images: ['/bg.png'],
+    images: [SITE_OG_IMAGE],
   },
 };
 
