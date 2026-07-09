@@ -10,6 +10,21 @@ import {
   parseCentralEuropeanDateRange,
 } from '@/lib/centralEuropeanDateRange';
 import { parseRevenueIdentityList, resolveRevenueExclusions } from '@/lib/admin/revenue-exclusion';
+import {
+  buildGiftReferralExpenseSummaryFromRows,
+  buildRevenueExpenseBreakdown,
+  getRevenueInviteRewardRows,
+  getRevenueOrderReferralRows,
+  normalizeExpenseGroupRows,
+  summarizeInviteRewardExpenseRows,
+  summarizeOrderReferralExpenseRows,
+} from '@/lib/admin/revenue-expense';
+import {
+  getLotteryFusionRevenueSummary,
+  LOTTERY_FUSION_COUNT_BUCKET_LABEL,
+  LOTTERY_FUSION_SOURCE_KIND_LABEL,
+  type LotteryFusionCountBucket,
+} from '@/lib/admin/lottery-fusion-revenue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,15 +98,26 @@ const buildIdentityExclusion = (
   return clauses.length ? { NOT: { OR: clauses } } : {};
 };
 
-type OrderReferralRow = {
-  id: string;
-  referralId: string;
-  orderId: string;
-  amount: Prisma.Decimal | null;
-  createdAt: Date;
-  orderEndedAt: Date | null;
-  hostId: string | null;
-  workerId: string | null;
+const FUSION_POOL_LABEL: Record<string, string> = {
+  NORMAL: '银色',
+  MEDIUM: '金色',
+  ADVANCED: '高级',
+  SPECIAL: '特殊',
+};
+
+const FUSION_COUNT_BUCKET_ORDER: LotteryFusionCountBucket[] = ['3', '4', '6', 'other'];
+const FUSION_SOURCE_KIND_ORDER = ['lottery', 'coupon', 'pointshop'] as const;
+
+const formatBreakdownText = (
+  breakdown: Record<string, number>,
+  labelMap: Record<string, string>,
+  fallback = 'none',
+) => {
+  const parts = Object.entries(breakdown)
+    .filter(([, count]) => count > 0)
+    .sort((left, right) => right[1] - left[1])
+    .map(([key, count]) => `${labelMap[key] ?? key} ${count}`);
+  return parts.join(' / ') || fallback;
 };
 
 type RevertedGiftRow = {
@@ -257,6 +283,7 @@ export async function GET(request: NextRequest) {
     giftAuditRows,
     orderRows,
     referralPayoutRows,
+    inviteRewardRows,
     discountRebateRows,
     lotteryCreatedRows,
     lotteryConsumeRows,
@@ -296,24 +323,16 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { endedAt: 'desc' },
     }),
-    prisma.$queryRaw<OrderReferralRow[]>(Prisma.sql`
-      SELECT
-        rp."id",
-        rp."referralId",
-        rp."orderId",
-        rp."amount",
-        rp."createdAt",
-        o."endedAt" AS "orderEndedAt",
-        o."hostId",
-        o."workerId"
-      FROM "ReferralPayout" rp
-      JOIN "Order" o
-        ON o."id" = rp."orderId"
-      WHERE rp."createdAt" >= ${start}
-        AND rp."createdAt" < ${end}
-        AND o."status" = 'ENDED'
-      ORDER BY rp."createdAt" DESC
-    `),
+    getRevenueOrderReferralRows({
+      start,
+      end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
+    getRevenueInviteRewardRows({
+      start,
+      end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
     prisma.individualTransaction.findMany({
       where: discountRebateWhere,
       orderBy: { timeCreatedAt: 'desc' },
@@ -411,18 +430,20 @@ export async function GET(request: NextRequest) {
   const revertedGiftPaid = decimalSum(revertedGiftRows, 'payable');
   const revertedGiftSubsidy = decimalSum(revertedGiftRows, 'subsidyAmount');
   const revertedGiftFee = decimalSum(revertedGiftRows, 'feeAmount');
-  const revertedGiftReferral = decimalSum(revertedGiftRows, 'bossReferralAmount').add(
-    decimalSum(revertedGiftRows, 'workerReferralAmount'),
-  );
   const revertedOrderGross = decimalSum(revertedOrderRows, 'revertedOrderGross');
   const giftGrossNet = giftGross.sub(revertedGiftGross);
   const giftPaidNet = giftPaid.sub(revertedGiftPaid);
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = decimalSum(giftAuditRows, 'feeAmount');
   const giftFeeNet = giftFee.sub(revertedGiftFee);
-  const giftReferral = decimalSum(giftAuditRows, 'bossReferralAmount').add(decimalSum(giftAuditRows, 'workerReferralAmount'));
-  const giftReferralNet = giftReferral.sub(revertedGiftReferral);
-  const orderReferral = decimalSum(referralPayoutRows, 'amount');
+  const giftReferralExpenseRow = buildGiftReferralExpenseSummaryFromRows({
+    giftAuditRows,
+    revertedGiftRows,
+    excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+  });
+  const giftReferralNet = giftReferralExpenseRow.amount;
+  const orderReferralExpenseRow = summarizeOrderReferralExpenseRows(referralPayoutRows);
+  const orderReferral = orderReferralExpenseRow.amount;
   const orderGross = decimalSum(orderRows, 'grossAmount');
   const orderNet = decimalSum(orderRows, 'netAmount');
   const orderFee = orderGross.sub(orderNet);
@@ -438,6 +459,43 @@ export async function GET(request: NextRequest) {
   const grossIncome = new Prisma.Decimal(drawCount).mul(29);
   const consumeTotal = decimalSum(lotteryConsumeRows, 'consumeAmount');
   const netProfit = grossIncome.sub(consumeTotal);
+  const fusionRevenue = await getLotteryFusionRevenueSummary({
+    start,
+    end,
+    excludeJinleeIds: excludeMemberResolved.excludeJinleeIds,
+    excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+  });
+  const fusionCreatedRows = lotteryCreatedRows.filter((row) =>
+    typeof row.nonce === 'string' ? row.nonce.startsWith('fusion:') : false,
+  );
+  const fusionConsumeRows = lotteryConsumeRows.filter((row) =>
+    typeof row.nonce === 'string' ? row.nonce.startsWith('fusion:') : false,
+  );
+  const fusionPoolBreakdownText = formatBreakdownText(
+    fusionRevenue.createdPoolBreakdown,
+    FUSION_POOL_LABEL,
+  );
+  const fusionOutstandingPoolBreakdownText = formatBreakdownText(
+    fusionRevenue.activeOutstandingPoolBreakdown,
+    FUSION_POOL_LABEL,
+  );
+  const fusionRuleBreakdownText = FUSION_COUNT_BUCKET_ORDER.map(
+    (bucket) => `${LOTTERY_FUSION_COUNT_BUCKET_LABEL[bucket]} ${fusionRevenue.fusionCountBreakdown[bucket]}`,
+  ).join(' / ');
+  const fusionRuleResultBreakdownText = FUSION_COUNT_BUCKET_ORDER.map((bucket) => {
+    const poolText = formatBreakdownText(
+      fusionRevenue.resultPoolByFusionCount[bucket],
+      FUSION_POOL_LABEL,
+    );
+    return `${LOTTERY_FUSION_COUNT_BUCKET_LABEL[bucket]}: ${poolText}`;
+  }).join(' / ');
+  const fusionSourceKindBreakdownText = FUSION_SOURCE_KIND_ORDER.map(
+    (kind) => `${LOTTERY_FUSION_SOURCE_KIND_LABEL[kind]} ${fusionRevenue.sourceKindBreakdown[kind]}`,
+  ).join(' / ');
+  const fusionSourcePoolBreakdownText = formatBreakdownText(
+    fusionRevenue.sourcePoolBreakdown,
+    FUSION_POOL_LABEL,
+  );
 
   const scratchRevealedCount = scratchRows.length;
   const scratchGross = new Prisma.Decimal(scratchRevealedCount).mul(19);
@@ -445,6 +503,7 @@ export async function GET(request: NextRequest) {
   const scratchNet = scratchGross.sub(scratchReward);
 
   const expenseTotal = decimalSum(expenseRows, 'amount');
+  const inviteRewardExpenseRow = summarizeInviteRewardExpenseRows(inviteRewardRows);
   const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
   const vipBenefitCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.VIP_BENEFIT);
   const chatDropCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.CHAT_DROP);
@@ -468,6 +527,18 @@ export async function GET(request: NextRequest) {
   const expenseByReasonSorted = Array.from(expenseByReasonMap.entries())
     .map(([reason, value]) => ({ reason, count: value.count, amount: value.amount }))
     .sort((a, b) => b.amount.comparedTo(a.amount));
+  const expenseBreakdown = buildRevenueExpenseBreakdown({
+    expenseCount: expenseRows.length,
+    expenseAmount: expenseTotal,
+    expenseByReasonRows: normalizeExpenseGroupRows(
+      expenseByReasonSorted.map((row) => ({
+        reason: row.reason,
+        _count: { id: row.count },
+        _sum: { amount: row.amount },
+      })),
+    ),
+    syntheticRows: [giftReferralExpenseRow, orderReferralExpenseRow, inviteRewardExpenseRow],
+  });
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'jinlee admin';
@@ -490,10 +561,13 @@ export async function GET(request: NextRequest) {
     { section: 'rows', key: 'Commission(all)', value: commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: giftAuditRows.length },
     { section: 'rows', key: 'Order(ENDED all)', value: orderRows.length },
-    { section: 'rows', key: 'ReferralPayout(all)', value: referralPayoutRows.length },
+    { section: 'rows', key: 'ReferralPayout(filtered ENDED)', value: referralPayoutRows.length },
+    { section: 'rows', key: 'InviteLinkUsage(filtered)', value: inviteRewardRows.length },
     { section: 'rows', key: 'IndividualTransaction(优惠返利 all)', value: discountRebateRows.length },
     { section: 'rows', key: 'LotteryDraw(createdAt window)', value: lotteryCreatedRows.length },
     { section: 'rows', key: 'LotteryDraw(consumeAt window)', value: lotteryConsumeRows.length },
+    { section: 'rows', key: 'LotteryFusion(createdAt window)', value: fusionCreatedRows.length },
+    { section: 'rows', key: 'LotteryFusion(consumeAt window)', value: fusionConsumeRows.length },
     { section: 'rows', key: 'ScratchTicket(REVEALED)', value: scratchRows.length },
     { section: 'rows', key: 'Expense', value: expenseRows.length },
     { section: 'rows', key: 'RevertedGiftSubsidy(join)', value: revertedGiftRows.length },
@@ -519,6 +593,19 @@ export async function GET(request: NextRequest) {
     { section: '抽奖收益', key: '券抵扣消耗', value: consumeTotal.toString() },
     { section: '抽奖收益', key: '净收益', value: netProfit.toString() },
 
+    { section: '重铸成本', key: '本期重铸产出', value: fusionRevenue.createdCount },
+    { section: '重铸成本', key: '本期已核销', value: fusionRevenue.consumedCount },
+    { section: '重铸成本', key: '本期已核销成本', value: fusionRevenue.realizedCost.toString() },
+    { section: '重铸成本', key: '当前待核销', value: fusionRevenue.activeOutstandingCount },
+    { section: '重铸成本', key: '本期产出池分布', value: fusionPoolBreakdownText },
+    { section: '重铸成本', key: '当前待核销池分布', value: fusionOutstandingPoolBreakdownText },
+    { section: '重铸成本', key: '再次投入的重铸产物来源数', value: fusionRevenue.rerolledLotteryInputCount },
+    { section: '重铸成本', key: '再次投入的重铸次数', value: fusionRevenue.rerolledRequestCount },
+    { section: '重铸规则', key: '规则分布', value: fusionRuleBreakdownText },
+    { section: '重铸规则', key: '各规则产出池', value: fusionRuleResultBreakdownText },
+    { section: '重铸来源', key: '来源类型分布', value: fusionSourceKindBreakdownText },
+    { section: '重铸来源', key: '来源池分布', value: fusionSourcePoolBreakdownText },
+
     { section: '刮刮乐收益', key: '已刮开数量', value: scratchRevealedCount },
     { section: '刮刮乐收益', key: '毛收入（数量×19）', value: scratchGross.toString() },
     { section: '刮刮乐收益', key: '中奖支出', value: scratchReward.toString() },
@@ -530,14 +617,22 @@ export async function GET(request: NextRequest) {
     { section: '积木游戏收益', key: '捣蛋奖励', value: blockReward.toString() },
     { section: '积木游戏收益', key: '净收益', value: blockEarning.toString() },
 
-    { section: '支出记录(Expense)', key: '笔数', value: expenseRows.length },
-    { section: '支出记录(Expense)', key: '总额', value: expenseTotal.toString() },
-    { section: '支出记录(Expense)', key: 'Coupon表格金额（手动送券）', value: manualGrantCouponAmount.toString() },
-    { section: '支出记录(Expense)', key: 'Coupon表格笔数（手动送券）', value: manualGrantCouponCount },
-    { section: '支出记录(Expense)', key: 'Coupon表格金额（VIP福利）', value: vipBenefitCouponAmount.toString() },
-    { section: '支出记录(Expense)', key: 'Coupon表格笔数（VIP福利）', value: vipBenefitCouponCount },
-    { section: '支出记录(Expense)', key: 'Coupon表格金额（彩蛋）', value: chatDropCouponAmount.toString() },
-    { section: '支出记录(Expense)', key: 'Coupon表格笔数（彩蛋）', value: chatDropCouponCount },
+    { section: '支出记录(Expense + 邀请)', key: 'Expense 表笔数', value: expenseRows.length },
+    { section: '支出记录(Expense + 邀请)', key: 'Expense 表总额', value: expenseTotal.toString() },
+    { section: '支出记录(Expense + 邀请)', key: giftReferralExpenseRow.reason, value: giftReferralExpenseRow.amount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: `${giftReferralExpenseRow.reason}笔数`, value: giftReferralExpenseRow.count },
+    { section: '支出记录(Expense + 邀请)', key: orderReferralExpenseRow.reason, value: orderReferralExpenseRow.amount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: `${orderReferralExpenseRow.reason}笔数`, value: orderReferralExpenseRow.count },
+    { section: '支出记录(Expense + 邀请)', key: inviteRewardExpenseRow.reason, value: inviteRewardExpenseRow.amount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: `${inviteRewardExpenseRow.reason}笔数`, value: inviteRewardExpenseRow.count },
+    { section: '支出记录(Expense + 邀请)', key: '扩展总支出', value: expenseBreakdown.totalAmount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: '扩展总支出笔数', value: expenseBreakdown.totalCount },
+    { section: '支出记录(Expense + 邀请)', key: 'Coupon表格金额（手动送券）', value: manualGrantCouponAmount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（手动送券）', value: manualGrantCouponCount },
+    { section: '支出记录(Expense + 邀请)', key: 'Coupon表格金额（VIP福利）', value: vipBenefitCouponAmount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（VIP福利）', value: vipBenefitCouponCount },
+    { section: '支出记录(Expense + 邀请)', key: 'Coupon表格金额（彩蛋）', value: chatDropCouponAmount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（彩蛋）', value: chatDropCouponCount },
 
     { section: '抽成详情', key: '打赏面值流水', value: giftGrossNet.toString() },
     { section: '抽成详情', key: '打赏实付流水', value: giftPaidNet.toString() },
@@ -561,6 +656,45 @@ export async function GET(request: NextRequest) {
     { section: '抽成详情', key: '其他来源抽成', value: commissionOtherSources.toString() },
   ]);
 
+  addObjectRowsSheet(
+    workbook,
+    '重铸规则分布',
+    FUSION_COUNT_BUCKET_ORDER.map((bucket) => ({
+      rule: LOTTERY_FUSION_COUNT_BUCKET_LABEL[bucket],
+      rerollCount: fusionRevenue.fusionCountBreakdown[bucket],
+      resultPools: formatBreakdownText(
+        fusionRevenue.resultPoolByFusionCount[bucket],
+        FUSION_POOL_LABEL,
+      ),
+    })),
+  );
+  addObjectRowsSheet(
+    workbook,
+    '重铸来源类型',
+    FUSION_SOURCE_KIND_ORDER.map((kind) => ({
+      sourceKind: LOTTERY_FUSION_SOURCE_KIND_LABEL[kind],
+      count: fusionRevenue.sourceKindBreakdown[kind],
+    })),
+  );
+  addObjectRowsSheet(
+    workbook,
+    '重铸来源池',
+    Object.entries(fusionRevenue.sourcePoolBreakdown).map(([pool, count]) => ({
+      pool,
+      poolLabel: FUSION_POOL_LABEL[pool] ?? pool,
+      count,
+    })),
+  );
+  addObjectRowsSheet(
+    workbook,
+    '重铸待核销池',
+    Object.entries(fusionRevenue.activeOutstandingPoolBreakdown).map(([pool, count]) => ({
+      pool,
+      poolLabel: FUSION_POOL_LABEL[pool] ?? pool,
+      count,
+    })),
+  );
+
   addObjectRowsSheet(workbook, '排除ID映射', excludeMembers);
   addObjectRowsSheet(workbook, '积木游戏明细', blockStackRows);
   addObjectRowsSheet(workbook, '充值明细', rechargeRows);
@@ -572,15 +706,18 @@ export async function GET(request: NextRequest) {
   addObjectRowsSheet(workbook, '打赏补贴回退明细', revertedGiftRows);
   addObjectRowsSheet(workbook, '订单明细_ENDED', orderRows);
   addObjectRowsSheet(workbook, '订单返利明细', referralPayoutRows);
+  addObjectRowsSheet(workbook, '邀请进服奖励明细', inviteRewardRows);
   addObjectRowsSheet(workbook, '优惠返利流水', discountRebateRows);
   addObjectRowsSheet(workbook, '抽奖明细_创建时间', lotteryCreatedRows);
   addObjectRowsSheet(workbook, '抽奖明细_消耗时间', lotteryConsumeRows);
+  addObjectRowsSheet(workbook, '重铸明细_创建时间', fusionCreatedRows);
+  addObjectRowsSheet(workbook, '重铸明细_消耗时间', fusionConsumeRows);
   addObjectRowsSheet(workbook, '刮刮乐已刮开明细', scratchRows);
   addObjectRowsSheet(workbook, '支出明细', expenseRows);
   addObjectRowsSheet(
     workbook,
     '支出分类汇总',
-    expenseByReasonSorted.map((row) => ({ reason: row.reason, count: row.count, amount: row.amount.toString() })),
+    expenseBreakdown.byReasonRows.map((row) => ({ reason: row.reason, count: row.count, amount: row.amount.toString() })),
   );
   const buffer = await workbook.xlsx.writeBuffer();
   const fileName = toFileName('admin_revenue_data');

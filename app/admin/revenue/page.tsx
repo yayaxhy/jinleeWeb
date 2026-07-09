@@ -8,6 +8,21 @@ import { formatAmountDown2 } from '@/lib/numberFormat';
 import { RevenueTimeRangeActions } from '@/components/admin/RevenueTimeRangeActions';
 import { parseCentralEuropeanDateRange } from '@/lib/centralEuropeanDateRange';
 import { parseRevenueIdentityList, resolveRevenueExclusions } from '@/lib/admin/revenue-exclusion';
+import {
+  buildRevenueExpenseBreakdown,
+  getGiftReferralExpenseSummary,
+  getRevenueInviteRewardRows,
+  getRevenueOrderReferralRows,
+  normalizeExpenseGroupRows,
+  summarizeInviteRewardExpenseRows,
+  summarizeOrderReferralExpenseRows,
+} from '@/lib/admin/revenue-expense';
+import {
+  getLotteryFusionRevenueSummary,
+  LOTTERY_FUSION_COUNT_BUCKET_LABEL,
+  LOTTERY_FUSION_SOURCE_KIND_LABEL,
+  type LotteryFusionCountBucket,
+} from '@/lib/admin/lottery-fusion-revenue';
 
 export const metadata = {
   title: '查看收益',
@@ -60,6 +75,28 @@ const buildIdentityExclusion = (
     clauses.push({ [discordField]: { in: excludeDiscordIds } });
   }
   return clauses.length ? { NOT: { OR: clauses } } : {};
+};
+
+const FUSION_POOL_LABEL: Record<string, string> = {
+  NORMAL: '银色',
+  MEDIUM: '金色',
+  ADVANCED: '高级',
+  SPECIAL: '特殊',
+};
+
+const FUSION_COUNT_BUCKET_ORDER: LotteryFusionCountBucket[] = ['3', '4', '6', 'other'];
+const FUSION_SOURCE_KIND_ORDER = ['lottery', 'coupon', 'pointshop'] as const;
+
+const formatBreakdownText = (
+  breakdown: Record<string, number>,
+  labelMap: Record<string, string>,
+  fallback = '当前区间暂无数据',
+) => {
+  const parts = Object.entries(breakdown)
+    .filter(([, count]) => count > 0)
+    .sort((left, right) => right[1] - left[1])
+    .map(([key, count]) => `${labelMap[key] ?? key} ${count}`);
+  return parts.join(' / ') || fallback;
 };
 
 export default async function AdminRevenuePage(props: PageProps) {
@@ -183,24 +220,11 @@ export default async function AdminRevenuePage(props: PageProps) {
       gross: true,
       payable: true,
       feeAmount: true,
-      bossReferralAmount: true,
-      workerReferralAmount: true,
     },
     where: {
       createdAt: { gte: start, lt: end },
     },
   });
-  const orderReferralRows = await prisma.$queryRaw<{ order_referral: Prisma.Decimal | null }[]>(
-    Prisma.sql`
-      SELECT COALESCE(SUM(rp."amount"), 0) AS order_referral
-      FROM "ReferralPayout" rp
-      JOIN "Order" o
-        ON o."id" = rp."orderId"
-      WHERE rp."createdAt" >= ${start}
-        AND rp."createdAt" < ${end}
-        AND o."status" = 'ENDED'
-    `,
-  );
   const orderWhere: Prisma.OrderWhereInput = {
     status: 'ENDED',
     endedAt: { gte: start, lt: end },
@@ -233,17 +257,13 @@ export default async function AdminRevenuePage(props: PageProps) {
       reverted_gross: Prisma.Decimal | null;
       reverted_payable: Prisma.Decimal | null;
       reverted_fee: Prisma.Decimal | null;
-      reverted_boss_referral: Prisma.Decimal | null;
-      reverted_worker_referral: Prisma.Decimal | null;
     }[]
   >(
     Prisma.sql`
       SELECT
         COALESCE(SUM(ga."gross"), 0) AS reverted_gross,
         COALESCE(SUM(ga."payable"), 0) AS reverted_payable,
-        COALESCE(SUM(ga."feeAmount"), 0) AS reverted_fee,
-        COALESCE(SUM(ga."bossReferralAmount"), 0) AS reverted_boss_referral,
-        COALESCE(SUM(ga."workerReferralAmount"), 0) AS reverted_worker_referral
+        COALESCE(SUM(ga."feeAmount"), 0) AS reverted_fee
       FROM "gift_audit" ga
       JOIN "revert" r
         ON r."originalTransactionId" = ga."individualTransactionId"
@@ -270,18 +290,12 @@ export default async function AdminRevenuePage(props: PageProps) {
   const revertedGiftGross = dec(revertedGiftAgg.reverted_gross);
   const revertedGiftPaid = dec(revertedGiftAgg.reverted_payable);
   const revertedGiftFee = dec(revertedGiftAgg.reverted_fee);
-  const revertedGiftReferral = dec(revertedGiftAgg.reverted_boss_referral).add(
-    dec(revertedGiftAgg.reverted_worker_referral),
-  );
   const revertedOrderGross = dec(revertedOrderRows[0]?.reverted_order_gross);
   const giftGrossNet = giftGross.sub(revertedGiftGross);
   const giftPaidNet = giftPaid.sub(revertedGiftPaid);
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = dec(giftAgg._sum.feeAmount);
   const giftFeeNet = giftFee.sub(revertedGiftFee);
-  const giftReferral = dec(giftAgg._sum.bossReferralAmount).add(dec(giftAgg._sum.workerReferralAmount));
-  const giftReferralNet = giftReferral.sub(revertedGiftReferral);
-  const orderReferral = dec(orderReferralRows[0]?.order_referral);
   const orderGross = dec(orderAgg._sum.grossAmount);
   const orderNet = dec(orderAgg._sum.netAmount);
   const orderFee = orderGross.sub(orderNet);
@@ -366,6 +380,9 @@ export default async function AdminRevenuePage(props: PageProps) {
     pureProfitAgg,
     expenseByReason,
     couponConsumedBySource,
+    orderReferralRows,
+    inviteRewardRows,
+    giftReferralExpenseRow,
   ] = await Promise.all([
     prisma.expense.aggregate({
       _sum: { amount: true },
@@ -388,10 +405,33 @@ export default async function AdminRevenuePage(props: PageProps) {
       _count: { id: true },
       where: couponWhere,
     }),
+    getRevenueOrderReferralRows({
+      start,
+      end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
+    getRevenueInviteRewardRows({
+      start,
+      end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
+    getGiftReferralExpenseSummary({
+      start,
+      end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
   ]);
-  const expenseByReasonSorted = [...expenseByReason].sort(
-    (a, b) => (parseNumber(b._sum.amount) ?? 0) - (parseNumber(a._sum.amount) ?? 0)
-  );
+  const orderReferralExpenseRow = summarizeOrderReferralExpenseRows(orderReferralRows);
+  const inviteRewardExpenseRow = summarizeInviteRewardExpenseRows(inviteRewardRows);
+  const expenseBreakdown = buildRevenueExpenseBreakdown({
+    expenseCount: expenseAgg._count.id,
+    expenseAmount: expenseAgg._sum.amount,
+    expenseByReasonRows: normalizeExpenseGroupRows(expenseByReason),
+    syntheticRows: [giftReferralExpenseRow, orderReferralExpenseRow, inviteRewardExpenseRow],
+  });
+  const expenseByReasonSorted = expenseBreakdown.byReasonRows;
+  const giftReferralNet = giftReferralExpenseRow.amount;
+  const orderReferral = orderReferralExpenseRow.amount;
   const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
   const vipBenefitCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.VIP_BENEFIT);
   const chatDropCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.CHAT_DROP);
@@ -445,6 +485,43 @@ export default async function AdminRevenuePage(props: PageProps) {
         },
       }),
     ]);
+
+  const fusionRevenue = await getLotteryFusionRevenueSummary({
+    start,
+    end,
+    excludeJinleeIds: excludeMemberResolved.excludeJinleeIds,
+    excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+  });
+  const fusionPoolBreakdownText = formatBreakdownText(
+    fusionRevenue.createdPoolBreakdown,
+    FUSION_POOL_LABEL,
+    '当前区间暂无产出',
+  );
+  const fusionOutstandingPoolBreakdownText = formatBreakdownText(
+    fusionRevenue.activeOutstandingPoolBreakdown,
+    FUSION_POOL_LABEL,
+    '当前暂无待核销奖品',
+  );
+  const fusionRuleBreakdownText =
+    FUSION_COUNT_BUCKET_ORDER.map(
+      (bucket) => `${LOTTERY_FUSION_COUNT_BUCKET_LABEL[bucket]} ${fusionRevenue.fusionCountBreakdown[bucket]}`,
+    ).join(' / ');
+  const fusionSourceKindBreakdownText = FUSION_SOURCE_KIND_ORDER.map(
+    (kind) => `${LOTTERY_FUSION_SOURCE_KIND_LABEL[kind]} ${fusionRevenue.sourceKindBreakdown[kind]}`,
+  ).join(' / ');
+  const fusionSourcePoolBreakdownText = formatBreakdownText(
+    fusionRevenue.sourcePoolBreakdown,
+    FUSION_POOL_LABEL,
+    '当前区间暂无来源数据',
+  );
+  const fusionRuleResultBreakdownText = FUSION_COUNT_BUCKET_ORDER.map((bucket) => {
+    const poolText = formatBreakdownText(
+      fusionRevenue.resultPoolByFusionCount[bucket],
+      FUSION_POOL_LABEL,
+      '无',
+    );
+    return `${LOTTERY_FUSION_COUNT_BUCKET_LABEL[bucket]}：${poolText}`;
+  }).join(' / ');
 
   return (
     <div className="space-y-8 text-white">
@@ -566,6 +643,35 @@ export default async function AdminRevenuePage(props: PageProps) {
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">重铸成本</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>本期重铸产出：{fusionRevenue.createdCount}</p>
+            <p>本期已核销：{fusionRevenue.consumedCount}</p>
+            <p>本期已核销成本：¥{formatNumber(fusionRevenue.realizedCost)}</p>
+            <p>当前待核销：{fusionRevenue.activeOutstandingCount}</p>
+            <p>当前待核销池：{fusionOutstandingPoolBreakdownText}</p>
+            <p>再次投入的重铸产物：{fusionRevenue.rerolledLotteryInputCount} 个来源 / {fusionRevenue.rerolledRequestCount} 次重铸</p>
+            <p className="text-white">本期产出池分布：{fusionPoolBreakdownText}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">重铸规则分布</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>{fusionRuleBreakdownText}</p>
+            <p className="text-white">各规则产出池：{fusionRuleResultBreakdownText}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <h3 className="text-lg font-semibold">重铸来源结构</h3>
+          <div className="space-y-1 text-sm text-white/70">
+            <p>来源类型：{fusionSourceKindBreakdownText}</p>
+            <p className="text-white">来源池分布：{fusionSourcePoolBreakdownText}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">刮刮乐收益</h3>
           <div className="space-y-1 text-sm text-white/70">
             <p>已刮开数量：{scratchRevealedCount}</p>
@@ -597,7 +703,7 @@ export default async function AdminRevenuePage(props: PageProps) {
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-lg font-semibold">支出记录（Expense）</h3>
+            <h3 className="text-lg font-semibold">支出记录（Expense + 邀请）</h3>
             <Link
               href="/admin/expenses"
               className="inline-flex items-center justify-center rounded-full border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10"
@@ -606,8 +712,12 @@ export default async function AdminRevenuePage(props: PageProps) {
             </Link>
           </div>
           <div className="space-y-1 text-sm text-white/70">
-            <p>笔数：{expenseAgg._count.id}</p>
-            <p>总额：¥{formatNumber(expenseAgg._sum.amount, 4)}</p>
+            <p>Expense 表笔数：{expenseAgg._count.id}</p>
+            <p>Expense 表总额：¥{formatNumber(expenseAgg._sum.amount, 4)}</p>
+            <p>{giftReferralExpenseRow.reason}：{giftReferralExpenseRow.count}笔，¥{formatNumber(giftReferralExpenseRow.amount, 4)}</p>
+            <p>{orderReferralExpenseRow.reason}：{orderReferralExpenseRow.count}笔，¥{formatNumber(orderReferralExpenseRow.amount, 4)}</p>
+            <p>{inviteRewardExpenseRow.reason}：{inviteRewardExpenseRow.count}笔，¥{formatNumber(inviteRewardExpenseRow.amount, 4)}</p>
+            <p className="text-white">扩展总支出：{expenseBreakdown.totalCount}笔，¥{formatNumber(expenseBreakdown.totalAmount, 4)}</p>
             <p>Coupon表格金额（手动送券）：{manualGrantCouponCount}笔，¥{formatNumber(manualGrantCouponAmount, 4)}</p>
             <p>Coupon表格金额（VIP福利）：{vipBenefitCouponCount}笔，¥{formatNumber(vipBenefitCouponAmount, 4)}</p>
             <p>Coupon表格金额（彩蛋）：{chatDropCouponCount}笔，¥{formatNumber(chatDropCouponAmount, 4)}</p>
@@ -618,7 +728,7 @@ export default async function AdminRevenuePage(props: PageProps) {
             {expenseByReasonSorted.length ? (
               expenseByReasonSorted.map((row) => (
                 <p key={row.reason}>
-                  {row.reason}：{row._count.id} 笔 · ¥{formatNumber(row._sum.amount, 4)}
+                  {row.reason}：{row.count} 笔 · ¥{formatNumber(row.amount, 4)}
                 </p>
               ))
             ) : (

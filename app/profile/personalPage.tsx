@@ -6,6 +6,7 @@ import { AuditionInvitePreferenceToggle } from '@/components/profile/AuditionInv
 import { PeiwanReviewManager } from '@/components/profile/PeiwanReviewManager';
 import { SentPeiwanReviewHistory } from '@/components/profile/SentPeiwanReviewHistory';
 import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnouncementPreferenceToggle';
+import { VipRoleSyncPreferenceToggle } from '@/components/profile/VipRoleSyncPreferenceToggle';
 import { VoicePreviewManager } from '@/components/profile/VoicePreviewManager';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { formatAmountDown2 } from '@/lib/numberFormat';
@@ -206,6 +207,7 @@ export default async function Profile(props: ProfilePageProps) {
   const navLinks = [
     { href: '/profile', label: '个人主页' },
     { href: '/profile/bag', label: '我的背包' },
+    { href: '/profile/lottery-fusion', label: '奖品重铸' },
     { href: '/profile/heart', label: '心动值' },
     { href: '/profile/giftwall', label: '礼物墙' },
     { href: '/profile/withdraw', label: '提现' },
@@ -244,6 +246,7 @@ export default async function Profile(props: ProfilePageProps) {
   const canViewSentPeiwanReviews = true;
   const canManageVoicePreview = isPeiwanMember;
   const showPersonalisationTab = isPeiwanMember || isLaobanMember;
+  const vipRoleSyncEnabled = member?.vipBenefitProfile?.roleOptOut !== true;
   const vipAnnouncementBroadcastEnabled = member?.vipBenefitProfile?.announcementEnabled !== false;
   const now = new Date();
   const level = peiwan?.level ?? '—';
@@ -849,7 +852,10 @@ export default async function Profile(props: ProfilePageProps) {
                       </div>
                       <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PROFILE</span>
                     </div>
-                    <VipAnnouncementPreferenceToggle enabled={vipAnnouncementBroadcastEnabled} />
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      <VipRoleSyncPreferenceToggle enabled={vipRoleSyncEnabled} />
+                      <VipAnnouncementPreferenceToggle enabled={vipAnnouncementBroadcastEnabled} />
+                    </div>
                     <BlacklistManager initialEntries={blacklistItems} />
                     {isPeiwanMember ? (
                       <div className="space-y-6 border-t border-dashed border-black/10 pt-6">

@@ -11,6 +11,7 @@ export async function GET() {
     headers: {
       'cache-control': 'no-store',
       'content-type': 'text/html; charset=utf-8',
+      'x-robots-tag': 'noindex, nofollow',
     },
   });
 }

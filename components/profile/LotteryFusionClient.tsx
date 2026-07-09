@@ -1,17 +1,42 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+/* eslint-disable @next/next/no-img-element */
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  ArchiveBoxIcon,
+  ArrowRightOnRectangleIcon,
+  ClockIcon,
+  Cog6ToothIcon,
+  DocumentTextIcon,
+  GiftIcon,
+  HomeIcon,
+  QuestionMarkCircleIcon,
+  SparklesIcon,
+  UserCircleIcon,
+  WalletIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
+import { CheckIcon } from '@heroicons/react/24/solid';
+import { startTransition, useEffect, useRef, useState } from 'react';
+import {
+  buildLotteryFusionSourceRef,
+  LOTTERY_FUSION_RULES,
+  type LotteryFusionSourceKind,
+} from '@/lib/lottery-fusion';
 
-type FusionItemView = {
+export type FusionItemView = {
   id: string;
+  sourceKind?: LotteryFusionSourceKind;
   prizeName: string;
   prizeType: string;
   pool: string;
   expiresAt: string | null;
   createdAt: string;
+  imageUrl?: string | null;
 };
 
-type FusionResultView = {
+export type FusionResultView = {
   drawId: string;
   prizeName: string;
   prizeType: string;
@@ -19,19 +44,34 @@ type FusionResultView = {
   poolLabel: string;
   imageUrl: string | null;
   expiresAt: string | null;
-  sourceDrawIds: string[];
+  sourceIds: string[];
+};
+
+export type FusionMembershipView = {
+  level: number;
+  currentValue: number;
+  nextValue: number;
+  progressPercent: number;
 };
 
 type LotteryFusionClientProps = {
   initialItems: FusionItemView[];
+  initialSelectedIds?: string[];
+  membership: FusionMembershipView;
+  embeddedInProfile?: boolean;
 };
 
 type Notice = {
-  level: 'success' | 'error' | 'info';
+  level: 'success' | 'error';
   text: string;
 } | null;
 
-type AnimationPhase = 'collapsing' | 'charging' | 'revealing';
+type BlockingDialog = {
+  title: string;
+  text: string;
+} | null;
+
+type AnimationPhase = 'charging' | 'complete';
 
 type AnimationPayload = {
   result: FusionResultView;
@@ -43,247 +83,230 @@ type AnimationState = {
   payload: AnimationPayload;
 } | null;
 
-type ResultPoolKey = 'NORMAL' | 'MEDIUM' | 'ADVANCED' | 'SPECIAL';
+type SortKey = 'created-asc' | 'created-desc' | 'expires-asc' | 'pool-asc';
+type InventoryView = 'grid' | 'compact';
+type FilterPool = 'ALL' | 'NORMAL' | 'MEDIUM' | 'ADVANCED' | 'SPECIAL';
 
 const ROME_TIMEZONE = 'Europe/Rome';
-const MAX_SELECTION = 6;
+const ANIMATION_TIMINGS = {
+  charging: 880,
+} as const;
+
+const NAV_ITEMS: ReadonlyArray<{
+  href: string;
+  label: string;
+  icon: typeof HomeIcon;
+  active?: boolean;
+}> = [
+  { href: '/', label: '首页', icon: HomeIcon },
+  { href: '/profile', label: '个人中心', icon: UserCircleIcon },
+  { href: '/profile/withdraw', label: '钱包', icon: WalletIcon },
+  { href: '/profile/bag', label: '背包', icon: ArchiveBoxIcon },
+  { href: '/profile', label: '订单记录', icon: DocumentTextIcon },
+  { href: '/profile/lottery-fusion', label: '奖品重铸', icon: SparklesIcon, active: true },
+  { href: '/profile/heart', label: '邀请奖励', icon: GiftIcon },
+  { href: '/profile', label: '设置', icon: Cog6ToothIcon },
+];
+
+const RULE_OPTIONS = [LOTTERY_FUSION_RULES[3], LOTTERY_FUSION_RULES[4], LOTTERY_FUSION_RULES[6]] as const;
+
+const FILTER_OPTIONS = [
+  { value: 'ALL' as const, label: '全部' },
+  { value: 'NORMAL' as const, label: '银色' },
+  { value: 'MEDIUM' as const, label: '金色' },
+  { value: 'ADVANCED' as const, label: '高级' },
+  { value: 'SPECIAL' as const, label: '特殊' },
+] as const;
+
+const PRIZE_ARTWORK_BY_NAME: Record<string, string> = {
+  香槟代金券: '/lottery-fusion/business/香槟代金券.png',
+  棒棒糖代金券: '/lottery-fusion/business/棒棒糖代金券.png',
+  蝴蝶代金券: '/lottery-fusion/business/蝴蝶代金券.png',
+  抽奖代金券: '/lottery-fusion/business/抽奖代金券.PNG',
+  特殊9折券: '/lottery-fusion/business/抽奖特殊9折券.PNG',
+  积木游戏代金券: '/lottery-fusion/business/抽积木代金券.png',
+  双倍消费5000券: '/lottery-fusion/business/双倍消费5000.PNG',
+  双倍流水5000券: '/lottery-fusion/business/双倍流水5000.PNG',
+  钢琴代金券: '/lottery-fusion/business/钢琴代金券.png',
+  深海宝箱代金券: '/lottery-fusion/business/深海宝箱代金券.png',
+  飞机代金券: '/lottery-fusion/business/飞机代金券.png',
+  '7折券': '/lottery-fusion/business/7折券.PNG',
+  '8折券': '/lottery-fusion/business/八折券.PNG',
+  一日冠95折券: '/lottery-fusion/business/一日冠95折.PNG',
+  一日冠92折券: '/lottery-fusion/business/一日冠92折.PNG',
+  一日冠9折券: '/lottery-fusion/business/一日冠9折券.PNG',
+  三日冠92折券: '/lottery-fusion/business/三日冠92折.PNG',
+  三日冠9折券: '/lottery-fusion/business/三日冠9折券.PNG',
+  一周冠92折券: '/lottery-fusion/business/一周冠92折.PNG',
+  一周冠9折券: '/lottery-fusion/business/一周冠9折.PNG',
+  '4位数靓号卡': '/lottery-fusion/business/4位数靓号.PNG',
+  '3位数靓号卡': '/lottery-fusion/business/3位数靓号.PNG',
+  自定义tag券: '/lottery-fusion/business/自定义tag.PNG',
+  自定义礼物券: '/lottery-fusion/business/自定义礼物.PNG',
+  绝白羽翼: '/lottery-fusion/reference/demo-butterfly.png',
+  蝴蝶: '/lottery-fusion/reference/demo-butterfly.png',
+  蝶光之翼: '/lottery-fusion/reference/demo-butterfly.png',
+  星夜来信: '/lottery-fusion/reference/demo-letter.png',
+  琥珀香氛: '/lottery-fusion/reference/demo-perfume.png',
+  香水代金券: '/lottery-fusion/reference/demo-perfume.png',
+  月光发冠: '/lottery-fusion/reference/demo-tiara.png',
+  皇冠: '/lottery-fusion/reference/demo-tiara.png',
+  心愿钥匙: '/lottery-fusion/reference/demo-key.png',
+  星穹水晶球: '/lottery-fusion/reference/demo-orb.png',
+  高级水晶: '/lottery-fusion/reference/demo-orb.png',
+  定制礼物券: '/lottery-fusion/reference/demo-letter.png',
+  小蛋糕代金券: '/lottery-fusion/business/小蛋糕.png',
+};
+
 const POOL_LABEL: Record<string, string> = {
   NORMAL: '银色',
   MEDIUM: '金色',
   ADVANCED: '高级',
-  SPECIAL: '特级',
-};
-const MAX_POOL_LABEL_BY_COUNT: Record<number, string> = {
-  3: '金色',
-  4: '高级',
-  6: '特级',
-};
-const PRIZE_TYPE_LABEL: Record<string, string> = {
-  COUPON: '券',
-  GIFT: '礼物',
-  SELFUSE: '自用',
-};
-const ANIMATION_TIMINGS = {
-  collapsing: 420,
-  charging: 900,
-  revealing: 560,
-} as const;
-
-const PHASE_META: Record<
-  AnimationPhase,
-  {
-    eyebrow: string;
-    title: string;
-    description: string;
-  }
-> = {
-  collapsing: {
-    eyebrow: 'Material Collapse',
-    title: '素材正在坍缩',
-    description: '选中的奖品正在被重铸，原有结果会被彻底吃掉。',
-  },
-  charging: {
-    eyebrow: 'Core Charging',
-    title: 'Reroll Core 充能中',
-    description: '奖池正在重算，本次结果已经锁定，可以直接跳过动画。',
-  },
-  revealing: {
-    eyebrow: 'Result Reveal',
-    title: '新奖品即将展开',
-    description: '最终结果已经生成，正在将新奖品送回你的背包。',
-  },
+  SPECIAL: '特殊',
 };
 
-const SPECIAL_PARTICLE_POINTS = [
-  { top: '8%', left: '48%', delay: '0ms' },
-  { top: '20%', left: '80%', delay: '140ms' },
-  { top: '48%', left: '92%', delay: '280ms' },
-  { top: '78%', left: '78%', delay: '420ms' },
-  { top: '90%', left: '50%', delay: '560ms' },
-  { top: '76%', left: '18%', delay: '700ms' },
-  { top: '46%', left: '6%', delay: '840ms' },
-  { top: '18%', left: '22%', delay: '980ms' },
-] as const;
-
-const RESULT_EFFECT_META: Record<
-  ResultPoolKey,
-  {
-    overlayShellClass: string;
-    overlayBaseTextClass: string;
-    overlayAccentTextClass: string;
-    overlayBodyTextClass: string;
-    overlayAuraClass: string;
-    overlayGlowClass: string;
-    skipButtonClass: string;
-    outerRingClass: string;
-    innerRingClass: string;
-    coreGlowClass: string;
-    coreClass: string;
-    coreInnerTextClass: string;
-    resultCardClass: string;
-    resultTitleClass: string;
-    resultBodyClass: string;
-    resultEyebrowClass: string;
-    sweepGradientClass: string;
-    pageCardClass: string;
-    pageEyebrowClass: string;
-    pageTitleClass: string;
-    pageBodyClass: string;
-    showSweep: boolean;
-    showOrbit: boolean;
-    showParticles: boolean;
-  }
-> = {
-  NORMAL: {
-    overlayShellClass:
-      'border-white/12 bg-[radial-gradient(circle_at_top,_rgba(244,247,250,0.96),_rgba(46,53,61,0.96)_58%)]',
-    overlayBaseTextClass: 'text-[#f8fbff]',
-    overlayAccentTextClass: 'text-[#d8e0e8]/82',
-    overlayBodyTextClass: 'text-[#e7edf3]/74',
-    overlayAuraClass: 'bg-[radial-gradient(circle_at_center,_rgba(215,224,235,0.16),_transparent_58%)]',
-    overlayGlowClass: 'bg-[#dce3ec]/18',
-    skipButtonClass:
-      'border-[#dce4eb]/28 bg-white/8 text-[#eef4f9] hover:bg-white/16',
-    outerRingClass: 'border-[#dce4eb]/30',
-    innerRingClass: 'border-[#eef3f8]/30',
-    coreGlowClass: 'bg-[#d1d8e2]/22',
-    coreClass:
-      'border-[#eef3f8]/52 bg-[radial-gradient(circle,_rgba(255,255,255,0.98),_rgba(180,190,201,0.92))] shadow-[0_0_42px_rgba(207,216,227,0.42)]',
-    coreInnerTextClass: 'text-[#364251]',
-    resultCardClass: 'border-white/12 bg-white/8',
-    resultTitleClass: 'text-[#f8fbff]',
-    resultBodyClass: 'text-[#edf2f8]/78',
-    resultEyebrowClass: 'text-[#d8e0e8]/74',
-    sweepGradientClass: 'from-transparent via-white/28 to-transparent',
-    pageCardClass:
-      'border-[#d7dee5] bg-[linear-gradient(135deg,_#f8fbff,_#eef3f6)] shadow-[0_18px_48px_rgba(163,175,188,0.16)]',
-    pageEyebrowClass: 'text-[#7f8b97]',
-    pageTitleClass: 'text-[#36414f]',
-    pageBodyClass: 'text-[#64707d]',
-    showSweep: false,
-    showOrbit: false,
-    showParticles: false,
-  },
-  MEDIUM: {
-    overlayShellClass:
-      'border-[#f4c542]/22 bg-[radial-gradient(circle_at_top,_rgba(255,243,194,0.96),_rgba(42,24,6,0.96)_58%)]',
-    overlayBaseTextClass: 'text-[#fff8e3]',
-    overlayAccentTextClass: 'text-[#f7d777]/80',
-    overlayBodyTextClass: 'text-[#fef4d0]/78',
-    overlayAuraClass: 'bg-[radial-gradient(circle_at_center,_rgba(255,216,107,0.14),_transparent_58%)]',
-    overlayGlowClass: 'bg-[#f4c542]/18',
-    skipButtonClass:
-      'border-[#f7d777]/35 bg-white/10 text-[#fff5d4] hover:bg-white/18',
-    outerRingClass: 'border-[#f7d777]/28',
-    innerRingClass: 'border-[#ffe9a5]/35',
-    coreGlowClass: 'bg-[#f4c542]/22',
-    coreClass:
-      'border-[#ffe29c]/45 bg-[radial-gradient(circle,_rgba(255,238,187,0.95),_rgba(198,131,0,0.92))] shadow-[0_0_50px_rgba(244,197,66,0.5)]',
-    coreInnerTextClass: 'text-[#3d2c00]',
-    resultCardClass: 'border-[#f7d777]/25 bg-white/10',
-    resultTitleClass: 'text-[#fff6db]',
-    resultBodyClass: 'text-[#fef1c4]/78',
-    resultEyebrowClass: 'text-[#f7d777]/76',
-    sweepGradientClass: 'from-transparent via-[#fff0bd]/35 to-transparent',
-    pageCardClass:
-      'border-[#e8d28a] bg-[linear-gradient(135deg,_#fff8dc,_#fff0be)] shadow-[0_18px_52px_rgba(212,167,55,0.18)]',
-    pageEyebrowClass: 'text-[#a17a16]',
-    pageTitleClass: 'text-[#5b4300]',
-    pageBodyClass: 'text-[#7d5c00]',
-    showSweep: false,
-    showOrbit: false,
-    showParticles: false,
-  },
-  ADVANCED: {
-    overlayShellClass:
-      'border-[#79e3d3]/22 bg-[radial-gradient(circle_at_top,_rgba(221,255,248,0.94),_rgba(4,37,43,0.96)_58%)]',
-    overlayBaseTextClass: 'text-[#ecfffb]',
-    overlayAccentTextClass: 'text-[#87f1df]/82',
-    overlayBodyTextClass: 'text-[#d7fff7]/78',
-    overlayAuraClass: 'bg-[radial-gradient(circle_at_center,_rgba(80,255,221,0.14),_transparent_58%)]',
-    overlayGlowClass: 'bg-[#55efd0]/18',
-    skipButtonClass:
-      'border-[#8cf3e1]/35 bg-white/8 text-[#e9fffa] hover:bg-white/16',
-    outerRingClass: 'border-[#8cf3e1]/32',
-    innerRingClass: 'border-[#b7fff4]/38',
-    coreGlowClass: 'bg-[#42ffd6]/20',
-    coreClass:
-      'border-[#b9fff3]/48 bg-[radial-gradient(circle,_rgba(227,255,248,0.98),_rgba(25,179,152,0.9))] shadow-[0_0_58px_rgba(66,255,214,0.44)]',
-    coreInnerTextClass: 'text-[#0b4e44]',
-    resultCardClass: 'border-[#8cf3e1]/30 bg-white/10 shadow-[0_0_42px_rgba(66,255,214,0.12)]',
-    resultTitleClass: 'text-[#ebfffb]',
-    resultBodyClass: 'text-[#d4fff7]/80',
-    resultEyebrowClass: 'text-[#8cf3e1]/78',
-    sweepGradientClass: 'from-transparent via-[#cffff6]/42 to-transparent',
-    pageCardClass:
-      'border-[#8fdccc] bg-[linear-gradient(135deg,_#eafff9,_#c9fff1)] shadow-[0_20px_56px_rgba(39,185,157,0.2)]',
-    pageEyebrowClass: 'text-[#2f8c7d]',
-    pageTitleClass: 'text-[#0f5549]',
-    pageBodyClass: 'text-[#2f6e64]',
-    showSweep: true,
-    showOrbit: true,
-    showParticles: false,
-  },
-  SPECIAL: {
-    overlayShellClass:
-      'border-[#ffb46c]/24 bg-[radial-gradient(circle_at_top,_rgba(255,233,194,0.94),_rgba(47,11,4,0.97)_58%)]',
-    overlayBaseTextClass: 'text-[#fff6ea]',
-    overlayAccentTextClass: 'text-[#ffc98d]/84',
-    overlayBodyTextClass: 'text-[#ffe2c0]/78',
-    overlayAuraClass: 'bg-[radial-gradient(circle_at_center,_rgba(255,144,54,0.18),_transparent_60%)]',
-    overlayGlowClass: 'bg-[#ff9440]/22',
-    skipButtonClass:
-      'border-[#ffc98d]/38 bg-white/10 text-[#fff0dc] hover:bg-white/18',
-    outerRingClass: 'border-[#ffc98d]/34',
-    innerRingClass: 'border-[#ffd8aa]/42',
-    coreGlowClass: 'bg-[#ff9440]/24',
-    coreClass:
-      'border-[#ffd29d]/50 bg-[radial-gradient(circle,_rgba(255,237,214,0.98),_rgba(255,128,38,0.9))] shadow-[0_0_70px_rgba(255,148,64,0.52)]',
-    coreInnerTextClass: 'text-[#5a2004]',
-    resultCardClass:
-      'border-[#ffc98d]/34 bg-[linear-gradient(135deg,_rgba(255,255,255,0.14),_rgba(255,183,103,0.08))] shadow-[0_0_54px_rgba(255,148,64,0.16)]',
-    resultTitleClass: 'text-[#fff7ef]',
-    resultBodyClass: 'text-[#ffe7cb]/82',
-    resultEyebrowClass: 'text-[#ffc98d]/80',
-    sweepGradientClass: 'from-transparent via-[#ffe0bc]/55 to-transparent',
-    pageCardClass:
-      'border-[#efbc86] bg-[linear-gradient(135deg,_#fff0df,_#ffd3ab)] shadow-[0_24px_64px_rgba(255,144,64,0.24)]',
-    pageEyebrowClass: 'text-[#b8601c]',
-    pageTitleClass: 'text-[#6a2505]',
-    pageBodyClass: 'text-[#8a4a22]',
-    showSweep: true,
-    showOrbit: true,
-    showParticles: true,
-  },
+const RESULT_POOL_LABEL: Record<string, string> = {
+  NORMAL: '银色',
+  MEDIUM: '金色',
+  ADVANCED: '高级',
+  SPECIAL: '特殊',
 };
 
-const getResultEffectMeta = (pool?: string) =>
-  RESULT_EFFECT_META[(pool as ResultPoolKey) ?? 'NORMAL'] ?? RESULT_EFFECT_META.NORMAL;
+const SOURCE_KIND_LABEL: Record<LotteryFusionSourceKind, string> = {
+  lottery: '抽奖',
+  coupon: '券',
+  pointshop: '积分商城',
+};
+
+const POOL_WEIGHT: Record<string, number> = {
+  NORMAL: 1,
+  MEDIUM: 2,
+  ADVANCED: 3,
+  SPECIAL: 4,
+};
 
 const formatDateOnly = (value?: string | null) => {
   if (!value) return '长期有效';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '长期有效';
-  return date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
+  return date.toLocaleDateString('en-CA', { timeZone: ROME_TIMEZONE });
 };
 
-export function LotteryFusionClient({ initialItems }: LotteryFusionClientProps) {
-  const [items, setItems] = useState(initialItems);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
-  const [result, setResult] = useState<FusionResultView | null>(null);
-  const [animationState, setAnimationState] = useState<AnimationState>(null);
-  const animationTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+const toMillis = (value?: string | null) => {
+  if (!value) return 0;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
 
-  const selectedCount = selectedIds.length;
-  const currentMaxPoolLabel = MAX_POOL_LABEL_BY_COUNT[selectedCount] ?? null;
-  const animationPayload = animationState?.payload ?? null;
-  const animationPhase = animationState?.phase ?? null;
-  const isAnimating = animationState !== null;
-  const interactionLocked = loading || isAnimating;
-  const animationResultEffect = getResultEffectMeta(animationPayload?.result.pool);
-  const finalResultEffect = getResultEffectMeta(result?.pool);
+const isExpiredDiscordAttachment = (value?: string | null) => {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    if (url.hostname !== 'cdn.discordapp.com') return false;
+    const expiresAt = url.searchParams.get('ex');
+    if (!expiresAt) return false;
+
+    const expiresAtMillis = Number.parseInt(expiresAt, 16) * 1000;
+    return Number.isFinite(expiresAtMillis) && expiresAtMillis <= Date.now();
+  } catch {
+    return false;
+  }
+};
+
+const resolvePrizeFallbackArt = (prizeName: string) => {
+  if (PRIZE_ARTWORK_BY_NAME[prizeName]) {
+    return PRIZE_ARTWORK_BY_NAME[prizeName];
+  }
+  if (prizeName.includes('蝴蝶') || prizeName.includes('羽翼')) {
+    return '/lottery-fusion/reference/demo-butterfly.png';
+  }
+  if (prizeName.includes('冠')) {
+    return '/lottery-fusion/reference/demo-tiara.png';
+  }
+  if (prizeName.includes('香槟') || prizeName.includes('香水')) {
+    return '/lottery-fusion/reference/demo-perfume.png';
+  }
+  if (prizeName.includes('宝箱') || prizeName.includes('水晶') || prizeName.includes('海')) {
+    return '/lottery-fusion/reference/demo-orb.png';
+  }
+  if (prizeName.includes('钥匙') || prizeName.includes('飞机')) {
+    return '/lottery-fusion/reference/demo-key.png';
+  }
+  if (prizeName.includes('卡') || prizeName.includes('券') || prizeName.includes('tag')) {
+    return '/lottery-fusion/reference/demo-letter.png';
+  }
+  return null;
+};
+
+const getPrizeArt = (item: Pick<FusionItemView, 'prizeName' | 'imageUrl'> | Pick<FusionResultView, 'prizeName' | 'imageUrl'>) => {
+  const imageUrl = item.imageUrl?.trim();
+  if (imageUrl && !isExpiredDiscordAttachment(imageUrl)) {
+    return imageUrl;
+  }
+  return resolvePrizeFallbackArt(item.prizeName);
+};
+
+const getPoolText = (value?: string | null) => {
+  if (!value) return '银色';
+  return POOL_LABEL[value] ?? value;
+};
+
+const getResultPoolText = (value?: string | null) => {
+  if (!value) return '银色';
+  return RESULT_POOL_LABEL[value] ?? value;
+};
+
+const sortItems = (items: FusionItemView[], sortKey: SortKey) => {
+  return [...items].sort((left, right) => {
+    if (sortKey === 'created-asc') {
+      return toMillis(left.createdAt) - toMillis(right.createdAt);
+    }
+    if (sortKey === 'expires-asc') {
+      return toMillis(left.expiresAt) - toMillis(right.expiresAt);
+    }
+    if (sortKey === 'pool-asc') {
+      const poolDiff = (POOL_WEIGHT[left.pool] ?? 0) - (POOL_WEIGHT[right.pool] ?? 0);
+      if (poolDiff !== 0) return poolDiff;
+    }
+    return toMillis(right.createdAt) - toMillis(left.createdAt);
+  });
+};
+
+export function LotteryFusionClient({
+  initialItems,
+  initialSelectedIds = [],
+  membership,
+  embeddedInProfile = false,
+}: LotteryFusionClientProps) {
+  const router = useRouter();
+  const [items, setItems] = useState(initialItems);
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    initialSelectedIds.filter((id) => initialItems.some((item) => item.id === id)),
+  );
+  const [targetFusionCount, setTargetFusionCount] = useState<3 | 4 | 6>(4);
+  const [sortKey, setSortKey] = useState<SortKey>('created-desc');
+  const [filterPool, setFilterPool] = useState<FilterPool>('ALL');
+  const [inventoryView, setInventoryView] = useState<InventoryView>('grid');
+  const [notice, setNotice] = useState<Notice>(null);
+  const [blockingDialog, setBlockingDialog] = useState<BlockingDialog>(null);
+  const [loading, setLoading] = useState(false);
+  const [animationState, setAnimationState] = useState<AnimationState>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const animationTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+  const appliedAnimationRef = useRef<string | null>(null);
+
+  const selectedItems = selectedIds
+    .map((id) => items.find((item) => item.id === id) ?? null)
+    .filter((item): item is FusionItemView => item !== null);
+  const selectedCount = selectedItems.length;
+  const filteredItems = sortItems(
+    items.filter((item) => (filterPool === 'ALL' ? true : item.pool === filterPool)),
+    sortKey,
+  );
+  const canFuse = selectedCount === targetFusionCount && !loading;
+  const isAnimating = animationState?.phase === 'charging';
+  const completedResult = animationState?.phase === 'complete' ? animationState.payload.result : null;
+  const interactionLocked = loading || isAnimating || Boolean(blockingDialog);
 
   const clearAnimationTimers = () => {
     for (const timer of animationTimersRef.current) {
@@ -293,52 +316,42 @@ export function LotteryFusionClient({ initialItems }: LotteryFusionClientProps) 
   };
 
   const applyFusionResult = (payload: AnimationPayload) => {
-    const usedIds = new Set(payload.result.sourceDrawIds.length ? payload.result.sourceDrawIds : payload.sourceItems.map((item) => item.id));
+    if (appliedAnimationRef.current === payload.result.drawId) return;
+    appliedAnimationRef.current = payload.result.drawId;
+
+    const usedIds = new Set(payload.result.sourceIds);
     setItems((current) => [
       {
-        id: payload.result.drawId,
+        id: buildLotteryFusionSourceRef('lottery', payload.result.drawId),
+        sourceKind: 'lottery',
         prizeName: payload.result.prizeName,
         prizeType: payload.result.prizeType,
         pool: payload.result.pool,
         expiresAt: payload.result.expiresAt,
         createdAt: new Date().toISOString(),
+        imageUrl: payload.result.imageUrl,
       },
       ...current.filter((item) => !usedIds.has(item.id)),
     ]);
     setSelectedIds([]);
-    setResult(payload.result);
-    setNotice({
-      level: 'success',
-      text: `融合成功，获得了 ${payload.result.prizeName}`,
-    });
+    setNotice(null);
   };
 
-  const finishAnimation = (payload: AnimationPayload) => {
+  const completeAnimation = (payload: AnimationPayload) => {
     clearAnimationTimers();
-    setAnimationState(null);
     applyFusionResult(payload);
+    setAnimationState({ phase: 'complete', payload });
   };
 
   const startAnimation = (payload: AnimationPayload) => {
     clearAnimationTimers();
-    setAnimationState({ phase: 'collapsing', payload });
+    appliedAnimationRef.current = null;
+    setAnimationState({ phase: 'charging', payload });
 
     animationTimersRef.current.push(
       setTimeout(() => {
-        setAnimationState((current) => (current ? { ...current, phase: 'charging' } : current));
-      }, ANIMATION_TIMINGS.collapsing),
-    );
-
-    animationTimersRef.current.push(
-      setTimeout(() => {
-        setAnimationState((current) => (current ? { ...current, phase: 'revealing' } : current));
-      }, ANIMATION_TIMINGS.collapsing + ANIMATION_TIMINGS.charging),
-    );
-
-    animationTimersRef.current.push(
-      setTimeout(() => {
-        finishAnimation(payload);
-      }, ANIMATION_TIMINGS.collapsing + ANIMATION_TIMINGS.charging + ANIMATION_TIMINGS.revealing),
+        completeAnimation(payload);
+      }, ANIMATION_TIMINGS.charging),
     );
   };
 
@@ -348,330 +361,836 @@ export function LotteryFusionClient({ initialItems }: LotteryFusionClientProps) 
     };
   }, []);
 
+  useEffect(() => {
+    setItems(initialItems);
+    setSelectedIds((current) => current.filter((id) => initialItems.some((item) => item.id === id)));
+  }, [initialItems]);
+
   const toggleSelection = (itemId: string) => {
     if (interactionLocked) return;
     setNotice(null);
-    if (!selectedIds.includes(itemId) && selectedIds.length >= MAX_SELECTION) {
-      setNotice({ level: 'error', text: '最多只能同时选择 6 个奖品' });
-      return;
-    }
+
     setSelectedIds((current) => {
       if (current.includes(itemId)) {
         return current.filter((value) => value !== itemId);
+      }
+      if (current.length >= targetFusionCount) {
+        setNotice({
+          level: 'error',
+          text: `当前档位最多选择 ${targetFusionCount} 个券或奖品`,
+        });
+        return current;
       }
       return [...current, itemId];
     });
   };
 
+  const handleFusionRuleChange = (count: 3 | 4 | 6) => {
+    if (interactionLocked) return;
+    setTargetFusionCount(count);
+    setNotice(null);
+
+    setSelectedIds((current) => {
+      if (current.length <= count) return current;
+      setNotice({
+        level: 'error',
+        text: `已切换到 ${count} 个融合，超出的券或奖品已取消选择`,
+      });
+      return current.slice(0, count);
+    });
+  };
+
   const handleFuse = async () => {
-    if (![3, 4, 6].includes(selectedCount)) {
-      setNotice({ level: 'error', text: '仅支持选择 3 / 4 / 6 个抽奖奖品进行融合' });
+    if (!canFuse) {
+      setNotice({
+        level: 'error',
+        text: `请先选择 ${targetFusionCount} 个券或奖品`,
+      });
       return;
     }
 
-    const selectedItemsSnapshot = items.filter((item) => selectedIds.includes(item.id));
+    const selectedSnapshot = selectedItems;
     setLoading(true);
     setNotice(null);
+
     try {
       const response = await fetch('/api/lottery/fuse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lotteryIds: selectedIds }),
+        body: JSON.stringify({ sourceIds: selectedIds }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(typeof data?.error === 'string' ? data.error : '融合失败');
+        const errorCode = typeof data?.code === 'string' ? data.code : '';
+        const errorMessage = typeof data?.error === 'string' ? data.error : '重铸失败';
+
+        if (errorCode === 'SOURCE_ITEM_UNAVAILABLE' || errorCode === 'NO_SOURCE_ITEM') {
+          setSelectedIds([]);
+          setAnimationState(null);
+          setNotice(null);
+          setBlockingDialog({
+            title: '提示',
+            text: '所选券或奖品状态已变化，列表已自动刷新，请重新选择',
+          });
+          startTransition(() => {
+            router.refresh();
+          });
+          return;
+        }
+
+        throw new Error(errorMessage);
       }
 
       const fusionResult = data?.result as FusionResultView | undefined;
       if (!fusionResult?.drawId || !fusionResult?.prizeName) {
-        throw new Error('融合结果异常，请稍后重试');
+        throw new Error('重铸结果异常，请稍后再试');
       }
 
       startAnimation({
         result: fusionResult,
-        sourceItems: selectedItemsSnapshot,
+        sourceItems: selectedSnapshot,
       });
     } catch (error) {
-      setNotice({ level: 'error', text: error instanceof Error ? error.message : '融合失败' });
+      setNotice({
+        level: 'error',
+        text: error instanceof Error ? error.message : '重铸失败',
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/';
+    } catch {
+      window.location.href = '/';
+    }
+  };
+
+  const resetPrepareCard = () => {
+    clearAnimationTimers();
+    setAnimationState(null);
+    setNotice(null);
+  };
+
+  const overviewMessage =
+    selectedCount === targetFusionCount
+      ? `已满足 ${targetFusionCount} 个融合条件`
+      : `请先选择 ${targetFusionCount} 个券或奖品`;
+
+  const showFusionStage = isAnimating || Boolean(completedResult);
+  const selectedPanelTitle = completedResult
+    ? '重铸结果'
+    : isAnimating
+      ? '重铸进行中'
+      : `已选券/奖品 ${selectedCount}/${targetFusionCount}`;
+  const selectedPanelDescription = completedResult
+    ? `恭喜🎉抽到了${completedResult.prizeName}`
+    : isAnimating
+      ? '新的奖品正在生成中'
+      : '确认无误后将消耗这些券或奖品';
+  const selectedSlots = Array.from({ length: targetFusionCount }, (_, index) => selectedItems[index] ?? null);
+  const selectedGridClassName =
+    targetFusionCount === 3
+      ? 'grid-cols-2 md:grid-cols-3'
+      : targetFusionCount === 4
+        ? 'grid-cols-2 md:grid-cols-4'
+        : 'grid-cols-3 xl:grid-cols-6';
+  const shellWrapperClassName = embeddedInProfile
+    ? 'min-h-screen bg-[#f7f3ef] text-[#171717] px-4 py-10 sm:px-6 sm:py-12 lg:px-6 lg:py-16'
+    : 'min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,240,230,0.96),_#fff9f4_36%,_#fffaf7_100%)] text-[#85533f]';
+  const rootGridClassName = embeddedInProfile
+    ? 'mx-auto grid min-h-screen max-w-[1487px] grid-cols-1'
+    : 'mx-auto grid min-h-screen max-w-[1487px] grid-cols-1 lg:grid-cols-[168px_minmax(0,1fr)]';
+  const primaryActionButtonClassName =
+    'flex w-full items-center justify-center rounded-[999px] border border-[#f0d3b7] bg-[linear-gradient(180deg,_#fffdfb,_#fdf0e3)] px-6 py-4 text-[20px] font-semibold text-[#8c5140] shadow-[0_18px_30px_rgba(83,32,26,0.18)] transition hover:translate-y-[-1px]';
+  const secondaryActionButtonClassName =
+    'w-full rounded-[999px] border border-[#f4d7c0]/65 bg-transparent px-6 py-4 text-[18px] font-medium text-[#ffe5d2] transition hover:bg-white/8';
+  const mobileActionButtonLabel = completedResult
+    ? '再来一次'
+    : isAnimating
+      ? '跳过动画'
+      : loading
+        ? '正在生成...'
+        : '开始重铸';
+  const mobileActionDisabled = completedResult ? false : isAnimating ? false : !canFuse || loading;
+
   return (
-    <div className="space-y-6">
-      <section className="rounded-[32px] border border-black/5 bg-white p-6 space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.45em] text-gray-500">Reroll</p>
-            <h1 className="text-3xl font-semibold tracking-wide text-[#171717]">Reroll</h1>
-            <p className="max-w-2xl text-sm leading-6 text-gray-600">
-              这里只能选择抽奖活动来源的未使用奖品。选择后会消耗原奖品，并随机生成一个新的抽奖奖品放回你的背包。
+    <div className={shellWrapperClassName}>
+      <style jsx global>{`
+        nextjs-portal,
+        [data-next-badge-root],
+        [data-nextjs-toast],
+        [data-next-mark] {
+          display: none !important;
+        }
+      `}</style>
+
+      <div className={rootGridClassName}>
+        {!embeddedInProfile ? (
+        <aside className="border-b border-[#f0dfd2] bg-[linear-gradient(180deg,_rgba(255,251,248,0.98),_rgba(255,247,242,0.98))] px-4 py-5 lg:border-b-0 lg:border-r lg:px-6 lg:py-8">
+          <div className="flex flex-col justify-between gap-8 h-full">
+            <div className="space-y-6 lg:space-y-10">
+              <div className="flex justify-center lg:justify-center">
+                <img
+                  src="/lottery-fusion/reference/scheme3-logo.png"
+                  alt="Jinlee Club"
+                  className="h-[72px] w-auto object-contain lg:h-[108px]"
+                />
+              </div>
+
+              <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1 lg:space-y-3">
+                {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-[18px] px-3 py-3 text-[14px] transition lg:px-4 lg:text-[15px] ${
+                        item.active
+                          ? 'border border-[#efc89d] bg-[linear-gradient(180deg,_rgba(255,248,239,0.98),_rgba(255,243,230,0.98))] text-[#b36f4d] shadow-[0_12px_24px_rgba(233,195,154,0.22)]'
+                          : 'text-[#8b8179] hover:bg-white/70 hover:text-[#a56345]'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" />
+                      <span className="whitespace-nowrap">{item.label}</span>
+                    </Link>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  className="flex w-full items-center gap-3 rounded-[18px] px-3 py-3 text-[14px] text-[#8b8179] transition hover:bg-white/70 hover:text-[#a56345] lg:px-4 lg:text-[15px]"
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5 shrink-0" />
+                  <span className="whitespace-nowrap">{loggingOut ? '退出中...' : '登出'}</span>
+                </button>
+              </nav>
+            </div>
+
+            <div className="rounded-[24px] border border-[#f1ddd0] bg-white/90 p-4 shadow-[0_16px_36px_rgba(226,205,187,0.35)] lg:p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[linear-gradient(180deg,_#f7dac2,_#f2b98d)] text-white shadow-[0_8px_16px_rgba(220,164,120,0.34)]">
+                  <SparklesIcon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[12px] uppercase tracking-[0.24em] text-[#9e8c7f]">JINLEE CLUB</p>
+                  <p className="text-[15px] font-semibold tracking-[0.14em] text-[#7f5b49]">DIAMOND</p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-2">
+                <p className="text-xs text-[#b3a093]">会员等级</p>
+                <p className="text-[34px] font-semibold leading-none text-[#85533f]" style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}>
+                  Lv. {membership.level}
+                </p>
+              </div>
+
+              <div className="mt-5">
+                <div className="h-2 overflow-hidden rounded-full bg-[#f4e4d7]">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,_#efc17f,_#c98352)]"
+                    style={{ width: `${membership.progressPercent}%` }}
+                  />
+                </div>
+                <p className="mt-3 text-sm text-[#9c8879]">
+                  {Math.round(membership.currentValue)} / {Math.round(membership.nextValue)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </aside>
+        ) : null}
+
+        <main className="relative overflow-hidden px-4 pb-32 pt-6 sm:px-6 sm:pb-36 lg:px-8 lg:pb-10 lg:pt-10">
+          {embeddedInProfile ? (
+            <div className="relative mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href="/profile"
+                  className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-600 transition hover:bg-black/5"
+                >
+                  返回个人主页
+                </Link>
+                <Link
+                  href="/profile/bag"
+                  className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-600 transition hover:bg-black/5"
+                >
+                  我的背包
+                </Link>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1
+                  className="text-[34px] font-semibold leading-none tracking-[0.03em] text-[#73452f] sm:text-[44px] lg:text-[56px]"
+                  style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                >
+                  奖品重铸
+                </h1>
+                <QuestionMarkCircleIcon className="h-5 w-5 text-[#d7af8f] lg:h-6 lg:w-6" />
+              </div>
+              <p className="mt-3 max-w-[680px] text-[14px] text-[#8c6a59] sm:mt-4 sm:text-[16px] lg:mt-5 lg:text-[17px]">
+                消耗背包中可重铸的未使用券或奖品，随机获得一个新的抽奖奖品
+              </p>
+            </div>
+
+            <Link
+              href="/profile/lottery-fusion/history"
+              className="inline-flex w-fit items-center gap-2 self-start rounded-full border border-[#efdbc9] bg-white/92 px-4 py-2.5 text-[15px] font-medium text-[#7d5745] shadow-[0_12px_24px_rgba(234,214,196,0.36)] transition hover:translate-y-[-1px] sm:px-5 sm:py-3 sm:text-[18px]"
+            >
+              <ClockIcon className="h-5 w-5" />
+              <span>重铸记录</span>
+            </Link>
+          </div>
+
+          <div className="relative mt-6 grid gap-5 xl:mt-8 xl:grid-cols-[minmax(0,1fr)_318px]">
+            <section className="space-y-5">
+              <div className="rounded-[28px] border border-[#f0ddd0] bg-[linear-gradient(180deg,_rgba(255,255,255,0.95),_rgba(255,249,245,0.96))] p-5 shadow-[0_18px_46px_rgba(238,221,206,0.44)] lg:rounded-[34px] lg:p-7">
+                <div className="grid gap-6 xl:grid-cols-[238px_minmax(0,1fr)]">
+                  <div>
+                    <h2
+                      className="text-[28px] font-semibold text-[#74452f] lg:text-[36px]"
+                      style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                    >
+                      选择重铸数量
+                    </h2>
+                    <p className="mt-3 max-w-[280px] text-[14px] leading-7 text-[#9d7967] lg:mt-5 lg:max-w-[220px] lg:text-[15px] lg:leading-8">
+                      投入的券或奖品越多，越有机会获得更稀有的结果
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-3 lg:gap-4">
+                    {RULE_OPTIONS.map((option) => {
+                      const active = targetFusionCount === option.count;
+                      return (
+                        <button
+                          key={option.count}
+                          type="button"
+                          onClick={() => handleFusionRuleChange(option.count)}
+                          aria-pressed={active}
+                          aria-label={`切换到 ${option.count} 个融合`}
+                          className={`rounded-[22px] border px-4 py-5 text-center transition sm:px-6 sm:py-7 lg:rounded-[28px] ${
+                            active
+                              ? 'border-[#d7a18c] bg-[linear-gradient(180deg,_#a95a5c,_#8b444a)] text-white shadow-[0_20px_34px_rgba(166,92,95,0.32)]'
+                              : 'border-[#efddd0] bg-white text-[#8f654e] shadow-[0_12px_28px_rgba(239,226,214,0.34)] hover:border-[#e5c5b1]'
+                          }`}
+                        >
+                          <p
+                            className={`text-[26px] font-semibold sm:text-[32px] lg:text-[36px] ${active ? 'text-white' : 'text-[#a2613f]'}`}
+                            style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                          >
+                            {option.title}
+                          </p>
+                          <p className={`mt-5 text-sm ${active ? 'text-[#f8ddcf]' : 'text-[#9f7c69]'}`}>最高可出</p>
+                          <p className={`mt-2 text-[20px] font-medium ${active ? 'text-white' : 'text-[#70472f]'}`}>
+                            {option.resultLabel}
+                          </p>
+                          <p className={`mt-3 text-xs leading-6 ${active ? 'text-[#ffe7da]' : 'text-[#9f7c69]'}`}>
+                            {option.eligibleRangeLabel}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-[#f0ddd0] bg-[linear-gradient(180deg,_rgba(255,255,255,0.95),_rgba(255,249,245,0.96))] p-5 shadow-[0_18px_46px_rgba(238,221,206,0.44)] lg:rounded-[34px] lg:p-7">
+                <div className="text-center">
+                  <h2
+                    className="text-[28px] font-semibold text-[#74452f] lg:text-[38px]"
+                    style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                  >
+                    {selectedPanelTitle}
+                  </h2>
+                  <p className="mt-3 text-[15px] text-[#9d7967]">{selectedPanelDescription}</p>
+                </div>
+
+                <div className="mt-6 rounded-[28px] border border-[#dca578] bg-[linear-gradient(180deg,_#944349,_#6b2028)] px-3 pb-2 pt-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_18px_36px_rgba(151,89,81,0.28)] lg:rounded-[34px] lg:px-4 lg:pb-3 lg:pt-4">
+                  <div className="relative">
+                    <div
+                      aria-hidden={showFusionStage}
+                      className={`${selectedGridClassName} grid gap-3 ${
+                        showFusionStage ? 'pointer-events-none select-none opacity-0' : ''
+                      }`}
+                    >
+                      {selectedSlots.map((item, index) => {
+                        const art = item ? getPrizeArt(item) : null;
+
+                        return (
+                          <div
+                            key={item?.id ?? `slot-${index}`}
+                            className="relative rounded-[18px] border border-[#f0d5c0]/80 bg-[linear-gradient(180deg,_rgba(255,249,246,0.98),_rgba(255,243,236,0.96))] p-2.5 shadow-[0_14px_30px_rgba(67,20,25,0.18)] sm:rounded-[24px] sm:p-3"
+                          >
+                            {item ? (
+                              <button
+                                type="button"
+                                onClick={() => toggleSelection(item.id)}
+                                aria-label={`移除 ${item.prizeName}`}
+                                className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-[#e3b48b] bg-[rgba(220,173,120,0.88)] text-white shadow-[0_8px_18px_rgba(170,118,69,0.34)]"
+                              >
+                                <XMarkIcon className="h-4 w-4" />
+                              </button>
+                            ) : null}
+
+                            <div className="flex min-h-[170px] flex-col items-center justify-between sm:min-h-[220px]">
+                              <div className="w-full">
+                                <div className="inline-flex rounded-full border border-[#efdbc9] bg-[#fff7f1] px-3 py-1 text-[11px] font-semibold text-[#b27b58]">
+                                  {item ? SOURCE_KIND_LABEL[item.sourceKind ?? 'lottery'] : '待选'}
+                                </div>
+                              </div>
+
+                              <div className="flex min-h-[76px] items-center justify-center sm:min-h-[110px]">
+                                {art ? (
+                                  <img src={art} alt={item?.prizeName ?? '奖品'} className="max-h-[88px] object-contain sm:max-h-[116px]" />
+                                ) : (
+                                  <div className="flex h-[84px] w-[84px] items-center justify-center rounded-full border border-dashed border-[#efcfb7] bg-[#fff8f3] text-xs text-[#c39d83] sm:h-[108px] sm:w-[108px] sm:text-sm">
+                                    等待选择
+                                  </div>
+                                )}
+                              </div>
+
+                              {item ? (
+                                <div className="mt-3 text-center">
+                                  <p
+                                    className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-semibold leading-[1.3] text-[#73452f] sm:text-[18px]"
+                                    style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                                    title={item.prizeName}
+                                  >
+                                    {item.prizeName}
+                                  </p>
+                                  <p className="mt-1 text-xs text-[#aa826e] sm:mt-2 sm:text-sm">{getPoolText(item.pool)}</p>
+                                  <p className="mt-1 text-[11px] text-[#9f8a7c] sm:text-sm">到期：{formatDateOnly(item.expiresAt)}</p>
+                                </div>
+                              ) : (
+                                <div className="mt-3 text-center">
+                                  <p className="text-[16px] font-semibold text-[#c3a391] sm:text-[22px]" style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}>
+                                    空位 {index + 1}
+                                  </p>
+                                  <p className="mt-1 text-[11px] text-[#cfb7a9] sm:mt-2 sm:text-sm">从下方选择一个券或奖品</p>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="absolute bottom-[-12px] left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-[#f0d5c0] bg-[linear-gradient(180deg,_#c48d63,_#a96943)] text-sm font-semibold text-white shadow-[0_10px_18px_rgba(78,24,30,0.24)] sm:bottom-[-14px] sm:h-9 sm:w-9 sm:text-base">
+                              {index + 1}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {showFusionStage ? (
+                      <div className="absolute inset-0">
+                        {completedResult ? (
+                          <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[24px] border border-[#f0c9a2]/55 bg-[linear-gradient(180deg,_rgba(124,54,40,0.56),_rgba(83,32,26,0.42))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] sm:rounded-[28px] sm:p-4">
+                            <div className="flex h-full w-full max-w-[400px] flex-col overflow-hidden rounded-[22px] border border-[#f2d0b0]/45 bg-[radial-gradient(circle_at_top,_rgba(95,45,34,0.84),_rgba(69,30,23,0.98)_68%)] px-3 py-3 sm:rounded-[24px] sm:px-4 sm:py-4">
+                              <div className="flex min-h-[118px] flex-1 items-center justify-center sm:min-h-[146px]">
+                                <div className="flex h-full w-full items-center justify-center overflow-hidden">
+                                  {getPrizeArt(completedResult) ? (
+                                    <img
+                                      src={getPrizeArt(completedResult) ?? undefined}
+                                      alt={completedResult.prizeName}
+                                      className="max-h-[94px] object-contain drop-shadow-[0_0_20px_rgba(255,226,186,0.46)] sm:max-h-[122px]"
+                                    />
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              <div className="flex min-h-[62px] flex-col items-center justify-center px-2 pt-2 sm:min-h-[72px] sm:pt-2">
+                                <p
+                                  className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[16px] font-semibold leading-[1.18] text-white sm:text-[20px]"
+                                  style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                                >
+                                  {completedResult.prizeName}
+                                </p>
+                                <p className="mt-2 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[11px] leading-none tracking-[0.02em] text-[#ffdcbf] sm:text-[12px]">
+                                  {getResultPoolText(completedResult.pool)} · 有效期到 {formatDateOnly(completedResult.expiresAt)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center rounded-[24px] border border-[#f0c9a2]/55 bg-[linear-gradient(180deg,_rgba(124,54,40,0.56),_rgba(83,32,26,0.42))] p-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] sm:rounded-[28px] sm:p-5">
+                            <div className="relative mx-auto mt-5 flex h-[148px] w-[148px] items-center justify-center sm:mt-6 sm:h-[168px] sm:w-[168px]">
+                              <div className="absolute inset-0 rounded-full border border-[#ffd8a7]/45 animate-pulse" />
+                              <div className="absolute inset-[18px] rounded-full border border-[#ffd8a7]/35" />
+                              <div className="absolute inset-[36px] rounded-full bg-[radial-gradient(circle,_rgba(255,252,243,0.98),_rgba(255,233,190,0.86),_rgba(248,193,121,0.25))] shadow-[0_0_40px_rgba(255,229,184,0.36)]" />
+                              <div className="relative h-8 w-8 rounded-full bg-[radial-gradient(circle,_rgba(216,146,84,0.92),_rgba(188,108,55,0.52))]" />
+                            </div>
+
+                            <p className="mx-auto mt-4 max-w-[320px] text-[14px] leading-6 text-[#ffe3d0] sm:mt-5 sm:text-[15px] sm:leading-7">
+                              重新抽奖中...
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-6 hidden min-h-[104px] flex-col items-center gap-3 px-1 pb-1 sm:mt-8 sm:min-h-[116px] lg:flex">
+                    {!completedResult ? (
+                      <button
+                        type="button"
+                        onClick={isAnimating ? () => completeAnimation(animationState.payload) : () => void handleFuse()}
+                        disabled={isAnimating ? false : !canFuse || loading}
+                        className={`${primaryActionButtonClassName} max-w-[420px] ${!isAnimating && (!canFuse || loading) ? 'cursor-not-allowed opacity-55' : ''}`}
+                      >
+                        {isAnimating ? '跳过动画' : loading ? '正在生成...' : '开始重铸'}
+                      </button>
+                    ) : null}
+
+                    {completedResult ? (
+                      <div className="flex w-full max-w-[640px] flex-col gap-3">
+                        <button type="button" onClick={resetPrepareCard} className={secondaryActionButtonClassName}>
+                          再来一次
+                        </button>
+                      </div>
+                    ) : !showFusionStage ? (
+                      <p className="text-sm text-[#ffd7c3]">重铸后，原券或奖品将被消耗</p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative rounded-[28px] border border-[#f0ddd0] bg-[linear-gradient(180deg,_rgba(255,255,255,0.96),_rgba(255,249,245,0.96))] p-5 shadow-[0_18px_46px_rgba(238,221,206,0.44)] lg:rounded-[34px] lg:p-7">
+                <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h2
+                        className="text-[28px] font-semibold text-[#74452f] lg:text-[38px]"
+                        style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                      >
+                        可选择的未使用券/奖品
+                      </h2>
+                      <span className="rounded-full bg-[#fff1e5] px-3 py-1 text-sm font-semibold text-[#c07d55]">
+                        {items.length}
+                      </span>
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      {FILTER_OPTIONS.map((option) => {
+                        const active = filterPool === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setFilterPool(option.value)}
+                            aria-pressed={active}
+                            aria-label={`筛选 ${option.label}`}
+                            className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                              active
+                                ? 'border-[#d89c79] bg-[linear-gradient(180deg,_#fff8f1,_#fff0e1)] text-[#b56d49] shadow-[0_10px_18px_rgba(231,195,161,0.24)]'
+                                : 'border-[#efe0d2] bg-white text-[#9d7a68] hover:border-[#e5c5b1]'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="relative">
+                      <span className="sr-only">排序方式</span>
+                      <select
+                        value={sortKey}
+                        onChange={(event) => setSortKey(event.target.value as SortKey)}
+                        className="rounded-[16px] border border-[#efddd0] bg-white px-4 py-3 text-sm text-[#8b6857] shadow-[0_10px_18px_rgba(238,221,206,0.22)] outline-none"
+                      >
+                        <option value="created-asc">最早获得</option>
+                        <option value="created-desc">最新获得</option>
+                        <option value="expires-asc">最早到期</option>
+                        <option value="pool-asc">等级从低到高</option>
+                      </select>
+                    </label>
+
+                    <div className="flex items-center gap-2 rounded-[16px] border border-[#efddd0] bg-white p-2 shadow-[0_10px_18px_rgba(238,221,206,0.22)]">
+                      <button
+                        type="button"
+                        onClick={() => setInventoryView('grid')}
+                        aria-label="网格视图"
+                        aria-pressed={inventoryView === 'grid'}
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+                          inventoryView === 'grid'
+                            ? 'border-[#d89c79] bg-[#fff4ea] text-[#b56d49]'
+                            : 'border-transparent text-[#b89b87]'
+                        }`}
+                      >
+                        <div className="grid grid-cols-2 gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInventoryView('compact')}
+                        aria-label="列表视图"
+                        aria-pressed={inventoryView === 'compact'}
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+                          inventoryView === 'compact'
+                            ? 'border-[#d89c79] bg-[#fff4ea] text-[#b56d49]'
+                            : 'border-transparent text-[#b89b87]'
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <span className="block h-1.5 w-5 rounded-full bg-current" />
+                          <span className="block h-1.5 w-5 rounded-full bg-current" />
+                          <span className="block h-1.5 w-5 rounded-full bg-current" />
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`mt-6 ${inventoryView === 'grid' ? 'grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6' : 'space-y-3'}`}>
+                  {filteredItems.map((item) => {
+                    const selected = selectedIds.includes(item.id);
+                    const art = getPrizeArt(item);
+
+                    if (inventoryView === 'compact') {
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => toggleSelection(item.id)}
+                          disabled={interactionLocked}
+                          aria-label={selected ? `取消选择 ${item.prizeName}` : `选择 ${item.prizeName}`}
+                          className={`flex w-full items-center gap-4 rounded-[24px] border p-4 text-left transition ${
+                            selected
+                              ? 'border-[#d49773] bg-[linear-gradient(180deg,_#fff6f0,_#fff0e7)] shadow-[0_18px_36px_rgba(230,193,161,0.26)]'
+                              : 'border-[#efe0d2] bg-white hover:border-[#e1c0a7]'
+                          } ${interactionLocked ? 'cursor-not-allowed opacity-75' : ''}`}
+                        >
+                          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[18px] border border-[#efddd0] bg-[#fff9f4]">
+                            {art ? <img src={art} alt={item.prizeName} className="max-h-[68px] object-contain" /> : null}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap gap-2">
+                              <span className="rounded-full border border-[#f0ddcf] bg-[#fff8f2] px-3 py-1 text-xs text-[#b27b58]">
+                                {getPoolText(item.pool)}
+                              </span>
+                            </div>
+                            <p
+                              className="mt-3 overflow-hidden text-ellipsis whitespace-nowrap text-[16px] font-semibold leading-[1.35] text-[#73452f] sm:text-[18px]"
+                              style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                              title={item.prizeName}
+                            >
+                              {item.prizeName}
+                            </p>
+                            <p className="mt-2 text-sm text-[#9d7a68]">到期：{formatDateOnly(item.expiresAt)}</p>
+                          </div>
+                          <div
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+                              selected
+                                ? 'border-[#b46a48] bg-[linear-gradient(180deg,_#8f4b39,_#6f2f25)] text-white'
+                                : 'border-[#e5d2c2] bg-white text-transparent'
+                            }`}
+                          >
+                            <CheckIcon className="h-4 w-4" />
+                          </div>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => toggleSelection(item.id)}
+                        disabled={interactionLocked}
+                        aria-label={selected ? `取消选择 ${item.prizeName}` : `选择 ${item.prizeName}`}
+                        className={`rounded-[26px] border p-3 text-left transition ${
+                          selected
+                            ? 'border-[#d49773] bg-[linear-gradient(180deg,_#fff6f0,_#fff0e7)] shadow-[0_18px_36px_rgba(230,193,161,0.26)]'
+                            : 'border-[#efe0d2] bg-white hover:border-[#e1c0a7]'
+                        } ${interactionLocked ? 'cursor-not-allowed opacity-75' : ''}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="rounded-full border border-[#f0ddcf] bg-[#fff8f2] px-3 py-1 text-[11px] font-semibold text-[#b27b58]">
+                            {SOURCE_KIND_LABEL[item.sourceKind ?? 'lottery']}
+                          </span>
+                          <span
+                            className={`flex h-7 w-7 items-center justify-center rounded-full border ${
+                              selected
+                                ? 'border-[#b46a48] bg-[linear-gradient(180deg,_#8f4b39,_#6f2f25)] text-white'
+                                : 'border-[#e5d2c2] bg-white text-transparent'
+                            }`}
+                          >
+                            <CheckIcon className="h-4 w-4" />
+                          </span>
+                        </div>
+
+                        <div className="mt-4 flex h-[104px] items-center justify-center rounded-[18px] border border-[#efddd0] bg-[linear-gradient(180deg,_#fffdfb,_#fff7f1)] sm:h-[136px] sm:rounded-[22px]">
+                          {art ? <img src={art} alt={item.prizeName} className="max-h-[82px] object-contain sm:max-h-[118px]" /> : null}
+                        </div>
+
+                        <div className="mt-4 text-center">
+                          <p
+                            className="overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-semibold leading-[1.35] text-[#73452f] sm:text-[18px]"
+                            style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                            title={item.prizeName}
+                          >
+                            {item.prizeName}
+                          </p>
+                          <p className="mt-1 text-xs text-[#b49380] sm:mt-2 sm:text-sm">{getPoolText(item.pool)}</p>
+                          <p className="mt-1 text-[11px] text-[#9d7a68] sm:mt-2 sm:text-sm">到期：{formatDateOnly(item.expiresAt)}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="mt-5 text-center text-sm text-[#b09484]">只显示当前可重铸的未使用券与奖品</p>
+              </div>
+            </section>
+
+            <aside className="order-first space-y-5 xl:order-none">
+              <div className="rounded-[28px] border border-[#f0ddd0] bg-[linear-gradient(180deg,_rgba(255,255,255,0.96),_rgba(255,249,245,0.96))] p-5 shadow-[0_18px_46px_rgba(238,221,206,0.44)] lg:rounded-[32px] lg:p-6">
+                <div className="flex items-center gap-2">
+                  <h2
+                    className="text-[28px] font-semibold text-[#74452f] lg:text-[36px]"
+                    style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                  >
+                    重铸概览
+                  </h2>
+                  <SparklesIcon className="h-5 w-5 text-[#e1b38d]" />
+                </div>
+
+                <div className="mt-5 space-y-4 text-[18px] text-[#7b5a49]">
+                  <div className="flex items-center justify-between">
+                    <span>可重铸资产：</span>
+                    <strong className="text-[#6f4430]">{items.length} 个</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>当前已选：</span>
+                    <strong className="text-[#6f4430]">{selectedCount} 个</strong>
+                  </div>
+                  <p className={`pt-1 text-[20px] font-semibold ${selectedCount === targetFusionCount ? 'text-[#b87150]' : 'text-[#cf6f63]'}`}>
+                    {overviewMessage}
+                  </p>
+                </div>
+
+                <div className="mt-6 rounded-[20px] border border-[#f0ddd0] bg-[#fffaf6] px-4 py-3 text-sm text-[#a27d68]">
+                  仅可选择未使用、未过期且支持重铸的券或奖品
+                </div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-[28px] border border-[#f0ddd0] bg-[linear-gradient(180deg,_rgba(255,255,255,0.96),_rgba(255,249,245,0.96))] p-5 shadow-[0_18px_46px_rgba(238,221,206,0.44)] lg:rounded-[32px] lg:p-6">
+                <h2
+                  className="text-[28px] font-semibold text-[#74452f] lg:text-[36px]"
+                  style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+                >
+                  重铸说明
+                </h2>
+
+                <ul className="mt-5 space-y-4 pb-16 text-[14px] leading-7 text-[#9d7967] sm:pb-20 sm:text-[15px]">
+                  <li>• 当前页面会展示可重铸的未使用券与奖品</li>
+                  <li>• 3 个融合：结果只会出银色或金色，最高金色</li>
+                  <li>• 4 个融合：结果只会出银色、金色或高级，最高高级</li>
+                  <li>• 6 个融合：结果只会出金色、高级或特殊，不会出银色</li>
+                  <li>• 重铸后原券/奖品会被消耗，不会返还，请谨慎选择</li>
+                </ul>
+
+                <img
+                  src="/lottery-fusion/reference/fusion-rose-corner.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-0 right-0 w-[112px] sm:w-[168px]"
+                />
+              </div>
+            </aside>
+          </div>
+
+          {notice ? (
+            <div
+              className={`mt-5 rounded-[20px] border px-5 py-4 text-sm ${
+                notice.level === 'error'
+                  ? 'border-[#f0c6c0] bg-[#fff4f2] text-[#b45f56]'
+                  : 'border-[#e8d8ca] bg-[#fffaf5] text-[#a96e4d]'
+              }`}
+            >
+              {notice.text}
+            </div>
+          ) : null}
+        </main>
+      </div>
+
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-[#efd7c5] bg-[linear-gradient(180deg,_rgba(255,251,248,0.96),_rgba(255,244,238,0.98))] px-4 py-3 shadow-[0_-14px_36px_rgba(165,117,96,0.14)] backdrop-blur lg:hidden"
+        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+      >
+        <div className="mx-auto flex max-w-[720px] items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[#b09180]">
+              {completedResult ? '重铸结果' : `已选 ${selectedCount}/${targetFusionCount}`}
+            </p>
+            <p className="mt-1 truncate text-sm font-medium text-[#7b5140]">
+              {completedResult
+                ? `恭喜🎉抽到了${completedResult.prizeName}`
+                : canFuse
+                  ? `已满足 ${targetFusionCount} 个融合条件`
+                  : `还需选择 ${targetFusionCount - selectedCount} 个券或奖品`}
             </p>
           </div>
-          <div className="rounded-3xl border border-[#f2dfad] bg-[#fff8e6] px-5 py-4 text-sm text-[#7d5c00]">
-            <p>可用奖品：{items.length} 个</p>
-            <p>当前已选：{selectedCount} 个</p>
-            <p>{currentMaxPoolLabel ? `本次最高可出 ${currentMaxPoolLabel}` : '请选择 3 / 4 / 6 个奖品'}</p>
-          </div>
-        </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-black/10 bg-[#f7f3ef] px-4 py-3 text-sm text-gray-700">
-            <p className="font-semibold text-[#171717]">3 个融合</p>
-            <p>最高可出金色奖品</p>
-          </div>
-          <div className="rounded-2xl border border-black/10 bg-[#f7f3ef] px-4 py-3 text-sm text-gray-700">
-            <p className="font-semibold text-[#171717]">4 个融合</p>
-            <p>最高可出高级奖品</p>
-          </div>
-          <div className="rounded-2xl border border-black/10 bg-[#f7f3ef] px-4 py-3 text-sm text-gray-700">
-            <p className="font-semibold text-[#171717]">6 个融合</p>
-            <p>不会出银色奖品，最高可出特级</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={() => void handleFuse()}
-            disabled={interactionLocked || ![3, 4, 6].includes(selectedCount)}
-            className="rounded-full bg-[#f4c542] px-5 py-2 text-sm font-semibold text-[#3d2c00] hover:bg-[#ffd45b] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? '请求中…' : isAnimating ? '播放中…' : '开始融合'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (interactionLocked) return;
-              setSelectedIds([]);
-              setNotice(null);
-            }}
-            disabled={interactionLocked || selectedCount === 0}
-            className="rounded-full border border-black/10 px-5 py-2 text-sm font-semibold text-gray-600 hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            清空选择
-          </button>
-          <p className="text-sm text-gray-500">融合后原奖品会被消耗，新奖品会直接进入背包。</p>
-        </div>
-
-        {notice ? (
-          <p
-            className={`text-sm ${
-              notice.level === 'success'
-                ? 'text-emerald-600'
-                : notice.level === 'error'
-                  ? 'text-rose-500'
-                  : 'text-gray-600'
+            onClick={
+              completedResult
+                ? resetPrepareCard
+                : isAnimating
+                  ? () => completeAnimation(animationState.payload)
+                  : () => void handleFuse()
+            }
+            disabled={mobileActionDisabled}
+            className={`${primaryActionButtonClassName} w-auto min-w-[152px] px-5 py-3 text-[17px] ${
+              mobileActionDisabled ? 'cursor-not-allowed opacity-55' : ''
             }`}
           >
-            {notice.text}
-          </p>
-        ) : null}
-      </section>
+            {mobileActionButtonLabel}
+          </button>
+        </div>
+      </div>
 
-      {result ? (
-        <section className={`rounded-[32px] border p-6 space-y-2 ${finalResultEffect.pageCardClass}`}>
-          <p className={`text-xs uppercase tracking-[0.4em] ${finalResultEffect.pageEyebrowClass}`}>Reroll Result</p>
-          <h2 className={`text-2xl font-semibold ${finalResultEffect.pageTitleClass}`}>{result.prizeName}</h2>
-          <p className={`text-sm ${finalResultEffect.pageBodyClass}`}>
-            奖池等级：{result.poolLabel}，到期时间：{formatDateOnly(result.expiresAt)}
-          </p>
-        </section>
-      ) : null}
-
-      {animationPayload && animationPhase ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#120d06]/72 p-5 backdrop-blur-sm">
+      {blockingDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(71,36,28,0.34)] px-4">
           <div
-            className={`relative w-full max-w-4xl overflow-hidden rounded-[36px] border px-6 py-8 shadow-[0_32px_120px_rgba(0,0,0,0.38)] sm:px-10 ${animationResultEffect.overlayShellClass} ${animationResultEffect.overlayBaseTextClass}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lottery-fusion-dialog-title"
+            className="w-full max-w-[420px] rounded-[28px] border border-[#efd7c5] bg-[linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(255,246,240,0.98))] p-6 text-center shadow-[0_24px_60px_rgba(108,61,47,0.24)]"
           >
-            <div className={`absolute inset-0 ${animationResultEffect.overlayAuraClass}`} />
-            <div className={`absolute inset-x-[20%] top-14 h-40 rounded-full blur-3xl ${animationResultEffect.overlayGlowClass}`} />
-
-            <div className="relative flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-2">
-                <p className={`text-xs uppercase tracking-[0.45em] ${animationResultEffect.overlayAccentTextClass}`}>
-                  {PHASE_META[animationPhase].eyebrow}
-                </p>
-                <h2 className="text-3xl font-semibold tracking-wide">{PHASE_META[animationPhase].title}</h2>
-                <p className={`max-w-2xl text-sm leading-6 ${animationResultEffect.overlayBodyTextClass}`}>
-                  {PHASE_META[animationPhase].description}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => finishAnimation(animationPayload)}
-                className={`rounded-full border px-5 py-2 text-sm font-semibold transition ${animationResultEffect.skipButtonClass}`}
-              >
-                跳过动画
-              </button>
-            </div>
-
-            <div className="relative mt-8 grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-              <div className="space-y-4">
-                <p className={`text-xs uppercase tracking-[0.35em] ${animationResultEffect.overlayAccentTextClass}`}>
-                  Source Items
-                </p>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {animationPayload.sourceItems.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className={`rounded-2xl border bg-white/10 px-4 py-4 text-sm transition-all duration-500 ${animationResultEffect.resultCardClass} ${
-                        animationPhase === 'collapsing'
-                          ? 'translate-y-0 scale-100 opacity-100'
-                          : animationPhase === 'charging'
-                            ? 'translate-y-7 scale-75 opacity-0 blur-[1px]'
-                            : 'translate-y-10 scale-50 opacity-0 blur-sm'
-                      }`}
-                      style={{ transitionDelay: `${index * 70}ms` }}
-                    >
-                      <p className={`text-[11px] uppercase tracking-[0.28em] ${animationResultEffect.resultEyebrowClass}`}>
-                        {POOL_LABEL[item.pool] ?? item.pool}
-                      </p>
-                      <p className="mt-2 text-base font-semibold">{item.prizeName}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="relative mx-auto flex w-full max-w-sm flex-col items-center justify-center gap-5 py-4">
-                <div className="relative flex h-44 w-44 items-center justify-center">
-                  <div
-                    className={`absolute inset-0 rounded-full border ${animationResultEffect.outerRingClass} ${
-                      animationPhase === 'revealing' ? 'opacity-40' : 'animate-ping opacity-80'
-                    }`}
-                  />
-                  <div
-                    className={`absolute inset-4 rounded-full border ${animationResultEffect.innerRingClass} ${
-                      animationPhase === 'charging' ? 'animate-spin' : ''
-                    }`}
-                    style={{ animationDuration: '1.6s' }}
-                  />
-                  <div className={`absolute inset-6 rounded-full blur-2xl ${animationResultEffect.coreGlowClass}`} />
-                  {animationResultEffect.showOrbit ? (
-                    <div
-                      className={`absolute inset-2 rounded-full border border-dashed ${animationResultEffect.innerRingClass} ${
-                        animationPhase === 'charging' || animationPhase === 'revealing' ? 'animate-spin opacity-90' : 'opacity-0'
-                      }`}
-                      style={{ animationDuration: '3.6s' }}
-                    />
-                  ) : null}
-                  {animationResultEffect.showParticles
-                    ? SPECIAL_PARTICLE_POINTS.map((point, index) => (
-                        <div
-                          key={`${point.top}-${point.left}`}
-                          className={`absolute h-2.5 w-2.5 rounded-full ${
-                            animationPhase === 'revealing' ? 'animate-ping opacity-100' : 'opacity-0'
-                          } ${animationResultEffect.overlayGlowClass}`}
-                          style={{
-                            top: point.top,
-                            left: point.left,
-                            animationDelay: point.delay,
-                            animationDuration: `${1.2 + index * 0.06}s`,
-                          }}
-                        />
-                      ))
-                    : null}
-                  <div
-                    className={`relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border text-center transition-all duration-500 ${animationResultEffect.coreClass} ${
-                      animationPhase === 'revealing' ? 'scale-95' : 'scale-100'
-                    }`}
-                  >
-                    {animationResultEffect.showSweep ? (
-                      <div
-                        className={`pointer-events-none absolute inset-y-[-15%] left-[-30%] w-10 rotate-[18deg] bg-gradient-to-r ${animationResultEffect.sweepGradientClass} blur-[1px] transition-all duration-700 ${
-                          animationPhase === 'revealing' ? 'translate-x-[10.5rem] opacity-100' : 'translate-x-0 opacity-0'
-                        }`}
-                      />
-                    ) : null}
-                    <div>
-                      <p className={`text-[10px] uppercase tracking-[0.36em] ${animationResultEffect.coreInnerTextClass}`}>
-                        Reroll
-                      </p>
-                      <p className={`mt-2 text-sm font-semibold ${animationResultEffect.coreInnerTextClass}`}>Core</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={`w-full rounded-[28px] border p-5 transition-all duration-500 ${animationResultEffect.resultCardClass} ${
-                    animationPhase === 'revealing'
-                      ? 'translate-y-0 scale-100 opacity-100'
-                      : 'translate-y-6 scale-90 opacity-0'
-                  }`}
-                >
-                  <p className={`text-xs uppercase tracking-[0.35em] ${animationResultEffect.resultEyebrowClass}`}>
-                    Reroll Result
-                  </p>
-                  <h3 className={`mt-3 text-2xl font-semibold ${animationResultEffect.resultTitleClass}`}>
-                    {animationPayload.result.prizeName}
-                  </h3>
-                  <p className={`mt-2 text-sm ${animationResultEffect.resultBodyClass}`}>
-                    奖池等级：{animationPayload.result.poolLabel}，到期时间：
-                    {formatDateOnly(animationPayload.result.expiresAt)}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <h2
+              id="lottery-fusion-dialog-title"
+              className="text-[28px] font-semibold text-[#74452f]"
+              style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
+            >
+              {blockingDialog.title}
+            </h2>
+            <p className="mt-4 text-[15px] leading-7 text-[#8e6a58]">{blockingDialog.text}</p>
+            <button
+              type="button"
+              onClick={() => setBlockingDialog(null)}
+              className="mt-6 inline-flex min-w-[168px] items-center justify-center rounded-[999px] border border-[#f0d3b7] bg-[linear-gradient(180deg,_#fffdfb,_#fdf0e3)] px-6 py-3 text-[17px] font-semibold text-[#8c5140] shadow-[0_18px_30px_rgba(83,32,26,0.14)] transition hover:translate-y-[-1px]"
+            >
+              确认
+            </button>
           </div>
         </div>
       ) : null}
-
-      <section className="rounded-[32px] border border-black/5 bg-white p-6 space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-[#171717]">可融合奖品</h2>
-            <p className="text-sm text-gray-500">仅展示抽奖来源、未使用且未过期的奖品。</p>
-          </div>
-          <span className="text-xs uppercase tracking-[0.35em] text-gray-400">{items.length} 个</span>
-        </div>
-
-        {items.length === 0 ? (
-          <p className="text-sm text-gray-500">当前没有可融合的抽奖奖品。</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {items.map((item) => {
-              const selected = selectedIds.includes(item.id);
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => toggleSelection(item.id)}
-                  disabled={interactionLocked}
-                  className={`rounded-2xl border p-4 text-left transition ${
-                    selected
-                      ? 'border-[#f4c542] bg-[#fff8e6] shadow-[0_8px_24px_rgba(244,197,66,0.18)]'
-                      : 'border-black/10 bg-[#fcfbff] hover:border-[#f4c542]/60 hover:bg-[#fffdf6]'
-                  } ${interactionLocked ? 'cursor-not-allowed opacity-70' : ''}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-2">
-                      <span className="inline-flex rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs uppercase tracking-[0.25em] text-gray-500">
-                        {POOL_LABEL[item.pool] ?? item.pool}
-                      </span>
-                      <h3 className="text-lg font-semibold text-[#171717]">{item.prizeName}</h3>
-                    </div>
-                    <span
-                      className={`mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold ${
-                        selected
-                          ? 'border-[#c79200] bg-[#f4c542] text-[#3d2c00]'
-                          : 'border-black/10 bg-white text-gray-400'
-                      }`}
-                    >
-                      {selected ? '✓' : ''}
-                    </span>
-                  </div>
-                  <div className="mt-4 space-y-1 text-sm text-gray-600">
-                    <p>类型：{PRIZE_TYPE_LABEL[item.prizeType] ?? item.prizeType}</p>
-                    <p>到期：{formatDateOnly(item.expiresAt)}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </section>
     </div>
   );
 }

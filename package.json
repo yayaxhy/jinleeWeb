@@ -7,8 +7,9 @@
         "build": "next build --webpack",
         "start": "next start",
         "lint": "eslint",
-    "newhome:vendor": "node scripts/vendor-newhome.mjs",
-    "newhome:generate-code": "node scripts/generate-newhome-code.mjs",
+        "test": "tsx --test lib/*.test.ts",
+        "newhome:vendor": "node scripts/vendor-newhome.mjs",
+        "newhome:generate-code": "node scripts/generate-newhome-code.mjs",
         "farm:generate": "node scripts/generate-farm-asset.mjs",
         "farm:generate:all-core": "node scripts/generate-farm-asset.mjs --all-core",
         "farm:generate:all-crops": "node scripts/generate-farm-asset.mjs --all-crops",
@@ -17,6 +18,7 @@
         "farm:normalize-crops": "node scripts/normalize-farm-crops.mjs"
     },
     "dependencies": {
+        "@heroicons/react": "^2.2.0",
         "@prisma/client": "^6.19.2",
         "cuid": "^3.0.0",
         "exceljs": "^4.4.0",
@@ -38,6 +40,7 @@
         "prisma": "^6.19.2",
         "sharp": "^0.34.5",
         "tailwindcss": "^4",
+        "tsx": "^4.20.6",
         "typescript": "^5"
     },
     "overrides": {

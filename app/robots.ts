@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
         '/howard/',
         '/iria/',
         '/kefu/',
+        '/newhome',
         '/newhome-editable/',
         '/profile/',
         '/recharge/',

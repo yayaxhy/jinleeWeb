@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
       {
         pathname: '/farm/**',
       },
+      {
+        pathname: '/lottery-fusion/**',
+      },
     ],
     remotePatterns: [
       {
