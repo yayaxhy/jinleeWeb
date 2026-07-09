@@ -643,35 +643,6 @@ export default async function AdminRevenuePage(props: PageProps) {
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <h3 className="text-lg font-semibold">重铸成本</h3>
-          <div className="space-y-1 text-sm text-white/70">
-            <p>本期重铸产出：{fusionRevenue.createdCount}</p>
-            <p>本期已核销：{fusionRevenue.consumedCount}</p>
-            <p>本期已核销成本：¥{formatNumber(fusionRevenue.realizedCost)}</p>
-            <p>当前待核销：{fusionRevenue.activeOutstandingCount}</p>
-            <p>当前待核销池：{fusionOutstandingPoolBreakdownText}</p>
-            <p>再次投入的重铸产物：{fusionRevenue.rerolledLotteryInputCount} 个来源 / {fusionRevenue.rerolledRequestCount} 次重铸</p>
-            <p className="text-white">本期产出池分布：{fusionPoolBreakdownText}</p>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <h3 className="text-lg font-semibold">重铸规则分布</h3>
-          <div className="space-y-1 text-sm text-white/70">
-            <p>{fusionRuleBreakdownText}</p>
-            <p className="text-white">各规则产出池：{fusionRuleResultBreakdownText}</p>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <h3 className="text-lg font-semibold">重铸来源结构</h3>
-          <div className="space-y-1 text-sm text-white/70">
-            <p>来源类型：{fusionSourceKindBreakdownText}</p>
-            <p className="text-white">来源池分布：{fusionSourcePoolBreakdownText}</p>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">刮刮乐收益</h3>
           <div className="space-y-1 text-sm text-white/70">
             <p>已刮开数量：{scratchRevealedCount}</p>
@@ -760,6 +731,34 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>总实付流水：¥{formatNumber(totalPaidFlow, 4)}</p>
             <p>模型抽成合计（订单+打赏）：¥{formatNumber(feeFromOrderAndGiftModel, 4)}</p>
             <p className="text-white">其他来源抽成：¥{formatNumber(commissionOtherSources, 4)}</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4 sm:col-span-2">
+          <h3 className="text-lg font-semibold">重铸分析</h3>
+          <div className="grid gap-5 xl:grid-cols-3">
+            <div className="space-y-1 text-sm text-white/70">
+              <p className="text-sm font-medium text-white">成本</p>
+              <p>本期重铸产出：{fusionRevenue.createdCount}</p>
+              <p>本期已核销：{fusionRevenue.consumedCount}</p>
+              <p>本期已核销成本：¥{formatNumber(fusionRevenue.realizedCost)}</p>
+              <p>当前待核销：{fusionRevenue.activeOutstandingCount}</p>
+              <p>当前待核销池：{fusionOutstandingPoolBreakdownText}</p>
+              <p>再次投入的重铸产物：{fusionRevenue.rerolledLotteryInputCount} 个来源 / {fusionRevenue.rerolledRequestCount} 次重铸</p>
+              <p className="text-white">本期产出池分布：{fusionPoolBreakdownText}</p>
+            </div>
+
+            <div className="space-y-1 text-sm text-white/70">
+              <p className="text-sm font-medium text-white">规则分布</p>
+              <p>{fusionRuleBreakdownText}</p>
+              <p className="text-white">各规则产出池：{fusionRuleResultBreakdownText}</p>
+            </div>
+
+            <div className="space-y-1 text-sm text-white/70">
+              <p className="text-sm font-medium text-white">来源结构</p>
+              <p>来源类型：{fusionSourceKindBreakdownText}</p>
+              <p className="text-white">来源池分布：{fusionSourcePoolBreakdownText}</p>
+            </div>
           </div>
         </div>
       </div>
