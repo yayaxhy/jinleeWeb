@@ -10,7 +10,7 @@ import {
   SITE_URL,
 } from '@/lib/site';
 
-const homeTitle = '锦鲤公会｜欧洲游戏陪玩社区';
+const homeTitle = '锦鲤公会｜欧服最智能的陪玩公会';
 
 export const metadata: Metadata = {
   title: homeTitle,
@@ -96,10 +96,10 @@ export default function Home() {
               Jinlee Club
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-wide sm:text-5xl">
-              锦鲤公会游戏陪玩社区
+              欧服最智能的陪玩公会
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/90 sm:text-base">
-              来认识锦鲤公会小伙伴们吧。
+              锦鲤公会 Jinlee Club 专注欧服游戏陪玩，提供瓦、英雄联盟、三角洲、OW 等游戏陪玩服务。
             </p>
           </div>
         </div>
