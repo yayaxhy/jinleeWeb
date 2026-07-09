@@ -10,7 +10,7 @@ import {
   SITE_URL,
 } from '@/lib/site';
 
-const homeTitle = '锦鲤公会｜Valorant、Overwatch 游戏陪玩社区';
+const homeTitle = '锦鲤公会｜欧洲游戏陪玩社区';
 
 export const metadata: Metadata = {
   title: homeTitle,
