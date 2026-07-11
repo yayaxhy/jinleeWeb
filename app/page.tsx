@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import { NavBar } from '@/components/NavBar';
 import { PeiwanRecommendations } from '@/components/home/PeiwanRecommendations';
@@ -102,13 +103,61 @@ export default function Home() {
               欧服陪玩｜锦鲤陪玩公会
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/90 sm:text-base">
-              锦鲤陪玩公会 Jinlee Club 专注欧服陪玩，提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。
+              锦鲤陪玩公会 Jinlee Club 是欧洲最智能的陪玩公会，专注欧服陪玩，24 小时客服全天候为您服务。我们提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。
             </p>
+            <Link
+              href="/oufu-peiwan"
+              className="mt-5 inline-flex rounded-full bg-white px-5 py-2 text-sm font-semibold text-neutral-950 transition hover:bg-white/85"
+            >
+              了解欧服陪玩服务
+            </Link>
           </div>
         </div>
       </section>
       <section className="relative z-20 bg-white h-screen w-full overflow-hidden">
         <PeiwanRecommendations />
+      </section>
+      <section className="bg-[#f7f3ef] px-6 py-16 text-neutral-950">
+        <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-start">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-700">
+              EU Companion Service
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+              欧服陪玩常见问题
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-neutral-700">
+              锦鲤陪玩公会围绕欧洲时区、中文沟通和游戏陪玩体验提供服务，帮助玩家更快找到合适的欧服游戏伙伴。
+            </p>
+          </div>
+          <div className="space-y-4">
+            {[
+              {
+                question: '锦鲤公会提供欧服陪玩吗？',
+                answer:
+                  '是的，锦鲤陪玩公会 Jinlee Club 专注欧服陪玩与欧洲游戏陪玩，适合在欧洲时区寻找中文游戏伙伴的玩家。',
+              },
+              {
+                question: '支持哪些游戏陪玩服务？',
+                answer:
+                  '目前提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等热门游戏陪玩服务。',
+              },
+              {
+                question: '客服时间是多久？',
+                answer:
+                  '锦鲤陪玩公会提供 24 小时客服，全天候处理咨询、下单和服务问题。',
+              },
+            ].map((item) => (
+              <article
+                key={item.question}
+                className="rounded-2xl border border-orange-200/70 bg-white p-5 shadow-sm"
+              >
+                <h3 className="text-lg font-semibold">{item.question}</h3>
+                <p className="mt-2 text-sm leading-7 text-neutral-700">{item.answer}</p>
+              </article>
+            ))}
+          </div>
+        </div>
       </section>
       <Footer />
     </main>
