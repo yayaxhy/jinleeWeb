@@ -20,6 +20,8 @@ pm2 start ecosystem.config.cjs
 pm2 save
 ```
 
+`ecosystem.config.cjs` also starts `jinlee-monthly-financial-reports`, which calls the internal monthly financial-report generator. Put either `ADMIN_REPORT_CRON_TOKEN` or the existing `INTERNAL_API_TOKEN` in `.env.local`; the scheduler reads `.env.local` before calling the internal endpoint.
+
 Verify the listener:
 
 ```bash

@@ -92,12 +92,18 @@ const formatBreakdownText = (
   labelMap: Record<string, string>,
   fallback = '当前区间暂无数据',
 ) => {
-  const parts = Object.entries(breakdown)
+  const parts = formatBreakdownItems(breakdown, labelMap);
+  return parts.join(' / ') || fallback;
+};
+
+const formatBreakdownItems = (
+  breakdown: Record<string, number>,
+  labelMap: Record<string, string>,
+) =>
+  Object.entries(breakdown)
     .filter(([, count]) => count > 0)
     .sort((left, right) => right[1] - left[1])
     .map(([key, count]) => `${labelMap[key] ?? key} ${count}`);
-  return parts.join(' / ') || fallback;
-};
 
 export default async function AdminRevenuePage(props: PageProps) {
   const session = await getServerSession();
@@ -514,14 +520,10 @@ export default async function AdminRevenuePage(props: PageProps) {
     FUSION_POOL_LABEL,
     '当前区间暂无来源数据',
   );
-  const fusionRuleResultBreakdownText = FUSION_COUNT_BUCKET_ORDER.map((bucket) => {
-    const poolText = formatBreakdownText(
-      fusionRevenue.resultPoolByFusionCount[bucket],
-      FUSION_POOL_LABEL,
-      '无',
-    );
-    return `${LOTTERY_FUSION_COUNT_BUCKET_LABEL[bucket]}：${poolText}`;
-  }).join(' / ');
+  const fusionRuleResultBreakdown = FUSION_COUNT_BUCKET_ORDER.map((bucket) => ({
+    label: LOTTERY_FUSION_COUNT_BUCKET_LABEL[bucket],
+    poolItems: formatBreakdownItems(fusionRevenue.resultPoolByFusionCount[bucket], FUSION_POOL_LABEL),
+  }));
 
   return (
     <div className="space-y-8 text-white">
@@ -736,29 +738,43 @@ export default async function AdminRevenuePage(props: PageProps) {
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4 sm:col-span-2">
           <h3 className="text-lg font-semibold">重铸分析</h3>
-          <div className="grid gap-5 xl:grid-cols-3">
-            <div className="space-y-1 text-sm text-white/70">
-              <p className="text-sm font-medium text-white">成本</p>
-              <p>本期重铸产出：{fusionRevenue.createdCount}</p>
-              <p>本期已核销：{fusionRevenue.consumedCount}</p>
-              <p>本期已核销成本：¥{formatNumber(fusionRevenue.realizedCost)}</p>
-              <p>当前待核销：{fusionRevenue.activeOutstandingCount}</p>
-              <p>当前待核销池：{fusionOutstandingPoolBreakdownText}</p>
-              <p>再次投入的重铸产物：{fusionRevenue.rerolledLotteryInputCount} 个来源 / {fusionRevenue.rerolledRequestCount} 次重铸</p>
-              <p className="text-white">本期产出池分布：{fusionPoolBreakdownText}</p>
-            </div>
+          <div className="grid gap-x-8 gap-y-6 xl:grid-cols-3">
+            <section className="text-sm text-white/70">
+              <h4 className="mb-3 text-base font-medium text-white">成本</h4>
+              <dl className="space-y-2">
+                <div className="flex items-center justify-between gap-4"><dt>本期重铸产出</dt><dd className="text-white">{fusionRevenue.createdCount}</dd></div>
+                <div className="flex items-center justify-between gap-4"><dt>本期已核销</dt><dd className="text-white">{fusionRevenue.consumedCount}</dd></div>
+                <div className="flex items-center justify-between gap-4"><dt>本期已核销成本</dt><dd className="text-white">¥{formatNumber(fusionRevenue.realizedCost)}</dd></div>
+                <div className="flex items-center justify-between gap-4"><dt>当前待核销</dt><dd className="text-white">{fusionRevenue.activeOutstandingCount}</dd></div>
+                <div><dt>当前待核销池</dt><dd className="mt-1 text-white">{fusionOutstandingPoolBreakdownText}</dd></div>
+                <div><dt>再次投入的重铸产物</dt><dd className="mt-1 text-white">{fusionRevenue.rerolledLotteryInputCount} 个来源 / {fusionRevenue.rerolledRequestCount} 次重铸</dd></div>
+                <div><dt>本期产出池分布</dt><dd className="mt-1 text-white">{fusionPoolBreakdownText}</dd></div>
+              </dl>
+            </section>
 
-            <div className="space-y-1 text-sm text-white/70">
-              <p className="text-sm font-medium text-white">规则分布</p>
-              <p>{fusionRuleBreakdownText}</p>
-              <p className="text-white">各规则产出池：{fusionRuleResultBreakdownText}</p>
-            </div>
+            <section className="text-sm text-white/70">
+              <h4 className="mb-3 text-base font-medium text-white">规则分布</h4>
+              <p className="mb-4 leading-6">{fusionRuleBreakdownText}</p>
+              <div className="pt-1">
+                <p className="mb-2 font-medium text-white">各规则产出池</p>
+                <dl className="space-y-2">
+                  {fusionRuleResultBreakdown.map(({ label, poolItems }) => (
+                    <div key={label} className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3">
+                      <dt className="whitespace-nowrap text-white/60">{label}</dt>
+                      <dd className="min-w-0 break-words text-white">{poolItems.join(' / ') || '无'}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </section>
 
-            <div className="space-y-1 text-sm text-white/70">
-              <p className="text-sm font-medium text-white">来源结构</p>
-              <p>来源类型：{fusionSourceKindBreakdownText}</p>
-              <p className="text-white">来源池分布：{fusionSourcePoolBreakdownText}</p>
-            </div>
+            <section className="text-sm text-white/70">
+              <h4 className="mb-3 text-base font-medium text-white">来源结构</h4>
+              <dl className="space-y-4">
+                <div><dt>来源类型</dt><dd className="mt-1 leading-6 text-white">{fusionSourceKindBreakdownText}</dd></div>
+                <div><dt>来源池分布</dt><dd className="mt-1 leading-6 text-white">{fusionSourcePoolBreakdownText}</dd></div>
+              </dl>
+            </section>
           </div>
         </div>
       </div>

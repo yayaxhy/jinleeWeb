@@ -47,6 +47,12 @@ export function RevenueTimeRangeActions({
       >
         下载 Excel（全部收益数据）
       </button>
+      <a
+        href="/admin/revenue/files"
+        className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm text-white hover:bg-white/10"
+      >
+        查看文件
+      </a>
       <button
         type="submit"
         className="inline-flex items-center justify-center rounded-full bg-white/15 px-6 py-2 text-sm text-white hover:bg-white/25"

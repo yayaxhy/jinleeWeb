@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       {
         pathname: '/lottery-fusion/**',
       },
+      {
+        pathname: '/peiwanRecommend/**',
+      },
     ],
     remotePatterns: [
       {

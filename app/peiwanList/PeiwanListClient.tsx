@@ -102,7 +102,9 @@ export function PeiwanListClient() {
   const [idFilter, setIdFilter] = useState<string>('');
   const [page, setPage] = useState(1);
   const [seed] = useState(() => Math.random().toString(36).slice(2, 10));
-  const [loading, setLoading] = useState(false);
+  // The first request only starts after hydration. Begin in the loading state so
+  // the empty-state message is never shown before the API has answered.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ApiResponse | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);

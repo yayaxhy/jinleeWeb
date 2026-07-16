@@ -3,7 +3,7 @@ import Link from 'next/link';
 type SupportLink = { label: string; href: string; newTab?: boolean };
 
 const supportLinks: SupportLink[] = [
-  { label: 'Discord 链接', href: 'https://discord.gg/mUNUNQEmCA', newTab: true },
+  { label: 'Discord 链接', href: 'https://discord.gg/UJ95zhfJYR', newTab: true },
 ];
 
 export function Footer() {
@@ -26,6 +26,9 @@ export function Footer() {
               </li>
             ))}
           </ul>
+          <p className="text-sm leading-6 text-neutral-700">
+            网站相关请加微信：<span className="font-semibold">JF-DJ-</span>
+          </p>
         </div>
       </div>
 

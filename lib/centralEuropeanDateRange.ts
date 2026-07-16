@@ -107,6 +107,36 @@ const centralEuropeanLocalToUtc = (
   return new Date(resolvedMs);
 };
 
+export const getCentralEuropeanMonthParts = (date: Date) => {
+  const parts = getCentralEuropeanDateTimeParts(date);
+  return {
+    year: parts.year,
+    month: parts.month,
+  };
+};
+
+export const buildCentralEuropeanMonthRange = (year: number, month: number) => {
+  const nextMonthYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+
+  return {
+    start: centralEuropeanLocalToUtc(year, month, 1, 0, 0, 0, 0),
+    end: centralEuropeanLocalToUtc(nextMonthYear, nextMonth, 1, 0, 0, 0, 0),
+    year,
+    month,
+  };
+};
+
+export const getPreviousCentralEuropeanMonthRange = (referenceDate = new Date()) => {
+  const parts = getCentralEuropeanDateTimeParts(referenceDate);
+  const year = parts.month === 1 ? parts.year - 1 : parts.year;
+  const month = parts.month === 1 ? 12 : parts.month - 1;
+  return buildCentralEuropeanMonthRange(year, month);
+};
+
+export const formatCentralEuropeanMonthKey = (year: number, month: number) =>
+  `${year}-${pad2(month)}`;
+
 export const formatDateTimeInputCentralEuropean = (date: Date) =>
   buildDateTimeInput(getCentralEuropeanDateTimeParts(date));
 

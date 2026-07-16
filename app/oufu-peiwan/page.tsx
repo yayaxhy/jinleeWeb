@@ -149,7 +149,7 @@ export default function OufuPeiwanPage() {
               查看陪玩列表
             </Link>
             <Link
-              href="https://discord.gg/mUNUNQEmCA"
+              href="https://discord.gg/UJ95zhfJYR"
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-full border border-neutral-950 px-6 py-3 text-sm font-semibold transition hover:bg-white"

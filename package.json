@@ -15,7 +15,9 @@
         "farm:generate:all-crops": "node scripts/generate-farm-asset.mjs --all-crops",
         "farm:generate:field-overlays": "node scripts/generate-field-overlays.mjs",
         "farm:derive-plots": "node scripts/derive-plot-states.mjs",
-        "farm:normalize-crops": "node scripts/normalize-farm-crops.mjs"
+        "farm:normalize-crops": "node scripts/normalize-farm-crops.mjs",
+        "financials:scheduler": "node scripts/monthly-financial-report-scheduler.mjs",
+        "financials:generate-once": "node scripts/monthly-financial-report-scheduler.mjs --once"
     },
     "dependencies": {
         "@heroicons/react": "^2.2.0",

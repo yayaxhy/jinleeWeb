@@ -42,6 +42,48 @@ enum OrderStatus {
   EXPIRED
 }
 
+enum DispatchRequestStatus {
+  OPEN
+  CLOSED
+  EXPIRED
+  CANCELED
+}
+
+enum DispatchSource {
+  DISCORD
+  WECHAT_MINIPROGRAM
+}
+
+enum DispatchCandidateStatus {
+  ACTIVE
+  SELECTED
+  CANCELED
+}
+
+enum MiniConversationType {
+  DIRECT
+  SYSTEM
+}
+
+enum MiniMessageSenderType {
+  USER
+  SYSTEM
+  BOT
+  ADMIN
+}
+
+enum MiniMessageStatus {
+  NORMAL
+  BLOCKED
+  NOTICE
+}
+
+enum MiniModerationAction {
+  ALLOW
+  ALERT
+  BLOCK
+}
+
 enum RechargeOrderStatus {
   PENDING
   PAID
@@ -198,6 +240,11 @@ model JinleeUser {
   receivedTransactions    Transaction[]           @relation("TransactionToJinleeUser")
   commissionsFrom         Commission[]            @relation("CommissionFromJinleeUser")
   commissionsTo           Commission[]            @relation("CommissionToJinleeUser")
+  dispatchRequests        DispatchRequest[]       @relation("DispatchRequestOwner")
+  dispatchCandidates      DispatchCandidate[]     @relation("DispatchCandidateWorker")
+  miniConversationsA      MiniConversation[]      @relation("MiniConversationUserA")
+  miniConversationsB      MiniConversation[]      @relation("MiniConversationUserB")
+  miniMessages            MiniMessage[]           @relation("MiniMessageSender")
 }
 
 model AccountBinding {
@@ -354,8 +401,10 @@ model Member {
   jinleeUser JinleeUser? @relation("JinleeUserMember")
 
   // Order request logs/clicks
-  orderRequestsCreated OrderRequestLog[]   @relation("OrderRequestOwner")
-  orderRequestClicks   OrderRequestClick[] @relation("OrderRequestWorker")
+  orderRequestsCreated       OrderRequestLog[]   @relation("OrderRequestOwner")
+  orderRequestClicks         OrderRequestClick[] @relation("OrderRequestWorker")
+  dispatchRequestsFromDiscord DispatchRequest[]  @relation("DispatchRequestDiscordOwner")
+  dispatchCandidatesFromDiscord DispatchCandidate[] @relation("DispatchCandidateDiscordWorker")
   bossProfile          BossProfile?
 
   // Expense & profit logs
@@ -949,6 +998,7 @@ model PEIWAN {
   // Back-relation to Order for the peiwan relation
   orders       Order[]             @relation("PeiwanOrders")
   gameProfiles PeiwanGameProfile[]
+  dispatchCandidates DispatchCandidate[] @relation("DispatchCandidatePeiwan")
 
   @@index([status])
 }
@@ -1014,14 +1064,21 @@ model Order {
   netAmount      Decimal? @db.Decimal(18, 2)
 
   interId String?
+  dispatchRequestId   String?
+  dispatchCandidateId String?
 
   // Back-relation for WorkerLock (one active lock per order at most)
   workerLock WorkerLock? @relation("OrderWorkerLock")
+  dispatchRequest   DispatchRequest?   @relation(fields: [dispatchRequestId], references: [id], onDelete: SetNull)
+  dispatchCandidate DispatchCandidate? @relation(fields: [dispatchCandidateId], references: [id], onDelete: SetNull)
+  miniConversations MiniConversation[]
 
   @@index([status, cutoffAt])
   @@index([workerId, status])
   @@index([hostId, status])
   @@index([hostJinleeId, status])
+  @@index([dispatchRequestId])
+  @@index([dispatchCandidateId])
 }
 
 model OrderRequestLog {
@@ -1050,6 +1107,122 @@ model OrderRequestClick {
   @@unique([orderId, workerId])
   @@index([orderId])
   @@index([workerId])
+}
+
+model DispatchRequest {
+  id                       String                @id @default(cuid())
+  ownerJinleeId            String?
+  ownerDiscordUserId       String?
+  ownerWechatOpenId        String?
+  ownerDisplayName         String?
+  anonymous                Boolean               @default(true)
+  requirement              String                @db.VarChar(500)
+  sexRequirement           Json
+  game                     String?
+  tags                     Json?
+  status                   DispatchRequestStatus @default(OPEN)
+  source                   DispatchSource
+  discordOrderRequestLogId String?               @unique
+  discordGuildId           String?
+  discordChannelId         String?
+  discordMessageId         String?
+  createdAt                DateTime              @default(now())
+  expiresAt                DateTime
+  closedAt                 DateTime?
+
+  ownerJinleeUser    JinleeUser?         @relation("DispatchRequestOwner", fields: [ownerJinleeId], references: [jinleeId], onDelete: SetNull)
+  ownerDiscordMember Member?             @relation("DispatchRequestDiscordOwner", fields: [ownerDiscordUserId], references: [discordUserId], onDelete: SetNull)
+  candidates         DispatchCandidate[]
+  orders             Order[]
+
+  @@index([status, expiresAt])
+  @@index([ownerJinleeId, createdAt])
+  @@index([ownerDiscordUserId, createdAt])
+  @@index([source, createdAt])
+}
+
+model DispatchCandidate {
+  id                  String                  @id @default(cuid())
+  dispatchRequestId   String
+  workerJinleeId      String?
+  workerDiscordUserId String?
+  workerDisplayName   String?
+  peiwanId            Int
+  status              DispatchCandidateStatus @default(ACTIVE)
+  grabbedAt           DateTime                @default(now())
+  selectedAt          DateTime?
+  selectedOrderId     String?                 @unique
+
+  request             DispatchRequest @relation(fields: [dispatchRequestId], references: [id], onDelete: Cascade)
+  workerJinleeUser    JinleeUser?     @relation("DispatchCandidateWorker", fields: [workerJinleeId], references: [jinleeId], onDelete: SetNull)
+  workerDiscordMember Member?         @relation("DispatchCandidateDiscordWorker", fields: [workerDiscordUserId], references: [discordUserId], onDelete: SetNull)
+  peiwan              PEIWAN          @relation("DispatchCandidatePeiwan", fields: [peiwanId], references: [PEIWANID], onDelete: Restrict)
+  orders              Order[]
+
+  @@unique([dispatchRequestId, peiwanId])
+  @@index([dispatchRequestId, grabbedAt])
+  @@index([workerJinleeId, grabbedAt])
+  @@index([workerDiscordUserId, grabbedAt])
+  @@index([status, grabbedAt])
+}
+
+model MiniConversation {
+  id            String               @id @default(cuid())
+  type          MiniConversationType @default(DIRECT)
+  peerKey       String?
+  userAId       String?
+  userBId       String?
+  linkedOrderId String?
+  adminWatched  Boolean              @default(false)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @default(now()) @updatedAt
+
+  userA       JinleeUser?   @relation("MiniConversationUserA", fields: [userAId], references: [jinleeId], onDelete: SetNull)
+  userB       JinleeUser?   @relation("MiniConversationUserB", fields: [userBId], references: [jinleeId], onDelete: SetNull)
+  linkedOrder Order?        @relation(fields: [linkedOrderId], references: [id], onDelete: SetNull)
+  messages    MiniMessage[]
+
+  @@unique([type, peerKey])
+  @@index([userAId, updatedAt])
+  @@index([userBId, updatedAt])
+  @@index([linkedOrderId])
+}
+
+model MiniMessage {
+  id             String                @id @default(cuid())
+  conversationId String
+  senderJinleeId String?
+  senderType     MiniMessageSenderType @default(USER)
+  body           String                @db.VarChar(1000)
+  rawBody        String?               @db.VarChar(1000)
+  status         MiniMessageStatus     @default(NORMAL)
+  createdAt      DateTime              @default(now())
+
+  conversation     MiniConversation            @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderJinleeUser JinleeUser?                 @relation("MiniMessageSender", fields: [senderJinleeId], references: [jinleeId], onDelete: SetNull)
+  moderationEvents MiniMessageModerationEvent[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderJinleeId, createdAt])
+  @@index([status, createdAt])
+}
+
+model MiniMessageModerationEvent {
+  id             String               @id @default(cuid())
+  messageId      String?
+  conversationId String?
+  action         MiniModerationAction
+  riskLabels     Json?
+  rawText        String               @db.VarChar(1000)
+  reason         String?
+  createdAt      DateTime             @default(now())
+  reviewedAt     DateTime?
+
+  message MiniMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([messageId])
+  @@index([conversationId, createdAt])
+  @@index([action, createdAt])
 }
 
 model BossProfile {

@@ -30,6 +30,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .playwright-cli/
+# Homepage visual test captures
+output/playwright/home-*.png
 
 # env files
 .env
@@ -46,5 +48,6 @@ next-env.d.ts
 # media assets (local only)
 app/peiwanList/img/
 public/img/
+storage/
 README.md
 docs/farm-art-direction.md
