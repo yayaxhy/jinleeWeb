@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
+import { canEditPeiwanInfo, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { buildPeiwanDataObject, normalizePeiwanPayload } from '@/lib/peiwan/payload';
 import { getServerSession } from '@/lib/session';
@@ -7,7 +7,7 @@ import { registerPeiwanProfile } from '@/lib/peiwan/registerPeiwan';
 
 const ensurePeiwanWriteSession = async () => {
   const session = await getServerSession();
-  if (!session?.discordId || !canManagePeiwan(session.discordId)) {
+  if (!session?.discordId || !canEditPeiwanInfo(session.discordId)) {
     return null;
   }
   if (isHowardReadOnlyDiscordId(session.discordId)) {

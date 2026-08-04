@@ -2,7 +2,7 @@
 import { redirect } from 'next/navigation';
 import { PeiwanForm } from '@/components/admin/PeiwanForm';
 import { getServerSession } from '@/lib/session';
-import { canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
+import { canEditPeiwanInfo, canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: '新增陪玩 - 锦鲤管理后台',
@@ -10,10 +10,11 @@ export const metadata = {
 
 export default async function CreatePeiwanPage() {
   const session = await getServerSession();
-  if (!session?.discordId || !canManagePeiwan(session.discordId)) {
+  if (!session?.discordId || !canEditPeiwanInfo(session.discordId)) {
     redirect('/');
   }
   const readOnly = isHowardReadOnlyDiscordId(session.discordId);
+  const allowRoleSync = canManagePeiwan(session.discordId);
 
   return (
     <div className="space-y-6 text-white">
@@ -29,7 +30,7 @@ export default async function CreatePeiwanPage() {
           返回管理首页
         </Link>
       </div>
-      <PeiwanForm mode="create" readOnly={readOnly} />
+      <PeiwanForm mode="create" readOnly={readOnly} allowRoleSync={allowRoleSync} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   isKefuDiscordId,
   isHowardDiscordId,
   isIriaDiscordId,
+  isPeiwanInfoAdminDiscordId,
 } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 
@@ -36,6 +37,7 @@ const resolveBackHref = (discordId?: string | null) => {
   if (isKefuDiscordId(discordId)) return '/kefu';
   if (isHowardDiscordId(discordId)) return '/howard';
   if (isIriaDiscordId(discordId)) return '/iria';
+  if (isPeiwanInfoAdminDiscordId(discordId)) return '/admin';
   if (isAdminDiscordId(discordId)) return '/admin';
   return '/';
 };

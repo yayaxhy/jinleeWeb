@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/session';
-import { canViewTransactions } from '@/lib/admin';
+import { canViewKefuTransactions } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -77,7 +77,7 @@ type PageProps = {
 
 export default async function AdminTransactionsPage(props: PageProps) {
   const session = await getServerSession();
-  if (!session?.discordId || !canViewTransactions(session.discordId)) {
+  if (!session?.discordId || !canViewKefuTransactions(session.discordId)) {
     redirect('/');
   }
 

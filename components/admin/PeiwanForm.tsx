@@ -61,6 +61,7 @@ type PeiwanFormProps = {
   mode: 'create' | 'edit';
   initialValues?: Partial<PeiwanFormState>;
   readOnly?: boolean;
+  allowRoleSync?: boolean;
 };
 
 const mergeInitialState = (initialValues?: Partial<PeiwanFormState>) => {
@@ -87,7 +88,7 @@ const SectionTitle = ({ title, subtitle }: { title: string; subtitle?: string })
   </div>
 );
 
-export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanFormProps) {
+export function PeiwanForm({ mode, initialValues, readOnly = false, allowRoleSync = true }: PeiwanFormProps) {
   const [formState, setFormState] = useState<PeiwanFormState>(() => mergeInitialState(initialValues));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -106,7 +107,7 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
   );
 
   const isReadOnly = readOnly;
-  const syncReady = !isReadOnly && !!persistedTarget?.discordUserId;
+  const syncReady = !isReadOnly && allowRoleSync && !!persistedTarget?.discordUserId;
   const getQuotationCodeLabel = (code: PeiwanFormState['defaultQuotationCode']) => QUOTATION_CODE_LABEL[code] ?? code;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -240,7 +241,11 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
         initialPeiwanIdRef.current = nextId;
         setStatusMessage({
           type: 'success',
-          text: mode === 'create' ? '新增成功，可继续同步 Discord tag。' : '修改已保存',
+          text: mode === 'create'
+            ? allowRoleSync
+              ? '新增成功，可继续同步 Discord tag。'
+              : '新增成功。'
+            : '修改已保存',
         });
       }
     } catch (error) {
@@ -253,6 +258,10 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
   const handleSyncRoles = async () => {
     if (!persistedTarget?.discordUserId) {
       setStatusMessage({ type: 'error', text: '请先保存陪玩资料，再同步 Discord tag。' });
+      return;
+    }
+    if (!allowRoleSync) {
+      setStatusMessage({ type: 'error', text: '当前账号无权同步 Discord tag。' });
       return;
     }
     setStatusMessage(null);
@@ -430,7 +439,10 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
         </div>
 
         <div className="space-y-4">
-          <SectionTitle title="游戏档位配置" subtitle="只读，点击按钮从 Discord tag 同步" />
+          <SectionTitle
+            title="游戏档位配置"
+            subtitle={allowRoleSync ? '只读，点击按钮从 Discord tag 同步' : '只读，仅原陪玩管理员可同步 Discord tag'}
+          />
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
@@ -438,17 +450,21 @@ export function PeiwanForm({ mode, initialValues, readOnly = false }: PeiwanForm
                 <p className="text-xs text-gray-400">
                   {syncReady
                     ? '同步会以 Discord tag 为准，直接覆盖当前游戏档位。'
-                    : '请先保存陪玩资料，再同步 Discord tag。'}
+                    : allowRoleSync
+                      ? '请先保存陪玩资料，再同步 Discord tag。'
+                      : '当前账号只能新增或修改陪玩基础资料。'}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleSyncRoles}
-                disabled={!syncReady || isSyncing}
-                className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSyncing ? '同步中…' : '同步 Discord tag'}
-              </button>
+              {allowRoleSync ? (
+                <button
+                  type="button"
+                  onClick={handleSyncRoles}
+                  disabled={!syncReady || isSyncing}
+                  className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSyncing ? '同步中…' : '同步 Discord tag'}
+                </button>
+              ) : null}
             </div>
             {formState.gameProfiles.length > 0 ? (
               <div className="grid gap-3 md:grid-cols-2">

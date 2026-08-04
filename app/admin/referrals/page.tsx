@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { ReferralManager } from '@/components/admin/ReferralManager';
 import { ReferralPolicyManager } from '@/components/admin/ReferralPolicyManager';
 import { getServerSession } from '@/lib/session';
-import { canViewReferrals, isHowardReadOnlyDiscordId } from '@/lib/admin';
+import { canViewReferrals, isAdminDiscordId, isHowardDiscordId, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: '邀请人管理 - 锦鲤管理后台',
@@ -14,7 +14,9 @@ export default async function AdminReferralsPage() {
   if (!session?.discordId || !canViewReferrals(session.discordId)) {
     redirect('/');
   }
-  const readOnly = isHowardReadOnlyDiscordId(session.discordId);
+  const readOnly =
+    isHowardReadOnlyDiscordId(session.discordId) ||
+    (!isAdminDiscordId(session.discordId) && !isHowardDiscordId(session.discordId));
 
   return (
     <section className="min-h-screen bg-[#020204] text-white px-6 py-12">

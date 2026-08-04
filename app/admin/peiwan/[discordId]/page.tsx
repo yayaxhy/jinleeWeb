@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import {
+  PEIWAN_GAME_CODES,
+  PEIWAN_GAME_TIERS,
   PEIWAN_LEVEL_OPTIONS,
   PEIWAN_QUOTATION_FIELDS,
   PEIWAN_SEX_OPTIONS,
@@ -8,11 +10,11 @@ import {
 } from '@/constants/peiwan';
 import { PeiwanForm } from '@/components/admin/PeiwanForm';
 import { RestorePeiwanButton } from '@/components/admin/RestorePeiwanButton';
-import { sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
+import { sortPeiwanGameProfiles, type PeiwanGameProfileView } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/session';
-import { canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
+import { canEditPeiwanInfo, canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: '编辑陪玩 - 锦鲤管理后台',
@@ -42,12 +44,20 @@ const buildInitialValues = (record: Awaited<ReturnType<typeof prisma.pEIWAN.find
   const gameProfiles = Array.isArray(plain.gameProfiles)
     ? sortPeiwanGameProfiles(
         plain.gameProfiles.filter(
-          (item): item is { gameCode: string; tier: string; sourceRoleId?: string | null } =>
-            !!item &&
-            typeof item === 'object' &&
-            typeof (item as Record<string, unknown>).gameCode === 'string' &&
-            typeof (item as Record<string, unknown>).tier === 'string',
-        ) as Array<{ gameCode: any; tier: any; sourceRoleId?: string | null }>,
+          (item): item is PeiwanGameProfileView => {
+            if (!item || typeof item !== 'object') return false;
+            const candidate = item as Record<string, unknown>;
+            return (
+              typeof candidate.gameCode === 'string' &&
+              typeof candidate.tier === 'string' &&
+              (PEIWAN_GAME_CODES as readonly string[]).includes(candidate.gameCode) &&
+              (PEIWAN_GAME_TIERS.map((tier) => tier.code) as readonly string[]).includes(candidate.tier) &&
+              (candidate.sourceRoleId === null ||
+                candidate.sourceRoleId === undefined ||
+                typeof candidate.sourceRoleId === 'string')
+            );
+          },
+        ),
       )
     : [];
 
@@ -73,10 +83,11 @@ type EditPageProps = {
 
 export default async function EditPeiwanPage(props: EditPageProps) {
   const session = await getServerSession();
-  if (!session?.discordId || !canManagePeiwan(session.discordId)) {
+  if (!session?.discordId || !canEditPeiwanInfo(session.discordId)) {
     redirect('/');
   }
   const readOnly = isHowardReadOnlyDiscordId(session.discordId);
+  const allowRoleSync = canManagePeiwan(session.discordId);
 
   const resolvedParams = await props.params;
   const rawId = resolvedParams?.discordId ?? '';
@@ -191,7 +202,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
           返回管理首页
         </Link>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className={`grid gap-4 ${allowRoleSync ? 'md:grid-cols-2' : ''}`}>
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-2">
           <p className="text-sm text-white/80">
             当前身份：<span className="font-semibold text-white">{member?.status ?? '未知'}</span>
@@ -205,13 +216,15 @@ export default async function EditPeiwanPage(props: EditPageProps) {
             <p className="text-xs text-emerald-300">未下架，正常上架中</p>
           )}
         </div>
-        <RestorePeiwanButton
-          restoreToken={String(peiwanWithProfiles.PEIWANID ?? discordId)}
-          isDeleted={Boolean(deletionRecord)}
-          readOnly={readOnly}
-        />
+        {allowRoleSync ? (
+          <RestorePeiwanButton
+            restoreToken={String(peiwanWithProfiles.PEIWANID ?? discordId)}
+            isDeleted={Boolean(deletionRecord)}
+            readOnly={readOnly}
+          />
+        ) : null}
       </div>
-      <PeiwanForm mode="edit" initialValues={initialValues} readOnly={readOnly} />
+      <PeiwanForm mode="edit" initialValues={initialValues} readOnly={readOnly} allowRoleSync={allowRoleSync} />
     </div>
   );
 }

@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
+import { canEditPeiwanInfo, canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { buildPeiwanDataObject, normalizePeiwanPayload } from '@/lib/peiwan/payload';
 import { getServerSession } from '@/lib/session';
 import { MemberStatus } from '@prisma/client';
 
-const ensurePeiwanWriteSession = async () => {
+const ensurePeiwanInfoWriteSession = async () => {
+  const session = await getServerSession();
+  if (!session?.discordId || !canEditPeiwanInfo(session.discordId)) {
+    return null;
+  }
+  if (isHowardReadOnlyDiscordId(session.discordId)) {
+    return null;
+  }
+  return session;
+};
+
+const ensurePeiwanAdminWriteSession = async () => {
   const session = await getServerSession();
   if (!session?.discordId || !canManagePeiwan(session.discordId)) {
     return null;
@@ -20,7 +31,7 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ discordId: string }> },
 ) {
-  const session = await ensurePeiwanWriteSession();
+  const session = await ensurePeiwanInfoWriteSession();
   if (!session) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }
@@ -83,7 +94,7 @@ export async function DELETE(
   _request: NextRequest,
   context: { params: Promise<{ discordId: string }> },
 ) {
-  const session = await ensurePeiwanWriteSession();
+  const session = await ensurePeiwanAdminWriteSession();
   if (!session) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }

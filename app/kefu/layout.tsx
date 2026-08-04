@@ -2,7 +2,7 @@
 import '../admin/admin.css';
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/session';
-import { isKefuDiscordId } from '@/lib/admin';
+import { canViewKefuWorkspace } from '@/lib/admin';
 
 export const metadata = {
   title: '客服后台',
@@ -17,7 +17,7 @@ export const revalidate = 0;
 
 export default async function KefuLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession();
-  if (!session?.discordId || !isKefuDiscordId(session.discordId)) {
+  if (!session?.discordId || !canViewKefuWorkspace(session.discordId)) {
     redirect('/');
   }
 
