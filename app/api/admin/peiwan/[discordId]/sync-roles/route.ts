@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
+import { canSyncSinglePeiwanTag, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { getServerSession } from '@/lib/session';
 
 const INTERNAL_HOST = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
@@ -8,7 +8,7 @@ const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN;
 
 const ensurePeiwanWriteSession = async () => {
   const session = await getServerSession();
-  if (!session?.discordId || !canManagePeiwan(session.discordId)) {
+  if (!session?.discordId || !canSyncSinglePeiwanTag(session.discordId)) {
     return null;
   }
   if (isHowardReadOnlyDiscordId(session.discordId)) {

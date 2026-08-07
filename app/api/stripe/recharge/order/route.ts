@@ -1,0 +1,128 @@
+import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import {
+  buildStripeOutTradeNo,
+  createStripeCheckoutSession,
+  getStripeFirstRechargeAmount,
+  findStripeRechargePrice,
+  getStripeSecretKey,
+  isStripeRechargeAmountAllowed,
+} from '@/lib/stripe-recharge';
+
+export const runtime = 'nodejs';
+
+const resolveOrigin = (request: Request) =>
+  process.env.SITE_ORIGIN ??
+  process.env.NEXTAUTH_URL ??
+  process.env.ZPAY_PRODUCTION_ORIGIN ??
+  new URL(request.url).origin;
+
+const parseAmount = (raw: unknown) => {
+  try {
+    if (typeof raw === 'number' || typeof raw === 'string') {
+      const amount = new Prisma.Decimal(raw);
+      if (amount.isFinite() && amount.gt(0)) return amount.toDecimalPlaces(2);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+};
+
+export async function POST(request: Request) {
+  const currentUser = await getCurrentJinleeUser(request);
+  if (!currentUser) {
+    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 });
+  }
+
+  const amount = parseAmount(body.amount);
+  if (!amount) {
+    return NextResponse.json({ ok: false, error: 'invalid_amount' }, { status: 400 });
+  }
+
+  const price = findStripeRechargePrice(amount);
+  if (!price) {
+    return NextResponse.json({ ok: false, error: 'unsupported_stripe_recharge_amount' }, { status: 400 });
+  }
+
+  const priorRechargeCount = await prisma.recharge.count({
+    where: { jinleeId: currentUser.jinleeId },
+  });
+  const hasPriorRecharge = priorRechargeCount > 0;
+  if (!isStripeRechargeAmountAllowed({ amount: price.amount, hasPriorRecharge })) {
+    return NextResponse.json(
+      { ok: false, error: 'stripe_first_recharge_limited', allowedAmount: getStripeFirstRechargeAmount().toFixed(2) },
+      { status: 403 },
+    );
+  }
+
+  const outTradeNo = buildStripeOutTradeNo(currentUser.jinleeId);
+
+  await prisma.zPayRechargeOrder.create({
+    data: {
+      outTradeNo,
+      discordUserId: currentUser.discordUserId,
+      jinleeId: currentUser.jinleeId,
+      amount: price.amount,
+      channel: 'stripe_checkout',
+      notifyPayload: {
+        stage: 'stripe_checkout_create',
+        priceId: price.priceId,
+      },
+    },
+  });
+
+  const origin = resolveOrigin(request);
+  const successUrlBase = new URL('/recharge/result', origin);
+  successUrlBase.searchParams.set('order', outTradeNo);
+  const successUrl = `${successUrlBase.toString()}&stripe_session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = new URL('/recharge', origin);
+  cancelUrl.searchParams.set('stripe_cancelled', '1');
+
+  try {
+    const session = await createStripeCheckoutSession({
+      secretKey: getStripeSecretKey(),
+      priceId: price.priceId,
+      outTradeNo,
+      jinleeId: currentUser.jinleeId,
+      discordUserId: currentUser.discordUserId,
+      rechargeAmount: price.amountText,
+      successUrl,
+      cancelUrl: cancelUrl.toString(),
+    });
+
+    await prisma.zPayRechargeOrder.update({
+      where: { outTradeNo },
+      data: {
+        gatewayTradeNo: session.id,
+        notifyPayload: {
+          stage: 'stripe_checkout_created',
+          sessionId: session.id,
+          priceId: price.priceId,
+        },
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      orderId: outTradeNo,
+      payUrl: session.url,
+      channel: 'stripe_checkout',
+      amount: price.amountText,
+      returnUrl: successUrl,
+      displayMode: 'redirect',
+    });
+  } catch (error) {
+    console.error('[stripe.recharge.order] create failed', error);
+    return NextResponse.json({ ok: false, error: 'stripe_checkout_session_failed' }, { status: 500 });
+  }
+}

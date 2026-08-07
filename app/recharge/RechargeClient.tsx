@@ -18,12 +18,21 @@ const PAYMENT_CHANNELS = [
     description: '使用微信扫一扫完成支付，无需上传凭证，系统确认成功后自动加款。',
     accent: 'from-[#bbf7d0] to-[#86efac]',
   },
+  {
+    id: 'stripe',
+    label: 'Stripe',
+    description: '使用海外银行卡完成支付，系统确认成功后自动加款。',
+    accent: 'from-[#ddd6fe] to-[#c4b5fd]',
+  },
 ] as const;
 
 const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
+const STRIPE_AMOUNT_OPTIONS = [500, 1000, 2000, 5000] as const;
+const FIRST_STRIPE_AMOUNT_OPTIONS = [500] as const;
 
 type RechargeClientProps = {
   username?: string | null;
+  hasPriorRecharge?: boolean;
 };
 
 type CreatedOrder = {
@@ -49,7 +58,7 @@ const formatCurrency = (value?: string) => {
   return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(numeric);
 };
 
-export default function RechargeClient({ username }: RechargeClientProps) {
+export default function RechargeClient({ username, hasPriorRecharge = false }: RechargeClientProps) {
   const [channel, setChannel] = useState<(typeof PAYMENT_CHANNELS)[number]['id']>('alipay');
   const [amount, setAmount] = useState<string>(String(AMOUNT_OPTIONS[0]));
   const [loading, setLoading] = useState(false);
@@ -61,6 +70,8 @@ export default function RechargeClient({ username }: RechargeClientProps) {
     () => PAYMENT_CHANNELS.find((item) => item.id === channel) ?? PAYMENT_CHANNELS[0],
     [channel],
   );
+  const stripeAmountOptions = hasPriorRecharge ? STRIPE_AMOUNT_OPTIONS : FIRST_STRIPE_AMOUNT_OPTIONS;
+  const amountOptions = channel === 'stripe' ? stripeAmountOptions : AMOUNT_OPTIONS;
 
   useEffect(() => {
     if (!order || order.status === 'PAID') return;
@@ -88,13 +99,18 @@ export default function RechargeClient({ username }: RechargeClientProps) {
     setError(null);
     setHint(null);
     try {
-      const response = await fetch('/api/recharge/order', {
+      const endpoint = channel === 'stripe' ? '/api/stripe/recharge/order' : '/api/recharge/order';
+      const requestBody = channel === 'stripe' ? { amount: Number(amount) } : { amount: Number(amount), channel };
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: Number(amount), channel }),
+        body: JSON.stringify(requestBody),
       });
       const payload = await response.json();
       if (!response.ok) {
+        if (payload?.error === 'stripe_first_recharge_limited') {
+          throw new Error(`首次 Stripe 充值仅支持 ¥${Number(payload.allowedAmount ?? 500).toFixed(0)}。`);
+        }
         throw new Error(payload?.error ?? '下单失败，请稍后再试');
       }
       setOrder({
@@ -109,7 +125,9 @@ export default function RechargeClient({ username }: RechargeClientProps) {
       setHint(
         payload.displayMode === 'qrcode'
           ? '订单已创建，请使用微信扫一扫完成支付，系统会自动更新余额。'
-          : '订单已创建，请在 15 分钟内完成支付，系统会自动更新余额。',
+          : channel === 'stripe'
+            ? 'Stripe 支付链接已创建，请完成付款，系统会自动更新余额。'
+            : '订单已创建，请在 15 分钟内完成支付，系统会自动更新余额。',
       );
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '创建订单失败';
@@ -149,6 +167,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
                     }`}
                     onClick={() => {
                       setChannel(item.id);
+                      setAmount(String(item.id === 'stripe' ? STRIPE_AMOUNT_OPTIONS[0] : AMOUNT_OPTIONS[0]));
                       setHint(null);
                       setError(null);
                     }}
@@ -159,9 +178,17 @@ export default function RechargeClient({ username }: RechargeClientProps) {
               })}
             </div>
             <p className="text-sm text-gray-500">{selectedChannel.description}</p>
-            <p className="text-xs text-gray-500">
-              转账备注建议填写当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
-            </p>
+            {channel === 'stripe' ? (
+              <p className="text-xs text-gray-500">
+                {hasPriorRecharge
+                  ? 'Stripe 付款完成后会自动回调到账，无需填写转账备注。'
+                  : '首次 Stripe 充值仅开放 ¥500，完成首次到账后可选择更高档位。'}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-500">
+                转账备注建议填写当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
+              </p>
+            )}
           </div>
 
           {/* <div
@@ -186,7 +213,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">充值说明</p>
             <ol className="space-y-2 text-sm text-gray-600 list-decimal list-inside">
               <li>下方选择充值金额点击生成订单，系统会按支付方式生成二维码或支付链接。</li>
-              <li>使用支付宝或微信完成支付，无需上传凭证。</li>
+              <li>使用支付宝、微信或 Stripe 完成支付，无需上传凭证。</li>
               <li>支付成功后，余额将自动增加。</li>
             </ol>
           </div>
@@ -200,7 +227,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
         <div className="space-y-3">
           <label className="text-xs uppercase tracking-[0.4em] text-gray-500">充值金额 *</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {AMOUNT_OPTIONS.map((value) => {
+            {amountOptions.map((value) => {
               const active = amount === String(value);
               return (
                 <button
@@ -230,7 +257,7 @@ export default function RechargeClient({ username }: RechargeClientProps) {
           disabled={loading}
           className="w-full rounded-full bg-black px-6 py-3 text-sm uppercase tracking-[0.4em] text-white hover:bg-black/80 transition disabled:opacity-60"
         >
-          {loading ? '创建订单中…' : '生成支付二维码'}
+          {loading ? '创建订单中…' : channel === 'stripe' ? '前往 Stripe 支付' : '生成支付二维码'}
         </button>
 
         {error && <p className="text-sm text-red-500">{error}</p>}

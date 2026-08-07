@@ -36,7 +36,10 @@ output/playwright/home-*.png
 # env files
 .env
 .env.local*
+.env.staging.local
 .env.vercel
+!.env.example
+!.env.staging.example
 
 # vercel
 .vercel

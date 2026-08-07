@@ -14,7 +14,7 @@ import { sortPeiwanGameProfiles, type PeiwanGameProfileView } from '@/lib/peiwan
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/session';
-import { canEditPeiwanInfo, canManagePeiwan, isHowardReadOnlyDiscordId } from '@/lib/admin';
+import { canEditPeiwanInfo, canManagePeiwan, canSyncSinglePeiwanTag, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
 export const metadata = {
   title: '编辑陪玩 - 锦鲤管理后台',
@@ -87,7 +87,8 @@ export default async function EditPeiwanPage(props: EditPageProps) {
     redirect('/');
   }
   const readOnly = isHowardReadOnlyDiscordId(session.discordId);
-  const allowRoleSync = canManagePeiwan(session.discordId);
+  const allowRoleSync = canSyncSinglePeiwanTag(session.discordId);
+  const allowPeiwanAdminActions = canManagePeiwan(session.discordId);
 
   const resolvedParams = await props.params;
   const rawId = resolvedParams?.discordId ?? '';
@@ -202,7 +203,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
           返回管理首页
         </Link>
       </div>
-      <div className={`grid gap-4 ${allowRoleSync ? 'md:grid-cols-2' : ''}`}>
+      <div className={`grid gap-4 ${allowPeiwanAdminActions ? 'md:grid-cols-2' : ''}`}>
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-2">
           <p className="text-sm text-white/80">
             当前身份：<span className="font-semibold text-white">{member?.status ?? '未知'}</span>
@@ -216,7 +217,7 @@ export default async function EditPeiwanPage(props: EditPageProps) {
             <p className="text-xs text-emerald-300">未下架，正常上架中</p>
           )}
         </div>
-        {allowRoleSync ? (
+        {allowPeiwanAdminActions ? (
           <RestorePeiwanButton
             restoreToken={String(peiwanWithProfiles.PEIWANID ?? discordId)}
             isDeleted={Boolean(deletionRecord)}

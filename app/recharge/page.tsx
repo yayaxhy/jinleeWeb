@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { prisma } from '@/lib/prisma';
 import RechargeClient from './RechargeClient';
 
 export default async function RechargePage() {
@@ -14,6 +15,9 @@ export default async function RechargePage() {
     currentUser.jinleeUser.member?.serverDisplayName ??
     currentUser.jinleeUser.wechatDisplayName ??
     '微信用户';
+  const hasPriorRecharge = await prisma.recharge.count({
+    where: { jinleeId: currentUser.jinleeId },
+  }).then((count) => count > 0);
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-12">
@@ -32,12 +36,12 @@ export default async function RechargePage() {
             
             <h1 className="text-3xl font-semibold tracking-wide">余额充值</h1>
             <p className="text-sm text-gray-500">
-              网页支持支付宝与微信自动充值，如需外币或其他方式请联系客服
+              网页支持支付宝、微信与 Stripe 自动充值，如需其他方式请联系客服
             </p>
           </div>
         </div>
 
-        <RechargeClient username={username} />
+        <RechargeClient username={username} hasPriorRecharge={hasPriorRecharge} />
       </section>
     </main>
   );
