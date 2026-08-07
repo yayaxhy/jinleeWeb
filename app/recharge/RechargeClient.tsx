@@ -26,15 +26,21 @@ const PAYMENT_CHANNELS = [
   },
 ] as const;
 type PaymentChannel = (typeof PAYMENT_CHANNELS)[number];
-const VISIBLE_PAYMENT_CHANNELS: readonly PaymentChannel[] = PAYMENT_CHANNELS.filter((item) => item.id !== 'stripe');
+type PaymentChannelId = PaymentChannel['id'];
+const DEFAULT_VISIBLE_CHANNEL_IDS: readonly PaymentChannelId[] = ['alipay', 'wxpay'];
 
 const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
-const STRIPE_AMOUNT_OPTIONS = [500, 1000, 2000, 5000] as const;
-const FIRST_STRIPE_AMOUNT_OPTIONS = [500] as const;
+const DEFAULT_STRIPE_AMOUNT_OPTIONS = [500, 1000, 2000, 5000] as const;
+const DEFAULT_FIRST_STRIPE_AMOUNT_OPTIONS = [500] as const;
 
 type RechargeClientProps = {
   username?: string | null;
   hasPriorRecharge?: boolean;
+  initialChannel?: PaymentChannelId;
+  visibleChannelIds?: readonly PaymentChannelId[];
+  stripeAmountOptions?: readonly number[];
+  stripeNotice?: string | null;
+  paymentInstructionText?: string;
 };
 
 type CreatedOrder = {
@@ -60,9 +66,36 @@ const formatCurrency = (value?: string) => {
   return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(numeric);
 };
 
-export default function RechargeClient({ username, hasPriorRecharge = false }: RechargeClientProps) {
-  const [channel, setChannel] = useState<PaymentChannel['id']>('alipay');
-  const [amount, setAmount] = useState<string>(String(AMOUNT_OPTIONS[0]));
+const getDefaultAmountForChannel = (channel: PaymentChannelId, stripeAmountOptions: readonly number[]) =>
+  channel === 'stripe' ? stripeAmountOptions[0] ?? 1 : AMOUNT_OPTIONS[0];
+
+export default function RechargeClient({
+  username,
+  hasPriorRecharge = false,
+  initialChannel,
+  visibleChannelIds = DEFAULT_VISIBLE_CHANNEL_IDS,
+  stripeAmountOptions,
+  stripeNotice,
+  paymentInstructionText,
+}: RechargeClientProps) {
+  const visibleChannels = useMemo(
+    () => PAYMENT_CHANNELS.filter((item) => visibleChannelIds.includes(item.id)),
+    [visibleChannelIds],
+  );
+  const effectiveStripeAmountOptions = useMemo(
+    () =>
+      stripeAmountOptions?.length
+        ? stripeAmountOptions
+        : hasPriorRecharge
+          ? DEFAULT_STRIPE_AMOUNT_OPTIONS
+          : DEFAULT_FIRST_STRIPE_AMOUNT_OPTIONS,
+    [hasPriorRecharge, stripeAmountOptions],
+  );
+  const defaultChannel = visibleChannels.some((item) => item.id === initialChannel)
+    ? initialChannel ?? 'alipay'
+    : visibleChannels[0]?.id ?? 'alipay';
+  const [channel, setChannel] = useState<PaymentChannelId>(defaultChannel);
+  const [amount, setAmount] = useState<string>(String(getDefaultAmountForChannel(defaultChannel, effectiveStripeAmountOptions)));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
@@ -72,8 +105,19 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
     () => PAYMENT_CHANNELS.find((item) => item.id === channel) ?? PAYMENT_CHANNELS[0],
     [channel],
   );
-  const stripeAmountOptions = hasPriorRecharge ? STRIPE_AMOUNT_OPTIONS : FIRST_STRIPE_AMOUNT_OPTIONS;
-  const amountOptions = channel === 'stripe' ? stripeAmountOptions : AMOUNT_OPTIONS;
+  const amountOptions = channel === 'stripe' ? effectiveStripeAmountOptions : AMOUNT_OPTIONS;
+  const instructionText =
+    paymentInstructionText ??
+    (visibleChannelIds.includes('stripe')
+      ? '使用支付宝、微信或信用卡/银行卡完成支付，无需上传凭证。'
+      : '使用支付宝或微信完成支付，无需上传凭证。');
+
+  useEffect(() => {
+    if (visibleChannels.some((item) => item.id === channel)) return;
+    const nextChannel = visibleChannels[0]?.id ?? 'alipay';
+    setChannel(nextChannel);
+    setAmount(String(getDefaultAmountForChannel(nextChannel, effectiveStripeAmountOptions)));
+  }, [channel, effectiveStripeAmountOptions, visibleChannels]);
 
   useEffect(() => {
     if (!order || order.status === 'PAID') return;
@@ -156,7 +200,7 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
           <div className="space-y-3">
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">选择支付方式</p>
             <div className="flex flex-wrap gap-3">
-              {VISIBLE_PAYMENT_CHANNELS.map((item) => {
+              {visibleChannels.map((item) => {
                 const active = item.id === channel;
                 return (
                   <button
@@ -169,7 +213,7 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
                     }`}
                     onClick={() => {
                       setChannel(item.id);
-                      setAmount(String(item.id === 'stripe' ? STRIPE_AMOUNT_OPTIONS[0] : AMOUNT_OPTIONS[0]));
+                      setAmount(String(getDefaultAmountForChannel(item.id, effectiveStripeAmountOptions)));
                       setHint(null);
                       setError(null);
                     }}
@@ -181,7 +225,9 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
             </div>
             <p className="text-sm text-gray-500">{selectedChannel.description}</p>
             {channel === 'stripe' ? (
-              !hasPriorRecharge ? (
+              stripeNotice ? (
+                <p className="text-xs text-gray-500">{stripeNotice}</p>
+              ) : !hasPriorRecharge ? (
                 <p className="text-xs text-gray-500">首次信用卡/银行卡充值仅开放 ¥500，完成首次到账后可选择更高档位。</p>
               ) : null
             ) : (
@@ -213,7 +259,7 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">充值说明</p>
             <ol className="space-y-2 text-sm text-gray-600 list-decimal list-inside">
               <li>下方选择充值金额点击生成订单，系统会按支付方式生成二维码或支付链接。</li>
-              <li>使用支付宝或微信完成支付，无需上传凭证。</li>
+              <li>{instructionText}</li>
               <li>支付成功后，余额将自动增加。</li>
             </ol>
           </div>
