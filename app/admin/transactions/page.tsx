@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/session';
 import { canViewKefuTransactions } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import { formatTransactionType } from '@/lib/transaction-display';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 
@@ -369,7 +370,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
                             ) : null}
                           </div>
                         </td>
-                        <td className="py-3 pr-4 text-white/90">{tx.typeOfTransaction}</td>
+                        <td className="py-3 pr-4 text-white/90">{formatTransactionType(tx.typeOfTransaction)}</td>
                         <td className="py-3 pr-4 font-mono text-white/80">{formatNumber(tx.balanceBefore)}</td>
                         <td className={`py-3 pr-4 font-mono ${meta.className}`}>{meta.label}</td>
                         <td className="py-3 pr-4 font-mono text-white/80">{formatNumber(tx.balanceAfter)}</td>

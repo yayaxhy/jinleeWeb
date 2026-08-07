@@ -12,6 +12,7 @@ import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
+import { formatTransactionType } from '@/lib/transaction-display';
 
 const BOSS_LEVELS = [
   { vipLevel: 1, threshold: 500, label: '锦鲤' },
@@ -1013,7 +1014,7 @@ export default async function Profile(props: ProfilePageProps) {
                               return (
                                 <tr key={tx.transactionId} className="border-b border-black/5 last:border-0">
                                   <td className="py-4 pr-4 font-mono">{formatDate(tx.timeCreatedAt)}</td>
-                                  <td className="py-4 pr-4">{tx.typeOfTransaction}</td>
+                                  <td className="py-4 pr-4">{formatTransactionType(tx.typeOfTransaction)}</td>
                                   <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceBefore)}</td>
                                   <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
                                   <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceAfter)}</td>

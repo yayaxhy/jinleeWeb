@@ -14,11 +14,20 @@ import {
 
 export const runtime = 'nodejs';
 
-const resolveOrigin = (request: Request) =>
-  process.env.SITE_ORIGIN ??
-  process.env.NEXTAUTH_URL ??
-  process.env.ZPAY_PRODUCTION_ORIGIN ??
-  new URL(request.url).origin;
+const firstForwardedValue = (value: string | null) => value?.split(',')[0]?.trim() || null;
+
+const resolveOrigin = (request: Request) => {
+  const requestUrl = new URL(request.url);
+  const host = firstForwardedValue(request.headers.get('x-forwarded-host')) ?? request.headers.get('host') ?? requestUrl.host;
+  if (host) {
+    const forwardedProtocol = firstForwardedValue(request.headers.get('x-forwarded-proto'));
+    const requestProtocol = requestUrl.protocol.replace(':', '');
+    const isLocalHost = host.startsWith('localhost') || host.startsWith('127.0.0.1');
+    const protocol = forwardedProtocol ?? (requestProtocol === 'http' && !isLocalHost ? 'https' : requestProtocol);
+    return `${protocol}://${host}`;
+  }
+  return process.env.SITE_ORIGIN ?? process.env.NEXTAUTH_URL ?? process.env.ZPAY_PRODUCTION_ORIGIN ?? requestUrl.origin;
+};
 
 const parseAmount = (raw: unknown) => {
   try {

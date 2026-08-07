@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       gatewayTradeNo: getStripePaymentIntentId(session) ?? session.id ?? null,
       notifyPayload: event as Prisma.InputJsonValue,
       payerReference: getSourceReference(session),
-      transactionType: 'Stripe充值',
+      transactionType: '信用卡/银行卡充值',
     });
 
     if (settlement.kind === 'not_found') {

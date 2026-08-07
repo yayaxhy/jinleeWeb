@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewKefuTransactions } from '@/lib/admin';
+import { formatTransactionType } from '@/lib/transaction-display';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
       time: formatDate(tx.timeCreatedAt),
       jinleeId: tx.jinleeId ?? '',
       discordId: tx.discordId,
-      type: tx.typeOfTransaction,
+      type: formatTransactionType(tx.typeOfTransaction),
       before: parseNumber(tx.balanceBefore),
       change: resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter),
       after: parseNumber(tx.balanceAfter),
