@@ -157,6 +157,9 @@ export default function RechargeClient({
         if (payload?.error === 'stripe_first_recharge_limited') {
           throw new Error(`首次信用卡/银行卡充值仅支持 ¥${Number(payload.allowedAmount ?? 500).toFixed(0)}。`);
         }
+        if (payload?.error === 'stripe_amount_too_small') {
+          throw new Error(payload?.message ?? 'Stripe 最低付款金额约为 50 美分，请改用更高测试金额。');
+        }
         throw new Error(payload?.error ?? '下单失败，请稍后再试');
       }
       setOrder({

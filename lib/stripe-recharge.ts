@@ -4,13 +4,13 @@ import { Prisma } from '@prisma/client';
 const STRIPE_CHECKOUT_SESSIONS_URL = 'https://api.stripe.com/v1/checkout/sessions';
 const STRIPE_THREE_D_SECURE_VALUES = new Set(['automatic', 'any', 'challenge']);
 const DEFAULT_STRIPE_RECHARGE_PRICES = [
-  { amount: '1', priceId: 'price_1U1mLPFvZwyimnyiJXwROirY' },
+  { amount: '3', priceId: 'price_1U1mbHFvZwyimnyiXoFKWTft' },
   { amount: '500', priceId: 'price_1U1knZFvZwyimnyiJOGnUvhh' },
   { amount: '1000', priceId: 'price_1U1knZFvZwyimnyiuNLpYHJ6' },
   { amount: '2000', priceId: 'price_1U1knZFvZwyimnyiA2lAZJeE' },
   { amount: '5000', priceId: 'price_1U1knZFvZwyimnyiwKY9nm2G' },
 ] as const;
-const STRIPE_TEST_RECHARGE_AMOUNT = new Prisma.Decimal('1').toDecimalPlaces(2);
+const STRIPE_TEST_RECHARGE_AMOUNT = new Prisma.Decimal('3').toDecimalPlaces(2);
 
 export type StripeRechargePrice = {
   amount: Prisma.Decimal;
@@ -22,9 +22,28 @@ type StripeCheckoutSessionPayload = {
   id?: string;
   url?: string | null;
   error?: {
+    code?: string;
     message?: string;
+    param?: string;
+    type?: string;
   };
 };
+
+export class StripeCheckoutSessionError extends Error {
+  code?: string;
+  param?: string;
+  stripeType?: string;
+  status: number;
+
+  constructor(input: { message: string; code?: string; param?: string; stripeType?: string; status: number }) {
+    super(input.message);
+    this.name = 'StripeCheckoutSessionError';
+    this.code = input.code;
+    this.param = input.param;
+    this.stripeType = input.stripeType;
+    this.status = input.status;
+  }
+}
 
 export type StripeWebhookEvent = {
   id: string;
@@ -149,7 +168,13 @@ export const createStripeCheckoutSession = async (input: {
 
   const payload = (await response.json()) as StripeCheckoutSessionPayload;
   if (!response.ok || !payload.url || !payload.id) {
-    throw new Error(payload.error?.message || 'stripe_checkout_session_failed');
+    throw new StripeCheckoutSessionError({
+      message: payload.error?.message || 'stripe_checkout_session_failed',
+      code: payload.error?.code,
+      param: payload.error?.param,
+      stripeType: payload.error?.type,
+      status: response.status,
+    });
   }
 
   return {

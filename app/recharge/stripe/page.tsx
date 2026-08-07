@@ -45,8 +45,8 @@ export default async function StripeRechargePage() {
           hasPriorRecharge
           initialChannel="stripe"
           visibleChannelIds={['stripe']}
-          stripeAmountOptions={[1]}
-          stripeNotice="当前测试页仅开放 ¥1 充值。付款成功后，系统会自动加到余额。"
+          stripeAmountOptions={[3]}
+          stripeNotice="当前测试页仅开放 ¥3 充值。付款成功后，系统会自动加到余额。"
           paymentInstructionText="使用信用卡/银行卡完成支付，无需上传凭证。"
         />
       </section>

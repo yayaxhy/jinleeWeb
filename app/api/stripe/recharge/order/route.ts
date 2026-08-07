@@ -9,6 +9,7 @@ import {
   findStripeRechargePrice,
   getStripeSecretKey,
   isStripeRechargeAmountAllowed,
+  StripeCheckoutSessionError,
 } from '@/lib/stripe-recharge';
 
 export const runtime = 'nodejs';
@@ -122,7 +123,27 @@ export async function POST(request: Request) {
       displayMode: 'redirect',
     });
   } catch (error) {
-    console.error('[stripe.recharge.order] create failed', error);
+    if (error instanceof StripeCheckoutSessionError) {
+      console.error('[stripe.recharge.order] stripe rejected checkout session', {
+        code: error.code,
+        param: error.param,
+        status: error.status,
+        type: error.stripeType,
+        message: error.message,
+      });
+      if (error.code === 'amount_too_small') {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: 'stripe_amount_too_small',
+            message: 'Stripe 最低付款金额约为 50 美分，当前金额无法创建支付页面。请改用更高测试金额。',
+          },
+          { status: 400 },
+        );
+      }
+    } else {
+      console.error('[stripe.recharge.order] create failed', error);
+    }
     return NextResponse.json({ ok: false, error: 'stripe_checkout_session_failed' }, { status: 500 });
   }
 }
