@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canManagePeiwanCards } from '@/lib/admin';
 import { getServerSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -10,9 +10,9 @@ const ALLOWED_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
 const TARGET_DIR = path.join(process.cwd(), 'public', 'peiwanRecommend');
 const MAX_FILES = 8;
 
-const ensureAdmin = async () => {
+const ensurePeiwanCardAdmin = async () => {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canManagePeiwanCards(session.discordId)) {
     return false;
   }
   return true;
@@ -27,7 +27,7 @@ const normalizeFileName = (name: string) => {
 };
 
 export async function POST(request: NextRequest) {
-  if (!(await ensureAdmin())) {
+  if (!(await ensurePeiwanCardAdmin())) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PeiwanCardUploader } from '@/components/admin/PeiwanCardUploader';
 import { getServerSession } from '@/lib/session';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canManagePeiwanCards } from '@/lib/admin';
 
 export const metadata = {
   title: '管理陪玩列表名片',
@@ -10,7 +10,7 @@ export const metadata = {
 
 export default async function ManagePeiwanListCardsPage() {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canManagePeiwanCards(session.discordId)) {
     redirect('/');
   }
 

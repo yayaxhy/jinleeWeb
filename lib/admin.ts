@@ -107,6 +107,9 @@ export const canEditPeiwanInfo = (discordId?: string | null) =>
 export const canSyncSinglePeiwanTag = (discordId?: string | null) =>
   canManagePeiwan(discordId) || isPeiwanInfoAdminDiscordId(discordId);
 
+export const canManagePeiwanCards = (discordId?: string | null) =>
+  isAdminDiscordId(discordId) || isPeiwanInfoAdminDiscordId(discordId);
+
 export const canManageOrderChannelBindings = (discordId?: string | null) =>
   isAdminDiscordId(discordId);
 
