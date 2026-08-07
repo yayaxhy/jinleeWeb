@@ -54,3 +54,4 @@ public/img/
 storage/
 README.md
 docs/farm-art-direction.md
+.env.staging.example

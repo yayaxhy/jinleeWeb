@@ -4,11 +4,13 @@ import { Prisma } from '@prisma/client';
 const STRIPE_CHECKOUT_SESSIONS_URL = 'https://api.stripe.com/v1/checkout/sessions';
 const STRIPE_THREE_D_SECURE_VALUES = new Set(['automatic', 'any', 'challenge']);
 const DEFAULT_STRIPE_RECHARGE_PRICES = [
+  { amount: '1', priceId: 'price_1U1mLPFvZwyimnyiJXwROirY' },
   { amount: '500', priceId: 'price_1U1knZFvZwyimnyiJOGnUvhh' },
   { amount: '1000', priceId: 'price_1U1knZFvZwyimnyiuNLpYHJ6' },
   { amount: '2000', priceId: 'price_1U1knZFvZwyimnyiA2lAZJeE' },
   { amount: '5000', priceId: 'price_1U1knZFvZwyimnyiwKY9nm2G' },
 ] as const;
+const STRIPE_TEST_RECHARGE_AMOUNT = new Prisma.Decimal('1').toDecimalPlaces(2);
 
 export type StripeRechargePrice = {
   amount: Prisma.Decimal;
@@ -82,7 +84,14 @@ export const getStripeFirstRechargeAmount = () =>
 export const isStripeRechargeAmountAllowed = (input: {
   amount: Prisma.Decimal | number | string;
   hasPriorRecharge: boolean;
-}) => input.hasPriorRecharge || new Prisma.Decimal(input.amount).toDecimalPlaces(2).equals(getStripeFirstRechargeAmount());
+}) => {
+  const normalizedAmount = new Prisma.Decimal(input.amount).toDecimalPlaces(2);
+  return (
+    normalizedAmount.equals(STRIPE_TEST_RECHARGE_AMOUNT) ||
+    input.hasPriorRecharge ||
+    normalizedAmount.equals(getStripeFirstRechargeAmount())
+  );
+};
 
 export const buildStripeOutTradeNo = (jinleeId: string) => {
   const timestamp = Date.now().toString(36).toUpperCase();

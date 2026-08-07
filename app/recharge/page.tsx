@@ -36,7 +36,7 @@ export default async function RechargePage() {
             
             <h1 className="text-3xl font-semibold tracking-wide">余额充值</h1>
             <p className="text-sm text-gray-500">
-              网页支持支付宝、微信与 Stripe 自动充值，如需其他方式请联系客服
+              网页支持支付宝与微信自动充值，如需其他方式请联系客服
             </p>
           </div>
         </div>

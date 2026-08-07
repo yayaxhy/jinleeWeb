@@ -20,11 +20,13 @@ const PAYMENT_CHANNELS = [
   },
   {
     id: 'stripe',
-    label: 'Stripe',
-    description: '使用海外银行卡完成支付，系统确认成功后自动加款。',
+    label: '信用卡/银行卡',
+    description: '可使用 Visa、Mastercard、American Express、银联卡等银行卡，支持时也可使用 Apple Pay，系统确认成功后自动加款。',
     accent: 'from-[#ddd6fe] to-[#c4b5fd]',
   },
 ] as const;
+type PaymentChannel = (typeof PAYMENT_CHANNELS)[number];
+const VISIBLE_PAYMENT_CHANNELS: readonly PaymentChannel[] = PAYMENT_CHANNELS.filter((item) => item.id !== 'stripe');
 
 const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
 const STRIPE_AMOUNT_OPTIONS = [500, 1000, 2000, 5000] as const;
@@ -59,7 +61,7 @@ const formatCurrency = (value?: string) => {
 };
 
 export default function RechargeClient({ username, hasPriorRecharge = false }: RechargeClientProps) {
-  const [channel, setChannel] = useState<(typeof PAYMENT_CHANNELS)[number]['id']>('alipay');
+  const [channel, setChannel] = useState<PaymentChannel['id']>('alipay');
   const [amount, setAmount] = useState<string>(String(AMOUNT_OPTIONS[0]));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +111,7 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
       const payload = await response.json();
       if (!response.ok) {
         if (payload?.error === 'stripe_first_recharge_limited') {
-          throw new Error(`首次 Stripe 充值仅支持 ¥${Number(payload.allowedAmount ?? 500).toFixed(0)}。`);
+          throw new Error(`首次信用卡/银行卡充值仅支持 ¥${Number(payload.allowedAmount ?? 500).toFixed(0)}。`);
         }
         throw new Error(payload?.error ?? '下单失败，请稍后再试');
       }
@@ -126,7 +128,7 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
         payload.displayMode === 'qrcode'
           ? '订单已创建，请使用微信扫一扫完成支付，系统会自动更新余额。'
           : channel === 'stripe'
-            ? 'Stripe 支付链接已创建，请完成付款，系统会自动更新余额。'
+            ? '支付链接已创建，请完成付款，系统会自动更新余额。'
             : '订单已创建，请在 15 分钟内完成支付，系统会自动更新余额。',
       );
     } catch (err: unknown) {
@@ -154,7 +156,7 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
           <div className="space-y-3">
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">选择支付方式</p>
             <div className="flex flex-wrap gap-3">
-              {PAYMENT_CHANNELS.map((item) => {
+              {VISIBLE_PAYMENT_CHANNELS.map((item) => {
                 const active = item.id === channel;
                 return (
                   <button
@@ -179,11 +181,9 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
             </div>
             <p className="text-sm text-gray-500">{selectedChannel.description}</p>
             {channel === 'stripe' ? (
-              <p className="text-xs text-gray-500">
-                {hasPriorRecharge
-                  ? 'Stripe 付款完成后会自动回调到账，无需填写转账备注。'
-                  : '首次 Stripe 充值仅开放 ¥500，完成首次到账后可选择更高档位。'}
-              </p>
+              !hasPriorRecharge ? (
+                <p className="text-xs text-gray-500">首次信用卡/银行卡充值仅开放 ¥500，完成首次到账后可选择更高档位。</p>
+              ) : null
             ) : (
               <p className="text-xs text-gray-500">
                 转账备注建议填写当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
@@ -213,7 +213,7 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
             <p className="text-xs uppercase tracking-[0.4em] text-gray-500">充值说明</p>
             <ol className="space-y-2 text-sm text-gray-600 list-decimal list-inside">
               <li>下方选择充值金额点击生成订单，系统会按支付方式生成二维码或支付链接。</li>
-              <li>使用支付宝、微信或 Stripe 完成支付，无需上传凭证。</li>
+              <li>使用支付宝或微信完成支付，无需上传凭证。</li>
               <li>支付成功后，余额将自动增加。</li>
             </ol>
           </div>
@@ -257,7 +257,7 @@ export default function RechargeClient({ username, hasPriorRecharge = false }: R
           disabled={loading}
           className="w-full rounded-full bg-black px-6 py-3 text-sm uppercase tracking-[0.4em] text-white hover:bg-black/80 transition disabled:opacity-60"
         >
-          {loading ? '创建订单中…' : channel === 'stripe' ? '前往 Stripe 支付' : '生成支付二维码'}
+          {loading ? '创建订单中…' : channel === 'stripe' ? '前往信用卡/银行卡支付' : '生成支付二维码'}
         </button>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
