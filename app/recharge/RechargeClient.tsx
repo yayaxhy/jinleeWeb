@@ -32,6 +32,15 @@ const DEFAULT_VISIBLE_CHANNEL_IDS: readonly PaymentChannelId[] = ['alipay', 'wxp
 const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
 const DEFAULT_STRIPE_AMOUNT_OPTIONS = [500, 1000, 2000, 5000] as const;
 const DEFAULT_FIRST_STRIPE_AMOUNT_OPTIONS = [500] as const;
+const STRIPE_CURRENCY_OPTIONS = [
+  { code: 'cny', label: '人民币', shortLabel: 'CNY' },
+  { code: 'cad', label: '加币', shortLabel: 'CAD' },
+  { code: 'usd', label: '美元', shortLabel: 'USD' },
+  { code: 'gbp', label: '英镑', shortLabel: 'GBP' },
+  { code: 'eur', label: '欧元', shortLabel: 'EUR' },
+] as const;
+type StripeCurrencyCode = (typeof STRIPE_CURRENCY_OPTIONS)[number]['code'];
+const DEFAULT_STRIPE_CURRENCY_OPTIONS: readonly StripeCurrencyCode[] = ['cny', 'cad', 'usd', 'gbp', 'eur'];
 
 type RechargeClientProps = {
   username?: string | null;
@@ -39,6 +48,8 @@ type RechargeClientProps = {
   initialChannel?: PaymentChannelId;
   visibleChannelIds?: readonly PaymentChannelId[];
   stripeAmountOptions?: readonly number[];
+  stripeCurrencyOptions?: readonly StripeCurrencyCode[];
+  stripeCurrenciesByAmount?: Partial<Record<number, readonly StripeCurrencyCode[]>>;
   stripeNotice?: string | null;
   paymentInstructionText?: string;
 };
@@ -75,6 +86,8 @@ export default function RechargeClient({
   initialChannel,
   visibleChannelIds = DEFAULT_VISIBLE_CHANNEL_IDS,
   stripeAmountOptions,
+  stripeCurrencyOptions = DEFAULT_STRIPE_CURRENCY_OPTIONS,
+  stripeCurrenciesByAmount,
   stripeNotice,
   paymentInstructionText,
 }: RechargeClientProps) {
@@ -96,6 +109,7 @@ export default function RechargeClient({
     : visibleChannels[0]?.id ?? 'alipay';
   const [channel, setChannel] = useState<PaymentChannelId>(defaultChannel);
   const [amount, setAmount] = useState<string>(String(getDefaultAmountForChannel(defaultChannel, effectiveStripeAmountOptions)));
+  const [stripeCurrency, setStripeCurrency] = useState<StripeCurrencyCode>(stripeCurrencyOptions[0] ?? 'cny');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
@@ -106,6 +120,12 @@ export default function RechargeClient({
     [channel],
   );
   const amountOptions = channel === 'stripe' ? effectiveStripeAmountOptions : AMOUNT_OPTIONS;
+  const currentStripeCurrencyOptions = useMemo(() => {
+    if (channel !== 'stripe') return [];
+    const amountNumber = Number(amount);
+    const amountCurrencies = stripeCurrenciesByAmount?.[amountNumber];
+    return amountCurrencies?.length ? amountCurrencies : stripeCurrencyOptions;
+  }, [amount, channel, stripeCurrenciesByAmount, stripeCurrencyOptions]);
   const instructionText =
     paymentInstructionText ??
     (visibleChannelIds.includes('stripe')
@@ -118,6 +138,12 @@ export default function RechargeClient({
     setChannel(nextChannel);
     setAmount(String(getDefaultAmountForChannel(nextChannel, effectiveStripeAmountOptions)));
   }, [channel, effectiveStripeAmountOptions, visibleChannels]);
+
+  useEffect(() => {
+    if (channel !== 'stripe' || currentStripeCurrencyOptions.length === 0) return;
+    if (currentStripeCurrencyOptions.includes(stripeCurrency)) return;
+    setStripeCurrency(currentStripeCurrencyOptions[0]);
+  }, [channel, currentStripeCurrencyOptions, stripeCurrency]);
 
   useEffect(() => {
     if (!order || order.status === 'PAID') return;
@@ -146,7 +172,10 @@ export default function RechargeClient({
     setHint(null);
     try {
       const endpoint = channel === 'stripe' ? '/api/stripe/recharge/order' : '/api/recharge/order';
-      const requestBody = channel === 'stripe' ? { amount: Number(amount) } : { amount: Number(amount), channel };
+      const requestBody =
+        channel === 'stripe'
+          ? { amount: Number(amount), currency: stripeCurrency }
+          : { amount: Number(amount), channel };
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -159,6 +188,9 @@ export default function RechargeClient({
         }
         if (payload?.error === 'stripe_amount_too_small') {
           throw new Error(payload?.message ?? 'Stripe 最低付款金额约为 50 美分，请改用更高测试金额。');
+        }
+        if (payload?.error === 'unsupported_stripe_currency') {
+          throw new Error('暂不支持该 Stripe 支付币种。');
         }
         throw new Error(payload?.error ?? '下单失败，请稍后再试');
       }
@@ -217,6 +249,9 @@ export default function RechargeClient({
                     onClick={() => {
                       setChannel(item.id);
                       setAmount(String(getDefaultAmountForChannel(item.id, effectiveStripeAmountOptions)));
+                      if (item.id === 'stripe') {
+                        setStripeCurrency(stripeCurrencyOptions[0] ?? 'cny');
+                      }
                       setHint(null);
                       setError(null);
                     }}
@@ -300,6 +335,40 @@ export default function RechargeClient({
           </div>
           <p className="text-xs text-gray-500">请选择一项充值金额，暂不支持自定义金额。</p>
         </div>
+
+        {channel === 'stripe' && currentStripeCurrencyOptions.length > 0 ? (
+          <div className="space-y-3">
+            <label className="text-xs uppercase tracking-[0.4em] text-gray-500">支付币种 *</label>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {currentStripeCurrencyOptions.map((currency) => {
+                const meta = STRIPE_CURRENCY_OPTIONS.find((item) => item.code === currency);
+                const active = stripeCurrency === currency;
+                return (
+                  <button
+                    type="button"
+                    key={currency}
+                    className={`rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+                      active
+                        ? 'border-black bg-black text-white'
+                        : 'border-black/10 text-gray-600 hover:border-black hover:text-black'
+                    }`}
+                    onClick={() => {
+                      setStripeCurrency(currency);
+                      setHint(null);
+                      setError(null);
+                    }}
+                  >
+                    <span className="block">{meta?.shortLabel ?? currency.toUpperCase()}</span>
+                    <span className={`mt-1 block text-xs ${active ? 'text-white/70' : 'text-gray-400'}`}>
+                      {meta?.label ?? currency.toUpperCase()}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-gray-500">Stripe 付款页会显示所选币种对应的后台价格。</p>
+          </div>
+        ) : null}
 
         <button
           type="submit"

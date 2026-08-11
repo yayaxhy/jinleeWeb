@@ -14,6 +14,8 @@ import {
 
 export const runtime = 'nodejs';
 
+const STRIPE_SUPPORTED_CURRENCIES = new Set(['cny', 'cad', 'usd', 'gbp', 'eur']);
+
 const firstForwardedValue = (value: string | null) => value?.split(',')[0]?.trim() || null;
 
 const resolveOrigin = (request: Request) => {
@@ -41,6 +43,12 @@ const parseAmount = (raw: unknown) => {
   return null;
 };
 
+const parseCurrency = (raw: unknown) => {
+  if (typeof raw !== 'string') return null;
+  const currency = raw.trim().toLowerCase();
+  return STRIPE_SUPPORTED_CURRENCIES.has(currency) ? currency : null;
+};
+
 export async function POST(request: Request) {
   const currentUser = await getCurrentJinleeUser(request);
   if (!currentUser) {
@@ -62,6 +70,10 @@ export async function POST(request: Request) {
   const price = findStripeRechargePrice(amount);
   if (!price) {
     return NextResponse.json({ ok: false, error: 'unsupported_stripe_recharge_amount' }, { status: 400 });
+  }
+  const currency = parseCurrency(body.currency);
+  if (body.currency !== undefined && !currency) {
+    return NextResponse.json({ ok: false, error: 'unsupported_stripe_currency' }, { status: 400 });
   }
 
   const priorRechargeCount = await prisma.recharge.count({
@@ -87,6 +99,7 @@ export async function POST(request: Request) {
       notifyPayload: {
         stage: 'stripe_checkout_create',
         priceId: price.priceId,
+        selectedCurrency: currency,
       },
     },
   });
@@ -102,6 +115,7 @@ export async function POST(request: Request) {
     const session = await createStripeCheckoutSession({
       secretKey: getStripeSecretKey(),
       priceId: price.priceId,
+      currency,
       outTradeNo,
       jinleeId: currentUser.jinleeId,
       discordUserId: currentUser.discordUserId,
@@ -118,6 +132,7 @@ export async function POST(request: Request) {
           stage: 'stripe_checkout_created',
           sessionId: session.id,
           priceId: price.priceId,
+          selectedCurrency: currency,
         },
       },
     });

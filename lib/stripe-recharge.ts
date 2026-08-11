@@ -127,6 +127,7 @@ const getStripeThreeDSecureMode = () => {
 export const createStripeCheckoutSession = async (input: {
   secretKey: string;
   priceId: string;
+  currency?: string | null;
   outTradeNo: string;
   jinleeId: string;
   discordUserId?: string | null;
@@ -145,6 +146,11 @@ export const createStripeCheckoutSession = async (input: {
   params.set('client_reference_id', input.outTradeNo);
   params.set('line_items[0][price]', input.priceId);
   params.set('line_items[0][quantity]', '1');
+  if (input.currency) {
+    params.set('currency', input.currency);
+    params.set('metadata[selected_currency]', input.currency);
+    params.set('payment_intent_data[metadata][selected_currency]', input.currency);
+  }
   params.set('metadata[out_trade_no]', input.outTradeNo);
   params.set('metadata[jinlee_id]', input.jinleeId);
   params.set('metadata[recharge_amount]', input.rechargeAmount);

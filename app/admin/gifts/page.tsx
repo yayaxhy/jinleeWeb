@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canManageGifts } from '@/lib/admin';
 import { GiftAdminManager } from '@/components/admin/GiftAdminManager';
 
 export const metadata = {
@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function AdminGiftManagementPage() {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canManageGifts(session.discordId)) {
     redirect('/');
   }
 

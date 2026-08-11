@@ -45,8 +45,15 @@ export default async function StripeRechargePage() {
           hasPriorRecharge
           initialChannel="stripe"
           visibleChannelIds={['stripe']}
-          stripeAmountOptions={[3]}
-          stripeNotice="当前测试页仅开放 ¥3 充值。付款成功后，系统会自动加到余额。"
+          stripeAmountOptions={[3, 500, 1000, 2000, 5000]}
+          stripeCurrenciesByAmount={{
+            3: ['cny'],
+            500: ['cny', 'cad', 'usd', 'gbp', 'eur'],
+            1000: ['cny', 'cad', 'usd', 'gbp', 'eur'],
+            2000: ['cny', 'cad', 'usd', 'gbp', 'eur'],
+            5000: ['cny', 'cad', 'usd', 'gbp', 'eur'],
+          }}
+          stripeNotice="当前页面用于测试信用卡/银行卡充值。¥3 测试价只支持 CNY，其余金额可选择你在 Stripe 后台设置的多币种价格。"
           paymentInstructionText="使用信用卡/银行卡完成支付，无需上传凭证。"
         />
       </section>

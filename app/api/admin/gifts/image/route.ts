@@ -4,16 +4,16 @@ import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canManageGifts } from '@/lib/admin';
 
 export const runtime = 'nodejs';
 
 const ALLOWED_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif']);
 const TARGET_DIR = path.join(process.cwd(), 'public', 'gift-wall');
 
-const ensureAdmin = async () => {
+const ensureGiftAdmin = async () => {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canManageGifts(session.discordId)) {
     return false;
   }
   return true;
@@ -27,7 +27,7 @@ const resolveFileName = (giftName: string, ext: string) => {
 };
 
 export async function POST(request: NextRequest) {
-  if (!(await ensureAdmin())) {
+  if (!(await ensureGiftAdmin())) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }
 
