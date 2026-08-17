@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
 
-const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
+const AMOUNT_OPTIONS = [100, 200, 300, 400, 500, 1000] as const;
 const ROME_TIMEZONE = 'Europe/Rome';
 
 type WechatNativePayClientProps = {

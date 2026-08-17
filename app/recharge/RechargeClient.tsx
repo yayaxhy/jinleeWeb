@@ -7,29 +7,29 @@ const ROME_TIMEZONE = 'Europe/Rome';
 
 const PAYMENT_CHANNELS = [
   {
-    id: 'alipay',
-    label: '支付宝',
-    description: '使用支付宝扫一扫完成支付，系统确认成功后自动加款。',
-    accent: 'from-[#bfdbfe] to-[#93c5fd]',
-  },
-  {
     id: 'wechat_native',
     label: '微信支付',
-    description: '使用微信官方扫码支付，1 小时内完成支付，系统确认成功后自动加款。',
+    description: '使用微信官方扫码支付，1 小时内完成支付，系统确认成功后自动到账。',
     accent: 'from-[#bbf7d0] to-[#86efac]',
+  },
+  {
+    id: 'alipay',
+    label: '支付宝',
+    description: '使用支付宝扫一扫完成支付，系统确认成功后自动到账。',
+    accent: 'from-[#bfdbfe] to-[#93c5fd]',
   },
   {
     id: 'stripe',
     label: '信用卡/银行卡',
-    description: '可使用 Visa、Mastercard、American Express、银联卡等银行卡，支持时也可使用 Apple Pay，系统确认成功后自动加款。',
+    description: '可使用 Visa、Mastercard、American Express、银联卡等银行卡，也可使用 Apple Pay，系统确认成功后自动到账。',
     accent: 'from-[#ddd6fe] to-[#c4b5fd]',
   },
 ] as const;
 type PaymentChannel = (typeof PAYMENT_CHANNELS)[number];
 type PaymentChannelId = PaymentChannel['id'];
-const DEFAULT_VISIBLE_CHANNEL_IDS: readonly PaymentChannelId[] = ['alipay', 'wechat_native'];
+const DEFAULT_VISIBLE_CHANNEL_IDS: readonly PaymentChannelId[] = ['wechat_native', 'alipay'];
 
-const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
+const AMOUNT_OPTIONS = [100, 200, 300, 400, 500, 1000] as const;
 const DEFAULT_STRIPE_AMOUNT_OPTIONS = [500, 1000, 2000, 5000] as const;
 const DEFAULT_FIRST_STRIPE_AMOUNT_OPTIONS = [500] as const;
 const STRIPE_CURRENCY_OPTIONS = [
@@ -207,7 +207,7 @@ export default function RechargeClient({
           throw new Error(`首次信用卡/银行卡充值仅支持 ¥${Number(payload.allowedAmount ?? 500).toFixed(0)}。`);
         }
         if (payload?.error === 'stripe_amount_too_small') {
-          throw new Error(payload?.message ?? 'Stripe 最低付款金额约为 50 美分，请改用更高测试金额。');
+          throw new Error(payload?.message ?? 'Stripe 最低付款金额约为 50 美分');
         }
         if (payload?.error === 'unsupported_stripe_currency') {
           throw new Error('暂不支持该 Stripe 支付币种。');
@@ -389,7 +389,7 @@ export default function RechargeClient({
                 );
               })}
             </div>
-            <p className="text-xs text-gray-500">Stripe 付款页会显示所选币种对应的后台价格。</p>
+            <p className="text-xs text-gray-500">付款页会显示所选币种对应的价格。</p>
           </div>
         ) : null}
 

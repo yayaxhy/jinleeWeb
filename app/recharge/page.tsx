@@ -44,7 +44,7 @@ export default async function RechargePage() {
         <RechargeClient
           username={username}
           hasPriorRecharge={hasPriorRecharge}
-          visibleChannelIds={['alipay', 'wechat_native', 'stripe']}
+          visibleChannelIds={['wechat_native', 'alipay', 'stripe']}
           stripeCurrenciesByAmount={{
             500: ['gbp', 'eur', 'usd', 'cad', 'cny'],
             1000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
