@@ -46,10 +46,10 @@ export default async function RechargePage() {
           hasPriorRecharge={hasPriorRecharge}
           visibleChannelIds={['wechat_native', 'alipay', 'stripe']}
           stripeCurrenciesByAmount={{
-            500: ['gbp', 'eur', 'usd', 'cad', 'cny'],
-            1000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
-            2000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
-            5000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
+            500: ['gbp', 'eur', 'usd', 'cad'],
+            1000: ['gbp', 'eur', 'usd', 'cad'],
+            2000: ['gbp', 'eur', 'usd', 'cad'],
+            5000: ['gbp', 'eur', 'usd', 'cad'],
           }}
         />
       </section>

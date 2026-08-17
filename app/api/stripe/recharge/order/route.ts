@@ -14,7 +14,7 @@ import {
 
 export const runtime = 'nodejs';
 
-const STRIPE_SUPPORTED_CURRENCIES = new Set(['cny', 'cad', 'usd', 'gbp', 'eur']);
+const STRIPE_SUPPORTED_CURRENCIES = new Set(['cad', 'usd', 'gbp', 'eur']);
 
 const firstForwardedValue = (value: string | null) => value?.split(',')[0]?.trim() || null;
 
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'unsupported_stripe_recharge_amount' }, { status: 400 });
   }
   const currency = parseCurrency(body.currency);
-  if (body.currency !== undefined && !currency) {
+  if (!currency) {
     return NextResponse.json({ ok: false, error: 'unsupported_stripe_currency' }, { status: 400 });
   }
 

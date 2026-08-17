@@ -47,10 +47,10 @@ export default async function StripeRechargePage() {
           visibleChannelIds={['stripe']}
           stripeAmountOptions={[500, 1000, 2000, 5000]}
           stripeCurrenciesByAmount={{
-            500: ['gbp', 'eur', 'usd', 'cad', 'cny'],
-            1000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
-            2000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
-            5000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
+            500: ['gbp', 'eur', 'usd', 'cad'],
+            1000: ['gbp', 'eur', 'usd', 'cad'],
+            2000: ['gbp', 'eur', 'usd', 'cad'],
+            5000: ['gbp', 'eur', 'usd', 'cad'],
           }}
           stripeNotice="当前页面用于测试信用卡/银行卡充值，可选择你在 Stripe 后台设置的多币种价格。"
           paymentInstructionText="使用信用卡/银行卡完成支付，无需上传凭证。"

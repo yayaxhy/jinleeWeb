@@ -37,10 +37,9 @@ const STRIPE_CURRENCY_OPTIONS = [
   { code: 'eur', label: '欧元', shortLabel: 'EUR' },
   { code: 'usd', label: '美元', shortLabel: 'USD' },
   { code: 'cad', label: '加币', shortLabel: 'CAD' },
-  { code: 'cny', label: '人民币（银联卡）', shortLabel: 'CNY' },
 ] as const;
 type StripeCurrencyCode = (typeof STRIPE_CURRENCY_OPTIONS)[number]['code'];
-const DEFAULT_STRIPE_CURRENCY_OPTIONS: readonly StripeCurrencyCode[] = ['gbp', 'eur', 'usd', 'cad', 'cny'];
+const DEFAULT_STRIPE_CURRENCY_OPTIONS: readonly StripeCurrencyCode[] = ['gbp', 'eur', 'usd', 'cad'];
 
 type RechargeClientProps = {
   username?: string | null;
@@ -111,7 +110,7 @@ export default function RechargeClient({
     : visibleChannels[0]?.id ?? 'alipay';
   const [channel, setChannel] = useState<PaymentChannelId>(defaultChannel);
   const [amount, setAmount] = useState<string>(String(getDefaultAmountForChannel(defaultChannel, effectiveStripeAmountOptions)));
-  const [stripeCurrency, setStripeCurrency] = useState<StripeCurrencyCode>(stripeCurrencyOptions[0] ?? 'cny');
+  const [stripeCurrency, setStripeCurrency] = useState<StripeCurrencyCode>(stripeCurrencyOptions[0] ?? 'gbp');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
@@ -271,7 +270,7 @@ export default function RechargeClient({
                       setChannel(item.id);
                       setAmount(String(getDefaultAmountForChannel(item.id, effectiveStripeAmountOptions)));
                       if (item.id === 'stripe') {
-                        setStripeCurrency(stripeCurrencyOptions[0] ?? 'cny');
+                        setStripeCurrency(stripeCurrencyOptions[0] ?? 'gbp');
                       }
                       setHint(null);
                       setError(null);
@@ -362,7 +361,7 @@ export default function RechargeClient({
         {channel === 'stripe' && currentStripeCurrencyOptions.length > 0 ? (
           <div className="space-y-3">
             <label className="text-xs uppercase tracking-[0.4em] text-gray-500">支付币种 *</label>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {currentStripeCurrencyOptions.map((currency) => {
                 const meta = STRIPE_CURRENCY_OPTIONS.find((item) => item.code === currency);
                 const active = stripeCurrency === currency;
