@@ -3,7 +3,6 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import {
-  SUPPORTED_CHANNELS,
   buildOutTradeNo,
   buildSignaturePayload,
   buildZPaySignature,
@@ -59,9 +58,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'amount_too_small', min: MIN_AMOUNT }, { status: 400 });
   }
 
-  const requestedChannel: ZPayChannel = SUPPORTED_CHANNELS.includes(body.channel as ZPayChannel)
-    ? (body.channel as ZPayChannel)
-    : 'alipay';
+  if (body.channel !== undefined && body.channel !== 'alipay') {
+    return NextResponse.json({ ok: false, error: 'unsupported_zpay_channel' }, { status: 400 });
+  }
+  const requestedChannel: ZPayChannel = 'alipay';
 
   const amountDecimal = normalizeAmount(rawAmount);
   const amountText = amountDecimal.toFixed(2);

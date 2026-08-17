@@ -2,9 +2,9 @@ import crypto from 'crypto';
 
 const DEFAULT_GATEWAY = 'https://zpayz.cn/submit.php';
 
-export type ZPayChannel = 'alipay' | 'wxpay';
+export type ZPayChannel = 'alipay';
 
-export const SUPPORTED_CHANNELS: ZPayChannel[] = ['alipay', 'wxpay'];
+export const SUPPORTED_CHANNELS: ZPayChannel[] = ['alipay'];
 
 const md5 = (value: string) => crypto.createHash('md5').update(value, 'utf8').digest('hex');
 

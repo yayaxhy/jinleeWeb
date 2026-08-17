@@ -13,9 +13,9 @@ const PAYMENT_CHANNELS = [
     accent: 'from-[#bfdbfe] to-[#93c5fd]',
   },
   {
-    id: 'wxpay',
+    id: 'wechat_native',
     label: '微信支付',
-    description: '使用微信扫一扫完成支付，无需上传凭证，系统确认成功后自动加款。',
+    description: '使用微信官方扫码支付，1 小时内完成支付，系统确认成功后自动加款。',
     accent: 'from-[#bbf7d0] to-[#86efac]',
   },
   {
@@ -27,7 +27,7 @@ const PAYMENT_CHANNELS = [
 ] as const;
 type PaymentChannel = (typeof PAYMENT_CHANNELS)[number];
 type PaymentChannelId = PaymentChannel['id'];
-const DEFAULT_VISIBLE_CHANNEL_IDS: readonly PaymentChannelId[] = ['alipay', 'wxpay'];
+const DEFAULT_VISIBLE_CHANNEL_IDS: readonly PaymentChannelId[] = ['alipay', 'wechat_native'];
 
 const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
 const DEFAULT_STRIPE_AMOUNT_OPTIONS = [500, 1000, 2000, 5000] as const;
@@ -58,16 +58,18 @@ type CreatedOrder = {
   id: string;
   payUrl: string;
   qrCodeDataUrl?: string | null;
-  status: 'PENDING' | 'PAID';
+  status: 'PENDING' | 'PAID' | 'FAILED';
   amount: string;
   channel: string;
   displayMode?: 'qrcode' | 'redirect';
   paidAt?: string | null;
+  expiresAt?: string | null;
 };
 
 const STATUS_TEXT: Record<CreatedOrder['status'], string> = {
   PENDING: '等待支付',
   PAID: '充值成功',
+  FAILED: '订单已关闭',
 };
 
 const formatCurrency = (value?: string) => {
@@ -146,17 +148,28 @@ export default function RechargeClient({
   }, [channel, currentStripeCurrencyOptions, stripeCurrency]);
 
   useEffect(() => {
-    if (!order || order.status === 'PAID') return;
+    if (!order || order.status !== 'PENDING') return;
     const timer = setInterval(async () => {
       try {
         const res = await fetch(`/api/recharge/order/${order.id}`, { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
-        if (data?.order?.status === 'PAID') {
+        if (data?.order?.status === 'PAID' || data?.order?.status === 'FAILED') {
           setOrder((prev) =>
-            prev ? { ...prev, status: 'PAID', paidAt: data.order.paidAt ?? null } : prev,
+            prev
+              ? {
+                  ...prev,
+                  status: data.order.status,
+                  paidAt: data.order.paidAt ?? null,
+                  expiresAt: data.order.expiresAt ?? prev.expiresAt ?? null,
+                }
+              : prev,
           );
-          setHint('系统已确认到账，刷新个人中心即可看到最新余额。');
+          setHint(
+            data.order.status === 'PAID'
+              ? '系统已确认到账，刷新个人中心即可看到最新余额。'
+              : '二维码已过期或订单已关闭，请重新创建订单。',
+          );
         }
       } catch (pollError) {
         console.error('[recharge] poll error', pollError);
@@ -171,11 +184,18 @@ export default function RechargeClient({
     setError(null);
     setHint(null);
     try {
-      const endpoint = channel === 'stripe' ? '/api/stripe/recharge/order' : '/api/recharge/order';
+      const endpoint =
+        channel === 'stripe'
+          ? '/api/stripe/recharge/order'
+          : channel === 'wechat_native'
+            ? '/api/wechat/pay/order'
+            : '/api/recharge/order';
       const requestBody =
         channel === 'stripe'
           ? { amount: Number(amount), currency: stripeCurrency }
-          : { amount: Number(amount), channel };
+          : channel === 'wechat_native'
+            ? { amount: Number(amount) }
+            : { amount: Number(amount), channel };
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -202,10 +222,11 @@ export default function RechargeClient({
         amount: payload.amount,
         channel: payload.channel,
         displayMode: payload.displayMode ?? 'redirect',
+        expiresAt: payload.expiresAt ?? null,
       });
       setHint(
         payload.displayMode === 'qrcode'
-          ? '订单已创建，请使用微信扫一扫完成支付，系统会自动更新余额。'
+          ? '订单已创建，请在 1 小时内使用微信扫一扫完成支付，系统会自动更新余额。'
           : channel === 'stripe'
             ? '支付链接已创建，请完成付款，系统会自动更新余额。'
             : '订单已创建，请在 15 分钟内完成支付，系统会自动更新余额。',
@@ -268,6 +289,8 @@ export default function RechargeClient({
               ) : !hasPriorRecharge ? (
                 <p className="text-xs text-gray-500">首次信用卡/银行卡充值仅开放 ¥500，完成首次到账后可选择更高档位。</p>
               ) : null
+            ) : channel === 'wechat_native' ? (
+              <p className="text-xs text-gray-500">微信官方支付无需填写转账备注。</p>
             ) : (
               <p className="text-xs text-gray-500">
                 转账备注建议填写当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
@@ -375,7 +398,13 @@ export default function RechargeClient({
           disabled={loading}
           className="w-full rounded-full bg-black px-6 py-3 text-sm uppercase tracking-[0.4em] text-white hover:bg-black/80 transition disabled:opacity-60"
         >
-          {loading ? '创建订单中…' : channel === 'stripe' ? '前往信用卡/银行卡支付' : '生成支付二维码'}
+          {loading
+            ? '创建订单中…'
+            : channel === 'stripe'
+              ? '前往信用卡/银行卡支付'
+              : channel === 'wechat_native'
+                ? '生成微信支付二维码'
+                : '生成支付二维码'}
         </button>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -411,7 +440,15 @@ export default function RechargeClient({
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">状态</span>
-              <span className={order.status === 'PAID' ? 'text-emerald-600' : 'text-orange-500'}>
+              <span
+                className={
+                  order.status === 'PAID'
+                    ? 'text-emerald-600'
+                    : order.status === 'FAILED'
+                      ? 'text-red-500'
+                      : 'text-orange-500'
+                }
+              >
                 {STATUS_TEXT[order.status]}
               </span>
             </div>
@@ -420,11 +457,17 @@ export default function RechargeClient({
                 到账时间：
                 {new Date(order.paidAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
               </p>
-            ) : (
+            ) : order.status === 'PENDING' ? (
               <p className="text-xs text-gray-500">
                 支付完成后请耐心等待 1-2 分钟，系统会自动确认。
               </p>
-            )}
+            ) : null}
+            {order.expiresAt && order.status === 'PENDING' ? (
+              <p className="text-xs text-gray-500">
+                二维码有效至：
+                {new Date(order.expiresAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
+              </p>
+            ) : null}
             <div className="flex flex-wrap gap-3 pt-2">
               {order.displayMode !== 'qrcode' ? (
                 <a
