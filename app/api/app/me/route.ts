@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { summarizeJinleeUser } from '@/lib/jinlee-user';
 import { revokeWechatProgramSession } from '@/lib/wechat-program-session';
+import { getHomePendingTask, getHomeRecommendationIds, getMiniAvailability, getMiniNotificationSettings } from '@/lib/mini-program-account';
 
 const buildMemberPayload = (
   member:
@@ -39,11 +40,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
+  const [availability, pendingTask, recommendedPeiwanIds] = await Promise.all([
+    getMiniAvailability(currentUser),
+    getHomePendingTask(currentUser),
+    getHomeRecommendationIds(currentUser),
+  ]);
+
   return NextResponse.json({
     ok: true,
     sessionSource: currentUser.sessionSource,
     user: summarizeJinleeUser(currentUser.jinleeUser),
     member: buildMemberPayload(currentUser.jinleeUser.member),
+    availability,
+    pendingTask,
+    notificationSettings: getMiniNotificationSettings(currentUser),
+    recommendedPeiwanIds,
   });
 }
 

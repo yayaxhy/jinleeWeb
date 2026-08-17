@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+import { AccountProvider, Prisma } from '@prisma/client';
 import { ensureJinleeUserForWechatProgram, summarizeJinleeUser } from '@/lib/jinlee-user';
 import { createWechatProgramSession } from '@/lib/wechat-program-session';
 import { WeChatMiniProgramAuthError, exchangeMiniProgramCode } from '@/lib/wechat';
+import { recordAuthLoginEvent } from '@/lib/auth-login-audit';
 
 const normalizeString = (value: unknown, maxLength: number) => {
   if (typeof value !== 'string') return null;
@@ -79,6 +80,12 @@ export async function POST(request: Request) {
       jinleeId: jinleeUser.jinleeId,
       providerAccountId: bindingId,
     });
+    await recordAuthLoginEvent({
+      request,
+      jinleeId: jinleeUser.jinleeId,
+      discordUserId: jinleeUser.discordUserId,
+      provider: AccountProvider.WECHAT_MINIPROGRAM,
+    }).catch((error) => console.error('[wechat.mini-program.login] login audit failed', error));
 
     return NextResponse.json({
       ok: true,

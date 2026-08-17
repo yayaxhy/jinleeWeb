@@ -33,9 +33,9 @@ export default async function StripeRechargePage() {
 
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-wide">Stripe 测试充值</h1>
+            <h1 className="text-3xl font-semibold tracking-wide">Stripe 充值测试</h1>
             <p className="text-sm text-gray-500">
-              当前页面仅用于测试信用卡/银行卡支付与自动到账流程
+              当前页面仅用于测试信用卡/银行卡支付与自动到账流程。
             </p>
           </div>
         </div>
@@ -45,15 +45,14 @@ export default async function StripeRechargePage() {
           hasPriorRecharge
           initialChannel="stripe"
           visibleChannelIds={['stripe']}
-          stripeAmountOptions={[3, 500, 1000, 2000, 5000]}
+          stripeAmountOptions={[500, 1000, 2000, 5000]}
           stripeCurrenciesByAmount={{
-            3: ['cny'],
-            500: ['cny', 'cad', 'usd', 'gbp', 'eur'],
-            1000: ['cny', 'cad', 'usd', 'gbp', 'eur'],
-            2000: ['cny', 'cad', 'usd', 'gbp', 'eur'],
-            5000: ['cny', 'cad', 'usd', 'gbp', 'eur'],
+            500: ['gbp', 'eur', 'usd', 'cad', 'cny'],
+            1000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
+            2000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
+            5000: ['gbp', 'eur', 'usd', 'cad', 'cny'],
           }}
-          stripeNotice="当前页面用于测试信用卡/银行卡充值。¥3 测试价只支持 CNY，其余金额可选择你在 Stripe 后台设置的多币种价格。"
+          stripeNotice="当前页面用于测试信用卡/银行卡充值，可选择你在 Stripe 后台设置的多币种价格。"
           paymentInstructionText="使用信用卡/银行卡完成支付，无需上传凭证。"
         />
       </section>

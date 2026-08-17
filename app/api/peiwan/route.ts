@@ -171,11 +171,12 @@ export async function GET(request: Request) {
       normalizedPrice = Number.isNaN(num) ? rawPrice : num;
     }
 
-    const sortedProfiles = sortPeiwanGameProfiles(row.gameProfiles as any);
+    const sortedProfiles = sortPeiwanGameProfiles(row.gameProfiles);
     const gameCodes = sortedProfiles.map((profile) => profile.gameCode);
     const gameLabels = gameCodes.map((gameCode) => getPeiwanGameLabel(gameCode));
     const displayName =
       row.serverDisplayName ?? row.member?.serverDisplayName ?? row.discordUserId;
+    const type = PEIWAN_TYPE_OPTIONS.find((option) => option === row.type) ?? PEIWAN_TYPE_OPTIONS[0];
 
     return {
       id: row.PEIWANID,
@@ -183,9 +184,10 @@ export async function GET(request: Request) {
       serverDisplayName: displayName,
       quotationCode: row.defaultQuotationCode,
       price: normalizedPrice,
+      status: row.status,
       level: row.level,
       sex: row.sex,
-      type: PEIWAN_TYPE_OPTIONS.includes(row.type as any) ? row.type : PEIWAN_TYPE_OPTIONS[0],
+      type,
       mpUrl: row.MP_url,
       gameCodes,
       gameLabels,

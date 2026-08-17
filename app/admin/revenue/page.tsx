@@ -179,9 +179,9 @@ export default async function AdminRevenuePage(props: PageProps) {
     where: withdrawWhere,
   });
 
-  const zpayWhere: Prisma.ZPayRechargeOrderWhereInput = {
+  const paidRechargeOrderWhere: Prisma.ZPayRechargeOrderWhereInput = {
     status: 'PAID',
-    createdAt: { gte: start, lt: end },
+    paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
       'jinleeId',
       'discordUserId',
@@ -189,15 +189,47 @@ export default async function AdminRevenuePage(props: PageProps) {
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.ZPayRechargeOrderWhereInput),
   };
-  const zpayAgg = await prisma.zPayRechargeOrder.aggregate({
-    _sum: { amount: true },
-    where: zpayWhere,
-  });
+  const paidStripePaymentWhere: Prisma.StripePaymentWhereInput = {
+    status: 'PAID',
+    paidAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordUserId',
+      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDiscordIds,
+    ) as Prisma.StripePaymentWhereInput),
+  };
+  const paidWechatNativePaymentWhere: Prisma.WechatNativePaymentWhereInput = {
+    status: 'PAID',
+    paidAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordUserId',
+      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDiscordIds,
+    ) as Prisma.WechatNativePaymentWhereInput),
+  };
+  const [zpayAgg, stripeAgg, wechatNativeAgg] = await Promise.all([
+    prisma.zPayRechargeOrder.aggregate({
+      _sum: { amount: true },
+      where: { ...paidRechargeOrderWhere, channel: { in: ['alipay', 'wxpay'] } },
+    }),
+    prisma.stripePayment.aggregate({
+      _sum: { rechargeAmount: true },
+      where: paidStripePaymentWhere,
+    }),
+    prisma.wechatNativePayment.aggregate({
+      _sum: { rechargeAmount: true },
+      where: paidWechatNativePaymentWhere,
+    }),
+  ]);
 
   const rechargeTotal = dec(rechargeAgg._sum.amount);
   const withdrawTotal = dec(withdrawAgg._sum.amount);
   const netRecharge = rechargeTotal.sub(withdrawTotal);
   const zpayTotal = dec(zpayAgg._sum.amount);
+  const stripeTotal = dec(stripeAgg._sum.rechargeAmount);
+  const wechatNativeTotal = dec(wechatNativeAgg._sum.rechargeAmount);
 
   const jinleeWhere: Prisma.JinleeUserWhereInput = buildIdentityExclusion(
     'jinleeId',
@@ -619,6 +651,8 @@ export default async function AdminRevenuePage(props: PageProps) {
           <div className="space-y-1 text-sm text-white/70">
             <p>Recharge 充值总额：¥{formatNumber(rechargeTotal)}</p>
             <p>ZPay 已支付：¥{formatNumber(zpayTotal)}</p>
+            <p>微信原生已支付：¥{formatNumber(wechatNativeTotal)}</p>
+            <p>Stripe 已支付：¥{formatNumber(stripeTotal)}</p>
             <p>提现总额：¥{formatNumber(withdrawTotal)}</p>
             <p className="text-white">净充值：¥{formatNumber(netRecharge)}</p>
           </div>

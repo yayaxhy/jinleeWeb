@@ -1,11 +1,19 @@
 import { Prisma } from '@prisma/client';
 import {
   getStripePaymentIntentId,
+  getStripeSecretKey,
   getStripeWebhookSecret,
+  retrieveStripePaymentAccounting,
   verifyStripeWebhookPayload,
   type StripeCheckoutSessionObject,
 } from '@/lib/stripe-recharge';
 import { settleRechargeOrderPayment } from '@/lib/recharge-order';
+import {
+  recordStripeCheckoutFailure,
+  recordStripeDispute,
+  recordStripePaymentSuccess,
+  recordStripeRefund,
+} from '@/lib/stripe-payment';
 
 export const runtime = 'nodejs';
 
@@ -20,11 +28,12 @@ const isPaidCheckoutSession = (session: StripeCheckoutSessionObject) =>
   session.payment_status === 'paid';
 
 const getSourceReference = (session: StripeCheckoutSessionObject) =>
-  session.customer_details?.email ??
-  session.customer_email ??
-  getStripePaymentIntentId(session) ??
-  session.id ??
-  'stripe_checkout';
+  getStripePaymentIntentId(session) ?? session.id ?? 'stripe_checkout';
+
+const getString = (object: Record<string, unknown>, field: string) => {
+  const value = object[field];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+};
 
 export async function POST(request: Request) {
   let rawBody = '';
@@ -35,6 +44,59 @@ export async function POST(request: Request) {
       signatureHeader: request.headers.get('stripe-signature'),
       webhookSecret: getStripeWebhookSecret(),
     });
+
+    if (event.type === 'refund.created' || event.type === 'charge.refunded') {
+      const refund = event.data.object;
+      const paymentIntentId = getString(refund, 'payment_intent');
+      if (!paymentIntentId) return successResponse();
+
+      const accounting = await retrieveStripePaymentAccounting({
+        secretKey: getStripeSecretKey(),
+        paymentIntentId,
+      });
+      await recordStripeRefund({
+        paymentIntentId,
+        accounting,
+        stripeEventId: event.id,
+      });
+      console.warn('[stripe.notify] refund recorded', { paymentIntentId, eventId: event.id });
+      return successResponse();
+    }
+
+    if (event.type === 'charge.dispute.created' || event.type === 'charge.dispute.closed') {
+      const dispute = event.data.object;
+      const disputeId = getString(dispute, 'id');
+      if (!disputeId) return successResponse();
+
+      const paymentIntentId = getString(dispute, 'payment_intent');
+      const chargeId = getString(dispute, 'charge');
+      await recordStripeDispute({
+        paymentIntentId,
+        chargeId,
+        disputeId,
+        disputeStatus: getString(dispute, 'status'),
+        closed: event.type === 'charge.dispute.closed',
+        stripeEventId: event.id,
+      });
+      console.warn('[stripe.notify] dispute recorded', { paymentIntentId, chargeId, disputeId, eventId: event.id });
+      return successResponse();
+    }
+
+    if (event.type === 'checkout.session.async_payment_failed' || event.type === 'checkout.session.expired') {
+      const session = event.data.object as StripeCheckoutSessionObject;
+      const outTradeNo = session.client_reference_id ?? session.metadata?.out_trade_no;
+      if (outTradeNo) {
+        await recordStripeCheckoutFailure({
+          outTradeNo,
+          checkoutSessionId: session.id,
+          paymentIntentId: getStripePaymentIntentId(session),
+          expired: event.type === 'checkout.session.expired',
+          reason: event.type,
+          stripeEventId: event.id,
+        });
+      }
+      return successResponse();
+    }
 
     if (event.type !== 'checkout.session.completed' && event.type !== 'checkout.session.async_payment_succeeded') {
       return successResponse();
@@ -55,11 +117,42 @@ export async function POST(request: Request) {
       });
     }
 
+    const paymentIntentId = getStripePaymentIntentId(session);
+    if (!session.id || !paymentIntentId) {
+      return failResponse('missing_stripe_payment_reference', 400, {
+        sessionId: session.id,
+        paymentIntentId,
+        outTradeNo,
+      });
+    }
+
+    const accounting = await retrieveStripePaymentAccounting({
+      secretKey: getStripeSecretKey(),
+      paymentIntentId,
+    });
+    const stripePayment = await recordStripePaymentSuccess({
+      outTradeNo,
+      checkoutSessionId: session.id,
+      accounting,
+      stripeEventId: event.id,
+    });
+    if (!stripePayment) {
+      return failResponse('order_not_found', 400, { outTradeNo, sessionId: session.id });
+    }
+    if (stripePayment.paymentStatus !== 'SUCCEEDED') {
+      console.warn('[stripe.notify] payment is not eligible for credit', {
+        outTradeNo,
+        paymentStatus: stripePayment.paymentStatus,
+        sessionId: session.id,
+      });
+      return successResponse();
+    }
+
     const settlement = await settleRechargeOrderPayment({
       outTradeNo,
       amount: new Prisma.Decimal(rechargeAmount).toDecimalPlaces(2),
-      gatewayTradeNo: getStripePaymentIntentId(session) ?? session.id ?? null,
-      notifyPayload: event as Prisma.InputJsonValue,
+      orderProvider: 'stripe',
+      gatewayTradeNo: paymentIntentId,
       payerReference: getSourceReference(session),
       transactionType: '信用卡/银行卡充值',
     });

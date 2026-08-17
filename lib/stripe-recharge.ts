@@ -2,15 +2,14 @@ import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 
 const STRIPE_CHECKOUT_SESSIONS_URL = 'https://api.stripe.com/v1/checkout/sessions';
+const STRIPE_PAYMENT_INTENTS_URL = 'https://api.stripe.com/v1/payment_intents';
 const STRIPE_THREE_D_SECURE_VALUES = new Set(['automatic', 'any', 'challenge']);
 const DEFAULT_STRIPE_RECHARGE_PRICES = [
-  { amount: '3', priceId: 'price_1U1mbHFvZwyimnyiXoFKWTft' },
   { amount: '500', priceId: 'price_1U1knZFvZwyimnyiJOGnUvhh' },
   { amount: '1000', priceId: 'price_1U1knZFvZwyimnyiuNLpYHJ6' },
   { amount: '2000', priceId: 'price_1U1knZFvZwyimnyiA2lAZJeE' },
   { amount: '5000', priceId: 'price_1U1knZFvZwyimnyiwKY9nm2G' },
 ] as const;
-const STRIPE_TEST_RECHARGE_AMOUNT = new Prisma.Decimal('3').toDecimalPlaces(2);
 
 export type StripeRechargePrice = {
   amount: Prisma.Decimal;
@@ -63,7 +62,46 @@ export type StripeCheckoutSessionObject = {
   payment_intent?: string | { id?: string } | null;
   payment_status?: string | null;
   status?: string | null;
+  amount_total?: number | null;
+  currency?: string | null;
   metadata?: Record<string, string> | null;
+};
+
+type StripeBalanceTransactionObject = {
+  id?: string;
+  amount?: number;
+  fee?: number;
+  net?: number;
+  currency?: string;
+};
+
+type StripeChargeObject = {
+  id?: string;
+  amount?: number;
+  amount_refunded?: number;
+  currency?: string;
+  balance_transaction?: string | StripeBalanceTransactionObject | null;
+};
+
+type StripePaymentIntentPayload = {
+  id?: string;
+  latest_charge?: string | StripeChargeObject | null;
+  error?: {
+    message?: string;
+  };
+};
+
+export type StripePaymentAccounting = {
+  paymentIntentId: string;
+  chargeId: string | null;
+  chargedAmount: number | null;
+  chargedCurrency: string | null;
+  refundedAmount: number | null;
+  balanceTransactionId: string | null;
+  balanceAmount: number | null;
+  balanceFee: number | null;
+  balanceNet: number | null;
+  balanceCurrency: string | null;
 };
 
 export const getStripeSecretKey = () => {
@@ -105,16 +143,12 @@ export const isStripeRechargeAmountAllowed = (input: {
   hasPriorRecharge: boolean;
 }) => {
   const normalizedAmount = new Prisma.Decimal(input.amount).toDecimalPlaces(2);
-  return (
-    normalizedAmount.equals(STRIPE_TEST_RECHARGE_AMOUNT) ||
-    input.hasPriorRecharge ||
-    normalizedAmount.equals(getStripeFirstRechargeAmount())
-  );
+  return input.hasPriorRecharge || normalizedAmount.equals(getStripeFirstRechargeAmount());
 };
 
 export const buildStripeOutTradeNo = (jinleeId: string) => {
   const timestamp = Date.now().toString(36).toUpperCase();
-  const random = crypto.randomBytes(4).toString('hex').toUpperCase();
+  const random = crypto.randomBytes(8).toString('hex').toUpperCase();
   const suffix = jinleeId.slice(-4).toUpperCase();
   return `STRIPE${timestamp}${random}${suffix}`;
 };
@@ -247,4 +281,42 @@ export const verifyStripeWebhookPayload = (input: {
 export const getStripePaymentIntentId = (session: StripeCheckoutSessionObject) => {
   if (typeof session.payment_intent === 'string') return session.payment_intent;
   return session.payment_intent?.id ?? null;
+};
+
+const numberOrNull = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
+
+export const retrieveStripePaymentAccounting = async (input: {
+  secretKey: string;
+  paymentIntentId: string;
+}): Promise<StripePaymentAccounting> => {
+  const expand = new URLSearchParams({ 'expand[]': 'latest_charge.balance_transaction' });
+  const response = await fetch(
+    `${STRIPE_PAYMENT_INTENTS_URL}/${encodeURIComponent(input.paymentIntentId)}?${expand.toString()}`,
+    {
+      headers: { Authorization: `Bearer ${input.secretKey}` },
+    },
+  );
+  const payload = (await response.json()) as StripePaymentIntentPayload;
+  if (!response.ok || payload.id !== input.paymentIntentId) {
+    throw new Error(payload.error?.message || 'stripe_payment_intent_retrieve_failed');
+  }
+
+  const charge = typeof payload.latest_charge === 'object' && payload.latest_charge ? payload.latest_charge : null;
+  const balanceTransaction =
+    charge && typeof charge.balance_transaction === 'object' && charge.balance_transaction
+      ? charge.balance_transaction
+      : null;
+
+  return {
+    paymentIntentId: input.paymentIntentId,
+    chargeId: charge?.id ?? null,
+    chargedAmount: numberOrNull(charge?.amount),
+    chargedCurrency: charge?.currency?.toLowerCase() ?? null,
+    refundedAmount: numberOrNull(charge?.amount_refunded),
+    balanceTransactionId: balanceTransaction?.id ?? null,
+    balanceAmount: numberOrNull(balanceTransaction?.amount),
+    balanceFee: numberOrNull(balanceTransaction?.fee),
+    balanceNet: numberOrNull(balanceTransaction?.net),
+    balanceCurrency: balanceTransaction?.currency?.toLowerCase() ?? null,
+  };
 };

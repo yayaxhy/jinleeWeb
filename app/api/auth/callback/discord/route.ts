@@ -10,6 +10,8 @@ import {
 import { ensureJinleeUserForDiscordMember } from '@/lib/jinlee-user';
 import { exchangeCodeForTokens, fetchDiscordUser, fetchGuildMember } from '@/lib/discord';
 import { prisma } from '@/lib/prisma';
+import { recordAuthLoginEvent } from '@/lib/auth-login-audit';
+import { AccountProvider } from '@prisma/client';
 
 type ParsedState = {
   csrf?: string;
@@ -115,6 +117,12 @@ export async function GET(request: Request) {
         discriminator: discordUser.discriminator ?? null,
       },
     });
+    await recordAuthLoginEvent({
+      request,
+      jinleeId: jinleeUser.jinleeId,
+      discordUserId: discordUser.id,
+      provider: AccountProvider.DISCORD,
+    }).catch((error) => console.error('[discord.callback] login audit failed', error));
 
     const cookieTarget = await getLoginRedirectCookie();
     const redirectTarget = normalizeRedirectTarget(cookieTarget ?? state.next ?? undefined, '/profile');

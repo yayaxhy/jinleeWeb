@@ -1,6 +1,7 @@
 import { Decimal } from '@prisma/client/runtime/library';
 import { decryptWechatPayResource, getWechatPayIdentity, verifyWechatPayCallbackSignature } from '@/lib/wechat-pay';
 import { settleRechargeOrderPayment } from '@/lib/recharge-order';
+import { recordWechatNativePaymentSuccess } from '@/lib/wechat-native-payment';
 
 type WechatPayNotification = {
   id: string;
@@ -79,15 +80,24 @@ export async function POST(request: Request) {
     }
 
     const amountDecimal = new Decimal(transaction.amount.total).div(100).toDecimalPlaces(2);
+    const payment = await recordWechatNativePaymentSuccess({
+      outTradeNo: transaction.out_trade_no,
+      transactionId: transaction.transaction_id,
+      tradeState: transaction.trade_state,
+      amountFen: transaction.amount.total,
+      currency: transaction.amount.currency,
+      wechatEventId: payload.id,
+    });
+    if (!payment) {
+      return failResponse('order_not_found', { outTradeNo: transaction.out_trade_no });
+    }
+
     const settlement = await settleRechargeOrderPayment({
       outTradeNo: transaction.out_trade_no,
       amount: amountDecimal,
+      orderProvider: 'wechat_native',
       gatewayTradeNo: transaction.transaction_id,
-      notifyPayload: {
-        notification: payload,
-        transaction,
-      },
-      payerReference: transaction.payer?.openid ?? transaction.transaction_id,
+      payerReference: transaction.transaction_id,
       transactionType: '微信Native充值',
     });
 

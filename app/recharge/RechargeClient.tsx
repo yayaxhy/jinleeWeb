@@ -33,14 +33,14 @@ const AMOUNT_OPTIONS = [99, 199, 299, 399, 499, 999] as const;
 const DEFAULT_STRIPE_AMOUNT_OPTIONS = [500, 1000, 2000, 5000] as const;
 const DEFAULT_FIRST_STRIPE_AMOUNT_OPTIONS = [500] as const;
 const STRIPE_CURRENCY_OPTIONS = [
-  { code: 'cny', label: '人民币', shortLabel: 'CNY' },
-  { code: 'cad', label: '加币', shortLabel: 'CAD' },
-  { code: 'usd', label: '美元', shortLabel: 'USD' },
   { code: 'gbp', label: '英镑', shortLabel: 'GBP' },
   { code: 'eur', label: '欧元', shortLabel: 'EUR' },
+  { code: 'usd', label: '美元', shortLabel: 'USD' },
+  { code: 'cad', label: '加币', shortLabel: 'CAD' },
+  { code: 'cny', label: '人民币（银联卡）', shortLabel: 'CNY' },
 ] as const;
 type StripeCurrencyCode = (typeof STRIPE_CURRENCY_OPTIONS)[number]['code'];
-const DEFAULT_STRIPE_CURRENCY_OPTIONS: readonly StripeCurrencyCode[] = ['cny', 'cad', 'usd', 'gbp', 'eur'];
+const DEFAULT_STRIPE_CURRENCY_OPTIONS: readonly StripeCurrencyCode[] = ['gbp', 'eur', 'usd', 'cad', 'cny'];
 
 type RechargeClientProps = {
   username?: string | null;

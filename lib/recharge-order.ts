@@ -5,9 +5,12 @@ import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinle
 const DEC = (value: Prisma.Decimal | number | string) =>
   value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value);
 
+type RechargeOrderProvider = 'zpay' | 'stripe' | 'wechat_native';
+
 type SettleRechargeOrderInput = {
   outTradeNo: string;
   amount: Prisma.Decimal | number | string;
+  orderProvider?: RechargeOrderProvider;
   gatewayTradeNo?: string | null;
   notifyPayload?: Prisma.InputJsonValue;
   payerReference?: string | null;
@@ -29,8 +32,49 @@ type RechargeOrderSettlementResult =
   | { kind: 'invalid_order'; reason: string }
   | { kind: 'amount_mismatch'; expected: string; received: string };
 
-const loadRechargeOrder = async (outTradeNo: string): Promise<RechargeOrderBase | null> =>
-  prisma.zPayRechargeOrder.findUnique({
+const loadRechargeOrder = async (
+  outTradeNo: string,
+  orderProvider: RechargeOrderProvider,
+): Promise<RechargeOrderBase | null> => {
+  if (orderProvider === 'stripe') {
+    const order = await prisma.stripePayment.findUnique({
+      where: { outTradeNo },
+      select: {
+        outTradeNo: true,
+        status: true,
+        rechargeAmount: true,
+        discordUserId: true,
+        jinleeId: true,
+      },
+    });
+    return order
+      ? {
+          ...order,
+          amount: order.rechargeAmount,
+        }
+      : null;
+  }
+
+  if (orderProvider === 'wechat_native') {
+    const order = await prisma.wechatNativePayment.findUnique({
+      where: { outTradeNo },
+      select: {
+        outTradeNo: true,
+        status: true,
+        rechargeAmount: true,
+        discordUserId: true,
+        jinleeId: true,
+      },
+    });
+    return order
+      ? {
+          ...order,
+          amount: order.rechargeAmount,
+        }
+      : null;
+  }
+
+  return prisma.zPayRechargeOrder.findUnique({
     where: { outTradeNo },
     select: {
       outTradeNo: true,
@@ -40,11 +84,13 @@ const loadRechargeOrder = async (outTradeNo: string): Promise<RechargeOrderBase 
       jinleeId: true,
     },
   });
+};
 
 export const settleRechargeOrderPayment = async (
   input: SettleRechargeOrderInput,
 ): Promise<RechargeOrderSettlementResult> => {
-  const order = await loadRechargeOrder(input.outTradeNo);
+  const orderProvider = input.orderProvider ?? 'zpay';
+  const order = await loadRechargeOrder(input.outTradeNo, orderProvider);
   if (!order) {
     return { kind: 'not_found' };
   }
@@ -77,18 +123,41 @@ export const settleRechargeOrderPayment = async (
   let applied = false;
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const claimed = await tx.zPayRechargeOrder.updateMany({
-      where: {
-        outTradeNo: order.outTradeNo,
-        status: 'PENDING',
-      },
-      data: {
-        status: 'PAID',
-        gatewayTradeNo: input.gatewayTradeNo ?? undefined,
-        notifyPayload: input.notifyPayload,
-        paidAt,
-      },
-    });
+    const claimed =
+      orderProvider === 'stripe'
+        ? await tx.stripePayment.updateMany({
+            where: {
+              outTradeNo: order.outTradeNo,
+              status: 'PENDING',
+            },
+            data: {
+              status: 'PAID',
+              paidAt,
+            },
+          })
+        : orderProvider === 'wechat_native'
+          ? await tx.wechatNativePayment.updateMany({
+              where: {
+                outTradeNo: order.outTradeNo,
+                status: 'PENDING',
+              },
+              data: {
+                status: 'PAID',
+                paidAt,
+              },
+            })
+        : await tx.zPayRechargeOrder.updateMany({
+            where: {
+              outTradeNo: order.outTradeNo,
+              status: 'PENDING',
+            },
+            data: {
+              status: 'PAID',
+              gatewayTradeNo: input.gatewayTradeNo ?? undefined,
+              notifyPayload: input.notifyPayload,
+              paidAt,
+            },
+          });
 
     if (claimed.count === 0) {
       return;
@@ -146,7 +215,7 @@ export const settleRechargeOrderPayment = async (
     return { kind: 'paid' };
   }
 
-  const latest = await loadRechargeOrder(input.outTradeNo);
+  const latest = await loadRechargeOrder(input.outTradeNo, orderProvider);
   if (latest?.status === 'PAID') {
     return { kind: 'already_paid' };
   }

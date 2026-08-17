@@ -234,15 +234,39 @@ export async function GET(request: NextRequest) {
     ) as Prisma.WithdrawWhereInput),
   };
 
-  const zpayWhere: Prisma.ZPayRechargeOrderWhereInput = {
+  const paidRechargeOrderWhere: Prisma.ZPayRechargeOrderWhereInput = {
     status: 'PAID',
-    createdAt: { gte: start, lt: end },
+    paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
       'jinleeId',
       'discordUserId',
       excludeRechargeResolved.excludeJinleeIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.ZPayRechargeOrderWhereInput),
+  };
+  const zpayWhere: Prisma.ZPayRechargeOrderWhereInput = {
+    ...paidRechargeOrderWhere,
+    channel: { in: ['alipay', 'wxpay'] },
+  };
+  const stripeWhere: Prisma.StripePaymentWhereInput = {
+    status: 'PAID',
+    paidAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordUserId',
+      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDiscordIds,
+    ) as Prisma.StripePaymentWhereInput),
+  };
+  const wechatNativeWhere: Prisma.WechatNativePaymentWhereInput = {
+    status: 'PAID',
+    paidAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordUserId',
+      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDiscordIds,
+    ) as Prisma.WechatNativePaymentWhereInput),
   };
 
   const jinleeWhere: Prisma.JinleeUserWhereInput = buildIdentityExclusion(
@@ -278,6 +302,8 @@ export async function GET(request: NextRequest) {
     rechargeRows,
     withdrawRows,
     zpayRows,
+    stripeRows,
+    wechatNativeRows,
     memberRows,
     commissionRows,
     giftAuditRows,
@@ -299,7 +325,9 @@ export async function GET(request: NextRequest) {
     }),
     prisma.recharge.findMany({ where: rechargeWhere, orderBy: { createdAt: 'desc' } }),
     prisma.withdraw.findMany({ where: withdrawWhere, orderBy: { createdAt: 'desc' } }),
-    prisma.zPayRechargeOrder.findMany({ where: zpayWhere, orderBy: { createdAt: 'desc' } }),
+    prisma.zPayRechargeOrder.findMany({ where: zpayWhere, orderBy: { paidAt: 'desc' } }),
+    prisma.stripePayment.findMany({ where: stripeWhere, orderBy: { paidAt: 'desc' } }),
+    prisma.wechatNativePayment.findMany({ where: wechatNativeWhere, orderBy: { paidAt: 'desc' } }),
     prisma.jinleeUser.findMany({
       where: jinleeWhere,
       orderBy: { jinleeId: 'asc' },
@@ -416,6 +444,8 @@ export async function GET(request: NextRequest) {
   const rechargeTotal = decimalSum(rechargeRows, 'amount');
   const withdrawTotal = decimalSum(withdrawRows, 'amount');
   const zpayTotal = decimalSum(zpayRows, 'amount');
+  const stripeTotal = decimalSum(stripeRows, 'rechargeAmount');
+  const wechatNativeTotal = decimalSum(wechatNativeRows, 'rechargeAmount');
   const netRecharge = rechargeTotal.sub(withdrawTotal);
 
   const memberRechargeTotal = decimalSum(memberRows, 'recharge');
@@ -557,6 +587,8 @@ export async function GET(request: NextRequest) {
     { section: 'rows', key: 'Recharge', value: rechargeRows.length },
     { section: 'rows', key: 'Withdraw', value: withdrawRows.length },
     { section: 'rows', key: 'ZPayRechargeOrder(PAID)', value: zpayRows.length },
+    { section: 'rows', key: 'WechatNativePayment(PAID)', value: wechatNativeRows.length },
+    { section: 'rows', key: 'StripePayment(PAID)', value: stripeRows.length },
     { section: 'rows', key: 'JinleeUser(filtered)', value: memberRows.length },
     { section: 'rows', key: 'Commission(all)', value: commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: giftAuditRows.length },
@@ -580,6 +612,8 @@ export async function GET(request: NextRequest) {
   addKeyValueSheet(workbook, '收益汇总', [
     { section: '当月充值提现', key: 'Recharge 充值总额', value: rechargeTotal.toString() },
     { section: '当月充值提现', key: 'ZPay 已支付', value: zpayTotal.toString() },
+    { section: '当月充值提现', key: '微信原生已支付', value: wechatNativeTotal.toString() },
+    { section: '当月充值提现', key: 'Stripe 已支付', value: stripeTotal.toString() },
     { section: '当月充值提现', key: '提现总额', value: withdrawTotal.toString() },
     { section: '当月充值提现', key: '净充值', value: netRecharge.toString() },
 
@@ -700,6 +734,8 @@ export async function GET(request: NextRequest) {
   addObjectRowsSheet(workbook, '充值明细', rechargeRows);
   addObjectRowsSheet(workbook, '提现明细', withdrawRows);
   addObjectRowsSheet(workbook, 'ZPay已支付明细', zpayRows);
+  addObjectRowsSheet(workbook, '微信原生已支付明细', wechatNativeRows);
+  addObjectRowsSheet(workbook, 'Stripe已支付明细', stripeRows);
   addObjectRowsSheet(workbook, '会员汇总明细', memberRows);
   addObjectRowsSheet(workbook, '抽成明细_Commission', commissionRows);
   addObjectRowsSheet(workbook, '打赏审计明细', giftAuditRows);

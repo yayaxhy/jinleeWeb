@@ -89,18 +89,14 @@ export async function POST(request: Request) {
 
   const outTradeNo = buildStripeOutTradeNo(currentUser.jinleeId);
 
-  await prisma.zPayRechargeOrder.create({
+  await prisma.stripePayment.create({
     data: {
       outTradeNo,
       discordUserId: currentUser.discordUserId,
       jinleeId: currentUser.jinleeId,
-      amount: price.amount,
-      channel: 'stripe_checkout',
-      notifyPayload: {
-        stage: 'stripe_checkout_create',
-        priceId: price.priceId,
-        selectedCurrency: currency,
-      },
+      rechargeAmount: price.amount,
+      priceId: price.priceId,
+      selectedCurrency: currency,
     },
   });
 
@@ -124,16 +120,10 @@ export async function POST(request: Request) {
       cancelUrl: cancelUrl.toString(),
     });
 
-    await prisma.zPayRechargeOrder.update({
+    await prisma.stripePayment.update({
       where: { outTradeNo },
       data: {
-        gatewayTradeNo: session.id,
-        notifyPayload: {
-          stage: 'stripe_checkout_created',
-          sessionId: session.id,
-          priceId: price.priceId,
-          selectedCurrency: currency,
-        },
+        checkoutSessionId: session.id,
       },
     });
 
@@ -148,6 +138,14 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (error instanceof StripeCheckoutSessionError) {
+      await prisma.stripePayment.updateMany({
+        where: { outTradeNo, status: 'PENDING' },
+        data: {
+          status: 'FAILED',
+          paymentStatus: 'FAILED',
+          failedReason: error.code ?? error.stripeType ?? `http_${error.status}`,
+        },
+      });
       console.error('[stripe.recharge.order] stripe rejected checkout session', {
         code: error.code,
         param: error.param,

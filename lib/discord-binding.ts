@@ -400,6 +400,14 @@ export async function mergeWechatProgramJinleeUserIntoJinleeUser(params: {
         where: { jinleeId: incomingJinleeUser.jinleeId },
         data: { jinleeId: canonicalJinleeUser.jinleeId },
       }),
+      tx.stripePayment.updateMany({
+        where: { jinleeId: incomingJinleeUser.jinleeId },
+        data: { jinleeId: canonicalJinleeUser.jinleeId },
+      }),
+      tx.wechatNativePayment.updateMany({
+        where: { jinleeId: incomingJinleeUser.jinleeId },
+        data: { jinleeId: canonicalJinleeUser.jinleeId },
+      }),
       tx.recharge.updateMany({
         where: { jinleeId: incomingJinleeUser.jinleeId },
         data: { jinleeId: canonicalJinleeUser.jinleeId },

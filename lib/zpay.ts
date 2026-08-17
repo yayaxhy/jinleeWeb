@@ -51,13 +51,9 @@ export const buildZPayUrl = (params: PlainParams, secret: string, gateway = DEFA
 };
 
 export const buildOutTradeNo = (userKey: string) => {
-  const now = new Date();
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(
-    now.getHours(),
-  )}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  const random = Math.floor(Math.random() * 900) + 100;
-  const suffix = userKey.slice(-4);
+  const timestamp = Date.now().toString();
+  const random = crypto.randomInt(1_000_000_000, 10_000_000_000).toString();
+  const suffix = userKey.replace(/\D/g, '').slice(-4).padStart(4, '0');
   return `${timestamp}${random}${suffix}`;
 };
 

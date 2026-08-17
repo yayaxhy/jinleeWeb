@@ -54,6 +54,13 @@ const resolveAmountChange = (amountChange: unknown, balanceBefore: unknown, bala
   return amount;
 };
 
+const paymentSource = (transactionType: string) => {
+  if (transactionType === '网站充值') return 'ZPay';
+  if (transactionType === '微信Native充值') return '微信原生';
+  if (transactionType === '信用卡/银行卡充值') return 'Stripe';
+  return '';
+};
+
 const toExcelFileName = (prefix: string, date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, '0');
   const year = date.getFullYear();
@@ -110,6 +117,7 @@ export async function GET(request: NextRequest) {
     { header: 'Jinlee ID', key: 'jinleeId', width: 26 },
     { header: 'Discord ID', key: 'discordId', width: 22 },
     { header: '类型', key: 'type', width: 16 },
+    { header: '充值来源', key: 'paymentSource', width: 16 },
     { header: '变动前余额', key: 'before', width: 16 },
     { header: '金额变动', key: 'change', width: 14 },
     { header: '变动后余额', key: 'after', width: 16 },
@@ -124,6 +132,7 @@ export async function GET(request: NextRequest) {
       jinleeId: tx.jinleeId ?? '',
       discordId: tx.discordId,
       type: formatTransactionType(tx.typeOfTransaction),
+      paymentSource: paymentSource(tx.typeOfTransaction),
       before: parseNumber(tx.balanceBefore),
       change: resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter),
       after: parseNumber(tx.balanceAfter),

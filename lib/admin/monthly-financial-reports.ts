@@ -311,15 +311,39 @@ async function loadMonthlyRevenueData(params: {
     ) as Prisma.WithdrawWhereInput),
   };
 
-  const zpayWhere: Prisma.ZPayRechargeOrderWhereInput = {
+  const paidRechargeOrderWhere: Prisma.ZPayRechargeOrderWhereInput = {
     status: 'PAID',
-    createdAt: { gte: start, lt: end },
+    paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
       'jinleeId',
       'discordUserId',
       excludeRechargeResolved.excludeJinleeIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.ZPayRechargeOrderWhereInput),
+  };
+  const zpayWhere: Prisma.ZPayRechargeOrderWhereInput = {
+    ...paidRechargeOrderWhere,
+    channel: { in: ['alipay', 'wxpay'] },
+  };
+  const stripeWhere: Prisma.StripePaymentWhereInput = {
+    status: 'PAID',
+    paidAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordUserId',
+      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDiscordIds,
+    ) as Prisma.StripePaymentWhereInput),
+  };
+  const wechatNativeWhere: Prisma.WechatNativePaymentWhereInput = {
+    status: 'PAID',
+    paidAt: { gte: start, lt: end },
+    ...(buildIdentityExclusion(
+      'jinleeId',
+      'discordUserId',
+      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDiscordIds,
+    ) as Prisma.WechatNativePaymentWhereInput),
   };
 
   const jinleeWhere: Prisma.JinleeUserWhereInput = buildIdentityExclusion(
@@ -351,6 +375,8 @@ async function loadMonthlyRevenueData(params: {
     rechargeRows,
     withdrawRows,
     zpayRows,
+    stripeRows,
+    wechatNativeRows,
     memberRows,
     commissionRows,
     giftAuditRows,
@@ -373,7 +399,9 @@ async function loadMonthlyRevenueData(params: {
     }),
     prisma.recharge.findMany({ where: rechargeWhere, orderBy: { createdAt: 'desc' } }),
     prisma.withdraw.findMany({ where: withdrawWhere, orderBy: { createdAt: 'desc' } }),
-    prisma.zPayRechargeOrder.findMany({ where: zpayWhere, orderBy: { createdAt: 'desc' } }),
+    prisma.zPayRechargeOrder.findMany({ where: zpayWhere, orderBy: { paidAt: 'desc' } }),
+    prisma.stripePayment.findMany({ where: stripeWhere, orderBy: { paidAt: 'desc' } }),
+    prisma.wechatNativePayment.findMany({ where: wechatNativeWhere, orderBy: { paidAt: 'desc' } }),
     prisma.jinleeUser.findMany({
       where: jinleeWhere,
       orderBy: { jinleeId: 'asc' },
@@ -494,6 +522,8 @@ async function loadMonthlyRevenueData(params: {
   const rechargeTotal = decimalSum(rechargeRows, 'amount');
   const withdrawTotal = decimalSum(withdrawRows, 'amount');
   const zpayTotal = decimalSum(zpayRows, 'amount');
+  const stripeTotal = decimalSum(stripeRows, 'rechargeAmount');
+  const wechatNativeTotal = decimalSum(wechatNativeRows, 'rechargeAmount');
   const netRecharge = rechargeTotal.sub(withdrawTotal);
 
   const memberRechargeTotal = decimalSum(memberRows, 'recharge');
@@ -632,6 +662,8 @@ async function loadMonthlyRevenueData(params: {
       rechargeRows,
       withdrawRows,
       zpayRows,
+      stripeRows,
+      wechatNativeRows,
       memberRows,
       commissionRows,
       giftAuditRows,
@@ -657,6 +689,8 @@ async function loadMonthlyRevenueData(params: {
       rechargeTotal,
       withdrawTotal,
       zpayTotal,
+      stripeTotal,
+      wechatNativeTotal,
       netRecharge,
       memberRechargeTotal,
       memberIncomeTotal,
@@ -1179,6 +1213,8 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
     { section: 'rows', key: 'Recharge', value: data.rows.rechargeRows.length },
     { section: 'rows', key: 'Withdraw', value: data.rows.withdrawRows.length },
     { section: 'rows', key: 'ZPayRechargeOrder(PAID)', value: data.rows.zpayRows.length },
+    { section: 'rows', key: 'WechatNativePayment(PAID)', value: data.rows.wechatNativeRows.length },
+    { section: 'rows', key: 'StripePayment(PAID)', value: data.rows.stripeRows.length },
     { section: 'rows', key: 'JinleeUser(filtered)', value: data.rows.memberRows.length },
     { section: 'rows', key: 'Commission(all)', value: data.rows.commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: data.rows.giftAuditRows.length },
@@ -1202,6 +1238,8 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
   addKeyValueSheet(workbook, '收益汇总', [
     { section: '当月充值提现', key: 'Recharge 充值总额', value: data.totals.rechargeTotal.toString() },
     { section: '当月充值提现', key: 'ZPay 已支付', value: data.totals.zpayTotal.toString() },
+    { section: '当月充值提现', key: '微信原生已支付', value: data.totals.wechatNativeTotal.toString() },
+    { section: '当月充值提现', key: 'Stripe 已支付', value: data.totals.stripeTotal.toString() },
     { section: '当月充值提现', key: '提现总额', value: data.totals.withdrawTotal.toString() },
     { section: '当月充值提现', key: '净充值', value: data.totals.netRecharge.toString() },
     { section: '会员余额汇总', key: 'JinleeUser.recharge 合计', value: data.totals.memberRechargeTotal.toString() },
@@ -1315,6 +1353,8 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
   addObjectRowsSheet(workbook, '充值明细', data.rows.rechargeRows);
   addObjectRowsSheet(workbook, '提现明细', data.rows.withdrawRows);
   addObjectRowsSheet(workbook, 'ZPay已支付明细', data.rows.zpayRows);
+  addObjectRowsSheet(workbook, '微信原生已支付明细', data.rows.wechatNativeRows);
+  addObjectRowsSheet(workbook, 'Stripe已支付明细', data.rows.stripeRows);
   addObjectRowsSheet(workbook, '会员汇总明细', data.rows.memberRows);
   addObjectRowsSheet(workbook, '抽成明细_Commission', data.rows.commissionRows);
   addObjectRowsSheet(workbook, '打赏审计明细', data.rows.giftAuditRows);

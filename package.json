@@ -4,6 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "next dev --webpack",
+        "dev:staging": "node scripts/run-staging.mjs next dev --webpack",
         "build": "next build --webpack",
         "start": "next start",
         "lint": "eslint",
@@ -17,7 +18,14 @@
         "farm:derive-plots": "node scripts/derive-plot-states.mjs",
         "farm:normalize-crops": "node scripts/normalize-farm-crops.mjs",
         "financials:scheduler": "node scripts/monthly-financial-report-scheduler.mjs",
-        "financials:generate-once": "node scripts/monthly-financial-report-scheduler.mjs --once"
+        "financials:generate-once": "node scripts/monthly-financial-report-scheduler.mjs --once",
+        "wechat-native:reconcile": "node scripts/wechat-native-reconcile-scheduler.mjs",
+        "wechat-native:reconcile-once": "node scripts/wechat-native-reconcile-scheduler.mjs --once",
+        "auth-login-audit:purge": "node scripts/auth-login-audit-retention-scheduler.mjs",
+        "auth-login-audit:purge-once": "node scripts/auth-login-audit-retention-scheduler.mjs --once",
+        "db:deploy:staging": "node scripts/run-staging.mjs prisma migrate deploy",
+        "db:sync:staging": "node scripts/run-staging.mjs node scripts/sync-staging-db.mjs",
+        "prisma:generate:staging": "node scripts/run-staging.mjs prisma generate"
     },
     "dependencies": {
         "@heroicons/react": "^2.2.0",

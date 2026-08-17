@@ -84,10 +84,43 @@ enum MiniModerationAction {
   BLOCK
 }
 
+enum MiniAvailabilityStatus {
+  AVAILABLE
+  BUSY
+  RESTING
+}
+
+enum AuditionInviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  FULFILLED
+  CANCELED
+}
+
 enum RechargeOrderStatus {
   PENDING
   PAID
   FAILED
+}
+
+enum StripePaymentStatus {
+  PENDING
+  SUCCEEDED
+  PARTIALLY_REFUNDED
+  REFUNDED
+  DISPUTED
+  DISPUTE_CLOSED
+  FAILED
+  EXPIRED
+}
+
+enum WechatNativePaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CLOSED
 }
 
 enum QuotationCode {
@@ -210,6 +243,10 @@ model JinleeUser {
   recharge           Decimal  @default(0) @db.Decimal(19, 4)
   totalSpent         Decimal  @default(0) @db.Decimal(19, 4)
   loyaltyPoints      Decimal  @default(0) @db.Decimal(19, 4)
+  miniAvailability   MiniAvailabilityStatus @default(AVAILABLE)
+  miniCriticalNotifications Boolean @default(false)
+  miniMessageNotifications  Boolean @default(false)
+  miniDispatchNotifications Boolean @default(false)
   withdrawAccount1   String?
   withdrawAccount2   String?
   withdrawAccount3   String?
@@ -218,9 +255,12 @@ model JinleeUser {
 
   member                  Member?                 @relation("JinleeUserMember", fields: [discordUserId], references: [discordUserId], onDelete: SetNull)
   accountBindings         AccountBinding[]
+  authLoginEvents        AuthLoginEvent[]
   wechatProgramSessions   WechatProgramSession[]
   hostedOrders            Order[]
   rechargeOrders          ZPayRechargeOrder[]
+  stripePayments          StripePayment[]
+  wechatNativePayments    WechatNativePayment[]
   rechargeRecords         Recharge[]
   withdrawals             Withdraw[]
   individualTransactions  IndividualTransaction[]
@@ -264,6 +304,27 @@ model AccountBinding {
   @@unique([provider, providerUserId])
   @@index([jinleeId])
   @@index([provider, unionId])
+}
+
+model AuthLoginEvent {
+  id                 String          @id @default(cuid())
+  jinleeId           String?
+  discordUserId      String?
+  provider           AccountProvider
+  ipAddressEncrypted String?
+  ipHash             String?
+  userAgent          String?
+  referrer           String?
+  visitorId          String?
+  createdAt          DateTime        @default(now())
+
+  jinleeUser JinleeUser? @relation(fields: [jinleeId], references: [jinleeId], onDelete: SetNull)
+  member     Member?     @relation(fields: [discordUserId], references: [discordUserId], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([jinleeId, createdAt])
+  @@index([discordUserId, createdAt])
+  @@index([ipHash, createdAt])
+  @@index([createdAt])
 }
 
 model WechatProgramSession {
@@ -342,6 +403,9 @@ model Member {
   sentTransactions     Transaction[]       @relation("FromMember")
   receivedTransactions Transaction[]       @relation("ToMember")
   zpayRechargeOrders   ZPayRechargeOrder[]
+  stripePayments       StripePayment[]
+  wechatNativePayments WechatNativePayment[]
+  authLoginEvents      AuthLoginEvent[]
 
   // One-to-one: every 陪玩 is a member; not every member is a 陪玩
   peiwan            PEIWAN?            @relation("MemberToPeiwan")
@@ -406,6 +470,9 @@ model Member {
   dispatchRequestsFromDiscord DispatchRequest[]  @relation("DispatchRequestDiscordOwner")
   dispatchCandidatesFromDiscord DispatchCandidate[] @relation("DispatchCandidateDiscordWorker")
   bossProfile          BossProfile?
+  auditionRoom          AuditionRoom?    @relation("BossAuditionRoom")
+  bossAuditionInvites   AuditionInvite[] @relation("BossAuditionInvites")
+  workerAuditionInvites AuditionInvite[] @relation("WorkerAuditionInvites")
 
   // Expense & profit logs
   expensesAsOperator     Expense[]     @relation("ExpenseOperator")
@@ -577,6 +644,7 @@ model Transaction {
 
   commissionById    Commission? @relation("commissionById")
   commissionByOrder Commission? @relation("commissionByOrder")
+  auditionInvite    AuditionInvite?
 
   from           Member?     @relation("FromMember", fields: [fromId], references: [discordUserId])
   to             Member      @relation("ToMember", fields: [toId], references: [discordUserId])
@@ -585,6 +653,60 @@ model Transaction {
 
   @@index([fromJinleeId, createdAt])
   @@index([toJinleeId, createdAt])
+}
+
+model AuditionRoom {
+  bossId      String    @id
+  guildId     String
+  categoryId  String
+  channelId   String    @unique
+  channelName String
+  emptySince  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  boss Member @relation("BossAuditionRoom", fields: [bossId], references: [discordUserId], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([guildId, categoryId])
+}
+
+model AuditionInvite {
+  id                    String               @id @default(cuid())
+  orderRequestId        String
+  bossId                String
+  workerId              String
+  peiwanId              Int?
+  roomChannelId         String
+  roomGuildId           String
+  bossContactChannelId  String?
+  workerPromptChannelId String?
+  workerPromptMessageId String?
+  status                AuditionInviteStatus @default(PENDING)
+  expiresAt             DateTime
+  acceptedAt            DateTime?
+  declinedAt            DateTime?
+  joinedAt              DateTime?
+  chargedAt             DateTime?
+  fulfilledAt           DateTime?
+  canceledAt            DateTime?
+  failureReason         String?
+  bossRoomNoticeSentAt  DateTime?
+  transactionId         String?              @unique
+  grossAmount           Decimal?             @db.Decimal(19, 4)
+  feeAmount             Decimal?             @db.Decimal(19, 4)
+  netAmount             Decimal?             @db.Decimal(19, 4)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  boss               Member       @relation("BossAuditionInvites", fields: [bossId], references: [discordUserId], onDelete: Cascade, onUpdate: Cascade)
+  worker             Member       @relation("WorkerAuditionInvites", fields: [workerId], references: [discordUserId], onDelete: Cascade, onUpdate: Cascade)
+  paymentTransaction Transaction? @relation(fields: [transactionId], references: [Transid], onDelete: SetNull)
+
+  @@index([orderRequestId, createdAt])
+  @@index([bossId, status, createdAt])
+  @@index([workerId, status, createdAt])
+  @@index([roomChannelId, status, createdAt])
+  @@index([expiresAt, status])
 }
 
 model Withdraw {
@@ -948,9 +1070,73 @@ model ZPayRechargeOrder {
 
   member     Member?     @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade, onUpdate: Cascade)
   jinleeUser JinleeUser? @relation(fields: [jinleeId], references: [jinleeId], onDelete: SetNull)
-
   @@index([status, createdAt])
   @@index([jinleeId, status, createdAt])
+}
+
+model StripePayment {
+  id                   String              @id @default(cuid())
+  outTradeNo           String              @unique
+  discordUserId        String?
+  jinleeId             String?
+  rechargeAmount       Decimal             @db.Decimal(19, 4)
+  priceId              String?
+  selectedCurrency     String?
+  status               RechargeOrderStatus @default(PENDING)
+  paymentStatus        StripePaymentStatus @default(PENDING)
+  checkoutSessionId    String?             @unique
+  paymentIntentId      String?             @unique
+  chargeId             String?             @unique
+  chargedAmount        Int?
+  chargedCurrency      String?
+  refundedAmount       Int                 @default(0)
+  balanceTransactionId String?             @unique
+  balanceAmount        Int?
+  balanceFee           Int?
+  balanceNet           Int?
+  balanceCurrency      String?
+  disputeId            String?             @unique
+  disputeStatus        String?
+  latestStripeEventId  String?
+  failedReason         String?
+  createdAt            DateTime            @default(now())
+  paidAt               DateTime?
+  updatedAt            DateTime            @updatedAt
+
+  member     Member?     @relation(fields: [discordUserId], references: [discordUserId], onDelete: SetNull, onUpdate: Cascade)
+  jinleeUser JinleeUser? @relation(fields: [jinleeId], references: [jinleeId], onDelete: SetNull)
+
+  @@index([status, updatedAt])
+  @@index([jinleeId, status, createdAt])
+  @@index([chargedCurrency, createdAt])
+}
+
+model WechatNativePayment {
+  id                  String                    @id @default(cuid())
+  outTradeNo          String                    @unique
+  discordUserId       String?
+  jinleeId            String?
+  rechargeAmount      Decimal                   @db.Decimal(19, 4)
+  status              RechargeOrderStatus       @default(PENDING)
+  paymentStatus       WechatNativePaymentStatus @default(PENDING)
+  transactionId       String?                   @unique
+  tradeState          String?
+  amountFen           Int?
+  currency            String?
+  latestWechatEventId String?
+  failedReason        String?
+  createdAt           DateTime                  @default(now())
+  expiresAt           DateTime?
+  paidAt              DateTime?
+  updatedAt           DateTime                  @updatedAt
+
+  member     Member?     @relation(fields: [discordUserId], references: [discordUserId], onDelete: SetNull, onUpdate: Cascade)
+  jinleeUser JinleeUser? @relation(fields: [jinleeId], references: [jinleeId], onDelete: SetNull)
+
+  @@index([status, updatedAt])
+  @@index([status, expiresAt])
+  @@index([jinleeId, status, createdAt])
+  @@index([tradeState, createdAt])
 }
 
 model PEIWAN {
@@ -1174,6 +1360,8 @@ model MiniConversation {
   userBId       String?
   linkedOrderId String?
   adminWatched  Boolean              @default(false)
+  userALastReadAt DateTime?
+  userBLastReadAt DateTime?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @default(now()) @updatedAt
 
@@ -1217,6 +1405,8 @@ model MiniMessageModerationEvent {
   reason         String?
   createdAt      DateTime             @default(now())
   reviewedAt     DateTime?
+  notifiedAt     DateTime?
+  notificationError String?
 
   message MiniMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
 

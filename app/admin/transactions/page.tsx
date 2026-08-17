@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/session';
-import { canViewKefuTransactions } from '@/lib/admin';
+import { canViewKefuTransactions, isAdminDiscordId } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { formatTransactionType } from '@/lib/transaction-display';
 
@@ -64,6 +64,13 @@ const changeMeta = (value: number | null) => {
     label: `${prefix}${formatNumber(Math.abs(value))}`,
     className: value > 0 ? 'text-emerald-400' : 'text-rose-400',
   };
+};
+
+const paymentSource = (transactionType: string) => {
+  if (transactionType === '网站充值') return 'ZPay';
+  if (transactionType === '微信Native充值') return '微信原生';
+  if (transactionType === '信用卡/银行卡充值') return 'Stripe';
+  return '—';
 };
 
 export const metadata = {
@@ -156,6 +163,26 @@ export default async function AdminTransactionsPage(props: PageProps) {
       take: PAGE_SIZE,
     }),
   ]);
+  const stripePaymentIntentIds = Array.from(
+    new Set(
+      transactions
+        .filter((tx) => tx.typeOfTransaction === '信用卡/银行卡充值')
+        .map((tx) => tx.thirdPartydiscordId.trim())
+        .filter(Boolean),
+    ),
+  );
+  const stripePayments = stripePaymentIntentIds.length
+    ? await prisma.stripePayment.findMany({
+        where: { paymentIntentId: { in: stripePaymentIntentIds } },
+        select: { outTradeNo: true, paymentIntentId: true },
+      })
+    : [];
+  const stripeOrderByPaymentIntentId = new Map(
+    stripePayments
+      .filter((payment): payment is { outTradeNo: string; paymentIntentId: string } => Boolean(payment.paymentIntentId))
+      .map((payment) => [payment.paymentIntentId, payment.outTradeNo]),
+  );
+  const canDownloadStripeEvidence = isAdminDiscordId(session.discordId);
 
   const relatedDiscordIds = Array.from(
     new Set(
@@ -346,10 +373,12 @@ export default async function AdminTransactionsPage(props: PageProps) {
                     <th className="py-3 pr-4">时间</th>
                     <th className="py-3 pr-4">用户</th>
                     <th className="py-3 pr-4">类型</th>
+                    <th className="py-3 pr-4">充值来源</th>
                     <th className="py-3 pr-4">变动前余额</th>
                     <th className="py-3 pr-4">金额变动</th>
                     <th className="py-3 pr-4">变动后余额</th>
                     <th className="py-3 pr-4">关联对象</th>
+                    <th className="py-3 pr-4">争议证据</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -371,6 +400,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
                           </div>
                         </td>
                         <td className="py-3 pr-4 text-white/90">{formatTransactionType(tx.typeOfTransaction)}</td>
+                        <td className="py-3 pr-4 text-white/80">{paymentSource(tx.typeOfTransaction)}</td>
                         <td className="py-3 pr-4 font-mono text-white/80">{formatNumber(tx.balanceBefore)}</td>
                         <td className={`py-3 pr-4 font-mono ${meta.className}`}>{meta.label}</td>
                         <td className="py-3 pr-4 font-mono text-white/80">{formatNumber(tx.balanceAfter)}</td>
@@ -384,6 +414,25 @@ export default async function AdminTransactionsPage(props: PageProps) {
                             </div>
                           ) : (
                             <span className="text-white/60">—</span>
+                          )}
+                        </td>
+                        <td className="py-3 pr-4">
+                          {canDownloadStripeEvidence && tx.typeOfTransaction === '信用卡/银行卡充值' ? (
+                            (() => {
+                              const outTradeNo = stripeOrderByPaymentIntentId.get(tx.thirdPartydiscordId);
+                              return outTradeNo ? (
+                                <a
+                                  href={`/api/admin/stripe-payments/${encodeURIComponent(outTradeNo)}/evidence`}
+                                  className="text-xs text-violet-300 underline underline-offset-4 hover:text-violet-100"
+                                >
+                                  下载
+                                </a>
+                              ) : (
+                                <span className="text-white/40">—</span>
+                              );
+                            })()
+                          ) : (
+                            <span className="text-white/40">—</span>
                           )}
                         </td>
                       </tr>

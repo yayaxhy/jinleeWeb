@@ -20,7 +20,16 @@ pm2 start ecosystem.config.cjs
 pm2 save
 ```
 
-`ecosystem.config.cjs` also starts `jinlee-monthly-financial-reports`, which calls the internal monthly financial-report generator. Put either `ADMIN_REPORT_CRON_TOKEN` or the existing `INTERNAL_API_TOKEN` in `.env.local`; the scheduler reads `.env.local` before calling the internal endpoint.
+`ecosystem.config.cjs` also starts the monthly financial-report, WeChat Native reconciliation, and login-audit retention schedulers. Put `INTERNAL_API_TOKEN` in `.env.local`; the schedulers read `.env.local` before calling their internal endpoints.
+
+For encrypted login-IP evidence, set the following values in `.env.local` before starting PM2:
+
+```bash
+AUTH_LOGIN_AUDIT_ENCRYPTION_KEY=<base64-encoded-32-byte-key>
+AUTH_LOGIN_AUDIT_RETENTION_DAYS=365
+```
+
+Generate and retain the encryption key securely; rotating or losing it prevents old IP records from being decrypted. The app continues to authenticate users when this key is absent, but login events will not include an IP address.
 
 Verify the listener:
 
@@ -63,6 +72,8 @@ server {
     }
 }
 ```
+
+If Nginx is behind Cloudflare or another proxy, configure Nginx's real-IP module so `$remote_addr` is first replaced with the trusted proxy's client IP before forwarding `X-Real-IP` to Next.js.
 
 If you use Baota/BT Panel, put the same reverse proxy target in the site config:
 

@@ -3,10 +3,15 @@ import QRCode from 'qrcode';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { buildOutTradeNo } from '@/lib/zpay';
-import { buildWechatPayOrderDescription, createNativeRechargeOrder, WechatPayApiError } from '@/lib/wechat-pay';
+import {
+  buildWechatNativeOutTradeNo,
+  buildWechatPayOrderDescription,
+  createNativeRechargeOrder,
+  WechatPayApiError,
+} from '@/lib/wechat-pay';
 
 const MIN_AMOUNT = Number(process.env.RECHARGE_MIN_AMOUNT ?? 0.01);
+const WECHAT_NATIVE_ORDER_TTL_MS = 60 * 60 * 1000;
 
 const parseAmount = (raw: unknown) => {
   const amountNumber = typeof raw === 'string' ? Number(raw) : typeof raw === 'number' ? raw : NaN;
@@ -42,15 +47,16 @@ export async function POST(request: Request) {
   const amountDecimal = normalizeAmount(rawAmount);
   const amountText = amountDecimal.toFixed(2);
   const amountFen = Math.round(Number(amountText) * 100);
-  const outTradeNo = buildOutTradeNo(currentUser.jinleeId);
+  const outTradeNo = buildWechatNativeOutTradeNo(currentUser.jinleeId);
+  const expiresAt = new Date(Date.now() + WECHAT_NATIVE_ORDER_TTL_MS);
 
-  await prisma.zPayRechargeOrder.create({
+  await prisma.wechatNativePayment.create({
     data: {
       outTradeNo,
       discordUserId: currentUser.discordUserId,
       jinleeId: currentUser.jinleeId,
-      amount: amountDecimal,
-      channel: 'wechat_native',
+      rechargeAmount: amountDecimal,
+      expiresAt,
     },
   });
 
@@ -65,6 +71,7 @@ export async function POST(request: Request) {
       outTradeNo,
       amountFen,
       description: buildWechatPayOrderDescription(orderDisplayName),
+      expiresAt,
     });
     const qrCodeDataUrl = await QRCode.toDataURL(codeUrl, {
       margin: 1,
@@ -78,6 +85,7 @@ export async function POST(request: Request) {
       qrCodeDataUrl,
       channel: 'wechat_native',
       amount: amountText,
+      expiresAt,
       displayMode: 'qrcode',
     });
   } catch (error) {
@@ -88,14 +96,12 @@ export async function POST(request: Request) {
           ? error.message
           : '微信支付下单失败';
 
-    await prisma.zPayRechargeOrder.updateMany({
-      where: { outTradeNo },
+    await prisma.wechatNativePayment.updateMany({
+      where: { outTradeNo, status: 'PENDING' },
       data: {
         status: 'FAILED',
-        notifyPayload: {
-          stage: 'wechat_native_prepay',
-          message: failureMessage,
-        },
+        paymentStatus: 'FAILED',
+        failedReason: failureMessage,
       },
     });
 

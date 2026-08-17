@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { queryNativeRechargeOrder } from '@/lib/wechat-pay';
-import { settleRechargeOrderPayment } from '@/lib/recharge-order';
+import { reconcileWechatNativePayment } from '@/lib/wechat-native-reconciliation';
 
 type RouteParams = { orderId: string };
+
+const belongsToCurrentUser = (
+  order: { jinleeId: string | null; discordUserId: string | null },
+  currentUser: { jinleeId: string; discordUserId: string | null },
+) => {
+  if (order.jinleeId) {
+    return order.jinleeId === currentUser.jinleeId;
+  }
+  return order.discordUserId === currentUser.discordUserId;
+};
 
 export async function GET(request: Request, context: { params: Promise<RouteParams> }) {
   const currentUser = await getCurrentJinleeUser(request);
@@ -13,7 +22,7 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
   }
 
   const params = await context.params;
-  let order = await prisma.zPayRechargeOrder.findUnique({
+  const zpayOrder = await prisma.zPayRechargeOrder.findUnique({
     where: { outTradeNo: params.orderId },
     select: {
       outTradeNo: true,
@@ -27,62 +36,111 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
     },
   });
 
-  if (
-    !order ||
-    (order.jinleeId && order.jinleeId !== currentUser.jinleeId) ||
-    (!order.jinleeId && order.discordUserId !== currentUser.discordUserId)
-  ) {
-    return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+  if (zpayOrder) {
+    if (!belongsToCurrentUser(zpayOrder, currentUser)) {
+      return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+    }
+    return NextResponse.json({
+      ok: true,
+      order: {
+        id: zpayOrder.outTradeNo,
+        amount: zpayOrder.amount.toString(),
+        status: zpayOrder.status,
+        channel: zpayOrder.channel,
+        paidAt: zpayOrder.paidAt,
+        createdAt: zpayOrder.createdAt,
+      },
+    });
   }
 
-  if (order.status !== 'PAID' && order.channel === 'wechat_native') {
-    try {
-      const remoteOrder = await queryNativeRechargeOrder(order.outTradeNo);
-      if (remoteOrder.trade_state === 'SUCCESS') {
-        await settleRechargeOrderPayment({
-          outTradeNo: remoteOrder.out_trade_no,
-          amount: (remoteOrder.amount.total / 100).toFixed(2),
-          gatewayTradeNo: remoteOrder.transaction_id ?? null,
-          notifyPayload: { transaction: remoteOrder, source: 'manual_query' },
-          payerReference: remoteOrder.payer?.openid ?? remoteOrder.transaction_id ?? remoteOrder.out_trade_no,
-          transactionType: '微信Native充值',
-        });
+  let wechatNativePayment = await prisma.wechatNativePayment.findUnique({
+    where: { outTradeNo: params.orderId },
+    select: {
+      outTradeNo: true,
+      rechargeAmount: true,
+      status: true,
+      paidAt: true,
+      createdAt: true,
+      expiresAt: true,
+      discordUserId: true,
+      jinleeId: true,
+    },
+  });
 
-        order = await prisma.zPayRechargeOrder.findUnique({
+  if (wechatNativePayment) {
+    if (!belongsToCurrentUser(wechatNativePayment, currentUser)) {
+      return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+    }
+
+    if (wechatNativePayment.status === 'PENDING') {
+      try {
+        await reconcileWechatNativePayment(wechatNativePayment.outTradeNo);
+
+        wechatNativePayment = await prisma.wechatNativePayment.findUnique({
           where: { outTradeNo: params.orderId },
           select: {
             outTradeNo: true,
-            amount: true,
+            rechargeAmount: true,
             status: true,
-            channel: true,
             paidAt: true,
             createdAt: true,
+            expiresAt: true,
             discordUserId: true,
             jinleeId: true,
           },
         });
+      } catch (error) {
+        console.error('[recharge.order.status] wechat query failed', {
+          outTradeNo: params.orderId,
+          error,
+        });
       }
-    } catch (error) {
-      console.error('[recharge.order.status] wechat query failed', {
-        outTradeNo: params.orderId,
-        error,
-      });
     }
+
+    if (!wechatNativePayment) {
+      return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      order: {
+        id: wechatNativePayment.outTradeNo,
+        amount: wechatNativePayment.rechargeAmount.toString(),
+        status: wechatNativePayment.status,
+        channel: 'wechat_native',
+        paidAt: wechatNativePayment.paidAt,
+        createdAt: wechatNativePayment.createdAt,
+        expiresAt: wechatNativePayment.expiresAt,
+      },
+    });
   }
 
-  if (!order) {
+  const stripePayment = await prisma.stripePayment.findUnique({
+    where: { outTradeNo: params.orderId },
+    select: {
+      outTradeNo: true,
+      rechargeAmount: true,
+      status: true,
+      paidAt: true,
+      createdAt: true,
+      discordUserId: true,
+      jinleeId: true,
+    },
+  });
+
+  if (!stripePayment || !belongsToCurrentUser(stripePayment, currentUser)) {
     return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
   }
 
   return NextResponse.json({
     ok: true,
     order: {
-      id: order.outTradeNo,
-      amount: order.amount.toString(),
-      status: order.status,
-      channel: order.channel,
-      paidAt: order.paidAt,
-      createdAt: order.createdAt,
+      id: stripePayment.outTradeNo,
+      amount: stripePayment.rechargeAmount.toString(),
+      status: stripePayment.status,
+      channel: 'stripe_checkout',
+      paidAt: stripePayment.paidAt,
+      createdAt: stripePayment.createdAt,
     },
   });
 }

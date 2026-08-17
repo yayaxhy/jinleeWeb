@@ -24,6 +24,23 @@ type GenerateCodeResponse = {
   errmsg?: string;
 };
 
+type MessageSecurityResponse = {
+  errcode?: number;
+  errmsg?: string;
+  trace_id?: string;
+  result?: {
+    suggest?: 'pass' | 'review' | 'risky';
+    label?: number;
+  };
+  detail?: Array<{
+    strategy?: string;
+    errcode?: number;
+    suggest?: 'pass' | 'review' | 'risky';
+    label?: number;
+    keyword?: string;
+  }>;
+};
+
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 
 export class WeChatMiniProgramAuthError extends Error {
@@ -94,6 +111,57 @@ export const getMiniProgramAccessToken = async () => {
   };
 
   return cachedAccessToken.token;
+};
+
+export const checkMiniProgramMessageSecurity = async (params: {
+  openId: string;
+  content: string;
+}) => {
+  const accessToken = await getMiniProgramAccessToken();
+  const response = await fetch(
+    `https://api.weixin.qq.com/wxa/msg_sec_check?access_token=${encodeURIComponent(accessToken)}`,
+    {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+      body: JSON.stringify({
+        content: params.content.slice(0, 1000),
+        version: 2,
+        scene: 2,
+        openid: params.openId,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new WeChatMiniProgramAuthError(
+      'wechat_message_security_http_error',
+      `WeChat message security request failed with HTTP ${response.status}`,
+      502,
+    );
+  }
+
+  const payload = (await response.json()) as MessageSecurityResponse;
+  if (payload.errcode) {
+    throw new WeChatMiniProgramAuthError(
+      'wechat_message_security_failed',
+      payload.errmsg ?? `msg_sec_check failed with errcode ${payload.errcode}`,
+      502,
+    );
+  }
+
+  const suggest = payload.result?.suggest ?? 'review';
+  return {
+    blocked: suggest === 'risky',
+    review: suggest === 'review',
+    suggest,
+    label: payload.result?.label ?? null,
+    traceId: payload.trace_id ?? null,
+    details: payload.detail ?? [],
+  };
 };
 
 export const generateMiniProgramUrlLink = async (params: {

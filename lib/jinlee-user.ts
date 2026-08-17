@@ -1,6 +1,7 @@
 import { AccountProvider, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { generateJinleeId } from '@/lib/jinlee-id';
+import { getHighestVipLevelByTotalSpent, getVipLevelLabel } from '@/lib/vip-levels';
 
 const jinleeUserWithMember = {
   member: true,
@@ -90,6 +91,7 @@ export const summarizeJinleeUser = (user: JinleeUserWithMember) => {
   const recharge = user.member?.recharge ?? user.recharge;
   const totalSpent = user.member?.totalSpent ?? user.totalSpent;
   const loyaltyPoints = user.loyaltyPoints;
+  const vipLevel = getHighestVipLevelByTotalSpent(totalSpent.toString());
 
   return {
     displayName,
@@ -106,6 +108,12 @@ export const summarizeJinleeUser = (user: JinleeUserWithMember) => {
     recharge: recharge.toString(),
     totalSpent: totalSpent.toString(),
     loyaltyPoints: loyaltyPoints.toString(),
+    vipLevel,
+    vipLevelLabel: getVipLevelLabel(vipLevel),
+    miniAvailability: user.miniAvailability,
+    miniCriticalNotifications: user.miniCriticalNotifications,
+    miniMessageNotifications: user.miniMessageNotifications,
+    miniDispatchNotifications: user.miniDispatchNotifications,
   };
 };
 

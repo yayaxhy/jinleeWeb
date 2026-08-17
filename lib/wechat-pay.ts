@@ -278,11 +278,23 @@ export const buildWechatPayOrderDescription = (name?: string | null) => {
   return truncateUtf8(description, 127);
 };
 
+export const buildWechatNativeOutTradeNo = (jinleeId: string) => {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = crypto.randomBytes(8).toString('hex').toUpperCase();
+  const suffix = jinleeId.replace(/[^A-Za-z0-9]/g, '').slice(-4).toUpperCase().padStart(4, '0');
+  return `WN${timestamp}${random}${suffix}`;
+};
+
 export const createNativeRechargeOrder = async (params: {
   outTradeNo: string;
   amountFen: number;
   description: string;
+  expiresAt: Date;
 }) => {
+  if (params.expiresAt.getTime() <= Date.now()) {
+    throw new Error('wechatpay_native_order_expiry_invalid');
+  }
+
   const config = await loadWechatPayConfig();
   const response = await requestWechatPay<NativePrepayResponse>('POST', '/v3/pay/transactions/native', {
     appid: config.appId,
@@ -290,6 +302,7 @@ export const createNativeRechargeOrder = async (params: {
     description: params.description,
     out_trade_no: params.outTradeNo,
     notify_url: config.notifyUrl,
+    time_expire: params.expiresAt.toISOString(),
     amount: {
       total: params.amountFen,
       currency: 'CNY',

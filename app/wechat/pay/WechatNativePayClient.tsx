@@ -14,15 +14,17 @@ type CreatedOrder = {
   id: string;
   payUrl: string;
   qrCodeDataUrl?: string | null;
-  status: 'PENDING' | 'PAID';
+  status: 'PENDING' | 'PAID' | 'FAILED';
   amount: string;
   channel: string;
   paidAt?: string | null;
+  expiresAt?: string | null;
 };
 
 const STATUS_TEXT: Record<CreatedOrder['status'], string> = {
   PENDING: '等待支付',
   PAID: '充值成功',
+  FAILED: '订单已关闭',
 };
 
 const formatCurrency = (value?: string) => {
@@ -40,17 +42,28 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
   const [order, setOrder] = useState<CreatedOrder | null>(null);
 
   useEffect(() => {
-    if (!order || order.status === 'PAID') return;
+    if (!order || order.status !== 'PENDING') return;
     const timer = setInterval(async () => {
       try {
         const res = await fetch(`/api/recharge/order/${order.id}`, { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
-        if (data?.order?.status === 'PAID') {
+        if (data?.order?.status === 'PAID' || data?.order?.status === 'FAILED') {
           setOrder((prev) =>
-            prev ? { ...prev, status: 'PAID', paidAt: data.order.paidAt ?? null } : prev,
+            prev
+              ? {
+                  ...prev,
+                  status: data.order.status,
+                  paidAt: data.order.paidAt ?? null,
+                  expiresAt: data.order.expiresAt ?? prev.expiresAt ?? null,
+                }
+              : prev,
           );
-          setHint('系统已确认到账，刷新个人中心即可看到最新余额。');
+          setHint(
+            data.order.status === 'PAID'
+              ? '系统已确认到账，刷新个人中心即可看到最新余额。'
+              : '二维码已过期或订单已关闭，请重新创建订单。',
+          );
         }
       } catch (pollError) {
         console.error('[wechat.native.pay] poll error', pollError);
@@ -81,8 +94,9 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
         status: 'PENDING',
         amount: payload.amount,
         channel: payload.channel,
+        expiresAt: payload.expiresAt ?? null,
       });
-      setHint('订单已创建，请使用微信扫一扫完成支付，系统会自动更新余额。');
+      setHint('订单已创建，请在 1 小时内使用微信扫一扫完成支付，系统会自动更新余额。');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '创建订单失败';
       setError(message);
@@ -201,7 +215,15 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">状态</span>
-              <span className={order.status === 'PAID' ? 'text-emerald-600' : 'text-orange-500'}>
+              <span
+                className={
+                  order.status === 'PAID'
+                    ? 'text-emerald-600'
+                    : order.status === 'FAILED'
+                      ? 'text-red-500'
+                      : 'text-orange-500'
+                }
+              >
                 {STATUS_TEXT[order.status]}
               </span>
             </div>
@@ -210,9 +232,15 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
                 到账时间：
                 {new Date(order.paidAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
               </p>
-            ) : (
+            ) : order.status === 'PENDING' ? (
               <p className="text-xs text-gray-500">支付完成后请耐心等待 1-2 分钟，系统会自动确认。</p>
-            )}
+            ) : null}
+            {order.expiresAt && order.status === 'PENDING' ? (
+              <p className="text-xs text-gray-500">
+                二维码有效至：
+                {new Date(order.expiresAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
+              </p>
+            ) : null}
             <div className="flex flex-wrap gap-3 pt-2">
               <button
                 type="button"
