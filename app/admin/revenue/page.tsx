@@ -650,9 +650,9 @@ export default async function AdminRevenuePage(props: PageProps) {
           <h3 className="text-lg font-semibold">当月充值/提现</h3>
           <div className="space-y-1 text-sm text-white/70">
             <p>Recharge 充值总额：¥{formatNumber(rechargeTotal)}</p>
-            <p>ZPay 已支付：¥{formatNumber(zpayTotal)}</p>
-            <p>微信原生已支付：¥{formatNumber(wechatNativeTotal)}</p>
-            <p>Stripe 已支付：¥{formatNumber(stripeTotal)}</p>
+            <p>ZPay：¥{formatNumber(zpayTotal)}</p>
+            <p>微信Native：¥{formatNumber(wechatNativeTotal)}</p>
+            <p>Stripe：¥{formatNumber(stripeTotal)}</p>
             <p>提现总额：¥{formatNumber(withdrawTotal)}</p>
             <p className="text-white">净充值：¥{formatNumber(netRecharge)}</p>
           </div>
