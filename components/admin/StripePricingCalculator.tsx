@@ -116,7 +116,7 @@ export function StripePricingCalculator() {
           {STRIPE_PRICING_CURRENCIES.map((currency) => (
             <div key={currency} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               <p className="text-xs text-white/45">{currency} / {CURRENCY_DETAILS[currency].name}</p>
-              <p className="mt-1 text-sm text-white">1 CNY = {snapshot.rates[currency].toFixed(6)} {currency}</p>
+              <p className="mt-1 text-sm text-white">1 {currency} = {(1 / snapshot.rates[currency]).toFixed(6)} CNY</p>
             </div>
           ))}
         </div>
