@@ -9,7 +9,7 @@ import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnounc
 import { VipRoleSyncPreferenceToggle } from '@/components/profile/VipRoleSyncPreferenceToggle';
 import { VoicePreviewManager } from '@/components/profile/VoicePreviewManager';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { formatAmountDown2 } from '@/lib/numberFormat';
+import { formatAmountDown, formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
 import { formatTransactionType } from '@/lib/transaction-display';
@@ -140,7 +140,7 @@ const resolveAmountChange = (
   return amount;
 };
 
-const getAmountChangeMeta = (value: number | null) => {
+const getAmountChangeMeta = (value: number | null, digits = 2) => {
   if (value === null || value === undefined) {
     return { label: '—', className: 'text-gray-400' };
   }
@@ -149,7 +149,7 @@ const getAmountChangeMeta = (value: number | null) => {
   }
   const prefix = value > 0 ? '+' : '-';
   return {
-    label: `${prefix}${formatNumber(Math.abs(value))}`,
+    label: `${prefix}${formatAmountDown(Math.abs(value), digits)}`,
     className: value > 0 ? 'text-emerald-500' : 'text-rose-500',
   };
 };
@@ -1010,14 +1010,15 @@ export default async function Profile(props: ProfilePageProps) {
                           <tbody>
                             {transactions.map((tx: TransactionRecord) => {
                               const resolvedChange = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
-                              const changeMeta = getAmountChangeMeta(resolvedChange);
+                              const ledgerDigits = resolvedChange !== null && resolvedChange !== 0 && Math.abs(resolvedChange) < 0.01 ? 4 : 2;
+                              const changeMeta = getAmountChangeMeta(resolvedChange, ledgerDigits);
                               return (
                                 <tr key={tx.transactionId} className="border-b border-black/5 last:border-0">
                                   <td className="py-4 pr-4 font-mono">{formatDate(tx.timeCreatedAt)}</td>
                                   <td className="py-4 pr-4">{formatTransactionType(tx.typeOfTransaction)}</td>
-                                  <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceBefore)}</td>
+                                  <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceBefore, ledgerDigits)}</td>
                                   <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
-                                  <td className="py-4 pr-4 font-mono">{formatNumber(tx.balanceAfter)}</td>
+                                  <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceAfter, ledgerDigits)}</td>
                                   <td className="py-4 pr-4 text-gray-500">{tx.thirdPartydiscordId ?? '—'}</td>
                                 </tr>
                               );

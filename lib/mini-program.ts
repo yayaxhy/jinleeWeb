@@ -23,6 +23,7 @@ import { prisma } from '@/lib/prisma';
 import { checkMiniProgramMessageSecurity } from '@/lib/wechat';
 import { getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
 import { notifyDispatchSubscribers, notifyMiniProgramUser } from '@/lib/mini-program-subscribe';
+import { findPeiwanCardPath } from '@/lib/peiwan/card-path';
 
 const DISPATCH_TTL_MINUTES = 20;
 const DISPATCH_TAKE_LIMIT = 50;
@@ -194,7 +195,7 @@ function serializeCandidate(candidate: CandidateWithRelations) {
     name,
     sex: sexLabel(peiwan.sex),
     level: peiwan.level,
-    image: /^https?:\/\//.test(peiwan.MP_url || '') ? peiwan.MP_url : '',
+    image: findPeiwanCardPath(peiwan.PEIWANID) ?? '',
     status: peiwanStatusLabel(peiwan.status),
     price: formatPrice(defaultPrice),
     games,
@@ -392,7 +393,10 @@ export async function grabDispatchRequest(currentUser: CurrentJinleeUser, dispat
 
       await tx.jinleeUser.update({
         where: { jinleeId: currentUser.jinleeId },
-        data: { miniAvailability: MiniAvailabilityStatus.AVAILABLE },
+        data: {
+          miniAvailability: MiniAvailabilityStatus.AVAILABLE,
+          miniAvailabilitySetAt: new Date(),
+        },
       });
       await tx.pEIWAN.update({
         where: { PEIWANID: peiwan.PEIWANID },
@@ -659,6 +663,7 @@ function serializeConversationSummary(conversation: ConversationSummary, current
     peerId: peer?.jinleeId ?? 'system',
     peerName: peer ? displayNameForUser(peer) : '机器人通知',
     peerRole: peer?.member?.status === MemberStatus.PEIWAN ? '陪玩' : conversation.type === MiniConversationType.SYSTEM ? '系统' : '用户',
+    peerAvatarUrl: peer?.wechatAvatarUrl ?? peer?.discordAvatarUrl ?? null,
     linkedOrder: conversation.linkedOrder ? `订单 #${conversation.linkedOrder.displayNo}` : conversation.type === MiniConversationType.SYSTEM ? '系统通知' : '未下单聊天',
     adminWatched: conversation.adminWatched,
     unread,

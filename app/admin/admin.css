@@ -17,3 +17,7 @@
 .admin-shell .overflow-x-auto {
   overflow-x: visible !important;
 }
+
+.admin-shell .stripe-pricing-table-scroll {
+  overflow-x: auto !important;
+}

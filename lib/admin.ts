@@ -32,6 +32,7 @@ const IRIA_DISCORD_IDS = [
 ];
 
 const HOWARD_READONLY_IDS = ['1421651539247894549'];
+const STRIPE_PRICING_ADMIN_DISCORD_ID = '525770714574225408';
 
 export const getAdminDiscordIds = () => ADMIN_DISCORD_IDS;
 
@@ -118,3 +119,6 @@ export const canManageOrderChannelBindings = (discordId?: string | null) =>
 
 export const canViewRevenue = (discordId?: string | null) =>
   isAdminDiscordId(discordId) || discordId === '308164614846414851';
+
+export const canViewStripePricing = (discordId?: string | null) =>
+  discordId === STRIPE_PRICING_ADMIN_DISCORD_ID;

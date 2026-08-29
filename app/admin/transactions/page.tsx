@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/session';
 import { canViewKefuTransactions, isAdminDiscordId } from '@/lib/admin';
-import { formatAmountDown2 } from '@/lib/numberFormat';
+import { formatAmountDown } from '@/lib/numberFormat';
 import { formatTransactionType } from '@/lib/transaction-display';
 
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -26,10 +26,6 @@ const parseNumber = (value: unknown): number | null => {
   if (typeof value === 'bigint') return Number(value);
   const numeric = Number(stringify(value));
   return Number.isNaN(numeric) ? null : numeric;
-};
-
-const formatNumber = (value: unknown) => {
-  return formatAmountDown2(value);
 };
 
 const formatDate = (value?: Date | string | null) => {
@@ -56,12 +52,12 @@ const resolveAmountChange = (amountChange: unknown, balanceBefore: unknown, bala
   return amount;
 };
 
-const changeMeta = (value: number | null) => {
+const changeMeta = (value: number | null, digits = 2) => {
   if (value === null) return { label: '—', className: 'text-gray-400' };
   if (value === 0) return { label: '0', className: 'text-gray-500' };
   const prefix = value > 0 ? '+' : '-';
   return {
-    label: `${prefix}${formatNumber(Math.abs(value))}`,
+    label: `${prefix}${formatAmountDown(Math.abs(value), digits)}`,
     className: value > 0 ? 'text-emerald-400' : 'text-rose-400',
   };
 };
@@ -384,7 +380,8 @@ export default async function AdminTransactionsPage(props: PageProps) {
                 <tbody>
                   {transactions.map((tx) => {
                     const change = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
-                    const meta = changeMeta(change);
+                    const ledgerDigits = change !== null && change !== 0 && Math.abs(change) < 0.01 ? 4 : 2;
+                    const meta = changeMeta(change, ledgerDigits);
                     return (
                       <tr key={tx.transactionId} className="border-b border-white/10 last:border-0">
                         <td className="py-3 pr-4 font-mono text-white/90">{formatDate(tx.timeCreatedAt)}</td>
@@ -401,9 +398,9 @@ export default async function AdminTransactionsPage(props: PageProps) {
                         </td>
                         <td className="py-3 pr-4 text-white/90">{formatTransactionType(tx.typeOfTransaction)}</td>
                         <td className="py-3 pr-4 text-white/80">{paymentSource(tx.typeOfTransaction)}</td>
-                        <td className="py-3 pr-4 font-mono text-white/80">{formatNumber(tx.balanceBefore)}</td>
+                        <td className="py-3 pr-4 font-mono text-white/80">{formatAmountDown(tx.balanceBefore, ledgerDigits)}</td>
                         <td className={`py-3 pr-4 font-mono ${meta.className}`}>{meta.label}</td>
-                        <td className="py-3 pr-4 font-mono text-white/80">{formatNumber(tx.balanceAfter)}</td>
+                        <td className="py-3 pr-4 font-mono text-white/80">{formatAmountDown(tx.balanceAfter, ledgerDigits)}</td>
                         <td className="py-3 pr-4">
                           {tx.thirdPartydiscordId ? (
                             <div className="space-y-1">

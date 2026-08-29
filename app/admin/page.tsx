@@ -4,7 +4,7 @@ import { AdminPeiwanActions } from '@/components/admin/AdminPeiwanActions';
 import { DeletePeiwanCard } from '@/components/admin/DeletePeiwanCard';
 import { SyncAllPeiwanTagsCard } from '@/components/admin/SyncAllPeiwanTagsCard';
 import { getServerSession } from '@/lib/session';
-import { canViewAdminHome, isAdminDiscordId } from '@/lib/admin';
+import { canViewAdminHome, canViewStripePricing, isAdminDiscordId } from '@/lib/admin';
 
 export default async function AdminHomePage() {
   const session = await getServerSession();
@@ -185,21 +185,6 @@ export default async function AdminHomePage() {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-white/70">小程序聊天审核</p>
-              <p className="text-xs text-white/50">查看完整原文、自动拦截与管理员预警</p>
-            </div>
-            <Link
-              href="/admin/mini-moderation"
-              className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
-            >
-              前往处理
-            </Link>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
               <p className="text-sm text-white/70">查询流水</p>
               <p className="text-xs text-white/50">默认展示全部流水，可选条件筛选</p>
             </div>
@@ -226,6 +211,23 @@ export default async function AdminHomePage() {
             </Link>
           </div>
         </div>
+
+        {canViewStripePricing(session.discordId) ? (
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-white/70">Stripe 定价</p>
+                <p className="text-xs text-white/50">按最新参考汇率计算价格</p>
+              </div>
+              <Link
+                href="/admin/stripe-pricing"
+                className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
+              >
+                前往查看
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -380,14 +382,14 @@ export default async function AdminHomePage() {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-white/70">Newhome 内容编辑</p>
-              <p className="text-xs text-white/50">编辑 /newhome 与 /newhome/404 的 JSON 内容与资源路径</p>
+              <p className="text-sm text-white/70">小程序聊天审核</p>
+              <p className="text-xs text-white/50">查看完整原文、自动拦截与管理员预警</p>
             </div>
             <Link
-              href="/admin/newhome"
-              className="inline-flex items-center justify-center rounded-full bg-[#c5512f] px-4 py-2 text-sm text-white hover:bg-[#af4527]"
+              href="/admin/mini-moderation"
+              className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
             >
-              前往编辑
+              前往处理
             </Link>
           </div>
         </div>

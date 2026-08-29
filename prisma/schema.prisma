@@ -243,7 +243,8 @@ model JinleeUser {
   recharge           Decimal  @default(0) @db.Decimal(19, 4)
   totalSpent         Decimal  @default(0) @db.Decimal(19, 4)
   loyaltyPoints      Decimal  @default(0) @db.Decimal(19, 4)
-  miniAvailability   MiniAvailabilityStatus @default(AVAILABLE)
+  miniAvailability   MiniAvailabilityStatus @default(RESTING)
+  miniAvailabilitySetAt DateTime?
   miniCriticalNotifications Boolean @default(false)
   miniMessageNotifications  Boolean @default(false)
   miniDispatchNotifications Boolean @default(false)

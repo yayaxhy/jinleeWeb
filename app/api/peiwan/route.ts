@@ -7,10 +7,14 @@ import {
   QUOTATION_CODE_TO_FIELD,
 } from '@/constants/peiwan';
 import { getPeiwanGameLabel, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
+import { readPeiwanCardAssets } from '@/lib/peiwan/card-path';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
+export const runtime = 'nodejs';
+
 const MAX_PAGE_SIZE = 50;
+const RECENT_ACTIVITY_DAYS = 30;
 const BLOCKED_DISCORD_IDS = [
   '734159747367829636',
   '525770714574225408',
@@ -94,6 +98,9 @@ export async function GET(request: Request) {
 
   const games = parseGames(searchParams.get('games'));
   const technicalOnly = parseBoolean(searchParams.get('techTag'));
+  const cardOnly = parseBoolean(searchParams.get('cardOnly'));
+  const cardAssets = await readPeiwanCardAssets();
+  const recentActivityCutoff = new Date(Date.now() - RECENT_ACTIVITY_DAYS * 24 * 60 * 60 * 1000);
 
   const deletedPeiwanIds = (
     await prisma.peiwanDeletion.findMany({ select: { peiwanId: true } })
@@ -122,6 +129,9 @@ export async function GET(request: Request) {
   if (technicalOnly) {
     where.type = { in: ['技术陪玩', '大神陪玩'] };
   }
+  if (cardOnly && peiwanId === null) {
+    where.PEIWANID = { in: [...cardAssets.keys()] };
+  }
   if (games.length > 0) {
     where.gameProfiles = {
       some: {
@@ -141,21 +151,52 @@ export async function GET(request: Request) {
 
   const skip = (page - 1) * pageSize;
 
-  const [total, rows] = await Promise.all([
+  const [total, rows, recentGiftReceivers] = await Promise.all([
     prisma.pEIWAN.count({ where }),
     prisma.pEIWAN.findMany({
       where,
+      omit: { MP_url: true },
       include: {
-        member: { select: { serverDisplayName: true, discordUserId: true } },
+        member: {
+          select: {
+            serverDisplayName: true,
+            discordUserId: true,
+            jinleeUser: {
+              select: {
+                miniAvailability: true,
+                miniAvailabilitySetAt: true,
+              },
+            },
+            ordersAsWorker: {
+              where: { status: 'RUNNING' },
+              select: { id: true },
+              take: 1,
+            },
+          },
+        },
         gameProfiles: {
           select: { gameCode: true, tier: true },
           orderBy: { gameCode: 'asc' },
         },
+        orders: {
+          where: {
+            acceptedAt: { gte: recentActivityCutoff },
+            status: { in: ['RUNNING', 'ENDED'] },
+          },
+          select: { id: true },
+          take: 1,
+        },
       },
       orderBy: { PEIWANID: 'asc' },
     }),
+    prisma.giftAudit.findMany({
+      where: { createdAt: { gte: recentActivityCutoff } },
+      select: { receiverId: true },
+      distinct: ['receiverId'],
+    }),
   ]);
 
+  const recentGiftReceiverIds = new Set(recentGiftReceivers.map((row) => row.receiverId));
   const shuffledRows = shuffleWithSeed([...rows], seed).slice(skip, skip + pageSize);
 
   const data = shuffledRows.map((row) => {
@@ -177,6 +218,18 @@ export async function GET(request: Request) {
     const displayName =
       row.serverDisplayName ?? row.member?.serverDisplayName ?? row.discordUserId;
     const type = PEIWAN_TYPE_OPTIONS.find((option) => option === row.type) ?? PEIWAN_TYPE_OPTIONS[0];
+    const selectedAvailability = row.member?.jinleeUser?.miniAvailabilitySetAt
+      ? row.member.jinleeUser.miniAvailability
+      : 'RESTING';
+    const availability = row.member?.ordersAsWorker.length
+      ? 'BUSY'
+      : selectedAvailability;
+    const cardAsset = cardAssets.get(row.PEIWANID);
+    const recentlyActive = Boolean(
+      row.orders.length
+      || recentGiftReceiverIds.has(row.discordUserId)
+      || (cardAsset && cardAsset.updatedAt >= recentActivityCutoff),
+    );
 
     return {
       id: row.PEIWANID,
@@ -184,11 +237,12 @@ export async function GET(request: Request) {
       serverDisplayName: displayName,
       quotationCode: row.defaultQuotationCode,
       price: normalizedPrice,
-      status: row.status,
+      availability,
       level: row.level,
       sex: row.sex,
       type,
-      mpUrl: row.MP_url,
+      cardUrl: cardAsset?.publicPath ?? null,
+      recentlyActive,
       gameCodes,
       gameLabels,
     };

@@ -25,9 +25,12 @@ export const roundDownTo = (value: number, digits = 2): number => {
   return Math.ceil((value - Number.EPSILON) * factor) / factor;
 };
 
-export const formatAmountDown2 = (value: unknown, locale = 'zh-CN'): string => {
+export const formatAmountDown = (value: unknown, digits: number, locale = 'zh-CN'): string => {
   const numeric = parseNumeric(value);
   if (numeric === null) return '—';
-  const rounded = roundDownTo(numeric, 2);
-  return rounded.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const rounded = roundDownTo(numeric, digits);
+  return rounded.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 };
+
+export const formatAmountDown2 = (value: unknown, locale = 'zh-CN'): string =>
+  formatAmountDown(value, 2, locale);

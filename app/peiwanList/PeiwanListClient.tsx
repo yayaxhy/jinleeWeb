@@ -20,7 +20,7 @@ type PeiwanItem = {
   level: (typeof PEIWAN_LEVEL_OPTIONS)[number];
   sex: (typeof PEIWAN_SEX_OPTIONS)[number];
   type: (typeof PEIWAN_TYPE_OPTIONS)[number];
-  mpUrl?: string | null;
+  cardUrl?: string | null;
   gameCodes: PeiwanGameCodeValue[];
   gameLabels: string[];
 };

@@ -43,7 +43,9 @@ async function hasRunningWorkerOrder(currentUser: CurrentJinleeUser) {
 
 export async function getMiniAvailability(currentUser: CurrentJinleeUser) {
   const forcedBusy = await hasRunningWorkerOrder(currentUser);
-  const selected = currentUser.jinleeUser.miniAvailability;
+  const selected = currentUser.jinleeUser.miniAvailabilitySetAt
+    ? currentUser.jinleeUser.miniAvailability
+    : MiniAvailabilityStatus.RESTING;
   const effective = forcedBusy ? MiniAvailabilityStatus.BUSY : selected;
   return {
     selected,
@@ -69,7 +71,7 @@ export async function setMiniAvailability(currentUser: CurrentJinleeUser, rawSta
   await prisma.$transaction(async (tx) => {
     await tx.jinleeUser.update({
       where: { jinleeId: currentUser.jinleeId },
-      data: { miniAvailability: normalized },
+      data: { miniAvailability: normalized, miniAvailabilitySetAt: new Date() },
     });
 
     if (currentUser.discordUserId && currentUser.jinleeUser.member?.status === 'PEIWAN') {

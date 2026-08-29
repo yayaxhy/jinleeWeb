@@ -9,6 +9,8 @@
         "start": "next start",
         "lint": "eslint",
         "test": "tsx --test lib/*.test.ts",
+        "fixture:mini-ui:staging": "node scripts/run-staging.mjs tsx scripts/mini-program-ui-fixture.ts",
+        "fixture:mini-ui:staging:clean": "node scripts/run-staging.mjs tsx scripts/mini-program-ui-fixture.ts --cleanup",
         "newhome:vendor": "node scripts/vendor-newhome.mjs",
         "newhome:generate-code": "node scripts/generate-newhome-code.mjs",
         "farm:generate": "node scripts/generate-farm-asset.mjs",
