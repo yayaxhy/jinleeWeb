@@ -65,14 +65,14 @@ export function StripePricingCalculator() {
 
   const priceTables = useMemo(() => {
     if (!snapshot) return [];
-    return STRIPE_PRICING_CURRENCIES.map((currency) => ({
-      currency,
-      rate: snapshot.rates[currency],
+    return STRIPE_PRICING_RMB_AMOUNTS.map((rmbAmount) => ({
+      rmbAmount,
       rows: STRIPE_PRICING_MARKUPS.map((markup) => ({
         markup,
-        prices: STRIPE_PRICING_RMB_AMOUNTS.map((rmbAmount) =>
-          calculateStripePrice(rmbAmount, snapshot.rates[currency], markup),
-        ),
+        prices: STRIPE_PRICING_CURRENCIES.map((currency) => ({
+          currency,
+          price: calculateStripePrice(rmbAmount, snapshot.rates[currency], markup),
+        })),
       })),
     }));
   }, [snapshot]);
@@ -111,25 +111,36 @@ export function StripePricingCalculator() {
         </div>
       ) : null}
 
+      {snapshot ? (
+        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+          {STRIPE_PRICING_CURRENCIES.map((currency) => (
+            <div key={currency} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+              <p className="text-xs text-white/45">{currency} / {CURRENCY_DETAILS[currency].name}</p>
+              <p className="mt-1 text-sm text-white">1 CNY = {snapshot.rates[currency].toFixed(6)} {currency}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {error ? <p className="rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">{error}</p> : null}
 
       {snapshot ? (
         <div className="grid gap-6 2xl:grid-cols-2">
-          {priceTables.map(({ currency, rate, rows }) => (
-            <section key={currency} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+          {priceTables.map(({ rmbAmount, rows }) => (
+            <section key={rmbAmount} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
               <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
                 <div>
-                  <h3 className="text-lg font-semibold">{currency} / {CURRENCY_DETAILS[currency].name}</h3>
-                  <p className="mt-1 text-xs text-white/55">1 CNY = {rate.toFixed(6)} {currency}</p>
+                  <h3 className="text-lg font-semibold">{formatRmb(rmbAmount)} 充值</h3>
+                  <p className="mt-1 text-xs text-white/55">对应锦鲤余额 {formatRmb(rmbAmount)}</p>
                 </div>
               </div>
               <div className="stripe-pricing-table-scroll overflow-x-auto">
-                <table className="min-w-[680px] text-right text-sm">
+                <table className="min-w-[620px] text-right text-sm">
                   <thead className="bg-white/[0.04] text-xs text-white/60">
                     <tr>
                       <th className="w-28 px-4 py-3 text-left font-medium">加价</th>
-                      {STRIPE_PRICING_RMB_AMOUNTS.map((amount) => (
-                        <th key={amount} className="px-4 py-3 font-medium">{formatRmb(amount)}</th>
+                      {STRIPE_PRICING_CURRENCIES.map((currency) => (
+                        <th key={currency} className="px-4 py-3 font-medium">{currency}<span className="ml-1 text-white/40">{CURRENCY_DETAILS[currency].name}</span></th>
                       ))}
                     </tr>
                   </thead>
@@ -137,8 +148,8 @@ export function StripePricingCalculator() {
                     {rows.map(({ markup, prices }) => (
                       <tr key={markup} className="border-t border-white/8 hover:bg-white/[0.025]">
                         <td className="px-4 py-3 text-left font-medium text-white/80">{formatMarkup(markup)}</td>
-                        {prices.map((price, index) => (
-                          <td key={STRIPE_PRICING_RMB_AMOUNTS[index]} className="px-4 py-3 font-mono text-white">
+                        {prices.map(({ currency, price }) => (
+                          <td key={currency} className="px-4 py-3 font-mono text-white">
                             {formatPrice(currency, price)}
                           </td>
                         ))}
