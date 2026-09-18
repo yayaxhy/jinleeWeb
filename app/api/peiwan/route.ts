@@ -81,6 +81,7 @@ export async function GET(request: Request) {
   const page = normalizePage(searchParams.get('page'), 1);
   const pageSize = normalizePageSize(searchParams.get('pageSize'), 12);
   const seed = searchParams.get('seed') ?? Math.random().toString(36).slice(2, 10);
+  const query = (searchParams.get('q') ?? '').trim().slice(0, 64);
 
   const rawId = searchParams.get('id');
   const peiwanId = rawId ? Number.parseInt(rawId, 10) : null;
@@ -138,6 +139,24 @@ export async function GET(request: Request) {
         gameCode: { in: games },
       },
     };
+  }
+  if (query) {
+    const numericId = /^\d+$/.test(query) ? Number.parseInt(query, 10) : null;
+    const searchConditions: Prisma.PEIWANWhereInput[] = [
+      { serverDisplayName: { contains: query, mode: 'insensitive' } },
+      { member: { serverDisplayName: { contains: query, mode: 'insensitive' } } },
+    ];
+    if (numericId !== null && Number.isSafeInteger(numericId)) {
+      searchConditions.unshift({ PEIWANID: numericId });
+    }
+
+    const existingAnd = where.AND;
+    const normalizedAnd = Array.isArray(existingAnd)
+      ? existingAnd
+      : existingAnd
+        ? [existingAnd]
+        : [];
+    where.AND = [...normalizedAnd, { OR: searchConditions }];
   }
   if (deletedPeiwanIds.length > 0) {
     const existingAnd = where.AND;
@@ -197,9 +216,21 @@ export async function GET(request: Request) {
   ]);
 
   const recentGiftReceiverIds = new Set(recentGiftReceivers.map((row) => row.receiverId));
-  const shuffledRows = shuffleWithSeed([...rows], seed).slice(skip, skip + pageSize);
+  const rankedRows = rows.map((row) => {
+    const cardAsset = cardAssets.get(row.PEIWANID);
+    const recentlyActive = Boolean(
+      row.orders.length
+      || recentGiftReceiverIds.has(row.discordUserId)
+      || (cardAsset && cardAsset.updatedAt >= recentActivityCutoff),
+    );
+    return { row, cardAsset, recentlyActive };
+  });
+  const shuffledRows = [
+    ...shuffleWithSeed(rankedRows.filter((item) => item.recentlyActive), `${seed}:active`),
+    ...shuffleWithSeed(rankedRows.filter((item) => !item.recentlyActive), `${seed}:other`),
+  ].slice(skip, skip + pageSize);
 
-  const data = shuffledRows.map((row) => {
+  const data = shuffledRows.map(({ row, cardAsset, recentlyActive }) => {
     const priceField = QUOTATION_CODE_TO_FIELD[row.defaultQuotationCode] as keyof typeof row;
     const rawPrice = (row as Record<string, unknown>)[priceField] as unknown;
     let normalizedPrice: string | number | null = null;
@@ -224,13 +255,6 @@ export async function GET(request: Request) {
     const availability = row.member?.ordersAsWorker.length
       ? 'BUSY'
       : selectedAvailability;
-    const cardAsset = cardAssets.get(row.PEIWANID);
-    const recentlyActive = Boolean(
-      row.orders.length
-      || recentGiftReceiverIds.has(row.discordUserId)
-      || (cardAsset && cardAsset.updatedAt >= recentActivityCutoff),
-    );
-
     return {
       id: row.PEIWANID,
       discordUserId: row.discordUserId,

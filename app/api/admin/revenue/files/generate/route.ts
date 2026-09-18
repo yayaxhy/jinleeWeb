@@ -32,8 +32,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  const redirectUrl = new URL('/admin/revenue/files', request.url);
-  redirectUrl.searchParams.set('generated', monthValue || 'previous');
-  return NextResponse.redirect(redirectUrl, { status: 303 });
+  const redirectUrl = new URLSearchParams({ generated: monthValue || 'previous' });
+  return new NextResponse(null, {
+    status: 303,
+    // Use a relative Location header so reverse-proxy requests never redirect the browser to localhost.
+    headers: { Location: `/admin/revenue/files?${redirectUrl.toString()}` },
+  });
 }
-

@@ -1,3 +1,5 @@
+import BindResultActions from './BindResultActions';
+
 type DiscordBindResultPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -68,8 +70,9 @@ export default async function DiscordBindResultPage({ searchParams }: DiscordBin
         <h1 className="text-3xl font-semibold tracking-wide text-[#171717]">{message.title}</h1>
         <p className="text-sm leading-7 text-gray-500">{message.body}</p>
         <div className="rounded-2xl bg-[#f8fafc] px-4 py-4 text-xs leading-6 text-gray-500">
-          这个页面是给小程序 `web-view` 用的。现在可以直接返回微信小程序，然后下拉刷新绑定页。
+          返回小程序后，绑定页会重新读取账号状态；也可以点击“检查绑定结果”。
         </div>
+        <BindResultActions />
       </div>
     </main>
   );

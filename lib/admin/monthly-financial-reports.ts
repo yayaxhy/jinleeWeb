@@ -7,6 +7,7 @@ import {
   buildCentralEuropeanMonthRange,
   formatCentralEuropeanMonthKey,
   formatDateTimeTextCentralEuropean,
+  getCentralEuropeanMonthParts,
   getPreviousCentralEuropeanMonthRange,
 } from '@/lib/centralEuropeanDateRange';
 import { parseRevenueIdentityList, resolveRevenueExclusions } from '@/lib/admin/revenue-exclusion';
@@ -277,6 +278,7 @@ function addKeyValueSheet(
 async function loadMonthlyRevenueData(params: {
   start: Date;
   end: Date;
+  monthKey?: string;
   excludeRechargeInput?: string;
   excludeMemberInput?: string;
 }) {
@@ -289,6 +291,8 @@ async function loadMonthlyRevenueData(params: {
     resolveRevenueExclusions(excludeMemberRawIds),
   ]);
   const { start, end } = params;
+  const startMonthParts = getCentralEuropeanMonthParts(start);
+  const monthKey = params.monthKey ?? formatCentralEuropeanMonthKey(startMonthParts.year, startMonthParts.month);
 
   const excludeMembers = [...excludeRechargeResolved.preview, ...excludeMemberResolved.preview];
   const rechargeWhere: Prisma.RechargeWhereInput = {
@@ -388,6 +392,7 @@ async function loadMonthlyRevenueData(params: {
     lotteryConsumeRows,
     scratchRows,
     expenseRows,
+    manualExpenseRows,
     pureProfitAgg,
     revertedGiftRows,
     revertedOrderRows,
@@ -468,6 +473,18 @@ async function loadMonthlyRevenueData(params: {
       orderBy: { revealedAt: 'desc' },
     }),
     prisma.expense.findMany({ where: { createdAt: { gte: start, lt: end } }, orderBy: { createdAt: 'desc' } }),
+    prisma.monthlyManualExpense.findMany({
+      where: { monthKey },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        operator: {
+          select: {
+            discordUserId: true,
+            serverDisplayName: true,
+          },
+        },
+      },
+    }),
     prisma.pureProfit.aggregate({
       _sum: { amount: true },
       where: { createdAt: { gte: start, lt: end } },
@@ -611,6 +628,7 @@ async function loadMonthlyRevenueData(params: {
   const scratchNet = scratchGross.sub(scratchReward);
 
   const expenseTotal = decimalSum(expenseRows, 'amount');
+  const manualExpenseTotal = decimalSum(manualExpenseRows, 'amount');
   const inviteRewardExpenseRow = summarizeInviteRewardExpenseRows(inviteRewardRows);
   const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
   const vipBenefitCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.VIP_BENEFIT);
@@ -677,6 +695,7 @@ async function loadMonthlyRevenueData(params: {
       fusionConsumeRows,
       scratchRows,
       expenseRows,
+      manualExpenseRows,
       revertedGiftRows,
       revertedOrderRows,
     },
@@ -729,6 +748,7 @@ async function loadMonthlyRevenueData(params: {
       scratchReward,
       scratchNet,
       expenseTotal,
+      manualExpenseTotal,
       expenseBreakdown,
       manualGrantCouponAmount,
       manualGrantCouponCount,
@@ -955,6 +975,19 @@ const getExpenseSource = (reason: string) => {
   return '数据库支出';
 };
 
+const getManualExpenseOperatorLabel = (row: Awaited<ReturnType<typeof loadMonthlyRevenueData>>['rows']['manualExpenseRows'][number]) =>
+  row.operator.serverDisplayName?.trim() || row.operatorId;
+
+const buildManualExpenseRows = (data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>) =>
+  data.rows.manualExpenseRows.map((row) => ({
+    source: '人工支出',
+    date: formatDateTimeTextCentralEuropean(row.updatedAt),
+    description: row.note,
+    amount: row.amount,
+    count: 1,
+    note: `操作人：${getManualExpenseOperatorLabel(row)}（${row.operatorId}）${row.imageFileName ? ' · 已附图片' : ''}`,
+  }));
+
 const buildIncomeStatementExpenseRows = (
   data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>,
   adjustments: MonthFinancialAdjustments,
@@ -970,6 +1003,7 @@ const buildIncomeStatementExpenseRows = (
         ? `合并 ${row.count} 笔 Expense`
         : `合并 ${row.count} 笔`,
   })),
+  ...buildManualExpenseRows(data),
   ...adjustments.expenseRows,
 ];
 
@@ -1228,6 +1262,7 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
     { section: 'rows', key: 'LotteryFusion(consumeAt window)', value: data.rows.fusionConsumeRows.length },
     { section: 'rows', key: 'ScratchTicket(REVEALED)', value: data.rows.scratchRows.length },
     { section: 'rows', key: 'Expense', value: data.rows.expenseRows.length },
+    { section: 'rows', key: 'MonthlyManualExpense', value: data.rows.manualExpenseRows.length },
     { section: 'rows', key: 'RevertedGiftSubsidy(join)', value: data.rows.revertedGiftRows.length },
     { section: 'rows', key: 'RevertedOrder(join)', value: data.rows.revertedOrderRows.length },
     { section: 'rows', key: 'Coupon(used MANUAL_GRANT)', value: data.totals.manualGrantCouponCount },
@@ -1273,6 +1308,8 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
     { section: '积木游戏收益', key: '净收益', value: data.totals.blockEarning.toString() },
     { section: '支出记录(Expense + 邀请)', key: 'Expense 表笔数', value: data.rows.expenseRows.length },
     { section: '支出记录(Expense + 邀请)', key: 'Expense 表总额', value: data.totals.expenseTotal.toString() },
+    { section: '支出记录(Expense + 邀请)', key: '人工月度支出笔数', value: data.rows.manualExpenseRows.length },
+    { section: '支出记录(Expense + 邀请)', key: '人工月度支出总额', value: data.totals.manualExpenseTotal.toString() },
     { section: '支出记录(Expense + 邀请)', key: data.summaries.giftReferralExpenseRow.reason, value: data.summaries.giftReferralExpenseRow.amount.toString() },
     { section: '支出记录(Expense + 邀请)', key: `${data.summaries.giftReferralExpenseRow.reason}笔数`, value: data.summaries.giftReferralExpenseRow.count },
     { section: '支出记录(Expense + 邀请)', key: data.summaries.orderReferralExpenseRow.reason, value: data.summaries.orderReferralExpenseRow.amount.toString() },
@@ -1371,6 +1408,21 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
   addObjectRowsSheet(workbook, '支出明细', data.rows.expenseRows);
   addObjectRowsSheet(
     workbook,
+    '人工月度支出明细',
+    data.rows.manualExpenseRows.map((row) => ({
+      id: row.id,
+      monthKey: row.monthKey,
+      amount: row.amount.toString(),
+      note: row.note,
+      hasImage: Boolean(row.imageFileName),
+      operatorId: row.operatorId,
+      operatorName: getManualExpenseOperatorLabel(row),
+      createdAt: formatDateTimeTextCentralEuropean(row.createdAt),
+      updatedAt: formatDateTimeTextCentralEuropean(row.updatedAt),
+    })),
+  );
+  addObjectRowsSheet(
+    workbook,
     '支出分类汇总',
     data.totals.expenseBreakdown.byReasonRows.map((row) => ({
       reason: row.reason,
@@ -1410,6 +1462,140 @@ const getTargetMonth = (monthKey?: string) => {
   };
 };
 
+const loadMonthlyFinancialReportContext = async (monthKey?: string) => {
+  const target = getTargetMonth(monthKey);
+  const [adjustments, data] = await Promise.all([
+    readFinancialAdjustments(target.monthKey),
+    loadMonthlyRevenueData({
+      start: target.start,
+      end: target.end,
+      monthKey: target.monthKey,
+      excludeMemberInput: DEFAULT_EXCLUDE_MEMBER_INPUT,
+    }),
+  ]);
+  return { target, adjustments, data };
+};
+
+type FinancialReportPreviewRow = {
+  item: string;
+  category?: string;
+  date?: string;
+  note?: string;
+  amount: string;
+  count?: number;
+};
+
+export async function getMonthlyFinancialReportPreview(monthKey: string) {
+  const { target, adjustments, data } = await loadMonthlyFinancialReportContext(monthKey);
+  const incomeRows = buildIncomeStatementRows(data, adjustments);
+  const expenseRows = buildIncomeStatementExpenseRows(data, adjustments);
+  const incomeTotal = incomeRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0));
+  const expenseTotal = expenseRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0));
+  const netProfit = incomeTotal.sub(expenseTotal);
+  const capitalAmount = adjustments.capitalAmount ?? DEFAULT_CAPITAL_AMOUNT;
+  const priorProfitTotal = adjustments.priorProfitRows.reduce(
+    (sum, row) => sum.add(dec(row.amount)),
+    new Prisma.Decimal(0),
+  );
+  const assetRows: FinancialReportPreviewRow[] = [
+    { item: '总用户余额', amount: data.totals.memberBalanceTotal.toString() },
+    ...adjustments.priorProfitRows.map((row) => ({ item: row.label, note: row.note, amount: String(row.amount) })),
+    { item: `${getMonthLabel(target.year, target.month)}盈利`, note: '分红', amount: netProfit.toString() },
+    { item: '投入资本', amount: String(capitalAmount) },
+    ...adjustments.assetRows.map((row) => ({
+      item: row.item,
+      category: row.category,
+      note: row.description,
+      amount: String(row.amount),
+    })),
+  ];
+  const assetTotal = data.totals.memberBalanceTotal
+    .add(priorProfitTotal)
+    .add(netProfit)
+    .add(capitalAmount)
+    .add(adjustments.assetRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0)));
+  const payableDividends = priorProfitTotal.add(netProfit);
+  const liabilityRows: FinancialReportPreviewRow[] = [
+    {
+      item: '用户余额',
+      category: '流动负债',
+      note: '已按 admin 排除规则计算',
+      amount: data.totals.memberBalanceTotal.toString(),
+    },
+    { item: '应付分红', category: '流动负债', note: '月底前尚未支付', amount: payableDividends.toString() },
+    ...adjustments.liabilityRows.map((row) => ({
+      item: row.item,
+      category: row.category,
+      note: row.description,
+      amount: String(row.amount),
+    })),
+  ];
+  const liabilityTotal = data.totals.memberBalanceTotal.add(payableDividends).add(
+    adjustments.liabilityRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0)),
+  );
+  const equityRows: FinancialReportPreviewRow[] = [
+    { item: '实际资本', category: '股东投入', note: '初始注资保留', amount: String(capitalAmount) },
+    ...adjustments.equityRows.map((row) => ({
+      item: row.item,
+      category: row.category,
+      note: row.description,
+      amount: String(row.amount),
+    })),
+  ];
+  const equityTotal = new Prisma.Decimal(capitalAmount).add(
+    adjustments.equityRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0)),
+  );
+
+  return {
+    monthKey: target.monthKey,
+    year: target.year,
+    month: target.month,
+    incomeRows: incomeRows.map((row) => ({ item: row.name, note: row.note, amount: dec(row.amount).toString() })),
+    expenseRows: expenseRows.map((row) => ({
+      item: row.description,
+      date: row.date,
+      note: `${row.source}${row.note ? ` · ${row.note}` : ''}`,
+      amount: dec(row.amount).toString(),
+      count: row.count,
+    })),
+    incomeTotal: incomeTotal.toString(),
+    expenseTotal: expenseTotal.toString(),
+    netProfit: netProfit.toString(),
+    assetRows,
+    assetTotal: assetTotal.toString(),
+    liabilityRows,
+    liabilityTotal: liabilityTotal.toString(),
+    equityRows,
+    equityTotal: equityTotal.toString(),
+    liabilityAndEquityTotal: liabilityTotal.add(equityTotal).toString(),
+    manualExpenses: data.rows.manualExpenseRows.map((row) => ({
+      id: row.id,
+      monthKey: row.monthKey,
+      amount: row.amount.toString(),
+      note: row.note,
+      hasImage: Boolean(row.imageFileName),
+      operatorId: row.operatorId,
+      operatorName: getManualExpenseOperatorLabel(row),
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    })),
+  };
+}
+
+export async function getMonthlyFinancialReportExcel(monthKey: string) {
+  const { target, adjustments, data } = await loadMonthlyFinancialReportContext(monthKey);
+  const workbook = buildFinancialStatementWorkbook({
+    year: target.year,
+    month: target.month,
+    data,
+    adjustments,
+  });
+  return {
+    fileName: `${target.year}年${target.month}月财务报表.xlsx`,
+    buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+  };
+}
+
 const getFileStats = async (filePath: string) => {
   const stat = await fs.stat(filePath);
   return {
@@ -1444,13 +1630,7 @@ export async function generateStoredMonthlyFinancialReports(params: {
   monthKey?: string;
   force?: boolean;
 } = {}) {
-  const target = getTargetMonth(params.monthKey);
-  const adjustments = await readFinancialAdjustments(target.monthKey);
-  const data = await loadMonthlyRevenueData({
-    start: target.start,
-    end: target.end,
-    excludeMemberInput: DEFAULT_EXCLUDE_MEMBER_INPUT,
-  });
+  const { target, adjustments, data } = await loadMonthlyFinancialReportContext(params.monthKey);
   const targetDir = path.join(REPORT_STORAGE_DIR, target.monthKey);
   await fs.mkdir(targetDir, { recursive: true });
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
@@ -12,6 +13,7 @@ import {
   SpendVoucherButton,
 } from '@/components/profile/VoucherUseButtons';
 import { resolveSpecialVoucher } from '@/lib/voucher';
+import { resolveLocalVoucherArt } from '@/lib/local-voucher-art';
 import {
   COUPON_VOUCHER_META,
   DISCOUNT_COUPON_PRIZE_NAMES,
@@ -50,7 +52,7 @@ export default async function BagPage() {
       orderBy: { createdAt: 'desc' },
       include: {
         prize: {
-          select: { name: true, pool: true, imageUrl: true, type: true },
+          select: { name: true, pool: true, type: true },
         },
       },
       take: 200,
@@ -199,6 +201,7 @@ export default async function BagPage() {
                       {list.map((item) => {
                         const prizeName = item.prizeName.trim();
                         const prizeType = item.prizeType ?? LotteryPrizeType.COUPON;
+                        const localArt = resolveLocalVoucherArt(prizeName);
                         const isUsed = item.status === 'USED';
                         const isVanityCard = VANITY_CARD_PRIZE_NAMES.has(prizeName);
                         const isBlockStackVoucher = BLOCK_STACK_PRIZE_NAMES.has(prizeName);
@@ -310,6 +313,17 @@ export default async function BagPage() {
                                   })()
                                 ) : null}
                               </div>
+                              {localArt ? (
+                                <div className="flex h-28 items-center justify-center overflow-hidden rounded-xl border border-black/5 bg-white/70 p-2">
+                                  <Image
+                                    src={localArt}
+                                    alt={prizeName}
+                                    width={180}
+                                    height={104}
+                                    className="max-h-full w-auto object-contain"
+                                  />
+                                </div>
+                              ) : null}
                               <p className="text-lg font-semibold text-[#171717]">{prizeName}</p>
                               <p className="text-sm text-gray-500">{isUsed ? '使用时间' : '到期时间'}：{metaTime}</p>
                               {isBlockStackVoucher ? (

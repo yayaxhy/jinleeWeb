@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import { Footer } from '@/components/Footer';
 import { NavBar } from '@/components/NavBar';
+import { LEGAL_ENTITY_NAME, UNIFIED_SOCIAL_CREDIT_CODE } from '@/lib/legal';
 import {
   SITE_ALTERNATE_NAME,
   SITE_DESCRIPTION,
@@ -69,6 +70,8 @@ const structuredData = {
       '@id': `${SITE_URL}/#organization`,
       name: SITE_NAME,
       alternateName: SITE_ALTERNATE_NAME,
+      legalName: LEGAL_ENTITY_NAME,
+      identifier: UNIFIED_SOCIAL_CREDIT_CODE,
       url: SITE_URL,
       description: SITE_DESCRIPTION,
       sameAs: ['https://discord.gg/UJ95zhfJYR'],

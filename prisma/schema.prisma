@@ -476,10 +476,11 @@ model Member {
   workerAuditionInvites AuditionInvite[] @relation("WorkerAuditionInvites")
 
   // Expense & profit logs
-  expensesAsOperator     Expense[]     @relation("ExpenseOperator")
-  expensesAsTarget       Expense[]     @relation("ExpenseTarget")
-  profitsAsOperator      PureProfit[]  @relation("PureProfitOperator")
-  profitsAsTarget        PureProfit[]  @relation("PureProfitTarget")
+  expensesAsOperator            Expense[]              @relation("ExpenseOperator")
+  expensesAsTarget              Expense[]              @relation("ExpenseTarget")
+  monthlyManualExpensesAsEditor MonthlyManualExpense[] @relation("MonthlyManualExpenseEditor")
+  profitsAsOperator             PureProfit[]           @relation("PureProfitOperator")
+  profitsAsTarget               PureProfit[]           @relation("PureProfitTarget")
   couponsAsConsumeTarget Coupon[]      @relation("CouponConsumeTarget")
   lotteryConsumeTargets  LotteryDraw[] @relation("LotteryConsumeTarget")
 }
@@ -844,6 +845,24 @@ model Expense {
   @@index([operatorId])
   @@index([targetId])
   @@index([createdAt])
+}
+
+// Manually recorded operating expenses for a selected financial-report month.
+// operatorId and updatedAt always describe the person/time of the latest edit.
+model MonthlyManualExpense {
+  id            String   @id @default(cuid())
+  monthKey      String
+  amount        Decimal  @db.Decimal(19, 4)
+  note          String
+  imageFileName String?
+  operatorId    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  operator Member @relation("MonthlyManualExpenseEditor", fields: [operatorId], references: [discordUserId])
+
+  @@index([monthKey, updatedAt])
+  @@index([operatorId])
 }
 
 model PureProfit {

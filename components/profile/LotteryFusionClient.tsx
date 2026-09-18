@@ -24,6 +24,7 @@ import {
   LOTTERY_FUSION_RULES,
   type LotteryFusionSourceKind,
 } from '@/lib/lottery-fusion';
+import { resolveLocalVoucherArt } from '@/lib/local-voucher-art';
 
 export type FusionItemView = {
   id: string;
@@ -119,30 +120,6 @@ const FILTER_OPTIONS = [
 ] as const;
 
 const PRIZE_ARTWORK_BY_NAME: Record<string, string> = {
-  香槟代金券: '/lottery-fusion/business/香槟代金券.png',
-  棒棒糖代金券: '/lottery-fusion/business/棒棒糖代金券.png',
-  蝴蝶代金券: '/lottery-fusion/business/蝴蝶代金券.png',
-  抽奖代金券: '/lottery-fusion/business/抽奖代金券.PNG',
-  特殊9折券: '/lottery-fusion/business/抽奖特殊9折券.PNG',
-  积木游戏代金券: '/lottery-fusion/business/抽积木代金券.png',
-  双倍消费5000券: '/lottery-fusion/business/双倍消费5000.PNG',
-  双倍流水5000券: '/lottery-fusion/business/双倍流水5000.PNG',
-  钢琴代金券: '/lottery-fusion/business/钢琴代金券.png',
-  深海宝箱代金券: '/lottery-fusion/business/深海宝箱代金券.png',
-  飞机代金券: '/lottery-fusion/business/飞机代金券.png',
-  '7折券': '/lottery-fusion/business/7折券.PNG',
-  '8折券': '/lottery-fusion/business/八折券.PNG',
-  一日冠95折券: '/lottery-fusion/business/一日冠95折.PNG',
-  一日冠92折券: '/lottery-fusion/business/一日冠92折.PNG',
-  一日冠9折券: '/lottery-fusion/business/一日冠9折券.PNG',
-  三日冠92折券: '/lottery-fusion/business/三日冠92折.PNG',
-  三日冠9折券: '/lottery-fusion/business/三日冠9折券.PNG',
-  一周冠92折券: '/lottery-fusion/business/一周冠92折.PNG',
-  一周冠9折券: '/lottery-fusion/business/一周冠9折.PNG',
-  '4位数靓号卡': '/lottery-fusion/business/4位数靓号.PNG',
-  '3位数靓号卡': '/lottery-fusion/business/3位数靓号.PNG',
-  自定义tag券: '/lottery-fusion/business/自定义tag.PNG',
-  自定义礼物券: '/lottery-fusion/business/自定义礼物.PNG',
   绝白羽翼: '/lottery-fusion/reference/demo-butterfly.png',
   蝴蝶: '/lottery-fusion/reference/demo-butterfly.png',
   蝶光之翼: '/lottery-fusion/reference/demo-butterfly.png',
@@ -155,7 +132,6 @@ const PRIZE_ARTWORK_BY_NAME: Record<string, string> = {
   星穹水晶球: '/lottery-fusion/reference/demo-orb.png',
   高级水晶: '/lottery-fusion/reference/demo-orb.png',
   定制礼物券: '/lottery-fusion/reference/demo-letter.png',
-  小蛋糕代金券: '/lottery-fusion/business/小蛋糕.png',
 };
 
 const POOL_LABEL: Record<string, string> = {
@@ -214,6 +190,10 @@ const isExpiredDiscordAttachment = (value?: string | null) => {
 };
 
 const resolvePrizeFallbackArt = (prizeName: string) => {
+  const voucherArt = resolveLocalVoucherArt(prizeName);
+  if (voucherArt) {
+    return voucherArt;
+  }
   if (PRIZE_ARTWORK_BY_NAME[prizeName]) {
     return PRIZE_ARTWORK_BY_NAME[prizeName];
   }

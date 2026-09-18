@@ -182,6 +182,9 @@ export function PeiwanListClient() {
             返回主页
           </Link>
           <h1 className="text-3xl font-bold tracking-wide text-[#2800ff]">陪玩列表</h1>
+          <p className="max-w-2xl text-sm leading-6 text-gray-600">
+            每张陪玩卡片均展示当前服务单价，价格单位为“币/小时”；具体游戏、时长与最终费用以下单前确认内容为准。
+          </p>
         </div>
       </header>
 

@@ -18,6 +18,25 @@ export type StripePricingRateSnapshot = {
   rates: Record<StripePricingCurrency, number>;
 };
 
+export type StripePricingPreset = {
+  rmbAmount: number;
+  priceId: string;
+  prices: Record<StripePricingCurrency, number>;
+};
+
+export type StripePricingSnapshot = StripePricingRateSnapshot & {
+  presetPrices: StripePricingPreset[];
+};
+
+export type StripeCardOrigin = 'domestic' | 'international';
+
+export const STRIPE_CANADA_STANDARD_CARD_PRICING = {
+  processingRate: 0.029,
+  internationalCardRate: 0.008,
+  currencyConversionRate: 0.02,
+  fixedFeeCad: 0.3,
+} as const;
+
 const FRANKFURTER_LATEST_URL =
   'https://api.frankfurter.dev/v1/latest?base=CNY&symbols=GBP,EUR,USD,CAD';
 
@@ -74,4 +93,35 @@ export const calculateStripePrice = (rmbAmount: number, rate: number, markupPerc
   // Every supported currency has a two-decimal smallest unit. Always round upward
   // so the configured markup cannot be reduced by rounding.
   return Math.ceil(rawAmount * 100 - 1e-8) / 100;
+};
+
+export const calculatePercentageDifference = (value: number, baseline: number) => {
+  if (!Number.isFinite(value) || !Number.isFinite(baseline) || baseline <= 0) return 0;
+  return (value / baseline - 1) * 100;
+};
+
+export const calculateEstimatedStripeCadPayout = (input: {
+  chargedAmount: number;
+  chargedCurrency: StripePricingCurrency;
+  rates: Record<StripePricingCurrency, number>;
+  cardOrigin: StripeCardOrigin;
+}) => {
+  const grossCad =
+    input.chargedCurrency === 'CAD'
+      ? input.chargedAmount
+      : input.chargedAmount * (input.rates.CAD / input.rates[input.chargedCurrency]);
+  const percentageFeeRate =
+    STRIPE_CANADA_STANDARD_CARD_PRICING.processingRate +
+    (input.cardOrigin === 'international' ? STRIPE_CANADA_STANDARD_CARD_PRICING.internationalCardRate : 0) +
+    (input.chargedCurrency === 'CAD' ? 0 : STRIPE_CANADA_STANDARD_CARD_PRICING.currencyConversionRate);
+  const feeCad = grossCad * percentageFeeRate + STRIPE_CANADA_STANDARD_CARD_PRICING.fixedFeeCad;
+  const netCad = Math.max(0, grossCad - feeCad);
+
+  return {
+    grossCad,
+    percentageFeeRate,
+    feeCad,
+    netCad,
+    netCny: netCad / input.rates.CAD,
+  };
 };

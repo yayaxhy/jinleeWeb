@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { canViewStripePricing } from '@/lib/admin';
 import { fetchStripePricingRateSnapshot } from '@/lib/stripe-pricing-rates';
+import { fetchStripeRechargePresetPrices, getStripeSecretKey } from '@/lib/stripe-recharge';
 import { getServerSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -12,8 +13,11 @@ export async function GET() {
   }
 
   try {
-    const snapshot = await fetchStripePricingRateSnapshot();
-    return NextResponse.json(snapshot, {
+    const [snapshot, presetPrices] = await Promise.all([
+      fetchStripePricingRateSnapshot(),
+      fetchStripeRechargePresetPrices(getStripeSecretKey()),
+    ]);
+    return NextResponse.json({ ...snapshot, presetPrices }, {
       headers: {
         'Cache-Control': 'no-store',
       },

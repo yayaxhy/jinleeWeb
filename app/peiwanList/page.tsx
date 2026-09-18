@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 
+import { Footer } from '@/components/Footer';
 import {
   SITE_OG_IMAGE,
   SITE_OG_IMAGE_HEIGHT,
@@ -39,8 +40,11 @@ export const metadata: Metadata = {
 
 export default function PartnersPage() {
   return (
-    <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-10">
-      <PeiwanListClient />
-    </main>
+    <div className="min-h-screen bg-[#f7f3ef]">
+      <main className="min-h-screen px-6 py-10 text-[#171717]">
+        <PeiwanListClient />
+      </main>
+      <Footer />
+    </div>
   );
 }
