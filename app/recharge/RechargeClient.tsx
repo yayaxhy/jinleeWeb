@@ -249,7 +249,7 @@ export default function RechargeClient({
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[320px,1fr]">
+    <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
       <div className="space-y-6">
         <div className="rounded-[32px] border border-black/5 bg-white p-6 space-y-5">
           <div className="space-y-3">
