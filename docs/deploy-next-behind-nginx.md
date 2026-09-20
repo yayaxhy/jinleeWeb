@@ -31,6 +31,34 @@ AUTH_LOGIN_AUDIT_RETENTION_DAYS=365
 
 Generate and retain the encryption key securely; rotating or losing it prevents old IP records from being decrypted. The app continues to authenticate users when this key is absent, but login events will not include an IP address.
 
+## Optional: coarse login location
+
+The admin traffic page can show the country, region, and city recorded at login. The application does not send a user's IP address to a third-party lookup API. Instead, configure the trusted reverse proxy to overwrite the following headers after a local GeoIP lookup:
+
+- `X-Geo-Country`
+- `X-Geo-Region`
+- `X-Geo-City`
+
+For example, with the Nginx GeoIP2 module and a locally stored MaxMind GeoLite2-City database, define variables in the `http` block. The database needs regular updates and the precise package/module installation differs by server distribution.
+
+```nginx
+geoip2 /usr/share/GeoIP/GeoLite2-City.mmdb {
+    $login_geo_country country names en;
+    $login_geo_region subdivisions 0 names en;
+    $login_geo_city city names en;
+}
+```
+
+Then add these headers to the site's `location /` block. `proxy_set_header` overwrites any similarly named header sent by a browser, so the application can treat the values as proxy-provided data.
+
+```nginx
+proxy_set_header X-Geo-Country $login_geo_country;
+proxy_set_header X-Geo-Region $login_geo_region;
+proxy_set_header X-Geo-City $login_geo_city;
+```
+
+If Nginx sits behind Cloudflare or another CDN, configure the real-IP module first so the GeoIP lookup receives the visitor IP rather than the CDN edge IP. A VPN, proxy, or mobile carrier can make this location inaccurate; it must be presented as an approximate login location.
+
 Verify the listener:
 
 ```bash

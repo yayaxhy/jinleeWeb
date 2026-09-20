@@ -5,7 +5,14 @@ import { prisma } from '@/lib/prisma';
 
 const MAX_USER_AGENT_LENGTH = 500;
 const MAX_REFERRER_LENGTH = 500;
+const MAX_LOCATION_PART_LENGTH = 120;
 const VISITOR_COOKIE_NAME = 'jl_vid';
+
+export type AuthLoginLocation = {
+  country: string | null;
+  region: string | null;
+  city: string | null;
+};
 
 const getEncryptionKey = () => {
   const configured = process.env.AUTH_LOGIN_AUDIT_ENCRYPTION_KEY?.trim();
@@ -38,6 +45,21 @@ export const getTrustedClientIp = (request: Request) => {
   const value = request.headers.get('x-real-ip')?.trim();
   return value && isIP(value) ? value : null;
 };
+
+const normalizeLocationPart = (value: string | null) => {
+  if (!value) return null;
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (!normalized || normalized.length > MAX_LOCATION_PART_LENGTH) return null;
+  return normalized;
+};
+
+export const getTrustedClientLocation = (request: Request): AuthLoginLocation => ({
+  // These headers must be overwritten by the trusted reverse proxy. Never accept browser-supplied
+  // location headers directly when the app is reachable from the public internet.
+  country: normalizeLocationPart(request.headers.get('x-geo-country')),
+  region: normalizeLocationPart(request.headers.get('x-geo-region')),
+  city: normalizeLocationPart(request.headers.get('x-geo-city')),
+});
 
 export const encryptAuthAuditIp = (ipAddress: string) => {
   const key = getEncryptionKey();
@@ -75,6 +97,7 @@ export const recordAuthLoginEvent = async (input: {
   provider: AccountProvider;
 }) => {
   const ipAddress = getTrustedClientIp(input.request);
+  const location = getTrustedClientLocation(input.request);
   let encryptedIp: { encrypted: string; hash: string } | null = null;
   if (ipAddress) {
     try {
@@ -91,6 +114,9 @@ export const recordAuthLoginEvent = async (input: {
       provider: input.provider,
       ipAddressEncrypted: encryptedIp?.encrypted ?? null,
       ipHash: encryptedIp?.hash ?? null,
+      ipCountry: location.country,
+      ipRegion: location.region,
+      ipCity: location.city,
       userAgent: input.request.headers.get('user-agent')?.slice(0, MAX_USER_AGENT_LENGTH) ?? null,
       referrer: input.request.headers.get('referer')?.slice(0, MAX_REFERRER_LENGTH) ?? null,
       visitorId: normalizeVisitorId(readCookie(input.request, VISITOR_COOKIE_NAME)),

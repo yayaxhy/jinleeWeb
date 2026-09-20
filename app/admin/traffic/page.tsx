@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Prisma } from '@prisma/client';
 import { redirect } from 'next/navigation';
-import { isAdminDiscordId } from '@/lib/admin';
+import { canViewTraffic } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
@@ -28,8 +28,19 @@ type DailyTrendRow = {
 };
 
 const BEIJING_OFFSET_MINUTES = 8 * 60;
+const LOGIN_EVENTS_PER_PAGE = 100;
 
 const numberFormatter = new Intl.NumberFormat('zh-CN');
+const beijingDateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
 
 function toNumber(value: bigint | number | string | null | undefined): number {
   if (value == null) return 0;
@@ -80,6 +91,29 @@ function getScopeFilterSql(scope: 'public' | 'all') {
   `;
 }
 
+function getSingleSearchParam(searchParams: Record<string, string | string[] | undefined>, key: string) {
+  const value = searchParams[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getPositiveInteger(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function getLoginLocationLabel(event: {
+  ipCountry: string | null;
+  ipRegion: string | null;
+  ipCity: string | null;
+  ipAddressEncrypted: string | null;
+}) {
+  const parts = [event.ipCity, event.ipRegion, event.ipCountry].filter(
+    (value): value is string => Boolean(value?.trim()),
+  );
+  if (parts.length > 0) return parts.join(' / ');
+  return event.ipAddressEncrypted ? '所在地未记录' : 'IP 未记录';
+}
+
 async function aggregateWindow(startAt: Date, endAt: Date, scopeSql: Prisma.Sql) {
   const rows = await prisma.$queryRaw<AggregateRow[]>(Prisma.sql`
     SELECT
@@ -101,12 +135,12 @@ async function aggregateWindow(startAt: Date, endAt: Date, scopeSql: Prisma.Sql)
 
 export default async function AdminTrafficPage(props: PageProps) {
   const session = await getServerSession();
-  if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
+  if (!session?.discordId || !canViewTraffic(session.discordId)) {
     redirect('/');
   }
 
   const searchParams = (await props.searchParams) ?? {};
-  const rawScope = Array.isArray(searchParams.scope) ? searchParams.scope[0] : searchParams.scope;
+  const rawScope = getSingleSearchParam(searchParams, 'scope');
   const scope: 'public' | 'all' = rawScope === 'all' ? 'all' : 'public';
   const scopeSql = getScopeFilterSql(scope);
 
@@ -117,7 +151,7 @@ export default async function AdminTrafficPage(props: PageProps) {
   const thirtyDaysStartUtc = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const trendStartUtc = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-  const [todayStats, sevenDayStats, monthStats, thirtyDayStats, topPathsRows, dailyTrendRows] =
+  const [todayStats, sevenDayStats, monthStats, thirtyDayStats, topPathsRows, dailyTrendRows, loginEventsTotal] =
     await Promise.all([
       aggregateWindow(todayStartUtc, now, scopeSql),
       aggregateWindow(sevenDaysStartUtc, now, scopeSql),
@@ -148,7 +182,32 @@ export default async function AdminTrafficPage(props: PageProps) {
         GROUP BY 1
         ORDER BY day DESC
       `),
+      prisma.authLoginEvent.count({
+        where: { discordUserId: { not: null } },
+      }),
     ]);
+
+  const totalLoginPages = Math.max(1, Math.ceil(loginEventsTotal / LOGIN_EVENTS_PER_PAGE));
+  const requestedLoginPage = getPositiveInteger(getSingleSearchParam(searchParams, 'loginPage'), 1);
+  const loginPage = Math.min(requestedLoginPage, totalLoginPages);
+  const loginEvents = await prisma.authLoginEvent.findMany({
+    where: { discordUserId: { not: null } },
+    orderBy: { createdAt: 'desc' },
+    skip: (loginPage - 1) * LOGIN_EVENTS_PER_PAGE,
+    take: LOGIN_EVENTS_PER_PAGE,
+    select: {
+      id: true,
+      discordUserId: true,
+      provider: true,
+      ipAddressEncrypted: true,
+      ipCountry: true,
+      ipRegion: true,
+      ipCity: true,
+      createdAt: true,
+      member: { select: { serverDisplayName: true } },
+      jinleeUser: { select: { discordDisplayName: true } },
+    },
+  });
 
   const topPaths = topPathsRows.map((row) => ({
     path: row.path,
@@ -285,6 +344,78 @@ export default async function AdminTrafficPage(props: PageProps) {
             </table>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">登录记录</h3>
+            <p className="text-xs text-white/50">
+              Discord 登录用户，按最新登录时间排序；所在地为登录时由受信任反向代理提供的粗略位置。
+            </p>
+          </div>
+          <p className="text-xs text-white/50">
+            共 {numberFormatter.format(loginEventsTotal)} 条 · 第 {loginPage} / {totalLoginPages} 页
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="text-xs uppercase tracking-[0.2em] text-white/50">
+              <tr>
+                <th className="px-2 py-2 text-left">Discord ID</th>
+                <th className="px-2 py-2 text-left">Discord 昵称</th>
+                <th className="px-2 py-2 text-left">登录所在地</th>
+                <th className="px-2 py-2 text-left">登录时间（北京时间）</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {loginEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-2 py-4 text-white/60">
+                    暂无 Discord 登录记录
+                  </td>
+                </tr>
+              ) : (
+                loginEvents.map((event) => {
+                  const displayName =
+                    event.member?.serverDisplayName?.trim() ||
+                    event.jinleeUser?.discordDisplayName?.trim() ||
+                    '未知昵称';
+                  return (
+                    <tr key={event.id}>
+                      <td className="px-2 py-3 font-mono text-xs text-white/80">{event.discordUserId}</td>
+                      <td className="px-2 py-3">{displayName}</td>
+                      <td className="px-2 py-3 text-white/80">{getLoginLocationLabel(event)}</td>
+                      <td className="px-2 py-3 whitespace-nowrap text-white/80">
+                        {beijingDateTimeFormatter.format(event.createdAt)}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        {totalLoginPages > 1 ? (
+          <div className="mt-4 flex items-center justify-end gap-3 text-sm">
+            {loginPage > 1 ? (
+              <Link
+                href={`/admin/traffic?scope=${scope}&loginPage=${loginPage - 1}`}
+                className="rounded-full border border-white/20 px-4 py-2 text-white hover:bg-white/10"
+              >
+                上一页
+              </Link>
+            ) : null}
+            {loginPage < totalLoginPages ? (
+              <Link
+                href={`/admin/traffic?scope=${scope}&loginPage=${loginPage + 1}`}
+                className="rounded-full border border-white/20 px-4 py-2 text-white hover:bg-white/10"
+              >
+                下一页
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

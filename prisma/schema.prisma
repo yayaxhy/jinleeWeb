@@ -314,6 +314,9 @@ model AuthLoginEvent {
   provider           AccountProvider
   ipAddressEncrypted String?
   ipHash             String?
+  ipCountry          String?
+  ipRegion           String?
+  ipCity             String?
   userAgent          String?
   referrer           String?
   visitorId          String?

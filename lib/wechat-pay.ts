@@ -94,7 +94,7 @@ const truncateUtf8 = (value: string, maxBytes: number) => {
 };
 
 const resolveAbsoluteUrl = (raw: string | undefined, fallback: string) => {
-  const base = process.env.SITE_ORIGIN ?? 'https://jinlee.vip';
+  const base = process.env.SITE_ORIGIN ?? 'https://jinleeclub.vip';
   const candidate = raw ?? `${base}${fallback}`;
   try {
     return new URL(candidate).toString();
@@ -224,7 +224,7 @@ const requestWechatPay = async <T>(
         `WECHATPAY2-SHA256-RSA2048 mchid="${config.mchId}",` +
         `nonce_str="${nonce}",timestamp="${timestamp}",serial_no="${config.certificateSerialNo}",` +
         `signature="${signature}"`,
-      'User-Agent': 'jinlee.vip/1.0',
+      'User-Agent': 'jinleeclub.vip/1.0',
     },
     body: requestBody || undefined,
   });

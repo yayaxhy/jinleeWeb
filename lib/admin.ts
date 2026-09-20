@@ -33,6 +33,7 @@ const IRIA_DISCORD_IDS = [
 
 const HOWARD_READONLY_IDS = ['1421651539247894549'];
 const STRIPE_PRICING_ADMIN_DISCORD_ID = '525770714574225408';
+const TRAFFIC_ADMIN_DISCORD_ID = '525770714574225408';
 
 export const getAdminDiscordIds = () => ADMIN_DISCORD_IDS;
 
@@ -122,3 +123,6 @@ export const canViewRevenue = (discordId?: string | null) =>
 
 export const canViewStripePricing = (discordId?: string | null) =>
   discordId === STRIPE_PRICING_ADMIN_DISCORD_ID;
+
+export const canViewTraffic = (discordId?: string | null) =>
+  discordId === TRAFFIC_ADMIN_DISCORD_ID;
