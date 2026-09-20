@@ -59,6 +59,20 @@ proxy_set_header X-Geo-City $login_geo_city;
 
 If Nginx sits behind Cloudflare or another CDN, configure the real-IP module first so the GeoIP lookup receives the visitor IP rather than the CDN edge IP. A VPN, proxy, or mobile carrier can make this location inaccurate; it must be presented as an approximate login location.
 
+### Backfill historical login locations
+
+After deploying the `AuthLoginEvent` location migration, use the local GeoLite2 database to fill historic records that have an encrypted login IP but missing location fields. The command never sends IP addresses to another service.
+
+```bash
+# Read-only preview: reports how many records can be resolved.
+npm run auth-login-location:backfill
+
+# Writes country, region and city only for resolvable records with missing location fields.
+npm run auth-login-location:backfill -- --apply
+```
+
+`AUTH_LOGIN_AUDIT_ENCRYPTION_KEY` must be the same key used when the login event was recorded. Set `AUTH_LOGIN_GEOIP_DB_PATH` only if `GeoLite2-City.mmdb` is not located at `/usr/share/GeoIP/GeoLite2-City.mmdb`.
+
 Verify the listener:
 
 ```bash

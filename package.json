@@ -25,12 +25,14 @@
         "wechat-native:reconcile-once": "node scripts/wechat-native-reconcile-scheduler.mjs --once",
         "auth-login-audit:purge": "node scripts/auth-login-audit-retention-scheduler.mjs",
         "auth-login-audit:purge-once": "node scripts/auth-login-audit-retention-scheduler.mjs --once",
+        "auth-login-location:backfill": "tsx scripts/backfill-auth-login-locations.ts",
         "db:deploy:staging": "node scripts/run-staging.mjs prisma migrate deploy",
         "db:sync:staging": "node scripts/run-staging.mjs node scripts/sync-staging-db.mjs",
         "prisma:generate:staging": "node scripts/run-staging.mjs prisma generate"
     },
     "dependencies": {
         "@heroicons/react": "^2.2.0",
+        "@maxmind/geoip2-node": "^6.3.4",
         "@prisma/client": "^6.19.2",
         "cuid": "^3.0.0",
         "exceljs": "^4.4.0",
