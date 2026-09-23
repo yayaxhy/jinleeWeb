@@ -25,6 +25,12 @@ function redirectToMigrationPage(origin: string, status: string) {
   return response;
 }
 
+function redirectToProfile(origin: string) {
+  const response = NextResponse.redirect(new URL('/profile', origin), { status: 302 });
+  clearDiscordMigrationStateCookie(response);
+  return response;
+}
+
 export async function GET(request: Request) {
   const origin = getOrigin(request);
   const url = new URL(request.url);
@@ -64,10 +70,13 @@ export async function GET(request: Request) {
       discordId: discordUser.id,
       accessToken: tokens.access_token,
     });
-    if (result.nicknameSync === 'failed') {
-      return redirectToMigrationPage(origin, result.alreadyMember ? 'already_joined_nickname_pending' : 'joined_nickname_pending');
+    if (result.alreadyMember) {
+      return redirectToProfile(origin);
     }
-    return redirectToMigrationPage(origin, result.alreadyMember ? 'already_joined' : 'joined');
+    if (result.nicknameSync === 'failed') {
+      return redirectToMigrationPage(origin, 'joined_nickname_pending');
+    }
+    return redirectToMigrationPage(origin, 'joined');
   } catch (error) {
     const code = error instanceof InternalBotError ? error.code : 'unexpected_error';
     console.error('[discord-migration] join failed', { code });

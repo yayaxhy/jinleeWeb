@@ -13,22 +13,12 @@ type MigrationPageProps = {
 const statusMessages: Record<string, { title: string; body: string; tone: 'success' | 'warning' | 'error' }> = {
   joined: {
     title: '已加入新服务器',
-    body: '你已完成授权并成功加入。现在可以打开 Discord 查看新服务器。',
-    tone: 'success',
-  },
-  already_joined: {
-    title: '你已经在新服务器中',
-    body: '无需重复迁移，可直接打开 Discord。',
+    body: '你已完成授权并成功加入。',
     tone: 'success',
   },
   joined_nickname_pending: {
     title: '已加入新服务器，但昵称暂未同步',
     body: '你的账号已成功加入。请联系管理员检查 Bot 的“管理昵称”权限或昵称长度。',
-    tone: 'warning',
-  },
-  already_joined_nickname_pending: {
-    title: '你已在新服务器中，但昵称暂未同步',
-    body: '请联系管理员检查 Bot 的“管理昵称”权限或昵称长度。',
     tone: 'warning',
   },
   authorization_declined: {
@@ -130,22 +120,11 @@ export default async function DiscordMigrationPage({ searchParams }: MigrationPa
   const status = typeof rawStatus === 'string' ? rawStatus : rawStatus?.[0];
   const message = status ? statusMessages[status] ?? statusMessages.unexpected_error : null;
   const config = getDiscordMigrationConfig();
-  const discordServerUrl = `https://discord.com/channels/${config.targetGuildId}`;
-
   return (
     <main className="min-h-screen bg-[#f7f3ef] px-6 py-16 text-[#171717]">
-      <section className="mx-auto max-w-2xl space-y-6">
-        <Link href="/profile" className="text-sm text-gray-500 transition hover:text-[#b77900]">
-          ← 返回个人主页
-        </Link>
-
+      <section className="mx-auto max-w-2xl">
         <article className="rounded-[32px] border border-black/5 bg-white p-8 shadow-[0_10px_30px_rgba(17,24,39,0.04)] sm:p-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#b77900]">Discord Migration</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-wide">加入 {config.targetGuildName}</h1>
-          <p className="mt-4 leading-7 text-gray-600">
-            点击后会跳转至 Discord 官方授权页。确认后，系统只会使用本次短期授权将当前 Discord 账号加入新服务器，
-            不会保存你的 Discord access token。
-          </p>
+          <h1 className="text-3xl font-semibold tracking-wide">加入 {config.targetGuildName}</h1>
 
           {message ? (
             <div className={`mt-6 rounded-2xl border px-5 py-4 ${toneClasses[message.tone]}`}>
@@ -154,32 +133,26 @@ export default async function DiscordMigrationPage({ searchParams }: MigrationPa
             </div>
           ) : null}
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 space-y-3">
             {config.enabled ? (
               <a
                 href="/api/discord/migration/start"
-                className="rounded-full bg-[#f8c84a] px-6 py-3 text-sm font-semibold text-[#4e3600] transition hover:bg-[#e9b42d]"
+                className="flex w-full items-center justify-center rounded-2xl bg-[#f8c84a] px-6 py-4 text-base font-semibold text-[#4e3600] transition hover:bg-[#e9b42d]"
               >
                 授权并加入新服务器
               </a>
             ) : (
-              <span className="rounded-full bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-500">
+              <span className="flex w-full items-center justify-center rounded-2xl bg-gray-200 px-6 py-4 text-base font-semibold text-gray-500">
                 迁移入口暂未开放
               </span>
             )}
-            {(status === 'joined' || status === 'already_joined' || status === 'joined_nickname_pending' || status === 'already_joined_nickname_pending') && (
-              <a
-                href={discordServerUrl}
-                className="rounded-full border border-black/15 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:border-[#f8c84a] hover:text-[#b77900]"
-              >
-                打开 Discord
-              </a>
-            )}
+            <Link
+              href="/profile"
+              className="flex w-full items-center justify-center rounded-2xl border border-black/15 px-6 py-4 text-base font-semibold text-gray-700 transition hover:border-[#f8c84a] hover:text-[#b77900]"
+            >
+              返回个人中心
+            </Link>
           </div>
-
-          <p className="mt-8 text-xs leading-5 text-gray-500">
-            此入口仅会在你确认 Discord 官方授权后将当前账号加入服务器；不会自动授予 VIP、管理或其他权益身份组。
-          </p>
         </article>
       </section>
     </main>
