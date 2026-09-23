@@ -213,6 +213,7 @@ export default async function Profile(props: ProfilePageProps) {
     { href: '/profile/giftwall', label: '礼物墙' },
     { href: '/profile/withdraw', label: '提现' },
     { href: '/profile/point-shop', label: '积分商城' },
+    { href: '/discord/migration', label: '迁移新服务器' },
     { href: '/recharge', label: '充值中心' },
   ];
   const quickEntryLinks = navLinks.filter(
