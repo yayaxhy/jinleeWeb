@@ -17,9 +17,9 @@ type JoinMigrationResponse = {
 
 const getOrigin = (request: Request) => process.env.NEXTAUTH_URL ?? new URL(request.url).origin;
 
-function redirectToMigrationPage(origin: string, status: string) {
+function redirectToMigrationPage(origin: string, status?: string) {
   const url = new URL('/discord/migration', origin);
-  url.searchParams.set('status', status);
+  if (status) url.searchParams.set('status', status);
   const response = NextResponse.redirect(url, { status: 302 });
   clearDiscordMigrationStateCookie(response);
   return response;
@@ -45,7 +45,10 @@ export async function GET(request: Request) {
   const returnedState = url.searchParams.get('state');
   const expectedState = await getDiscordMigrationStateCookie();
   if (!code || !returnedState || !expectedState || returnedState !== expectedState) {
-    return redirectToMigrationPage(origin, 'invalid_request');
+    // An older authorization tab may return after the user has already begun
+    // a newer authorization flow. Keep the state validation, but return the
+    // user quietly to a fresh migration page instead of showing an error.
+    return redirectToMigrationPage(origin);
   }
 
   const session = await getServerSession();

@@ -42,11 +42,6 @@ const statusMessages: Record<string, { title: string; body: string; tone: 'succe
     body: '请重新点击迁移按钮，并在 Discord 页面确认加入服务器权限。',
     tone: 'error',
   },
-  invalid_request: {
-    title: '迁移链接已失效',
-    body: '为保护账号安全，授权链接仅短时间有效。请重新发起迁移。',
-    tone: 'error',
-  },
   login_required: {
     title: '需要先登录网站',
     body: '请先使用你的 Discord 账号登录网站，再发起迁移。',
