@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getDiscordMigrationConfig } from '@/lib/discord-migration';
+import { InternalBotError, postInternalBot } from '@/lib/internal-bot';
 import { getServerSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -8,6 +9,11 @@ export const revalidate = 0;
 
 type MigrationPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+type MigrationStatusResponse = {
+  ok: true;
+  alreadyMember: boolean;
 };
 
 const statusMessages: Record<string, { title: string; body: string; tone: 'success' | 'warning' | 'error' }> = {
@@ -120,6 +126,24 @@ export default async function DiscordMigrationPage({ searchParams }: MigrationPa
   const status = typeof rawStatus === 'string' ? rawStatus : rawStatus?.[0];
   const message = status ? statusMessages[status] ?? statusMessages.unexpected_error : null;
   const config = getDiscordMigrationConfig();
+
+  // Preserve the post-join result messages, but avoid asking an existing
+  // member to authorize again whenever they revisit the migration link.
+  const hasFreshJoinResult = status === 'joined' || status === 'joined_nickname_pending';
+  if (config.enabled && !hasFreshJoinResult) {
+    let alreadyMember = false;
+    try {
+      const result = await postInternalBot<MigrationStatusResponse>('/internal/discord/migration/status', {
+        discordId: session.discordId,
+      });
+      alreadyMember = result.alreadyMember;
+    } catch (error) {
+      const code = error instanceof InternalBotError ? error.code : 'unexpected_error';
+      console.warn('[discord-migration] membership precheck unavailable', { code });
+    }
+    if (alreadyMember) redirect('/profile');
+  }
+
   return (
     <main className="min-h-screen bg-[#f7f3ef] px-6 py-16 text-[#171717]">
       <section className="mx-auto max-w-2xl">
