@@ -12,6 +12,7 @@ type JoinMigrationResponse = {
   ok: true;
   joined: boolean;
   alreadyMember: boolean;
+  nicknameSync: 'synced' | 'not_available' | 'failed';
 };
 
 const getOrigin = (request: Request) => process.env.NEXTAUTH_URL ?? new URL(request.url).origin;
@@ -63,6 +64,9 @@ export async function GET(request: Request) {
       discordId: discordUser.id,
       accessToken: tokens.access_token,
     });
+    if (result.nicknameSync === 'failed') {
+      return redirectToMigrationPage(origin, result.alreadyMember ? 'already_joined_nickname_pending' : 'joined_nickname_pending');
+    }
     return redirectToMigrationPage(origin, result.alreadyMember ? 'already_joined' : 'joined');
   } catch (error) {
     const code = error instanceof InternalBotError ? error.code : 'unexpected_error';

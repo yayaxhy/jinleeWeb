@@ -21,6 +21,16 @@ const statusMessages: Record<string, { title: string; body: string; tone: 'succe
     body: '无需重复迁移，可直接打开 Discord。',
     tone: 'success',
   },
+  joined_nickname_pending: {
+    title: '已加入新服务器，但昵称暂未同步',
+    body: '你的账号已成功加入。请联系管理员检查 Bot 的“管理昵称”权限或昵称长度。',
+    tone: 'warning',
+  },
+  already_joined_nickname_pending: {
+    title: '你已在新服务器中，但昵称暂未同步',
+    body: '请联系管理员检查 Bot 的“管理昵称”权限或昵称长度。',
+    tone: 'warning',
+  },
   authorization_declined: {
     title: '未完成 Discord 授权',
     body: '只有在 Discord 授权页确认后，系统才可以将你加入新服务器。',
@@ -157,7 +167,7 @@ export default async function DiscordMigrationPage({ searchParams }: MigrationPa
                 迁移入口暂未开放
               </span>
             )}
-            {(status === 'joined' || status === 'already_joined') && (
+            {(status === 'joined' || status === 'already_joined' || status === 'joined_nickname_pending' || status === 'already_joined_nickname_pending') && (
               <a
                 href={discordServerUrl}
                 className="rounded-full border border-black/15 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:border-[#f8c84a] hover:text-[#b77900]"
