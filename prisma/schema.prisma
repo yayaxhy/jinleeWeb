@@ -363,6 +363,34 @@ model DiscordMigrationAudit {
   @@index([createdAt])
 }
 
+/// Immutable, per-run source-server Role snapshot used only for the Discord
+/// server migration. It deliberately has no relation to Member because users
+/// who have never used the platform can still need their Role restored.
+model DiscordRoleMigrationSnapshot {
+  id            String                             @id @default(cuid())
+  sourceGuildId String
+  targetGuildId String
+  capturedAt    DateTime                           @default(now())
+  createdAt     DateTime                           @default(now())
+  members       DiscordRoleMigrationSnapshotMember[]
+
+  @@index([sourceGuildId, targetGuildId, capturedAt])
+}
+
+/// The complete non-everyone Role ID set held by one source-guild member at
+/// the moment a DiscordRoleMigrationSnapshot was captured.
+model DiscordRoleMigrationSnapshotMember {
+  id            String                       @id @default(cuid())
+  snapshotId    String
+  discordUserId String
+  roleIds       String[]                     @default([])
+  createdAt     DateTime                     @default(now())
+  snapshot      DiscordRoleMigrationSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([snapshotId, discordUserId])
+  @@index([discordUserId])
+}
+
 model AssetTransferAudit {
   id                String   @id @default(cuid())
   operatorDiscordId String?
