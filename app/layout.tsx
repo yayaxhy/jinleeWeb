@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { SiteAnnouncement } from "@/components/SiteAnnouncement";
 import { getServerSession } from "@/lib/session";
 import {
   SITE_DESCRIPTION,
@@ -82,6 +83,7 @@ export default async function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers initialSession={session}>
           <PageViewTracker />
+          <SiteAnnouncement />
           {children}
         </Providers>
       </body>
