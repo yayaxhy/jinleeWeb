@@ -24,7 +24,7 @@ import {
   LOTTERY_FUSION_RULES,
   type LotteryFusionSourceKind,
 } from '@/lib/lottery-fusion';
-import { resolveLocalVoucherArt } from '@/lib/local-voucher-art';
+import { resolveLocalVoucherArt, resolveVoucherDisplayArt } from '@/lib/local-voucher-art';
 
 export type FusionItemView = {
   id: string;
@@ -174,21 +174,6 @@ const toMillis = (value?: string | null) => {
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
 };
 
-const isExpiredDiscordAttachment = (value?: string | null) => {
-  if (!value) return false;
-  try {
-    const url = new URL(value);
-    if (url.hostname !== 'cdn.discordapp.com') return false;
-    const expiresAt = url.searchParams.get('ex');
-    if (!expiresAt) return false;
-
-    const expiresAtMillis = Number.parseInt(expiresAt, 16) * 1000;
-    return Number.isFinite(expiresAtMillis) && expiresAtMillis <= Date.now();
-  } catch {
-    return false;
-  }
-};
-
 const resolvePrizeFallbackArt = (prizeName: string) => {
   const voucherArt = resolveLocalVoucherArt(prizeName);
   if (voucherArt) {
@@ -219,11 +204,7 @@ const resolvePrizeFallbackArt = (prizeName: string) => {
 };
 
 const getPrizeArt = (item: Pick<FusionItemView, 'prizeName' | 'imageUrl'> | Pick<FusionResultView, 'prizeName' | 'imageUrl'>) => {
-  const imageUrl = item.imageUrl?.trim();
-  if (imageUrl && !isExpiredDiscordAttachment(imageUrl)) {
-    return imageUrl;
-  }
-  return resolvePrizeFallbackArt(item.prizeName);
+  return resolveVoucherDisplayArt(item.prizeName, item.imageUrl) ?? resolvePrizeFallbackArt(item.prizeName);
 };
 
 const getPoolText = (value?: string | null) => {
