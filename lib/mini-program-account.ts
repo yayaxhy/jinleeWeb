@@ -3,6 +3,7 @@ import type { CurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { postInternalBot } from '@/lib/internal-bot';
 import { formatPeiwanGameProfile } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { formatTransactionType } from '@/lib/transaction-display';
 import { notifyMiniProgramUser } from '@/lib/mini-program-subscribe';
 
@@ -202,9 +203,14 @@ export async function performMiniOrderAction(
 
 export async function listMiniTransactions(currentUser: CurrentJinleeUser) {
   const rows = await prisma.individualTransaction.findMany({
-    where: currentUser.discordUserId
-      ? { OR: [{ jinleeId: currentUser.jinleeId }, { discordId: currentUser.discordUserId }] }
-      : { jinleeId: currentUser.jinleeId },
+    where: {
+      AND: [
+        currentUser.discordUserId
+          ? { OR: [{ jinleeId: currentUser.jinleeId }, { discordId: currentUser.discordUserId }] }
+          : { jinleeId: currentUser.jinleeId },
+        { timeCreatedAt: newEntityOnlyTime() },
+      ],
+    },
     orderBy: { timeCreatedAt: 'desc' },
     take: TRANSACTION_TAKE_LIMIT,
   });

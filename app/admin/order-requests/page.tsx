@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewOrderRequests } from '@/lib/admin';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const PAGE_SIZE = 20;
@@ -55,6 +56,7 @@ export default async function AdminOrderRequestsPage(props: PageProps) {
   const skip = (currentPage - 1) * PAGE_SIZE;
 
   const where: Prisma.OrderRequestLogWhereInput = {};
+  where.createdAt = newEntityOnlyTime();
   if (orderId) where.orderId = orderId;
   if (ownerId) where.ownerId = ownerId;
   if (workerId) where.clicks = { some: { workerId } };

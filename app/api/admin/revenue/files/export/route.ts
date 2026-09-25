@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { canViewRevenue } from '@/lib/admin';
 import { getMonthlyFinancialReportExcel, parseMonthlyReportMonthKey } from '@/lib/admin/monthly-financial-reports';
 import { getServerSession } from '@/lib/session';
+import { isNewEntityReportMonth } from '@/lib/operating-entity-cutover';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   }
 
   const monthKey = request.nextUrl.searchParams.get('month')?.trim() ?? '';
-  if (!parseMonthlyReportMonthKey(monthKey)) {
+  if (!parseMonthlyReportMonthKey(monthKey) || !isNewEntityReportMonth(monthKey)) {
     return NextResponse.json({ error: '月份格式必须是 YYYY-MM' }, { status: 400 });
   }
 

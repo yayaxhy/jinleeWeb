@@ -5,6 +5,7 @@ import { formatAmountDown2 } from '@/lib/numberFormat';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewRefundableGifts } from '@/lib/admin';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const PAGE_SIZE = 50;
@@ -46,7 +47,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
   const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (currentPage - 1) * PAGE_SIZE;
 
-  const filters: Prisma.OrderAuditWhereInput[] = [];
+  const filters: Prisma.OrderAuditWhereInput[] = [{ createdAt: newEntityOnlyTime() }];
   if (hostId) {
     filters.push({
       OR: [{ hostId }, { hostJinleeId: hostId }],

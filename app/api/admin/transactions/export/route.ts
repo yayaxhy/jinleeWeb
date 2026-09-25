@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { getServerSession } from '@/lib/session';
 import { canViewKefuTransactions } from '@/lib/admin';
 import { formatTransactionType } from '@/lib/transaction-display';
@@ -97,9 +98,11 @@ export async function GET(request: NextRequest) {
   }
   if (startDate || endDate) {
     whereClause.timeCreatedAt = {
-      gte: startDate ?? undefined,
+      ...newEntityOnlyTime(startDate),
       lte: endDate ?? undefined,
     };
+  } else {
+    whereClause.timeCreatedAt = newEntityOnlyTime();
   }
   const hasFilters = Object.keys(whereClause).length > 0;
 

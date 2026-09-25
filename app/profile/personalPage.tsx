@@ -12,6 +12,7 @@ import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { formatAmountDown, formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { formatTransactionType } from '@/lib/transaction-display';
 
 const BOSS_LEVELS = [
@@ -269,10 +270,10 @@ export default async function Profile(props: ProfilePageProps) {
   });
   type CouponRecord = Awaited<typeof couponsPromise>[number];
   const totalTransactionsPromise = prisma.individualTransaction.count({
-    where: { jinleeId },
+    where: { jinleeId, timeCreatedAt: newEntityOnlyTime() },
   });
   const transactionsPromise = prisma.individualTransaction.findMany({
-    where: { jinleeId },
+    where: { jinleeId, timeCreatedAt: newEntityOnlyTime() },
     orderBy: { timeCreatedAt: 'desc' },
     skip,
     take: TRANSACTIONS_PER_PAGE,
@@ -414,7 +415,7 @@ export default async function Profile(props: ProfilePageProps) {
         where: {
           jinleeId,
           timeCreatedAt: {
-            gte: autoCommissionWindowStart,
+            ...newEntityOnlyTime(autoCommissionWindowStart),
             lte: autoCommissionWindowEnd,
           },
           typeOfTransaction: { in: [...AUTO_COMMISSION_INCOME_TYPES] },

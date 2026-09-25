@@ -6,7 +6,8 @@ import { getServerSession } from '@/lib/session';
 import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { RevenueTimeRangeActions } from '@/components/admin/RevenueTimeRangeActions';
-import { parseCentralEuropeanDateRange } from '@/lib/centralEuropeanDateRange';
+import { formatDateTimeInputCentralEuropean, parseCentralEuropeanDateRange } from '@/lib/centralEuropeanDateRange';
+import { newEntityReportStart } from '@/lib/operating-entity-cutover';
 import { parseRevenueIdentityList, resolveRevenueExclusions } from '@/lib/admin/revenue-exclusion';
 import {
   buildRevenueExpenseBreakdown,
@@ -131,7 +132,10 @@ export default async function AdminRevenuePage(props: PageProps) {
   ]);
   const startParam = Array.isArray(searchParams.startDate) ? searchParams.startDate[0] : searchParams.startDate;
   const endParam = Array.isArray(searchParams.endDate) ? searchParams.endDate[0] : searchParams.endDate;
-  const { start, end, startValue, endValue } = parseCentralEuropeanDateRange(startParam, endParam);
+  const range = parseCentralEuropeanDateRange(startParam, endParam);
+  const start = newEntityReportStart(range.start);
+  const { end, endValue } = range;
+  const startValue = formatDateTimeInputCentralEuropean(start);
 
   const blockStackAgg = await prisma.blockStackGame.aggregate({
     _sum: {

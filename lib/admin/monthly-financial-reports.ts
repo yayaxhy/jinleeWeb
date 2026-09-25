@@ -4,6 +4,11 @@ import ExcelJS from 'exceljs';
 import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
+  isNewEntityReportMonth,
+  NEW_ENTITY_OPERATIONS_STARTED_AT,
+  newEntityReportStart,
+} from '@/lib/operating-entity-cutover';
+import {
   buildCentralEuropeanMonthRange,
   formatCentralEuropeanMonthKey,
   formatDateTimeTextCentralEuropean,
@@ -290,7 +295,8 @@ async function loadMonthlyRevenueData(params: {
     resolveRevenueExclusions(excludeRechargeRawIds),
     resolveRevenueExclusions(excludeMemberRawIds),
   ]);
-  const { start, end } = params;
+  const start = newEntityReportStart(params.start);
+  const { end } = params;
   const startMonthParts = getCentralEuropeanMonthParts(start);
   const monthKey = params.monthKey ?? formatCentralEuropeanMonthKey(startMonthParts.year, startMonthParts.month);
 
@@ -1464,6 +1470,9 @@ const getTargetMonth = (monthKey?: string) => {
 
 const loadMonthlyFinancialReportContext = async (monthKey?: string) => {
   const target = getTargetMonth(monthKey);
+  if (!isNewEntityReportMonth(target.monthKey)) {
+    throw new Error('旧主体期间的月报仅保留在旧主体归档中，不能在新主体后台查看或生成。');
+  }
   const [adjustments, data] = await Promise.all([
     readFinancialAdjustments(target.monthKey),
     loadMonthlyRevenueData({
@@ -1694,9 +1703,10 @@ export async function listStoredMonthlyReportFiles(): Promise<StoredMonthlyRepor
         await visit(fullPath, entry.name);
         continue;
       }
-      if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.xlsx')) continue;
+      if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.xlsx') || !isNewEntityReportMonth(monthKey)) continue;
       const relativePath = path.relative(REPORT_STORAGE_DIR, fullPath);
       const stat = await fs.stat(fullPath);
+      if (stat.mtime.getTime() <= NEW_ENTITY_OPERATIONS_STARTED_AT.getTime()) continue;
       files.push({
         monthKey,
         fileName: entry.name,

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewOrderRequests } from '@/lib/admin';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
   const workerId = searchParams.get('workerId')?.trim() ?? '';
   const peiwanIdRaw = searchParams.get('peiwanId')?.trim() ?? '';
 
-  const filters: Prisma.OrderWhereInput[] = [{ status: 'RUNNING' }];
+  const filters: Prisma.OrderWhereInput[] = [{ status: 'RUNNING' }, { createdAt: newEntityOnlyTime() }];
   if (orderId) {
     const numeric = Number(orderId);
     if (Number.isInteger(numeric) && numeric > 0) {

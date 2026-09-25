@@ -31,8 +31,8 @@ body {
   z-index: 100;
   height: 2.5rem;
   overflow: hidden;
-  background: linear-gradient(90deg, #8f1616, #d53f2f 45%, #8f1616);
-  box-shadow: 0 2px 12px rgb(72 16 16 / 35%);
+  background: linear-gradient(90deg, #956871, #c48b8b 50%, #956871);
+  box-shadow: 0 2px 12px rgb(100 65 72 / 22%);
 }
 
 .site-announcement-link {
@@ -40,7 +40,7 @@ body {
   height: 100%;
   align-items: center;
   overflow: hidden;
-  color: #fff8df;
+  color: #fffaf7;
   text-decoration: none;
 }
 
@@ -52,15 +52,14 @@ body {
 .site-announcement-track {
   display: flex;
   width: max-content;
-  min-width: 100%;
-  animation: site-announcement-scroll 22s linear infinite;
+  animation: site-announcement-scroll 18s linear infinite;
   will-change: transform;
 }
 
 .site-announcement-message {
   flex: none;
-  padding-right: 5rem;
-  font-size: 0.875rem;
+  padding-right: 1.75rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   white-space: nowrap;
@@ -72,7 +71,7 @@ body {
 
 @keyframes site-announcement-scroll {
   to {
-    transform: translateX(-33.333%);
+    transform: translateX(-50%);
   }
 }
 

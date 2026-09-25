@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/session';
 import { canViewKefuTransactions, isAdminDiscordId } from '@/lib/admin';
@@ -130,9 +131,11 @@ export default async function AdminTransactionsPage(props: PageProps) {
   }
   if (startDate || endDate) {
     whereClause.timeCreatedAt = {
-      gte: startDate ?? undefined,
+      ...newEntityOnlyTime(startDate),
       lte: endDate ?? undefined,
     };
+  } else {
+    whereClause.timeCreatedAt = newEntityOnlyTime();
   }
   const hasFilters = Object.keys(whereClause).length > 0;
 

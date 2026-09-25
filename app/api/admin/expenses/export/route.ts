@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewTransactions } from '@/lib/admin';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,9 +73,11 @@ export async function GET(request: NextRequest) {
   }
   if (startDate || endDate) {
     whereClause.createdAt = {
-      gte: startDate ?? undefined,
+      ...newEntityOnlyTime(startDate),
       lte: endDate ?? undefined,
     };
+  } else {
+    whereClause.createdAt = newEntityOnlyTime();
   }
   const hasFilters = Object.keys(whereClause).length > 0;
 

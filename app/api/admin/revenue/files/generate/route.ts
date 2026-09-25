@@ -5,6 +5,7 @@ import {
   parseMonthlyReportMonthKey,
 } from '@/lib/admin/monthly-financial-reports';
 import { getServerSession } from '@/lib/session';
+import { isNewEntityReportMonth } from '@/lib/operating-entity-cutover';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
   const force = formData.get('force') === '1';
   if (monthValue && !parseMonthlyReportMonthKey(monthValue)) {
     return NextResponse.json({ error: '月份格式必须是 YYYY-MM' }, { status: 400 });
+  }
+  if (monthValue && !isNewEntityReportMonth(monthValue)) {
+    return NextResponse.json({ error: '旧主体期间的月报仅保留在旧主体归档中。' }, { status: 400 });
   }
 
   try {

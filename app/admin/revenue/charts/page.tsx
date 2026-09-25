@@ -8,6 +8,7 @@ import {
   formatDateTimeInputCentralEuropean,
   parseCentralEuropeanDateRange,
 } from '@/lib/centralEuropeanDateRange';
+import { newEntityReportStart } from '@/lib/operating-entity-cutover';
 
 export const metadata = {
   title: '收益图表',
@@ -356,7 +357,10 @@ export default async function AdminRevenueChartsPage(props: PageProps) {
     ? searchParams.excludeMember[0]
     : searchParams.excludeMember;
 
-  const { start, end, startValue, endValue } = parseCentralEuropeanDateRange(startParam, endParam);
+  const range = parseCentralEuropeanDateRange(startParam, endParam);
+  const start = newEntityReportStart(range.start);
+  const { end, endValue } = range;
+  const startValue = formatDateTimeInputCentralEuropean(start);
   const excludeRechargeInput = (excludeRechargeParam ?? '').trim();
   const excludeMemberInput = (excludeMemberParam ?? '').trim();
   const excludeRechargeIds = excludeRechargeInput ? parseExcludeIds(excludeRechargeInput) : [];

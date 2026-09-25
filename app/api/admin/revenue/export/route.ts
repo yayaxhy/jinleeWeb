@@ -9,6 +9,7 @@ import {
   formatFileTimestampCentralEuropean,
   parseCentralEuropeanDateRange,
 } from '@/lib/centralEuropeanDateRange';
+import { newEntityReportStart } from '@/lib/operating-entity-cutover';
 import { parseRevenueIdentityList, resolveRevenueExclusions } from '@/lib/admin/revenue-exclusion';
 import {
   buildGiftReferralExpenseSummaryFromRows,
@@ -208,10 +209,12 @@ export async function GET(request: NextRequest) {
     resolveRevenueExclusions(excludeRechargeRawIds),
     resolveRevenueExclusions(excludeMemberRawIds),
   ]);
-  const { start, end } = parseCentralEuropeanDateRange(
+  const range = parseCentralEuropeanDateRange(
     searchParams.get('startDate') ?? undefined,
     searchParams.get('endDate') ?? undefined,
   );
+  const start = newEntityReportStart(range.start);
+  const { end } = range;
 
   const excludeMembers = [...excludeRechargeResolved.preview, ...excludeMemberResolved.preview];
   const rechargeWhere: Prisma.RechargeWhereInput = {

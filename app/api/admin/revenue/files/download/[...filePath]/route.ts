@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { canViewRevenue } from '@/lib/admin';
 import { resolveStoredMonthlyReportFilePath } from '@/lib/admin/monthly-financial-reports';
 import { getServerSession } from '@/lib/session';
+import { isNewEntityReportMonth, NEW_ENTITY_OPERATIONS_STARTED_AT } from '@/lib/operating-entity-cutover';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,12 +20,19 @@ export async function GET(_request: Request, context: { params: Promise<RoutePar
   }
 
   const params = await context.params;
+  if (!isNewEntityReportMonth(params.filePath?.[0] ?? '')) {
+    return NextResponse.json({ error: '文件不存在' }, { status: 404 });
+  }
   const filePath = resolveStoredMonthlyReportFilePath(params.filePath ?? []);
   if (!filePath) {
     return NextResponse.json({ error: '文件不存在' }, { status: 404 });
   }
 
   try {
+    const stat = await fs.stat(filePath);
+    if (stat.mtime.getTime() <= NEW_ENTITY_OPERATIONS_STARTED_AT.getTime()) {
+      return NextResponse.json({ error: '文件不存在' }, { status: 404 });
+    }
     const buffer = await fs.readFile(filePath);
     const fileName = path.basename(filePath);
     return new NextResponse(buffer, {
@@ -43,4 +51,3 @@ export async function GET(_request: Request, context: { params: Promise<RoutePar
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

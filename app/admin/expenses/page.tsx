@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 import { canViewTransactions, isHowardReadOnlyDiscordId } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const PAGE_SIZE = 50;
@@ -98,9 +99,11 @@ export default async function AdminExpensesPage(props: PageProps) {
   }
   if (startDate || endDate) {
     whereClause.createdAt = {
-      gte: startDate ?? undefined,
+      ...newEntityOnlyTime(startDate),
       lte: endDate ?? undefined,
     };
+  } else {
+    whereClause.createdAt = newEntityOnlyTime();
   }
   const hasFilters = Object.keys(whereClause).length > 0;
 

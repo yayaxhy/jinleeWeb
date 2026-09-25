@@ -5,6 +5,7 @@ import { getServerSession } from '@/lib/session';
 import { canViewRefundableGifts } from '@/lib/admin';
 import { Prisma } from '@prisma/client';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const PAGE_SIZE = 50;
@@ -97,14 +98,13 @@ export default async function RefundableGiftsPage(props: PageProps) {
   const skip = (currentPage - 1) * PAGE_SIZE;
 
   const where: Prisma.GiftAuditWhereInput = {};
+  where.createdAt = newEntityOnlyTime();
   if (giverId) where.giverId = giverId;
   if (receiverId) where.receiverId = receiverId;
-  const hasFilters = giverId || receiverId;
-
   const [totalCount, records] = await Promise.all([
-    prisma.giftAudit.count({ where: hasFilters ? where : undefined }),
+    prisma.giftAudit.count({ where }),
     prisma.giftAudit.findMany({
-      where: hasFilters ? where : undefined,
+      where,
       orderBy: { createdAt: 'desc' },
       skip,
       take: PAGE_SIZE,

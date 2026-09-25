@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { canViewRevenue } from '@/lib/admin';
 import { getMonthlyFinancialReportPreview, parseMonthlyReportMonthKey } from '@/lib/admin/monthly-financial-reports';
 import { getServerSession } from '@/lib/session';
+import { isNewEntityReportMonth } from '@/lib/operating-entity-cutover';
 import MonthlyExpenseManager from './MonthlyExpenseManager';
 
 export const dynamic = 'force-dynamic';
@@ -59,7 +60,7 @@ export default async function MonthlyRevenueFilePage({ params }: PageProps) {
   if (!session?.discordId || !canViewRevenue(session.discordId)) redirect('/');
 
   const { monthKey } = await params;
-  if (!parseMonthlyReportMonthKey(monthKey)) notFound();
+  if (!parseMonthlyReportMonthKey(monthKey) || !isNewEntityReportMonth(monthKey)) notFound();
   const preview = await getMonthlyFinancialReportPreview(monthKey);
   const monthTitle = `${preview.year} 年 ${preview.month} 月`;
 

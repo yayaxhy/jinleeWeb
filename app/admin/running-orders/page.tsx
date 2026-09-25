@@ -12,6 +12,7 @@ import {
   isPeiwanInfoAdminDiscordId,
 } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const PAGE_SIZE = 20;
@@ -82,7 +83,7 @@ export default async function RunningOrdersPage(props: PageProps) {
         ? peiwanIdParam[0]?.trim()
         : '';
 
-  const filters: Prisma.OrderWhereInput[] = [{ status: 'RUNNING' }];
+  const filters: Prisma.OrderWhereInput[] = [{ status: 'RUNNING' }, { createdAt: newEntityOnlyTime() }];
 
   if (orderId) {
     const numeric = Number(orderId);

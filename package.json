@@ -27,6 +27,7 @@
         "auth-login-audit:purge": "node scripts/auth-login-audit-retention-scheduler.mjs",
         "auth-login-audit:purge-once": "node scripts/auth-login-audit-retention-scheduler.mjs --once",
         "auth-login-location:backfill": "tsx scripts/backfill-auth-login-locations.ts",
+        "entity-cutover:legacy": "tsx scripts/legacy-entity-cutover.ts",
         "db:deploy:staging": "node scripts/run-staging.mjs prisma migrate deploy",
         "db:sync:staging": "node scripts/run-staging.mjs node scripts/sync-staging-db.mjs",
         "prisma:generate:staging": "node scripts/run-staging.mjs prisma generate"

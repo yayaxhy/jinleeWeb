@@ -13,9 +13,11 @@ export function SiteAnnouncement() {
         aria-label={`${message}（在新标签页打开）`}
       >
         <span className="site-announcement-track" aria-hidden="true">
-          <span className="site-announcement-message">{message}</span>
-          <span className="site-announcement-message">{message}</span>
-          <span className="site-announcement-message">{message}</span>
+          {Array.from({ length: 10 }, (_, index) => (
+            <span className="site-announcement-message" key={index}>
+              {message}
+            </span>
+          ))}
         </span>
       </a>
     </aside>
