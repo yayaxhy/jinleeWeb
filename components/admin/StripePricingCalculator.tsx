@@ -196,7 +196,7 @@ export function StripePricingCalculator() {
               <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
                 <div>
                   <h3 className="text-lg font-semibold">{formatRmb(rmbAmount)} 充值</h3>
-                  <p className="mt-1 text-xs text-white/55">对应锦鲤余额 {formatRmb(rmbAmount)} · {preset.priceId}</p>
+                  <p className="mt-1 text-xs text-white/55">对应账户余额 {formatRmb(rmbAmount)} · {preset.priceId}</p>
                 </div>
               </div>
               <div className="stripe-pricing-table-scroll overflow-x-auto">

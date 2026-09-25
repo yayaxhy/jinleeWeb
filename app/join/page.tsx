@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata = {
-  title: '加入我们 - Jinlee Club',
+  title: '加入我们 - DLMClub',
   robots: {
     index: false,
     follow: false,
@@ -14,7 +14,7 @@ export default function JoinPage() {
     <main className="min-h-screen relative text-white">
       <Image
         src="/bg.png"
-        alt="Join Jinlee Club"
+        alt="Join DLMClub"
         fill
         priority
         className="object-cover brightness-[0.65]"

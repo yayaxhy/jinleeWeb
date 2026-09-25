@@ -13,8 +13,8 @@ import {
 } from '@/lib/legal';
 
 export const metadata: Metadata = {
-  title: '用户协议｜锦鲤公会',
-  description: '锦鲤公会网站服务、账户、下单、付款、取消及售后相关约定。',
+  title: '用户协议｜点了么娱乐公会',
+  description: '点了么娱乐公会网站服务、账户、下单、付款、取消及售后相关约定。',
   alternates: { canonical: '/terms' },
 };
 
@@ -25,7 +25,7 @@ const sections = [
     content: (
       <>
         <p>
-          本网站及“锦鲤公会 / Jinlee Club”相关网站服务由<strong>{LEGAL_ENTITY_NAME}</strong>运营，主体类型为
+          本网站及“点了么娱乐公会 / DLMClub”相关网站服务由<strong>{LEGAL_ENTITY_NAME}</strong>运营，主体类型为
           {LEGAL_ENTITY_TYPE}，统一社会信用代码为 {UNIFIED_SOCIAL_CREDIT_CODE}。
         </p>
         <p>
@@ -146,7 +146,7 @@ const sections = [
       <>
         <p>
           售后与投诉可通过微信 <strong>{SUPPORT_WECHAT_ID}</strong> 或
-          <a href={SUPPORT_DISCORD_URL} target="_blank" rel="noopener noreferrer"> Discord 客服频道</a> 联系。为便于核实，请提供锦鲤账户标识、订单号、问题说明和必要的支付或沟通记录。
+          <a href={SUPPORT_DISCORD_URL} target="_blank" rel="noopener noreferrer"> Discord 客服</a> 联系。为便于核实，请提供会员账户标识、订单号、问题说明和必要的支付或沟通记录。
         </p>
         <p>
           网站负责人邮箱：<a href={`mailto:${PUBLIC_CONTACT_EMAIL}`}>{PUBLIC_CONTACT_EMAIL}</a>。
@@ -164,7 +164,7 @@ export default function TermsPage() {
     <LegalDocument
       eyebrow="Legal"
       title="用户协议"
-      description="本协议说明锦鲤公会网站的服务内容、价格确认、账户使用、订单履行、取消退款和售后规则。"
+      description="本协议说明点了么娱乐公会网站的服务内容、价格确认、账户使用、订单履行、取消退款和售后规则。"
       effectiveDate={LEGAL_EFFECTIVE_DATE}
       sections={sections}
     />

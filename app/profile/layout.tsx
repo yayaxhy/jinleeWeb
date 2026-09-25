@@ -24,7 +24,7 @@ export const metadata: Metadata = {
         url: SITE_OG_IMAGE,
         width: SITE_OG_IMAGE_WIDTH,
         height: SITE_OG_IMAGE_HEIGHT,
-        alt: `${SITE_NAME}锦鲤 logo`,
+        alt: `${SITE_NAME} Logo`,
       },
     ],
   },

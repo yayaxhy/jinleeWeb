@@ -1,7 +1,9 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { LoginButton } from './LoginButton';
+import { SITE_ALTERNATE_NAME, SITE_LOGO, SITE_NAME } from '@/lib/site';
 
 const links = [
   { href: '/', label: 'HOME' },
@@ -19,10 +21,14 @@ export function NavBar() {
         <nav className="flex items-center gap-4 sm:gap-8 px-4 sm:px-8 py-4 text-xs sm:text-sm uppercase tracking-[0.22em] text-black w-full">
           <Link
             href="/"
-            className="mr-4 flex shrink-0 flex-col items-center font-serif leading-tight transition-colors duration-150 hover:text-neutral-600"
+            aria-label={`${SITE_NAME}首页`}
+            className="mr-4 flex shrink-0 items-center gap-2 leading-tight transition-colors duration-150 hover:text-neutral-600"
           >
-            <span className="text-2xl sm:text-3xl tracking-[0.35em]">JINLEE</span>
-            <span className="text-base sm:text-lg tracking-[0.5em] -mt-1">CLUB</span>
+            <Image src={SITE_LOGO} alt={SITE_NAME} width={52} height={52} className="rounded-xl object-contain" />
+            <span className="flex flex-col gap-1">
+              <span className="text-xl sm:text-2xl font-bold normal-case tracking-[0.08em]">{SITE_ALTERNATE_NAME}</span>
+              <span className="text-[10px] sm:text-xs tracking-[0.12em]">{SITE_NAME}</span>
+            </span>
           </Link>
           <div className="text-xl sm:text-xl flex flex-1 items-center font-serif gap-4 sm:gap-16 overflow-x-auto">
             {links.map((link) => (

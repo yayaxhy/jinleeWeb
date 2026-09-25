@@ -6,7 +6,7 @@ import { getServerSession } from '@/lib/session';
 import { canViewReferrals, isAdminDiscordId, isHowardDiscordId, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
 export const metadata = {
-  title: '邀请人管理 - 锦鲤管理后台',
+  title: '邀请人管理 - 点了么管理后台',
 };
 
 export default async function AdminReferralsPage() {

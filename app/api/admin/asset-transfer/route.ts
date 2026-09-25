@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
   ]);
 
   if (!sourceSummary.memberExists || !sourceSummary.jinleeId) {
-    return NextResponse.json({ error: '源账号不存在，或尚未建立 Jinlee 身份' }, { status: 404 });
+    return NextResponse.json({ error: '源账号不存在，或尚未建立 DLMClub 身份' }, { status: 404 });
   }
 
   if (sourceSummary.peiwan.exists && targetSummary.peiwan.exists) {
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!targetSummary.memberExists || !targetSummary.jinleeId) {
-    return NextResponse.json({ error: '目标账号不存在，或尚未建立 Jinlee 身份' }, { status: 404 });
+    return NextResponse.json({ error: '目标账号不存在，或尚未建立 DLMClub 身份' }, { status: 404 });
   }
 
   if (targetSummary.hasTransferableData && !forceMerge) {

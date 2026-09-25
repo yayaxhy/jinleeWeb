@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties, FocusEvent, PointerEvent } from 'react';
+import { SITE_WORDMARK } from '@/lib/site';
 
 type LetterVideo = {
   letter: string;
@@ -63,8 +64,9 @@ function isCjkCharacter(letter: string) {
 
 function buildLetterMask(letter: string) {
   const isCjk = isCjkCharacter(letter);
-  const viewBox = isCjk ? '0 0 300 300' : '0 0 220 300';
-  const x = isCjk ? '150' : '110';
+  // Give wide Latin glyphs such as the new wordmark's M enough horizontal room.
+  const viewBox = '0 0 300 300';
+  const x = '150';
   const y = isCjk ? '158' : '246';
   const fontSize = isCjk ? '254' : '286';
   const fontFamily = isCjk
@@ -154,14 +156,14 @@ function HoverLetter({
 
 function buildWordLetters(word: string) {
   const characters = Array.from(word.trim()).filter((char) => char.trim().length > 0);
-  const safeCharacters = characters.length > 0 ? characters : Array.from('JINLEE');
+  const safeCharacters = characters.length > 0 ? characters : Array.from(SITE_WORDMARK);
 
   return safeCharacters.map((char, index) => {
     const source = letters[index % letters.length];
     return {
       ...source,
       letter: char,
-      label: `锦鲤视频字 ${char}`,
+      label: `DLMClub 视频字 ${char}`,
     };
   });
 }
@@ -170,7 +172,7 @@ export function JinleeHoverLetters({
   showIntro = true,
   className = '',
   size = 'default',
-  word = 'JINLEE',
+  word = SITE_WORDMARK,
 }: {
   showIntro?: boolean;
   className?: string;
@@ -185,7 +187,7 @@ export function JinleeHoverLetters({
   }[size];
   const letterMaskSize = {
     default: '100% 100%',
-    hero: '132% 132%',
+    hero: '110% 110%',
     compare: '126% 126%',
   }[size];
   const sectionSpacingClass = showIntro ? 'mt-16' : '';
@@ -196,14 +198,14 @@ export function JinleeHoverLetters({
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4 px-1">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.52em] text-orange-200/70">
-              锦鲤互动
+              点了么互动
             </p>
             <h2 className="mt-3 text-2xl font-semibold text-[#fff7ed] md:text-4xl">
-              JINLEE 字母视频墙
+              {SITE_WORDMARK} 字母视频墙
             </h2>
           </div>
           <p className="max-w-md text-sm leading-6 text-white/45">
-            鼠标划过每个字母会播放视频。正式版可以换成游戏片段、陪玩语音房或锦鲤社区视频。
+            鼠标划过每个字母会播放视频。正式版可以换成游戏片段、陪玩语音房或点了么社区视频。
           </p>
         </div>
       ) : null}

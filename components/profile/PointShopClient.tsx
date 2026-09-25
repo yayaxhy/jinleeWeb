@@ -218,7 +218,7 @@ export function PointShopClient({ initialData }: PointShopClientProps) {
       <div className="rounded-3xl border border-black/5 bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Jinlee Points Shop</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-gray-500">DLMClub Points Shop</p>
             <h1 className="text-3xl font-semibold tracking-wide">积分商城</h1>
           </div>
           <div className="text-right">

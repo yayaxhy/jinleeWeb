@@ -638,7 +638,7 @@ export async function exchangePointsToCoins(discordUserId: string, amount: strin
     });
     const currentPoints = DEC(loyaltyPoint.points ?? 0);
     if (currentPoints.lt(pointAmount)) {
-      throw new Error('锦鲤积分不足');
+      throw new Error('点了么积分不足');
     }
 
     const coinDelta = pointAmount.mul(POINTS_TO_COINS_RATE);

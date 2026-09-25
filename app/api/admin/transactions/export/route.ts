@@ -109,12 +109,12 @@ export async function GET(request: NextRequest) {
   });
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'jinlee admin';
+  workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
   const worksheet = workbook.addWorksheet('查询流水');
   worksheet.columns = [
     { header: '时间(罗马)', key: 'time', width: 22 },
-    { header: 'Jinlee ID', key: 'jinleeId', width: 26 },
+    { header: '会员 ID', key: 'jinleeId', width: 26 },
     { header: 'Discord ID', key: 'discordId', width: 22 },
     { header: '类型', key: 'type', width: 16 },
     { header: '充值来源', key: 'paymentSource', width: 16 },

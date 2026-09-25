@@ -17,7 +17,7 @@ import { getServerSession } from '@/lib/session';
 import { canEditPeiwanInfo, canManagePeiwan, canSyncSinglePeiwanTag, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
 export const metadata = {
-  title: '编辑陪玩 - 锦鲤管理后台',
+  title: '编辑陪玩 - 点了么管理后台',
 };
 
 export const dynamic = 'force-dynamic';

@@ -10,8 +10,8 @@ import {
 } from '@/lib/legal';
 
 export const metadata: Metadata = {
-  title: '充值余额与退款规则｜锦鲤公会',
-  description: '锦鲤公会充值余额有效期、未消费余额退款、订单取消和售后处理规则。',
+  title: '充值余额与退款规则｜点了么娱乐公会',
+  description: '点了么娱乐公会充值余额有效期、未消费余额退款、订单取消和售后处理规则。',
   alternates: { canonical: '/recharge-policy' },
 };
 
@@ -87,7 +87,7 @@ const sections = [
       <>
         <p>申请退款或售后时，请提供：</p>
         <ul>
-          <li>锦鲤账户标识或绑定的 Discord / 微信账户信息；</li>
+          <li>会员账户标识或绑定的 Discord / 微信账户信息；</li>
           <li>充值或服务订单号、申请退款金额及原因；</li>
           <li>核实问题所必需的支付截图、服务时间或沟通记录。</li>
         </ul>

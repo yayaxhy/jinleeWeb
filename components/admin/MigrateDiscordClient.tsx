@@ -165,7 +165,7 @@ export function MigrateDiscordClient() {
                 <p className="text-white/65">余额：{takeover.member?.totalBalance ?? '0'}</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Jinlee</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/45">DLMClub</p>
                 <p className="mt-2 break-all text-white/90">{takeover.jinleeUser?.jinleeId ?? '未绑定'}</p>
                 <p className="mt-1 text-white/65">积分：{takeover.jinleeUser?.loyaltyPoints ?? '0'}</p>
                 <p className="text-white/65">Session 版本：{takeover.jinleeUser?.sessionVersion ?? 0}</p>

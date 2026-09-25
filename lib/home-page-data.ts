@@ -459,7 +459,7 @@ async function buildCompanionRanking(period: PeriodKey, issues: string[]) {
 
     return {
       name,
-      tag: labels[0] ?? '锦鲤陪玩',
+      tag: labels[0] ?? '点了么陪玩',
       tone: companionTones[index % companionTones.length],
       avatarUrl: getMemberAvatarUrl(member),
     };
@@ -638,7 +638,7 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             item: {
               id: row.id,
               title: `${game}陪玩服务进行中`,
-              detail: '已由锦鲤公会安排，正在进行服务。',
+              detail: '已由点了么娱乐公会安排，正在进行服务。',
               timeLabel: formatRelativeTime(row.acceptedAt ?? row.createdAt),
               statusLabel: '服务中',
             },
@@ -649,7 +649,7 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             item: {
               id: row.id,
               title: `${game}陪玩服务已完成`,
-              detail: '本次服务已顺利结束，感谢板板选择锦鲤公会。',
+              detail: '本次服务已顺利结束，感谢板板选择点了么娱乐公会。',
               timeLabel: formatRelativeTime(row.endedAt ?? row.createdAt),
               statusLabel: '已完成',
             },
@@ -671,7 +671,7 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             item: {
               id: row.id,
               title: `${game}陪玩订单已取消`,
-              detail: '匿名订单已取消，如有需要可重新联系锦鲤客服。',
+              detail: '匿名订单已取消，如有需要可重新联系点了么客服。',
               timeLabel: formatRelativeTime(row.createdAt),
               statusLabel: '匿名订单',
             },
@@ -692,7 +692,7 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             occurredAt: row.createdAt,
             item: {
               id: row.id,
-              title: '锦鲤陪玩订单动态',
+              title: '点了么陪玩订单动态',
               detail: '订单状态已更新，客服会继续协助处理。',
               timeLabel: formatRelativeTime(row.createdAt),
               statusLabel: '订单动态',
@@ -719,7 +719,7 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
       item: {
         id: `gift-${gift.id}`,
         title: `陪陪收到了价值 ¥${formatAmountDown2(gift.gross)} 的打赏`,
-        detail: '感谢板板对锦鲤陪玩的支持。',
+        detail: '感谢板板对点了么陪玩的支持。',
         timeLabel: formatRelativeTime(gift.createdAt),
         statusLabel: '高价值打赏',
       },

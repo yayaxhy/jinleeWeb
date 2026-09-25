@@ -1057,7 +1057,7 @@ export function FarmClient({ initialDashboard }: Props) {
             <div className="absolute left-[24px] top-[20px] z-20 w-[252px] rounded-[10px] border-[4px] border-[#7a4a18] bg-[#fff4d0] px-4 py-4 text-[#6d4d1a] shadow-[0_6px_0_#c8943f,0_16px_28px_rgba(116,80,21,0.16)]">
               <p className="text-[10px] uppercase tracking-[0.2em] text-[#aa7d1e]">Jinli Manor</p>
               <div className="mt-2 flex items-center gap-2">
-                <h1 className="text-[30px] font-black tracking-[0.03em] text-[#7a4117]">锦鲤庄园</h1>
+                <h1 className="text-[30px] font-black tracking-[0.03em] text-[#7a4117]">点了么庄园</h1>
                 <span className="rounded-[8px] border-[2px] border-[#d7a85f] bg-[#fff8e1] px-3 py-1 text-[10px] font-black tracking-[0.06em] text-[#9a6d16]">
                   {isVisiting ? `拜访 ${viewDashboard.owner.displayName}` : '我的庄园'}
                 </span>
@@ -1565,7 +1565,7 @@ export function FarmClient({ initialDashboard }: Props) {
             {[
               { title: '余额 → 金币', hint: '把 totalBalance 直接投进庄园。', value: balanceAmount, onChange: setBalanceAmount, action: () => runAction('exchange_balance', { amount: balanceAmount }, 'exchange_balance'), loading: 'exchange_balance', button: '兑换金币' },
               { title: '积分 → 金币', hint: '已有积分也能转成庄园货币。', value: pointAmount, onChange: setPointAmount, action: () => runAction('exchange_points', { amount: pointAmount }, 'exchange_points'), loading: 'exchange_points', button: '转成金币' },
-              { title: '金币 → 积分', hint: '收菜后的金币也能换回锦鲤积分。', value: coinAmount, onChange: setCoinAmount, action: () => runAction('exchange_coins_to_points', { amount: coinAmount }, 'exchange_coins_to_points'), loading: 'exchange_coins_to_points', button: '兑换积分' },
+              { title: '金币 → 积分', hint: '收菜后的金币也能换回点了么积分。', value: coinAmount, onChange: setCoinAmount, action: () => runAction('exchange_coins_to_points', { amount: coinAmount }, 'exchange_coins_to_points'), loading: 'exchange_coins_to_points', button: '兑换积分' },
             ].map((item) => (
               <div key={item.title} className="rounded-[24px] border border-[#d7bc83]/35 bg-white/72 p-4">
                 <div className="flex flex-col gap-1"><p className="text-base font-semibold tracking-[0.04em] text-[#38240d]">{item.title}</p><p className="text-sm text-[#7b6131]">{item.hint}</p></div>
@@ -1602,7 +1602,7 @@ export function FarmClient({ initialDashboard }: Props) {
               <div className="rounded-[30px] border border-[#efcf88]/38 bg-[linear-gradient(180deg,_rgba(122,24,20,0.96),_rgba(74,17,14,0.95))] p-5 text-[#fff5da] shadow-[0_18px_40px_rgba(69,18,15,0.24)]">
                 <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]">Koi Manor</p>
                 <h2 className="mt-2 text-3xl font-semibold tracking-[0.06em]">好友庄园</h2>
-                <p className="mt-3 text-sm leading-7 text-[#fcebc2]/86">好友、常访和搜索都收进独立拜访台，强调锦鲤红和鎏金木牌风格，不再像普通后台列表。</p>
+                <p className="mt-3 text-sm leading-7 text-[#fcebc2]/86">好友、常访和搜索都收进独立拜访台，强调暖红色和鎏金木牌风格，不再像普通后台列表。</p>
                 <div className="mt-5 space-y-2">
                   <button type="button" onClick={() => setCompanionTab('friends')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'friends' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>我的好友</button>
                   <button type="button" onClick={() => setCompanionTab('frequent')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'frequent' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>常访名单</button>

@@ -436,7 +436,7 @@ export default async function Profile(props: ProfilePageProps) {
     { label: '可提现余额', value: balanceValue },
     { label: '累计消费', value: totalSpentAmount },
     { label: '累计流水', value: peiwan?.totalEarn ?? null },
-    { label: '锦鲤积分', value: loyaltyPoint?.points ?? jinleeUser.loyaltyPoints ?? 0 },
+    { label: '点了么积分', value: loyaltyPoint?.points ?? jinleeUser.loyaltyPoints ?? 0 },
   ];
 
   const totalSpentValue = parseNumeric(totalSpentAmount) ?? 0;
@@ -518,14 +518,14 @@ export default async function Profile(props: ProfilePageProps) {
   const autoCommissionStatusMeta = autoCommissionEligibleNow
     ? { label: '已达标', badgeClass: 'bg-amber-50 text-amber-600' }
     : getBuffStatusMeta(autoCommissionActiveUntil);
-  const autoCommissionCardTitle = autoCommissionActive ? '锦鲤福星陪玩保级进度' : '锦鲤福星陪玩进度';
+  const autoCommissionCardTitle = autoCommissionActive ? '点了么福星陪玩保级进度' : '点了么福星陪玩进度';
   const autoCommissionDeadlineLabel = formatUtcDate(autoCommissionWindowEnd);
   const autoCommissionShortfall = Math.max(0, AUTO_COMMISSION_THRESHOLD - autoCommissionCurrentAmount);
   const autoCommissionHint = autoCommissionActive
     ? `在 ${autoCommissionDeadlineLabel} 前累计收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，当前还差 ${formatNumber(autoCommissionShortfall)} 完成保级`
     : autoCommissionEligibleNow
       ? `最近30天累计实际收入已达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，福星状态等待同步`
-    : `最近30天累计实际收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)} 即可晋升锦鲤福星陪玩`;
+    : `最近30天累计实际收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)} 即可晋升点了么福星陪玩`;
   const profileCommissionRate =
     autoCommissionActive && autoCommissionBuff?.targetShare != null
       ? autoCommissionBuff.targetShare
@@ -663,7 +663,7 @@ export default async function Profile(props: ProfilePageProps) {
                       </Link>
                     </div>
                   )}
-                  {item.label === '锦鲤积分' && (
+                  {item.label === '点了么积分' && (
                     <div className="pt-2">
                       <Link
                         href="/profile/point-shop"

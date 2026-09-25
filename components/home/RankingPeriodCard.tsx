@@ -5,9 +5,10 @@ import { useRef, useState, type PointerEvent } from 'react';
 
 import type { PeriodKey, RankingItem } from '@/lib/home-page-data';
 import { getVipLevelLabel } from '@/lib/vip-levels';
+import { SITE_LOGO } from '@/lib/site';
 
 const PAGE_SIZE = 5;
-const DEFAULT_RANKING_AVATAR = '/og-jinlee-logo.png';
+const DEFAULT_RANKING_AVATAR = SITE_LOGO;
 
 function AvatarBadge({
   name,
@@ -22,7 +23,7 @@ function AvatarBadge({
   anonymous?: boolean;
   size?: 'default' | 'featured' | 'compact';
 }) {
-  const initial = name.replace(/^神秘老板\s*/, '').trim().charAt(0) || '锦';
+  const initial = name.replace(/^神秘老板\s*/, '').trim().charAt(0) || '点';
   const resolvedAvatar = anonymous ? DEFAULT_RANKING_AVATAR : avatarUrl;
   const sizeClass = {
     default: 'h-14 w-14 text-lg',
@@ -35,7 +36,7 @@ function AvatarBadge({
       {resolvedAvatar ? (
         <img
           src={resolvedAvatar}
-          alt={anonymous ? '锦鲤匿名头像' : `${name} 头像`}
+          alt={anonymous ? '点了么匿名头像' : `${name} 头像`}
           className={`h-full w-full ${anonymous ? 'bg-white object-contain p-1.5' : 'object-cover'}`}
         />
       ) : (

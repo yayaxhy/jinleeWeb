@@ -571,7 +571,7 @@ export async function GET(request: NextRequest) {
   });
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'jinlee admin';
+  workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
 
   addKeyValueSheet(workbook, '导出参数', [

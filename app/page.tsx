@@ -8,7 +8,10 @@ import { LEGAL_ENTITY_NAME, UNIFIED_SOCIAL_CREDIT_CODE } from '@/lib/legal';
 import {
   SITE_ALTERNATE_NAME,
   SITE_DESCRIPTION,
+  DISCORD_INVITE_URL,
   SITE_NAME,
+  SITE_LOGO,
+  SITE_WORDMARK,
   SITE_OG_IMAGE,
   SITE_OG_IMAGE_HEIGHT,
   SITE_OG_IMAGE_WIDTH,
@@ -26,7 +29,7 @@ import { RankingPeriodCard } from '@/components/home/RankingPeriodCard';
 import { DiscordSupportLink } from '@/components/home/DiscordSupportLink';
 import { DispatchTicker } from '@/components/home/DispatchTicker';
 
-const homeTitle = '欧服陪玩｜锦鲤陪玩公会 Jinlee Club';
+const homeTitle = `欧服陪玩｜${SITE_NAME} ${SITE_ALTERNATE_NAME}`;
 const periods: PeriodKey[] = ['日榜', '周榜', '月榜'];
 const SHOW_RECOMMENDED_COMPANIONS = false;
 
@@ -50,7 +53,7 @@ export const metadata: Metadata = {
         url: SITE_OG_IMAGE,
         width: SITE_OG_IMAGE_WIDTH,
         height: SITE_OG_IMAGE_HEIGHT,
-        alt: `${SITE_NAME}锦鲤 logo`,
+        alt: `${SITE_NAME} Logo`,
       },
     ],
   },
@@ -73,8 +76,9 @@ const structuredData = {
       legalName: LEGAL_ENTITY_NAME,
       identifier: UNIFIED_SOCIAL_CREDIT_CODE,
       url: SITE_URL,
+      logo: `${SITE_URL}${SITE_LOGO}`,
       description: SITE_DESCRIPTION,
-      sameAs: ['https://discord.gg/UJ95zhfJYR'],
+      sameAs: [DISCORD_INVITE_URL],
     },
     {
       '@type': 'WebSite',
@@ -166,19 +170,19 @@ function HeroPanel({ dispatches }: { dispatches: RecentDispatchItem[] }) {
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto mb-7 max-w-5xl text-center">
           <h1 className="text-[clamp(2.65rem,6vw,5.7rem)] font-black leading-[0.9] tracking-[-0.075em] text-orange-200/80">
-            锦鲤陪玩公会
+            {SITE_NAME}
           </h1>
           <p className="mx-auto mt-4 inline-flex rounded-full border border-white/12 bg-white/[0.055] px-4 py-1.5 text-xs font-semibold tracking-[0.28em] text-white/42 backdrop-blur md:text-sm">
             欧服陪玩社区
           </p>
         </div>
 
-        <JinleeHoverLetters word="JINLEE" showIntro={false} className="mt-0" size="hero" />
+        <JinleeHoverLetters word={SITE_WORDMARK} showIntro={false} className="mt-0" size="hero" />
 
         <div className="mx-auto mt-6 max-w-4xl text-center">
           <div className="flex flex-wrap justify-center gap-3">
             <Link
-              href="https://discord.gg/UJ95zhfJYR"
+              href={DISCORD_INVITE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-full bg-gradient-to-b from-[#f8d990] to-[#bd7d1e] px-9 py-4 text-base font-bold text-[#211203] shadow-[0_12px_28px_rgba(190,125,30,0.3)] transition hover:-translate-y-0.5 hover:from-[#ffe6aa] hover:to-[#d89632]"
@@ -200,7 +204,7 @@ function HeroPanel({ dispatches }: { dispatches: RecentDispatchItem[] }) {
             </DiscordSupportLink>
           </div>
           <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-white/64 md:text-base">
-            锦鲤陪玩公会 Jinlee Club，欧洲最智能的陪玩公会，专注欧服陪玩，24小时客服全天候为您服务。提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。
+            点了么娱乐公会 DLMClub，欧洲最智能的陪玩公会，专注欧服陪玩，24小时客服全天候为您服务。提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。
           </p>
           <DispatchTicker dispatches={dispatches} />
         </div>
@@ -288,7 +292,7 @@ function CommunityFloor({ companions }: { companions: RecommendedCompanion[] }) 
           <p className="text-xs font-semibold tracking-[0.45em] text-orange-200/70">推荐陪玩</p>
           <h2 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#fff7ed]">推荐陪玩更新中</h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/50">
-            你可以先进入陪玩列表查看所有可预约的锦鲤陪玩。
+            你可以先进入陪玩列表查看所有可预约的点了么陪玩。
           </p>
         </div>
       </section>
@@ -427,7 +431,7 @@ function HowItWorks() {
       step: '01',
       title: '加入 Discord',
       text: '点击 加入 Discord 服务器',
-      href: 'https://discord.gg/UJ95zhfJYR',
+      href: DISCORD_INVITE_URL,
       openInNewTab: true,
     },
     {
@@ -529,7 +533,7 @@ export default async function Home() {
       <HeroPanel dispatches={homeData.recentDispatches} />
       <RankingRail
         eyebrow="老板榜单"
-        title="锦鲤老板榜"
+        title="点了么老板榜"
         data={homeData.bossRankings}
         accent="bg-orange-300"
         showTag={false}

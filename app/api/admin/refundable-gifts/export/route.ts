@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
   const resolveDisplayName = (discordUserId: string) => displayNameMap.get(discordUserId) || '未知用户';
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'jinlee admin';
+  workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
   const worksheet = workbook.addWorksheet('可退回打赏');
   worksheet.columns = [

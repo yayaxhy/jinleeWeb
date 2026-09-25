@@ -5,7 +5,7 @@ import { isBackofficeDiscordId } from '@/lib/admin';
 import { getServerSession } from '@/lib/session';
 
 export const metadata = {
-  title: '锦鲤管理后台',
+  title: '点了么管理后台',
   robots: {
     index: false,
     follow: false,
@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <div className="admin-shell mx-auto flex max-w-[1400px] flex-col gap-10 px-6 py-12">
         <header className="space-y-2">
           <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
-          <h1 className="text-3xl font-semibold">锦鲤公会管理后台</h1>
+          <h1 className="text-3xl font-semibold">点了么娱乐公会管理后台</h1>
           <p className="text-sm text-white/60">仅允许预设 Discord ID 登录</p>
         </header>
         <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur">

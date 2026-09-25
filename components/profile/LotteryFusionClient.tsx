@@ -517,8 +517,8 @@ export function LotteryFusionClient({
             <div className="space-y-6 lg:space-y-10">
               <div className="flex justify-center lg:justify-center">
                 <img
-                  src="/lottery-fusion/reference/scheme3-logo.png"
-                  alt="Jinlee Club"
+                  src="/DLMLOGO.png"
+                  alt="DLMClub"
                   className="h-[72px] w-auto object-contain lg:h-[108px]"
                 />
               </div>
@@ -559,7 +559,7 @@ export function LotteryFusionClient({
                   <SparklesIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-[12px] uppercase tracking-[0.24em] text-[#9e8c7f]">JINLEE CLUB</p>
+                  <p className="text-[12px] uppercase tracking-[0.24em] text-[#9e8c7f]">DLMClub</p>
                   <p className="text-[15px] font-semibold tracking-[0.14em] text-[#7f5b49]">DIAMOND</p>
                 </div>
               </div>

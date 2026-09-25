@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { SITE_ALTERNATE_NAME, SITE_URL } from '@/lib/site';
 import {
   buildOutTradeNo,
   buildSignaturePayload,
@@ -15,7 +16,7 @@ import {
 
 const MIN_AMOUNT = Number(process.env.RECHARGE_MIN_AMOUNT ?? 0.01);
 const PRODUCTION_ORIGIN =
-  process.env.ZPAY_PRODUCTION_ORIGIN ?? 'https://jinlee-200529-6-1387148708.sh.run.tcloudbase.com';
+  process.env.ZPAY_PRODUCTION_ORIGIN ?? SITE_URL;
 
 const resolveAbsoluteUrl = (raw: string | undefined, fallbackPath: string) => {
   const candidate = raw ?? `${PRODUCTION_ORIGIN}${fallbackPath}`;
@@ -25,7 +26,7 @@ const resolveAbsoluteUrl = (raw: string | undefined, fallbackPath: string) => {
     throw new Error(`Invalid URL configured for ${fallbackPath}: ${candidate}`);
   }
 };
-const SITE_NAME = process.env.ZPAY_SITE_NAME ?? 'Jinlee Club';
+const SITE_NAME = process.env.ZPAY_SITE_NAME ?? SITE_ALTERNATE_NAME;
 
 const parseAmount = (raw: unknown) => {
   const amountNumber = typeof raw === 'string' ? Number(raw) : typeof raw === 'number' ? raw : NaN;
@@ -103,7 +104,7 @@ export async function POST(request: Request) {
     `账户充值-${orderDisplayName}`,
     `账户充值-${currentUser.jinleeId}`,
   );
-  const safeSiteName = sanitizeZPayText(SITE_NAME, 'Jinlee Club');
+  const safeSiteName = sanitizeZPayText(SITE_NAME, SITE_ALTERNATE_NAME);
 
   const params = {
     pid: merchantId,

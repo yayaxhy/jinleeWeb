@@ -1,15 +1,13 @@
 'use client';
 
 import { useEffect, useRef, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-
-const DEFAULT_DISCORD_USER_ID = '1421651539247894549';
-const DISCORD_INVITE_FALLBACK = 'https://discord.gg/UJ95zhfJYR';
+import { SUPPORT_DISCORD_USER_ID } from '@/lib/site';
 
 export function DiscordSupportLink({
   children,
   className,
   style,
-  discordUserId = DEFAULT_DISCORD_USER_ID,
+  discordUserId = SUPPORT_DISCORD_USER_ID,
 }: {
   children: ReactNode;
   className: string;
@@ -17,6 +15,7 @@ export function DiscordSupportLink({
   discordUserId?: string;
 }) {
   const fallbackTimer = useRef<number | null>(null);
+  const supportProfileUrl = `https://discord.com/users/${discordUserId}`;
 
   useEffect(() => () => {
     if (fallbackTimer.current !== null) window.clearTimeout(fallbackTimer.current);
@@ -38,14 +37,14 @@ export function DiscordSupportLink({
     fallbackTimer.current = window.setTimeout(() => {
       fallbackTimer.current = null;
       if (document.visibilityState === 'visible' && document.hasFocus()) {
-        window.location.assign(DISCORD_INVITE_FALLBACK);
+        window.location.assign(supportProfileUrl);
       }
     }, 1000);
   };
 
   return (
     <a
-      href={DISCORD_INVITE_FALLBACK}
+      href={supportProfileUrl}
       onClick={handleClick}
       className={className}
       style={style}

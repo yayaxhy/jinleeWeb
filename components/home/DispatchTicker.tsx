@@ -7,7 +7,7 @@ import type { RecentDispatchItem } from '@/lib/home-page-data';
 const fallbackItems: RecentDispatchItem[] = [
   {
     id: 'empty',
-    title: '锦鲤客服在线',
+    title: '点了么客服在线',
     detail: '加入 Discord，说明游戏、段位和其他要求即可。',
     timeLabel: '现在',
     statusLabel: '实时咨询',
@@ -34,7 +34,7 @@ export function DispatchTicker({ dispatches }: { dispatches: RecentDispatchItem[
   const animationSeconds = Math.max(20, items.length * 8);
 
   return (
-    <section aria-label="锦鲤公会实时动态" className="mx-auto mt-7 max-w-4xl overflow-hidden">
+    <section aria-label="点了么娱乐公会实时动态" className="mx-auto mt-7 max-w-4xl overflow-hidden">
       <div className="mb-3 flex items-center gap-3 px-1">
         <p className="text-xs font-semibold tracking-[0.36em] text-orange-200/70">公会实时动态</p>
         <span className="h-px flex-1 bg-white/10" />

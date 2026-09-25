@@ -6,15 +6,16 @@ import { NavBar } from '@/components/NavBar';
 import {
   SITE_DESCRIPTION,
   SITE_NAME,
+  DISCORD_INVITE_URL,
   SITE_OG_IMAGE,
   SITE_OG_IMAGE_HEIGHT,
   SITE_OG_IMAGE_WIDTH,
   SITE_URL,
 } from '@/lib/site';
 
-const pageTitle = '欧服陪玩｜欧洲游戏陪玩服务｜锦鲤陪玩公会 Jinlee Club';
+const pageTitle = '欧服陪玩｜欧洲游戏陪玩服务｜点了么娱乐公会 DLMClub';
 const pageDescription =
-  '锦鲤陪玩公会 Jinlee Club 是欧洲最智能的陪玩公会，专注欧服陪玩与欧洲游戏陪玩，24 小时客服全天候为您服务，提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。';
+  '点了么娱乐公会 DLMClub 是欧洲最智能的陪玩公会，专注欧服陪玩与欧洲游戏陪玩，24 小时客服全天候为您服务，提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。';
 
 const games = [
   'Valorant/无畏契约欧服陪玩',
@@ -25,24 +26,24 @@ const games = [
 
 const faqs = [
   {
-    question: '锦鲤公会提供欧服陪玩吗？',
+    question: '点了么娱乐公会提供欧服陪玩吗？',
     answer:
-      '是的，锦鲤陪玩公会 Jinlee Club 专注欧服陪玩与欧洲游戏陪玩，适合在欧洲时区寻找中文游戏伙伴的玩家。',
+      '是的，点了么娱乐公会 DLMClub 专注欧服陪玩与欧洲游戏陪玩，适合在欧洲时区寻找中文游戏伙伴的玩家。',
   },
   {
-    question: '锦鲤陪玩公会支持哪些游戏？',
+    question: '点了么娱乐公会支持哪些游戏？',
     answer:
       '目前提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等热门游戏陪玩服务，后续会继续扩展更多游戏品类。',
   },
   {
     question: '客服是 24 小时在线吗？',
     answer:
-      '锦鲤陪玩公会提供 24 小时客服，全天候处理咨询、下单、服务匹配和售后问题。',
+      '点了么娱乐公会提供 24 小时客服，全天候处理咨询、下单、服务匹配和售后问题。',
   },
   {
     question: '欧洲陪玩和欧服陪玩有什么区别？',
     answer:
-      '欧洲陪玩更强调欧洲地区与欧洲时区，欧服陪玩更强调游戏服务器。锦鲤陪玩公会同时覆盖这两类需求。',
+      '欧洲陪玩更强调欧洲地区与欧洲时区，欧服陪玩更强调游戏服务器。点了么娱乐公会同时覆盖这两类需求。',
   },
 ];
 
@@ -64,7 +65,7 @@ export const metadata: Metadata = {
         url: SITE_OG_IMAGE,
         width: SITE_OG_IMAGE_WIDTH,
         height: SITE_OG_IMAGE_HEIGHT,
-        alt: `${SITE_NAME}锦鲤 logo`,
+        alt: `${SITE_NAME} Logo`,
       },
     ],
   },
@@ -133,13 +134,13 @@ export default function OufuPeiwanPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.2),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(220,38,38,0.16),transparent_30%)]" />
         <div className="relative mx-auto max-w-6xl">
           <p className="text-xs font-semibold uppercase tracking-[0.45em] text-orange-700">
-            Jinlee Club
+            DLMClub
           </p>
           <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-tight sm:text-6xl">
-            欧服陪玩｜锦鲤陪玩公会
+            欧服陪玩｜点了么娱乐公会
           </h1>
           <p className="mt-6 max-w-3xl text-base leading-8 text-neutral-700 sm:text-lg">
-            锦鲤陪玩公会 Jinlee Club 是欧洲最智能的陪玩公会，专注欧服陪玩，24 小时客服全天候为您服务。我们提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。
+            点了么娱乐公会 DLMClub 是欧洲最智能的陪玩公会，专注欧服陪玩，24 小时客服全天候为您服务。我们提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -149,7 +150,7 @@ export default function OufuPeiwanPage() {
               查看陪玩列表
             </Link>
             <Link
-              href="https://discord.gg/UJ95zhfJYR"
+              href={DISCORD_INVITE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-full border border-neutral-950 px-6 py-3 text-sm font-semibold transition hover:bg-white"
@@ -177,9 +178,9 @@ export default function OufuPeiwanPage() {
         <div className="mx-auto grid max-w-6xl gap-8 rounded-3xl bg-white p-6 shadow-sm md:grid-cols-[0.9fr_1.1fr] md:p-10">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-700">
-              Why Jinlee
+              Why DLMClub
             </p>
-            <h2 className="mt-4 text-3xl font-semibold">为什么选择锦鲤欧服陪玩？</h2>
+            <h2 className="mt-4 text-3xl font-semibold">为什么选择点了么欧服陪玩？</h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {[

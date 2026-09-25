@@ -826,10 +826,10 @@ export const executeAssetTransfer = async (
     ]);
 
   if (!sourceSummaryBefore.memberExists || !sourceJinleeUser?.jinleeId) {
-    throw new Error('源账号不存在，或尚未建立 Jinlee 身份');
+    throw new Error('源账号不存在，或尚未建立 DLMClub 身份');
   }
   if (!targetSummaryBefore.memberExists || !targetJinleeUser?.jinleeId) {
-    throw new Error('目标账号不存在，或尚未建立 Jinlee 身份');
+    throw new Error('目标账号不存在，或尚未建立 DLMClub 身份');
   }
 
   const sourceWalletBefore = await getJinleeWalletSnapshotTx(tx, {

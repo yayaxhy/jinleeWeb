@@ -251,7 +251,7 @@ export default function BindWechatClient() {
             <p className="text-xs uppercase tracking-[0.45em] text-gray-400">Bind WeChat</p>
             <h1 className="text-3xl font-semibold tracking-wide text-[#8a6000]">网站端绑定微信</h1>
             <p className="text-sm leading-7 text-gray-500">
-              当前页面用于把网站账号和微信小程序账号绑定到同一个 Jinlee 业务用户。请按照页面提示完成绑定，成功后网站端、
+              当前页面用于把网站账号和微信小程序账号绑定到同一个 DLMClub 业务用户。请按照页面提示完成绑定，成功后网站端、
               Bot 和微信小程序会共用同一个业务账号。
             </p>
           </div>
@@ -273,8 +273,8 @@ export default function BindWechatClient() {
                       : fallbackMode === 'manual_code'
                         ? '当前小程序无法直接扫码拉起，请复制右侧绑定码，在手机端打开小程序绑定页后粘贴完成关联。'
                         : fallbackMode === 'mini_program_code'
-                          ? '请使用微信扫一扫右侧小程序码，进入 Jinlee 小程序绑定页后确认绑定。'
-                        : '扫描右侧二维码后，会进入微信小程序绑定页；确认后当前网站账号和微信账号会合并成同一个 Jinlee 业务用户。'}
+                          ? '请使用微信扫一扫右侧小程序码，进入 DLMClub 小程序绑定页后确认绑定。'
+                        : '扫描右侧二维码后，会进入微信小程序绑定页；确认后当前网站账号和微信账号会合并成同一个 DLMClub 业务用户。'}
                   </p>
                 </div>
 
@@ -316,27 +316,27 @@ export default function BindWechatClient() {
                   {bound ? (
                     <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-gray-600">
                       <li>当前网站账号已经和微信账号完成绑定。</li>
-                      <li>后续你可以继续使用网站端或微信小程序登录同一个 Jinlee 用户。</li>
+                      <li>后续你可以继续使用网站端或微信小程序登录同一个 DLMClub 用户。</li>
                       <li>如需切换微信账号，可先解绑后重新发起绑定。</li>
                     </ol>
                   ) : fallbackMode === 'manual_code' ? (
                     <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-gray-600">
                       <li>点击右侧“复制绑定码”。</li>
-                      <li>在手机端打开 Jinlee 微信小程序，进入绑定页。</li>
+                      <li>在手机端打开 DLMClub 微信小程序，进入绑定页。</li>
                       <li>把绑定码粘贴到小程序输入框并确认提交。</li>
-                      <li>提交成功后，当前网站账号和微信账号会合并成同一个 Jinlee 业务用户。</li>
+                      <li>提交成功后，当前网站账号和微信账号会合并成同一个 DLMClub 业务用户。</li>
                     </ol>
                   ) : fallbackMode === 'mini_program_code' ? (
                     <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-gray-600">
                       <li>使用微信扫一扫右侧小程序码。</li>
-                      <li>微信会直接打开 Jinlee 小程序绑定页。</li>
+                      <li>微信会直接打开 DLMClub 小程序绑定页。</li>
                       <li>在小程序里确认绑定当前微信账号。</li>
                       <li>绑定完成后，网站端刷新即可看到已绑定状态。</li>
                     </ol>
                   ) : (
                     <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-gray-600">
                       <li>使用微信扫描右侧二维码。</li>
-                      <li>微信会打开 Jinlee 小程序绑定页。</li>
+                      <li>微信会打开 DLMClub 小程序绑定页。</li>
                       <li>在小程序里确认绑定当前微信账号。</li>
                       <li>绑定完成后，网站端刷新即可看到已绑定状态。</li>
                     </ol>
@@ -371,7 +371,7 @@ export default function BindWechatClient() {
                       </div>
                     </div>
                     <p className="text-xs leading-6 text-gray-500">
-                      当前小程序没有 URL Link 权限，不能直接扫码拉起。请在手机端打开 Jinlee 小程序绑定页，并粘贴上面的绑定码完成关联。
+                      当前小程序没有 URL Link 权限，不能直接扫码拉起。请在手机端打开 DLMClub 小程序绑定页，并粘贴上面的绑定码完成关联。
                     </p>
                     <button
                       type="button"
@@ -395,7 +395,7 @@ export default function BindWechatClient() {
                     <p className="text-xs leading-6 text-gray-500">
                       {urlLink
                         ? '如果微信无法直接识别二维码，也可以复制下面的链接在手机微信里打开。'
-                        : '请使用微信扫一扫识别这个小程序码，进入 Jinlee 小程序绑定页。'}
+                        : '请使用微信扫一扫识别这个小程序码，进入 DLMClub 小程序绑定页。'}
                     </p>
                     {urlLink ? (
                       <a

@@ -9,6 +9,7 @@ import {
 } from '@/lib/session';
 import { ensureJinleeUserForDiscordMember } from '@/lib/jinlee-user';
 import { exchangeCodeForTokens, fetchDiscordUser, fetchGuildMember } from '@/lib/discord';
+import { resolveDiscordLoginDisplayName } from '@/lib/discord-login-display-name';
 import { prisma } from '@/lib/prisma';
 import { recordAuthLoginEvent } from '@/lib/auth-login-audit';
 import { AccountProvider } from '@prisma/client';
@@ -47,7 +48,9 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = process.env.NEXTAUTH_URL ?? url.origin;
   console.log('[discord.callback] NEXTAUTH_URL', process.env.NEXTAUTH_URL, 'origin', origin);
-  const guildId = process.env.DISCORD_GUILD_ID ?? '828118159218966538';
+  const guildId = process.env.DISCORD_GUILD_ID?.trim()
+    || process.env.DISCORD_MIGRATION_TARGET_GUILD_ID?.trim()
+    || '1551704194438922310';
 
   if (url.searchParams.get('error')) {
     return buildErrorRedirect(origin, url.searchParams.get('error_description') ?? 'access_denied');
@@ -79,12 +82,28 @@ export async function GET(request: Request) {
         guildMember = null;
       }
     }
-    const serverDisplayName =
-      guildMember?.nick ??
-      guildMember?.user?.global_name ??
-      guildMember?.user?.username ??
-      discordUser.global_name ??
-      discordUser.username;
+    const [savedMember, savedJinleeUser, savedPeiwan] = await Promise.all([
+      prisma.member.findUnique({
+        where: { discordUserId: discordUser.id },
+        select: { serverDisplayName: true },
+      }),
+      prisma.jinleeUser.findUnique({
+        where: { discordUserId: discordUser.id },
+        select: { discordDisplayName: true },
+      }),
+      prisma.pEIWAN.findUnique({
+        where: { discordUserId: discordUser.id },
+        select: { serverDisplayName: true },
+      }),
+    ]);
+    const serverDisplayName = resolveDiscordLoginDisplayName({
+      guildNickname: guildMember?.nick,
+      memberDisplayName: savedMember?.serverDisplayName,
+      jinleeDisplayName: savedJinleeUser?.discordDisplayName,
+      peiwanDisplayName: savedPeiwan?.serverDisplayName,
+      globalName: discordUser.global_name,
+      username: discordUser.username,
+    });
     const avatarUrl = discordUser.avatar
       ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.${
           discordUser.avatar.startsWith('a_') ? 'gif' : 'png'

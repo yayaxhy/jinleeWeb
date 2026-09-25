@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { RECHARGE_DESCRIPTION, SITE_URL } from '@/lib/site';
 
 const WECHAT_PAY_API_BASE = 'https://api.mch.weixin.qq.com';
 const SIGNATURE_TOLERANCE_SECONDS = 60 * 5;
@@ -94,7 +95,7 @@ const truncateUtf8 = (value: string, maxBytes: number) => {
 };
 
 const resolveAbsoluteUrl = (raw: string | undefined, fallback: string) => {
-  const base = process.env.SITE_ORIGIN ?? 'https://jinleeclub.vip';
+  const base = process.env.SITE_ORIGIN ?? SITE_URL;
   const candidate = raw ?? `${base}${fallback}`;
   try {
     return new URL(candidate).toString();
@@ -140,7 +141,7 @@ const loadWechatPayConfig = async (): Promise<WechatPayConfig> => {
     publicKeyPem,
     publicKeyId: process.env.WECHAT_PAY_PUBLIC_KEY_ID || undefined,
     notifyUrl: resolveAbsoluteUrl(process.env.WECHAT_PAY_NOTIFY_URL, '/api/payment/wechat/notify'),
-    orderDescriptionPrefix: process.env.WECHAT_PAY_ORDER_DESCRIPTION_PREFIX ?? '锦鲤俱乐部账户充值',
+    orderDescriptionPrefix: process.env.WECHAT_PAY_ORDER_DESCRIPTION_PREFIX ?? RECHARGE_DESCRIPTION,
   };
 };
 
@@ -224,7 +225,7 @@ const requestWechatPay = async <T>(
         `WECHATPAY2-SHA256-RSA2048 mchid="${config.mchId}",` +
         `nonce_str="${nonce}",timestamp="${timestamp}",serial_no="${config.certificateSerialNo}",` +
         `signature="${signature}"`,
-      'User-Agent': 'jinleeclub.vip/1.0',
+      'User-Agent': 'DLMClub/1.0',
     },
     body: requestBody || undefined,
   });
@@ -272,7 +273,7 @@ const requestWechatPay = async <T>(
 
 export const buildWechatPayOrderDescription = (name?: string | null) => {
   const base = sanitizeWechatPayText(name ?? '', '');
-  const prefix = process.env.WECHAT_PAY_ORDER_DESCRIPTION_PREFIX ?? '锦鲤俱乐部账户充值';
+  const prefix = process.env.WECHAT_PAY_ORDER_DESCRIPTION_PREFIX ?? RECHARGE_DESCRIPTION;
   const safePrefix = sanitizeWechatPayText(prefix, '账户充值');
   const description = base ? `${safePrefix}-${base}` : safePrefix;
   return truncateUtf8(description, 127);

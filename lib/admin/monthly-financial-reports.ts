@@ -1015,7 +1015,7 @@ function buildFinancialStatementWorkbook(params: {
 }) {
   const { year, month, data, adjustments } = params;
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'jinlee admin';
+  workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
   workbook.modified = new Date();
 
@@ -1231,7 +1231,7 @@ function buildFinancialStatementWorkbook(params: {
 
 function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'jinlee admin';
+  workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
 
   addKeyValueSheet(workbook, '导出参数', [

@@ -6,7 +6,7 @@ import { resolveFarmSession } from '@/lib/farmDevSession';
 import { getServerSession } from '@/lib/session';
 
 export const metadata = {
-  title: '锦鲤庄园',
+  title: '点了么庄园',
   robots: {
     index: false,
     follow: false,

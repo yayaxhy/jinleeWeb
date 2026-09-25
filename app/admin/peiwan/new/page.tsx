@@ -5,7 +5,7 @@ import { getServerSession } from '@/lib/session';
 import { canEditPeiwanInfo, canSyncSinglePeiwanTag, isHowardReadOnlyDiscordId } from '@/lib/admin';
 
 export const metadata = {
-  title: '新增陪玩 - 锦鲤管理后台',
+  title: '新增陪玩 - 点了么管理后台',
 };
 
 export default async function CreatePeiwanPage() {

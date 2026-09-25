@@ -1,39 +1,16 @@
-const ADMIN_DISCORD_IDS = [
+// Access is intentionally disabled until replacement Discord IDs are approved.
+const ADMIN_DISCORD_IDS: readonly string[] = [
   '525770714574225408',
-  '794340158991237121',
-  '1012932103509377034',
   '1008032640445710447',
-];
-
-const KEFU_DISCORD_IDS = [
-  '525770714574225408',
-  '794340158991237121',
-  '1012932103509377034',
-  '1421651539247894549',
-];
-
-const PEIWAN_INFO_ADMIN_DISCORD_IDS = [
-  '1303464822393933938',
-];
-
-const HOWARD_DISCORD_IDS = [
-  '525770714574225408',
-  '794340158991237121',
-  '1012932103509377034',
-  '1421651539247894549',
+  '1552030874076315777',
   '308164614846414851',
+  '734159747367829636',
 ];
-
-const IRIA_DISCORD_IDS = [
-  '525770714574225408',
-  '794340158991237121',
-  '1012932103509377034',
-  '1008032640445710447',
-];
-
-const HOWARD_READONLY_IDS = ['1421651539247894549'];
-const STRIPE_PRICING_ADMIN_DISCORD_ID = '525770714574225408';
-const TRAFFIC_ADMIN_DISCORD_ID = '525770714574225408';
+const KEFU_DISCORD_IDS: readonly string[] = [];
+const PEIWAN_INFO_ADMIN_DISCORD_IDS: readonly string[] = [];
+const HOWARD_DISCORD_IDS: readonly string[] = [];
+const IRIA_DISCORD_IDS: readonly string[] = [];
+const HOWARD_READONLY_IDS: readonly string[] = [];
 
 export const getAdminDiscordIds = () => ADMIN_DISCORD_IDS;
 
@@ -119,10 +96,14 @@ export const canManageOrderChannelBindings = (discordId?: string | null) =>
   isAdminDiscordId(discordId);
 
 export const canViewRevenue = (discordId?: string | null) =>
-  isAdminDiscordId(discordId) || discordId === '308164614846414851';
+  isAdminDiscordId(discordId);
 
-export const canViewStripePricing = (discordId?: string | null) =>
-  discordId === STRIPE_PRICING_ADMIN_DISCORD_ID;
+export const canViewStripePricing = (discordId?: string | null) => {
+  void discordId;
+  return false;
+};
 
-export const canViewTraffic = (discordId?: string | null) =>
-  discordId === TRAFFIC_ADMIN_DISCORD_ID;
+export const canViewTraffic = (discordId?: string | null) => {
+  void discordId;
+  return false;
+};

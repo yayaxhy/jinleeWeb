@@ -273,7 +273,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
                     type="text"
                     name="fromId"
                     defaultValue={fromId}
-                    placeholder="请输入 Jinlee ID 或 Discord ID"
+                    placeholder="请输入 会员 ID 或 Discord ID"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
                   />
                 </div>

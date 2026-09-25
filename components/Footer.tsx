@@ -1,13 +1,9 @@
 import Link from 'next/link';
 
 import {
-  ICP_QUERY_URL,
-  ICP_RECORD_NUMBER,
-  LEGAL_ENTITY_NAME,
   PUBLIC_CONTACT_EMAIL,
   SUPPORT_DISCORD_URL,
   SUPPORT_WECHAT_ID,
-  UNIFIED_SOCIAL_CREDIT_CODE,
 } from '@/lib/legal';
 
 type SupportLink = { label: string; href: string; newTab?: boolean };
@@ -68,21 +64,6 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-neutral-200">
-        <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center gap-2 px-6 py-5 text-center text-xs leading-5 text-neutral-600">
-          <span>{LEGAL_ENTITY_NAME}</span>
-          <span>统一社会信用代码：{UNIFIED_SOCIAL_CREDIT_CODE}</span>
-          <Link
-            href={ICP_QUERY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-black hover:underline"
-          >
-            {ICP_RECORD_NUMBER}
-          </Link>
-          <span className="uppercase tracking-[0.14em]">© Jinlee Club 2025–2026</span>
-        </div>
-      </div>
     </footer>
   );
 }

@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
   });
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'jinlee admin';
+  workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
   const worksheet = workbook.addWorksheet('邀请关系');
   worksheet.columns = [

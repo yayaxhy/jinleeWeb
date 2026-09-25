@@ -288,7 +288,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
                             <div className="font-mono text-[11px] text-white/80">Discord: {record.hostId}</div>
                           ) : null}
                           {record.hostJinleeId ? (
-                            <div className="font-mono text-[11px] text-white/50">Jinlee: {record.hostJinleeId}</div>
+                            <div className="font-mono text-[11px] text-white/50">DLMClub: {record.hostJinleeId}</div>
                           ) : null}
                           {!record.hostId && record.hostWechatOpenId ? (
                             <div className="text-[11px] text-white/50">微信用户</div>
@@ -299,7 +299,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
                         <div className="space-y-1">
                           <div className="text-white/90">{workerDisplayName}</div>
                           <div className="font-mono text-[11px] text-white/80">Discord: {record.workerId}</div>
-                          <div className="font-mono text-[11px] text-white/50">Jinlee: {record.workerJinleeId}</div>
+                          <div className="font-mono text-[11px] text-white/50">DLMClub: {record.workerJinleeId}</div>
                         </div>
                       </td>
                       <td className="px-3 py-3">{formatNumber(record.gross)}</td>
