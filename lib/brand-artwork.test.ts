@@ -5,18 +5,18 @@ import test from 'node:test';
 import { OPERATION_ART, PRIZE_ART_BY_NAME, getVipArtworkPath } from './brand-artwork-catalog';
 import { resolveLocalVoucherArt, resolveVoucherDisplayArt } from './local-voucher-art';
 
-test('all 59 catalog assets are bundled with valid PNG/GIF headers', () => {
+test('all 66 catalog assets are bundled with valid PNG/GIF headers', () => {
   const assets = new Set([
     ...Object.values(OPERATION_ART),
     ...Object.values(PRIZE_ART_BY_NAME),
     ...Array.from({ length: 12 }, (_, i) => getVipArtworkPath(i + 1)),
   ]);
-  assert.equal(assets.size, 59);
+  assert.equal(assets.size, 66);
   let physicalFiles = 0;
   for (const group of ['operations', 'prizes', 'vip']) {
     physicalFiles += readdirSync(`public/brand/dlm-v1/${group}`).length;
   }
-  assert.equal(physicalFiles, 59);
+  assert.equal(physicalFiles, 66);
   for (const asset of assets) {
     const data = readFileSync(path.join('public', asset));
     assert.ok(data.length > 100, asset);
@@ -49,4 +49,17 @@ test('unmapped prizes keep valid user-managed art; expired URLs fall back safely
   assert.equal(resolveVoucherDisplayArt('新奖品', 'javascript:alert(1)'), null);
   assert.equal(resolveVoucherDisplayArt('新奖品', 'not a URL'), null);
   assert.equal(resolveLocalVoucherArt('__proto__'), null);
+});
+
+test('seven new voucher images override old URLs while the four excluded prizes keep their original art', () => {
+  const oldUrl = 'https://example.com/old-custom-prize.png';
+  const names = ['陪玩评语券', '香水代金券', '旋转木马代金券', '南瓜车代金券', '留声机代金券', '月冠名92折券', '月冠名9折券'];
+  const paths = names.map((name) => resolveVoucherDisplayArt(name, oldUrl));
+  assert.ok(paths.every((art) => art?.startsWith('/brand/dlm-v1/prizes/')));
+  assert.equal(new Set(paths).size, 7);
+  assert.notEqual(resolveLocalVoucherArt('月冠名92折券'), resolveLocalVoucherArt('月冠名9折券'));
+  for (const name of ['兔兔宝宝', '狐狸宝宝', '猪猪宝宝', '小鸡宝宝']) {
+    assert.equal(resolveLocalVoucherArt(name), null);
+    assert.equal(resolveVoucherDisplayArt(name, oldUrl), oldUrl);
+  }
 });

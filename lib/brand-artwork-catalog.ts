@@ -72,6 +72,13 @@ export const PRIZE_ART_BY_NAME: Readonly<Record<string, string>> = {
   '抽成降1%': prize('27-commission-minus-one.png'),
   双倍流水5000券: prize('28-double-flow-5000.png'),
   双倍消费5000券: prize('29-double-spend-5000.png'),
+  陪玩评语券: prize('30-peiwan-review-voucher.png'),
+  香水代金券: prize('31-perfume-voucher.png'),
+  旋转木马代金券: prize('32-carousel-voucher.png'),
+  南瓜车代金券: prize('33-pumpkin-car-voucher.png'),
+  留声机代金券: prize('34-phonograph-voucher.png'),
+  月冠名92折券: prize('35-month-crown-92-voucher.png'),
+  月冠名9折券: prize('36-month-crown-9-voucher.png'),
 };
 
 export function getPrizeArtworkPath(name?: string | null): string | null {
