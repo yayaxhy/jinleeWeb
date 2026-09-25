@@ -265,7 +265,7 @@ export default async function Profile(props: ProfilePageProps) {
   const skip = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
 
   const couponsPromise = prisma.coupon.findMany({
-    where: { jinleeId },
+    where: { jinleeId, issuedAt: newEntityOnlyTime() },
     orderBy: { issuedAt: 'desc' },
   });
   type CouponRecord = Awaited<typeof couponsPromise>[number];

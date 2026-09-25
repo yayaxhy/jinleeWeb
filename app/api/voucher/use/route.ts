@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { CouponStatus, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { resolveSpecialVoucher } from '@/lib/voucher';
 import { SPECIAL_ACTION_COUPON_TYPE_BY_PRIZE } from '@/lib/voucherCatalog';
 
@@ -110,6 +111,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
             jinleeId: currentUser.jinleeId,
             type: couponType,
             status: CouponStatus.ACTIVE,
+            issuedAt: newEntityOnlyTime(),
             expiresAt: { gt: now },
           },
           select: { id: true },
@@ -119,6 +121,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
             jinleeId: currentUser.jinleeId,
             type: couponType,
             status: CouponStatus.ACTIVE,
+            issuedAt: newEntityOnlyTime(),
             expiresAt: { gt: now },
           },
           orderBy: [{ expiresAt: 'asc' }, { issuedAt: 'asc' }, { id: 'asc' }],
@@ -135,6 +138,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
             deliveryStatus: PointShopDeliveryStatus.DELIVERED,
             couponType,
             couponStatus: CouponStatus.ACTIVE,
+            issuedAt: newEntityOnlyTime(),
             OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
           },
           select: { id: true },
@@ -146,6 +150,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
             deliveryStatus: PointShopDeliveryStatus.DELIVERED,
             couponType,
             couponStatus: CouponStatus.ACTIVE,
+            issuedAt: newEntityOnlyTime(),
             OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
           },
           orderBy: [{ expiresAt: 'asc' }, { issuedAt: 'asc' }, { id: 'asc' }],
@@ -160,6 +165,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
           id: lotteryId,
           jinleeId: currentUser.jinleeId,
           status: LotteryStatus.UNUSED,
+          createdAt: newEntityOnlyTime(),
           prize: { name: prizeName },
           expiresAt: { gt: now },
         },
@@ -169,6 +175,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
         where: {
           jinleeId: currentUser.jinleeId,
           status: LotteryStatus.UNUSED,
+          createdAt: newEntityOnlyTime(),
           prize: { name: prizeName },
           expiresAt: { gt: now },
         },

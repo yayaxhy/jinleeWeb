@@ -2,6 +2,7 @@ import { CouponStatus, CouponType, LotteryStatus, OrderStatus, PointShopDelivery
 import type { Prisma as PrismaNamespace } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 export type DiscountKind = 'coupon' | 'lottery';
 
@@ -130,6 +131,7 @@ async function consumeCouponCandidateTx(
         deliveryType: PointShopDeliveryType.COUPON,
         couponType: candidate.couponType,
         couponStatus: CouponStatus.ACTIVE,
+        issuedAt: newEntityOnlyTime(),
         expiresAt: { gt: now },
         consumedAt: null,
         consumeOrderId: null,
@@ -152,6 +154,7 @@ async function consumeCouponCandidateTx(
       jinleeId,
       type: candidate.couponType,
       status: CouponStatus.ACTIVE,
+      issuedAt: newEntityOnlyTime(),
       expiresAt: { gt: now },
       consumedAt: null,
       orderId: null,
@@ -187,6 +190,7 @@ async function consumeLotteryVoucherTx(
       id: voucherId,
       jinleeId,
       status: LotteryStatus.UNUSED,
+      createdAt: newEntityOnlyTime(),
       expiresAt: { gt: now },
       consumeAt: null,
       consumeOrderId: null,
@@ -301,13 +305,14 @@ export async function applyDiscountForOrder(params: {
 
     // expire outdated vouchers
     await tx.coupon.updateMany({
-      where: { jinleeId, status: 'ACTIVE', expiresAt: { lte: now } },
+      where: { jinleeId, status: 'ACTIVE', issuedAt: newEntityOnlyTime(), expiresAt: { lte: now } },
       data: { status: 'EXPIRED' },
     });
     await tx.lotteryDraw.updateMany({
       where: {
         jinleeId,
         status: LotteryStatus.UNUSED,
+        createdAt: newEntityOnlyTime(),
         expiresAt: { lte: now },
         prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
       },
@@ -329,6 +334,7 @@ export async function applyDiscountForOrder(params: {
               id: targetCouponId,
               jinleeId,
               status: CouponStatus.ACTIVE,
+              issuedAt: newEntityOnlyTime(),
               expiresAt: { gt: now },
               type: { in: discountCouponTypes },
             },
@@ -351,6 +357,7 @@ export async function applyDiscountForOrder(params: {
               jinleeId,
               deliveryType: PointShopDeliveryType.COUPON,
               couponStatus: CouponStatus.ACTIVE,
+              issuedAt: newEntityOnlyTime(),
               expiresAt: { gt: now },
               couponType: { in: discountCouponTypes },
             },
@@ -373,6 +380,7 @@ export async function applyDiscountForOrder(params: {
             where: {
               jinleeId,
               status: CouponStatus.ACTIVE,
+              issuedAt: newEntityOnlyTime(),
               expiresAt: { gt: now },
               type: { in: discountCouponTypes },
             },
@@ -384,6 +392,7 @@ export async function applyDiscountForOrder(params: {
               jinleeId,
               deliveryType: PointShopDeliveryType.COUPON,
               couponStatus: CouponStatus.ACTIVE,
+              issuedAt: newEntityOnlyTime(),
               expiresAt: { gt: now },
               couponType: { in: discountCouponTypes },
             },
@@ -465,6 +474,7 @@ export async function applyDiscountForOrder(params: {
                 id: targetLotteryId,
                 jinleeId,
                 status: LotteryStatus.UNUSED,
+                createdAt: newEntityOnlyTime(),
                 expiresAt: { gt: now },
                 prize: { name: { in: prizeNames } },
               },
@@ -474,6 +484,7 @@ export async function applyDiscountForOrder(params: {
               where: {
                 jinleeId,
                 status: LotteryStatus.UNUSED,
+                createdAt: newEntityOnlyTime(),
                 expiresAt: { gt: now },
                 prize: { name: { in: prizeNames } },
               },

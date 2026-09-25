@@ -15,6 +15,7 @@ import {
   type LotteryFusionHistorySourceShape,
 } from '@/lib/lottery-fusion';
 import { prisma } from '@/lib/prisma';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { COUPON_VOUCHER_META, inferPrizeTypeByPrizeName } from '@/lib/voucherCatalog';
 import type {
   FusionItemView,
@@ -115,6 +116,7 @@ export const getLotteryFusionPageData = async () => {
     prisma.lotteryDraw.findMany({
       where: {
         jinleeId: currentUser.jinleeId,
+        createdAt: newEntityOnlyTime(),
         status: LotteryStatus.UNUSED,
         consumeAt: null,
         OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
@@ -136,6 +138,7 @@ export const getLotteryFusionPageData = async () => {
     prisma.coupon.findMany({
       where: {
         jinleeId: currentUser.jinleeId,
+        issuedAt: newEntityOnlyTime(),
         status: CouponStatus.ACTIVE,
         expiresAt: { gt: now },
         consumedAt: null,
@@ -146,6 +149,7 @@ export const getLotteryFusionPageData = async () => {
     prisma.pointShopGrant.findMany({
       where: {
         jinleeId: currentUser.jinleeId,
+        issuedAt: newEntityOnlyTime(),
         deliveryType: PointShopDeliveryType.COUPON,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
         couponStatus: CouponStatus.ACTIVE,
@@ -241,6 +245,7 @@ export const getLotteryFusionHistoryPageData = async (): Promise<{
   const outputDraws = await prisma.lotteryDraw.findMany({
     where: {
       jinleeId: currentUser.jinleeId,
+      createdAt: newEntityOnlyTime(),
       nonce: { startsWith: 'fusion:' },
     },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -271,6 +276,7 @@ export const getLotteryFusionHistoryPageData = async (): Promise<{
           prisma.lotteryDraw.findMany({
             where: {
               jinleeId: currentUser.jinleeId,
+              createdAt: newEntityOnlyTime(),
               requestId: { in: requestIds },
               id: { notIn: outputIds },
             },
@@ -290,6 +296,7 @@ export const getLotteryFusionHistoryPageData = async (): Promise<{
           prisma.coupon.findMany({
             where: {
               jinleeId: currentUser.jinleeId,
+              issuedAt: newEntityOnlyTime(),
               orderId: { in: requestIds },
             },
             orderBy: [{ consumedAt: 'desc' }, { id: 'desc' }],
@@ -298,6 +305,7 @@ export const getLotteryFusionHistoryPageData = async (): Promise<{
           prisma.pointShopGrant.findMany({
             where: {
               jinleeId: currentUser.jinleeId,
+              issuedAt: newEntityOnlyTime(),
               consumeOrderId: { in: requestIds },
             },
             orderBy: [{ consumedAt: 'desc' }, { id: 'desc' }],

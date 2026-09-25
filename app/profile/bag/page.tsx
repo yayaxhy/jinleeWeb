@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { DiscountUsageButton } from '@/components/profile/DiscountUsageButton';
 import { GiftUsageButton, SelfUseButton } from '@/components/profile/GiftAndSelfUseButtons';
 import {
@@ -48,7 +49,7 @@ export default async function BagPage() {
 
   const [draws, coupons, pointShopGrants] = await Promise.all([
     prisma.lotteryDraw.findMany({
-      where: { jinleeId: currentUser.jinleeId },
+      where: { jinleeId: currentUser.jinleeId, createdAt: newEntityOnlyTime() },
       orderBy: { createdAt: 'desc' },
       include: {
         prize: {
@@ -58,13 +59,14 @@ export default async function BagPage() {
       take: 200,
     }),
     prisma.coupon.findMany({
-      where: { jinleeId: currentUser.jinleeId },
+      where: { jinleeId: currentUser.jinleeId, issuedAt: newEntityOnlyTime() },
       orderBy: { issuedAt: 'desc' },
       take: 200,
     }),
     prisma.pointShopGrant.findMany({
       where: {
         jinleeId: currentUser.jinleeId,
+        issuedAt: newEntityOnlyTime(),
         deliveryType: PointShopDeliveryType.COUPON,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
       },

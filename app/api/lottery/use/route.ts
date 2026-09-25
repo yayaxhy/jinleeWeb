@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import {
   COUPON_VOUCHER_META,
   GIFT_NAME_BY_PRIZE_NAME,
@@ -136,6 +137,7 @@ export async function POST(request: Request) {
         id: couponId,
         jinleeId: currentUser.jinleeId,
         status: CouponStatus.ACTIVE,
+        issuedAt: newEntityOnlyTime(),
         expiresAt: { gt: now },
       },
       select: { id: true, type: true },
@@ -156,6 +158,7 @@ export async function POST(request: Request) {
           deliveryType: PointShopDeliveryType.COUPON,
           deliveryStatus: PointShopDeliveryStatus.DELIVERED,
           couponStatus: CouponStatus.ACTIVE,
+          issuedAt: newEntityOnlyTime(),
           OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
         },
         select: { id: true, couponType: true, itemName: true },
@@ -183,6 +186,7 @@ export async function POST(request: Request) {
       where: {
         id: lotteryId,
         jinleeId: currentUser.jinleeId,
+        createdAt: newEntityOnlyTime(),
       },
       include: {
         prize: { select: { name: true, type: true } },
@@ -289,6 +293,7 @@ export async function POST(request: Request) {
           id: couponId,
           jinleeId: currentUser.jinleeId,
           status: CouponStatus.ACTIVE,
+          issuedAt: newEntityOnlyTime(),
           expiresAt: { gt: now },
           consumedAt: null,
         },
@@ -311,6 +316,7 @@ export async function POST(request: Request) {
           deliveryType: PointShopDeliveryType.COUPON,
           deliveryStatus: PointShopDeliveryStatus.DELIVERED,
           couponStatus: CouponStatus.ACTIVE,
+          issuedAt: newEntityOnlyTime(),
           OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
         },
         data: {
@@ -330,6 +336,7 @@ export async function POST(request: Request) {
           id: lotteryId,
           jinleeId: currentUser.jinleeId,
           status: LotteryStatus.UNUSED,
+          createdAt: newEntityOnlyTime(),
           consumeAt: null,
           OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
         },

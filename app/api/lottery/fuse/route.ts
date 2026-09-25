@@ -1,7 +1,14 @@
 import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
+import { CouponStatus, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { buildLotteryFusionApiError, LotteryFusionApiError } from '@/lib/lottery-fusion';
+import {
+  buildLotteryFusionApiError,
+  LotteryFusionApiError,
+  parseLotteryFusionSourceRef,
+} from '@/lib/lottery-fusion';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
+import { prisma } from '@/lib/prisma';
 
 type FusePayload = {
   sourceIds?: string[];
@@ -16,6 +23,67 @@ const ALLOWED_FUSION_COUNTS = new Set([3, 4, 6]);
 const buildRequestId = (jinleeId: string, lotteryIds: string[]) => {
   const digest = createHash('sha256').update(`${jinleeId}:${lotteryIds.join(',')}`).digest('hex');
   return `WEB_FUSION:${digest.slice(0, 24)}`;
+};
+
+const hasOnlyAvailableNewEntityFusionSources = async (params: {
+  jinleeId: string;
+  sourceIds: string[];
+  now: Date;
+}) => {
+  const parsedSources = params.sourceIds.map(parseLotteryFusionSourceRef);
+  if (parsedSources.some((source) => !source)) return false;
+
+  const lotteryIds = parsedSources
+    .filter((source) => source?.kind === 'lottery')
+    .map((source) => source!.id);
+  const couponIds = parsedSources
+    .filter((source) => source?.kind === 'coupon')
+    .map((source) => source!.id);
+  const pointShopIds = parsedSources
+    .filter((source) => source?.kind === 'pointshop')
+    .map((source) => source!.id);
+  const [lotteryCount, couponCount, pointShopCount] = await Promise.all([
+    lotteryIds.length
+      ? prisma.lotteryDraw.count({
+          where: {
+            id: { in: lotteryIds },
+            jinleeId: params.jinleeId,
+            createdAt: newEntityOnlyTime(),
+            status: LotteryStatus.UNUSED,
+            consumeAt: null,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: params.now } }],
+          },
+        })
+      : 0,
+    couponIds.length
+      ? prisma.coupon.count({
+          where: {
+            id: { in: couponIds },
+            jinleeId: params.jinleeId,
+            issuedAt: newEntityOnlyTime(),
+            status: CouponStatus.ACTIVE,
+            consumedAt: null,
+            expiresAt: { gt: params.now },
+          },
+        })
+      : 0,
+    pointShopIds.length
+      ? prisma.pointShopGrant.count({
+          where: {
+            id: { in: pointShopIds },
+            jinleeId: params.jinleeId,
+            issuedAt: newEntityOnlyTime(),
+            deliveryType: PointShopDeliveryType.COUPON,
+            deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+            couponStatus: CouponStatus.ACTIVE,
+            consumedAt: null,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: params.now } }],
+          },
+        })
+      : 0,
+  ]);
+
+  return lotteryCount === lotteryIds.length && couponCount === couponIds.length && pointShopCount === pointShopIds.length;
 };
 
 const callInternalFusion = async (params: {
@@ -80,6 +148,13 @@ export async function POST(request: Request) {
 
   if (!ALLOWED_FUSION_COUNTS.has(sourceIds.length)) {
     return NextResponse.json({ error: '仅支持 3 / 4 / 6 个券或奖品融合' }, { status: 400 });
+  }
+  if (!await hasOnlyAvailableNewEntityFusionSources({
+    jinleeId: currentUser.jinleeId,
+    sourceIds,
+    now: new Date(),
+  })) {
+    return NextResponse.json({ error: '所选奖品不可用、已过期或属于旧主体' }, { status: 409 });
   }
 
   try {
