@@ -566,7 +566,6 @@ export default async function Profile(props: ProfilePageProps) {
   );
   const tabCandidates = [
     ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-level', label: '升级进度' }] : []),
-    ...(isLaobanMember || isPeiwanMember ? [{ id: 'profile-tx', label: '流水记录' }] : []),
     { id: 'profile-buff', label: 'Buff 状态' },
     ...(showPersonalisationTab ? [{ id: 'profile-personalisation', label: '个性化' }] : []),
     ...(canViewSentPeiwanReviews ? [{ id: 'profile-sent-reviews', label: '评语' }] : []),
@@ -579,6 +578,115 @@ export default async function Profile(props: ProfilePageProps) {
     ? requestedTab!
     : profileTabs[0]?.id ?? 'profile-heart';
   const cardClass = 'bg-white rounded-[32px] border border-black/5 p-8 space-y-6 shadow-[0_10px_30px_rgba(17,24,39,0.04)]';
+  const transactionHistory = (isPeiwanMember || isLaobanMember) ? (
+    <div id="profile-tx" className="sm:col-span-2 xl:col-span-5 border-y border-dashed border-black/10 py-8 space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-wide text-[#8a6000]">流水记录</h2>
+        <p className="text-sm text-gray-500">与账户关联的收支流水</p>
+      </div>
+      {transactions.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-400 uppercase tracking-[0.4em] border-b border-black/5">
+                <th className="py-3 pr-4">时间</th>
+                <th className="py-3 pr-4">类型</th>
+                <th className="py-3 pr-4">变动前余额</th>
+                <th className="py-3 pr-4">金额变动</th>
+                <th className="py-3 pr-4">变动后余额</th>
+                <th className="py-3 pr-4">备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((tx: TransactionRecord) => {
+                const resolvedChange = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
+                const ledgerDigits = resolvedChange !== null && resolvedChange !== 0 && Math.abs(resolvedChange) < 0.01 ? 4 : 2;
+                const changeMeta = getAmountChangeMeta(resolvedChange, ledgerDigits);
+                return (
+                  <tr key={tx.transactionId} className="border-b border-black/5 last:border-0">
+                    <td className="py-4 pr-4 font-mono">{formatDate(tx.timeCreatedAt)}</td>
+                    <td className="py-4 pr-4">{formatTransactionType(tx.typeOfTransaction)}</td>
+                    <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceBefore, ledgerDigits)}</td>
+                    <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
+                    <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceAfter, ledgerDigits)}</td>
+                    <td className="py-4 pr-4 text-gray-500">{tx.thirdPartydiscordId ?? '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 text-sm text-gray-500">
+            <p>
+              第 {Math.min(currentPage, totalPages)} / {totalPages} 页 · 共 {totalTransactions} 条
+            </p>
+            <div className="flex gap-2">
+              <Link
+                href={`/profile?page=${prevPage}#profile-tx`}
+                prefetch={false}
+                className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
+                  hasPrevPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
+                }`}
+                aria-disabled={!hasPrevPage}
+              >
+                上一页
+              </Link>
+              <Link
+                href={`/profile?page=${nextPage}#profile-tx`}
+                prefetch={false}
+                className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
+                  hasNextPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
+                }`}
+                aria-disabled={!hasNextPage}
+              >
+                下一页
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-gray-500">暂时没有流水记录。</p>
+      )}
+    </div>
+  ) : null;
+  const renderStat = (item: (typeof stats)[number]) => (
+    <div
+      key={item.label}
+      className="rounded-2xl border border-dashed border-black/10 bg-white/70 p-5 text-center space-y-2"
+    >
+      <p className="text-xs tracking-[0.4em] text-gray-500">{item.label}</p>
+      <p className="text-2xl font-mono">{formatNumber(item.value)}</p>
+      {item.label === '可提现余额' && (
+        <div className="pt-2">
+          <Link
+            href="/profile/withdraw"
+            className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition inline-flex items-center justify-center hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
+          >
+            去提现
+          </Link>
+        </div>
+      )}
+      {item.label === '账户余额' && (
+        <div className="pt-2">
+          <Link
+            href="/recharge"
+            className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
+          >
+            充值
+          </Link>
+        </div>
+      )}
+      {item.label === '点了么积分' && (
+        <div className="pt-2">
+          <Link
+            href="/profile/point-shop"
+            className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
+          >
+            使用积分
+          </Link>
+        </div>
+      )}
+    </div>
+  );
 
 
   return (
@@ -637,45 +745,9 @@ export default async function Profile(props: ProfilePageProps) {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-              {stats.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-dashed border-black/10 bg-white/70 p-5 text-center space-y-2"
-                >
-                  <p className="text-xs tracking-[0.4em] text-gray-500">{item.label}</p>
-                  <p className="text-2xl font-mono">{formatNumber(item.value)}</p>
-                  {item.label === '可提现余额' && (
-                    <div className="pt-2">
-                      <Link
-                        href="/profile/withdraw"
-                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition inline-flex items-center justify-center hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
-                      >
-                        去提现
-                      </Link>
-                    </div>
-                  )}
-                  {item.label === '账户余额' && (
-                    <div className="pt-2">
-                      <Link
-                        href="/recharge"
-                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
-                      >
-                        充值
-                      </Link>
-                    </div>
-                  )}
-                  {item.label === '点了么积分' && (
-                    <div className="pt-2">
-                      <Link
-                        href="/profile/point-shop"
-                        className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
-                      >
-                        使用积分
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {stats.slice(0, 3).map(renderStat)}
+              {transactionHistory}
+              {stats.slice(3).map(renderStat)}
           </div>
         </div>
 
@@ -987,80 +1059,6 @@ export default async function Profile(props: ProfilePageProps) {
                   </div>
                 )}
 
-                {activeTab === 'profile-tx' && (isPeiwanMember || isLaobanMember) && (
-                  <div id="profile-tx" className="space-y-6">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                      <div>
-                        <h2 className="text-2xl font-semibold tracking-wide text-[#8a6000]">流水记录</h2>
-                        <p className="text-sm text-gray-500">与账户关联的收支流水</p>
-                      </div>
-                    </div>
-                    {transactions.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                          <thead>
-                            <tr className="text-left text-gray-400 uppercase tracking-[0.4em] border-b border-black/5">
-                              <th className="py-3 pr-4">时间</th>
-                              <th className="py-3 pr-4">类型</th>
-                              <th className="py-3 pr-4">变动前余额</th>
-                              <th className="py-3 pr-4">金额变动</th>
-                              <th className="py-3 pr-4">变动后余额</th>
-                              <th className="py-3 pr-4">备注</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {transactions.map((tx: TransactionRecord) => {
-                              const resolvedChange = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
-                              const ledgerDigits = resolvedChange !== null && resolvedChange !== 0 && Math.abs(resolvedChange) < 0.01 ? 4 : 2;
-                              const changeMeta = getAmountChangeMeta(resolvedChange, ledgerDigits);
-                              return (
-                                <tr key={tx.transactionId} className="border-b border-black/5 last:border-0">
-                                  <td className="py-4 pr-4 font-mono">{formatDate(tx.timeCreatedAt)}</td>
-                                  <td className="py-4 pr-4">{formatTransactionType(tx.typeOfTransaction)}</td>
-                                  <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceBefore, ledgerDigits)}</td>
-                                  <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
-                                  <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceAfter, ledgerDigits)}</td>
-                                  <td className="py-4 pr-4 text-gray-500">{tx.thirdPartydiscordId ?? '—'}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 text-sm text-gray-500">
-                          <p>
-                            第 {Math.min(currentPage, totalPages)} / {totalPages} 页 · 共 {totalTransactions} 条
-                          </p>
-                          <div className="flex gap-2">
-                            <Link
-                              href={`/profile?tab=profile-tx&page=${prevPage}`}
-                              scroll={false}
-                              prefetch={false}
-                              className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
-                                hasPrevPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
-                              }`}
-                              aria-disabled={!hasPrevPage}
-                            >
-                              上一页
-                            </Link>
-                            <Link
-                              href={`/profile?tab=profile-tx&page=${nextPage}`}
-                              scroll={false}
-                              prefetch={false}
-                              className={`px-4 py-2 rounded-full border text-xs uppercase tracking-[0.4em] ${
-                                hasNextPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
-                              }`}
-                              aria-disabled={!hasNextPage}
-                            >
-                              下一页
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-gray-500">暂时没有流水记录。</p>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           </div>
