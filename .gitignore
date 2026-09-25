@@ -62,3 +62,11 @@ docs/dlm-artwork-rollout.md
 docs/dlm-artwork-rollout.md
 docs/dlm-artwork-rollout.md
 docs/dlm-artwork-rollout.md
+.codex-work/individual-transactions-export/csv-to-xlsx.py
+.codex-work/individual-transactions-export/export-legacy-individual-transactions.mjs
+.codex-work/individual-transactions-export/individual-transactions-preview.png
+.codex-work/individual-transactions-export/node_modules
+.codex-work/individual-transactions-export/render/individual-transactions-through-cutover.pdf
+.codex-work/individual-transactions-export/render/preview-page-1.png
+outputs/legacy-individual-transactions-2026-09-25T19-26-50-956Z/individual-transactions-through-cutover.csv
+outputs/legacy-individual-transactions-2026-09-25T19-26-50-956Z/individual-transactions-through-cutover.xlsx
