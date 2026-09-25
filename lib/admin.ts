@@ -11,6 +11,7 @@ const PEIWAN_INFO_ADMIN_DISCORD_IDS: readonly string[] = [];
 const HOWARD_DISCORD_IDS: readonly string[] = [];
 const IRIA_DISCORD_IDS: readonly string[] = [];
 const HOWARD_READONLY_IDS: readonly string[] = [];
+const STRIPE_PRICING_AND_TRAFFIC_DISCORD_IDS: readonly string[] = ['525770714574225408'];
 
 export const getAdminDiscordIds = () => ADMIN_DISCORD_IDS;
 
@@ -98,12 +99,8 @@ export const canManageOrderChannelBindings = (discordId?: string | null) =>
 export const canViewRevenue = (discordId?: string | null) =>
   isAdminDiscordId(discordId);
 
-export const canViewStripePricing = (discordId?: string | null) => {
-  void discordId;
-  return false;
-};
+export const canViewStripePricing = (discordId?: string | null) =>
+  !!discordId && STRIPE_PRICING_AND_TRAFFIC_DISCORD_IDS.includes(discordId);
 
-export const canViewTraffic = (discordId?: string | null) => {
-  void discordId;
-  return false;
-};
+export const canViewTraffic = (discordId?: string | null) =>
+  !!discordId && STRIPE_PRICING_AND_TRAFFIC_DISCORD_IDS.includes(discordId);
