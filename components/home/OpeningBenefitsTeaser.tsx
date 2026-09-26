@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const couponImage = '/brand/dlm-v1/prizes/13-special-9-zhe-voucher.png';
-const crownCouponImage = '/lottery-fusion/business/一日冠75折.PNG';
+const crownCouponImage = '/brand/dlm-v1/prizes/17-day-crown-75-voucher.png';
 const characterArt = '/brand/dlm-v1/operations/18-thankBoss.gif';
 
 export function OpeningBenefitsTeaser() {
