@@ -579,7 +579,7 @@ export default async function Profile(props: ProfilePageProps) {
     : profileTabs[0]?.id ?? 'profile-heart';
   const cardClass = 'bg-white rounded-[32px] border border-black/5 p-8 space-y-6 shadow-[0_10px_30px_rgba(17,24,39,0.04)]';
   const transactionHistory = (isPeiwanMember || isLaobanMember) ? (
-    <div id="profile-tx" className="border-y border-dashed border-black/10 py-8 space-y-6">
+    <div id="profile-tx" className={cardClass}>
       <div>
         <h2 className="text-2xl font-semibold tracking-wide text-[#8a6000]">流水记录</h2>
         <p className="text-sm text-gray-500">与账户关联的收支流水</p>
@@ -744,14 +744,12 @@ export default async function Profile(props: ProfilePageProps) {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {stats.slice(0, 3).map(renderStat)}
-          </div>
-          {transactionHistory}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {stats.slice(3).map(renderStat)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+            {stats.map(renderStat)}
           </div>
         </div>
+
+        {transactionHistory}
 
         <div className={cardClass}>
           <div className="border-b border-dashed border-black/10 pb-6 grid gap-6 lg:grid-cols-[220px_1fr]">
