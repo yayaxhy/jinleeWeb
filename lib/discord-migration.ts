@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 const DEFAULT_TARGET_GUILD_ID = '1551704194438922310';
+const DEFAULT_MIGRATION_INVITE_URL = 'https://discord.gg/CpPvmBek2Z';
 const MIGRATION_STATE_COOKIE = 'discord_migration_state';
 const SNOWFLAKE_RE = /^\d{17,20}$/;
 
@@ -9,6 +10,7 @@ export type DiscordMigrationConfig = {
   enabled: boolean;
   targetGuildId: string;
   targetGuildName: string;
+  inviteUrl: string;
 };
 
 export function getDiscordMigrationConfig(): DiscordMigrationConfig {
@@ -23,6 +25,7 @@ export function getDiscordMigrationConfig(): DiscordMigrationConfig {
     enabled,
     targetGuildId,
     targetGuildName: (process.env.DISCORD_MIGRATION_TARGET_GUILD_NAME ?? '新服务器').trim() || '新服务器',
+    inviteUrl: (process.env.DISCORD_MIGRATION_INVITE_URL ?? DEFAULT_MIGRATION_INVITE_URL).trim(),
   };
 }
 

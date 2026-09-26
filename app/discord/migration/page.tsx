@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getDiscordMigrationConfig } from '@/lib/discord-migration';
-import { InternalBotError, postInternalBot } from '@/lib/internal-bot';
 import { getServerSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -11,12 +10,12 @@ type MigrationPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-type MigrationStatusResponse = {
-  ok: true;
-  alreadyMember: boolean;
-};
-
 const statusMessages: Record<string, { title: string; body: string; tone: 'success' | 'warning' | 'error' }> = {
+  manual_join: {
+    title: '请通过邀请链接加入新服务器',
+    body: '自动加群暂时不可用。点击下方邀请链接即可加入，不影响官网登录和使用。',
+    tone: 'warning',
+  },
   joined: {
     title: '已加入新服务器',
     body: '你已完成授权并成功加入。',
@@ -122,23 +121,6 @@ export default async function DiscordMigrationPage({ searchParams }: MigrationPa
   const message = status ? statusMessages[status] ?? statusMessages.unexpected_error : null;
   const config = getDiscordMigrationConfig();
 
-  // Preserve the post-join result messages, but avoid asking an existing
-  // member to authorize again whenever they revisit the migration link.
-  const hasFreshJoinResult = status === 'joined' || status === 'joined_nickname_pending';
-  if (config.enabled && !hasFreshJoinResult) {
-    let alreadyMember = false;
-    try {
-      const result = await postInternalBot<MigrationStatusResponse>('/internal/discord/migration/status', {
-        discordId: session.discordId,
-      });
-      alreadyMember = result.alreadyMember;
-    } catch (error) {
-      const code = error instanceof InternalBotError ? error.code : 'unexpected_error';
-      console.warn('[discord-migration] membership precheck unavailable', { code });
-    }
-    if (alreadyMember) redirect('/profile');
-  }
-
   return (
     <main className="min-h-screen bg-[#f7f3ef] px-6 py-16 text-[#171717]">
       <section className="mx-auto max-w-2xl">
@@ -155,10 +137,10 @@ export default async function DiscordMigrationPage({ searchParams }: MigrationPa
           <div className="mt-8 space-y-3">
             {config.enabled ? (
               <a
-                href="/api/discord/migration/start"
+                href={config.inviteUrl}
                 className="flex w-full items-center justify-center rounded-2xl bg-[#f8c84a] px-6 py-4 text-base font-semibold text-[#4e3600] transition hover:bg-[#e9b42d]"
               >
-                授权并加入新服务器
+                打开新公会邀请
               </a>
             ) : (
               <span className="flex w-full items-center justify-center rounded-2xl bg-gray-200 px-6 py-4 text-base font-semibold text-gray-500">

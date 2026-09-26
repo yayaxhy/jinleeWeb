@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getDiscordMigrationConfig, setDiscordMigrationStateCookie } from '@/lib/discord-migration';
-import { generateLoginState, getServerSession } from '@/lib/session';
-
-const DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
-const DISCORD_MIGRATION_SCOPE = 'identify guilds.join';
+import { getDiscordMigrationConfig } from '@/lib/discord-migration';
+import { getServerSession } from '@/lib/session';
 
 const getOrigin = (request: Request) => process.env.NEXTAUTH_URL ?? new URL(request.url).origin;
 
@@ -25,19 +22,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(loginUrl, { status: 302 });
   }
 
-  const clientId = process.env.DISCORD_CLIENT_ID?.trim();
-  if (!clientId) return redirectToMigrationPage(origin, 'configuration_error');
-
-  const state = generateLoginState();
-  const authorizeUrl = new URL(DISCORD_AUTHORIZE_URL);
-  authorizeUrl.searchParams.set('client_id', clientId);
-  authorizeUrl.searchParams.set('redirect_uri', `${origin}/api/discord/migration/callback`);
-  authorizeUrl.searchParams.set('response_type', 'code');
-  authorizeUrl.searchParams.set('scope', DISCORD_MIGRATION_SCOPE);
-  authorizeUrl.searchParams.set('prompt', 'consent');
-  authorizeUrl.searchParams.set('state', state);
-
-  const response = NextResponse.redirect(authorizeUrl, { status: 302 });
-  setDiscordMigrationStateCookie(response, state);
-  return response;
+  // Discord has temporarily quarantined the Bot, so it cannot use the
+  // `guilds.join` flow. Keep existing links safe by routing signed-in users
+  // to the manual invite instead of requesting a scope that will fail.
+  return redirectToMigrationPage(origin, 'manual_join');
 }
