@@ -33,8 +33,6 @@ type ApiResponse = {
 };
 
 const PAGE_SIZE = 6;
-const LOCAL_IMG_EXTS = ['png', 'jpg', 'gif'] as const;
-
 const formatPrice = (value: PeiwanItem['price']) => {
   if (value === null || value === undefined) return '未设置';
   const formatted = formatAmountDown2(value);
@@ -43,12 +41,9 @@ const formatPrice = (value: PeiwanItem['price']) => {
 };
 
 const CardImage = ({ item, onPreview }: { item: PeiwanItem; onPreview?: (src: string) => void }) => {
-  const [idx, setIdx] = useState(0);
-  const sources = useMemo(() => {
-    return LOCAL_IMG_EXTS.map((ext) => `/peiwanList/img/${item.id}.${ext}`);
-  }, [item.id]);
+  const cardUrl = item.cardUrl?.trim() || null;
 
-  if (sources.length === 0) {
+  if (!cardUrl) {
     return (
       <div className="w-full h-40 bg-gradient-to-r from-[#d0c3ff] to-[#f1e6ff] flex items-center justify-center text-gray-500 text-sm">
         无名片
@@ -56,20 +51,13 @@ const CardImage = ({ item, onPreview }: { item: PeiwanItem; onPreview?: (src: st
     );
   }
 
-  const currentSrc = sources[Math.min(idx, sources.length - 1)];
-
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={currentSrc}
+      src={cardUrl}
       alt={`Peiwan ${item.id}`}
       className="w-full h-40 object-cover cursor-zoom-in"
-      onClick={() => onPreview?.(currentSrc)}
-      onError={() => {
-        if (idx < sources.length - 1) {
-          setIdx(idx + 1);
-        }
-      }}
+      onClick={() => onPreview?.(cardUrl)}
     />
   );
 };

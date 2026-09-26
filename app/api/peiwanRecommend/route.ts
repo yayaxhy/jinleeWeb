@@ -24,6 +24,9 @@ export async function GET() {
 
     return NextResponse.json({ data });
   } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return NextResponse.json({ data: [] });
+    }
     console.error('Failed to read peiwanRecommend folder', err);
     return NextResponse.json({ data: [], error: 'failed_to_read_folder' }, { status: 500 });
   }
