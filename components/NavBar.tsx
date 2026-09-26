@@ -7,6 +7,7 @@ import { SITE_ALTERNATE_NAME, SITE_LOGO, SITE_NAME } from '@/lib/site';
 
 const links = [
   { href: '/', label: 'HOME' },
+  { href: '/opening-benefits', label: '开业福利' },
   { href: '/oufu-peiwan', label: '欧服陪玩' },
   { href: '/profile', label: '个人主页' },
   { href: '/recharge', label: '充值中心' },

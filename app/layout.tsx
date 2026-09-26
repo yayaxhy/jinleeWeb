@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { SiteAnnouncement } from "@/components/SiteAnnouncement";
+import { OpeningBenefitsModal } from "@/components/home/OpeningBenefitsModal";
 import { getServerSession } from "@/lib/session";
 import {
   SITE_DESCRIPTION,
@@ -84,6 +85,7 @@ export default async function RootLayout({
         <Providers initialSession={session}>
           <PageViewTracker />
           <SiteAnnouncement />
+          <OpeningBenefitsModal />
           {children}
         </Providers>
       </body>
