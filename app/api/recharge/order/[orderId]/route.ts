@@ -2,18 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { reconcileWechatNativePayment } from '@/lib/wechat-native-reconciliation';
+import { belongsToRechargeUser } from '@/lib/recharge-result';
 
 type RouteParams = { orderId: string };
-
-const belongsToCurrentUser = (
-  order: { jinleeId: string | null; discordUserId: string | null },
-  currentUser: { jinleeId: string; discordUserId: string | null },
-) => {
-  if (order.jinleeId) {
-    return order.jinleeId === currentUser.jinleeId;
-  }
-  return order.discordUserId === currentUser.discordUserId;
-};
 
 export async function GET(request: Request, context: { params: Promise<RouteParams> }) {
   const currentUser = await getCurrentJinleeUser(request);
@@ -37,7 +28,7 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
   });
 
   if (zpayOrder) {
-    if (!belongsToCurrentUser(zpayOrder, currentUser)) {
+    if (!belongsToRechargeUser(zpayOrder, currentUser)) {
       return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
     }
     return NextResponse.json({
@@ -68,7 +59,7 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
   });
 
   if (wechatNativePayment) {
-    if (!belongsToCurrentUser(wechatNativePayment, currentUser)) {
+    if (!belongsToRechargeUser(wechatNativePayment, currentUser)) {
       return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
     }
 
@@ -128,7 +119,7 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
     },
   });
 
-  if (!stripePayment || !belongsToCurrentUser(stripePayment, currentUser)) {
+  if (!stripePayment || !belongsToRechargeUser(stripePayment, currentUser)) {
     return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
   }
 

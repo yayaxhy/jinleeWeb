@@ -1,10 +1,9 @@
 import { Decimal } from '@prisma/client/runtime/library';
-import { buildSignaturePayload, buildZPaySignature, requiredZPayConfig, verifyZPaySignature } from '@/lib/zpay';
+import { prisma } from '@/lib/prisma';
+import { requiredZPayConfig, verifyZPaySignature } from '@/lib/zpay';
 import { settleRechargeOrderPayment } from '@/lib/recharge-order';
 
 type PlainObject = Record<string, string>;
-
-const checkProxySecret = () => true;
 
 const toPlainObject = (input: Record<string, unknown>) => {
   const result: PlainObject = {};
@@ -44,53 +43,64 @@ const failResponse = (reason?: string, details?: Record<string, unknown>) => {
   return new Response(reason ?? 'fail', { status: 400 });
 };
 
-const TRADE_SUCCESS_VALUES = new Set(['TRADE_SUCCESS', 'SUCCESS', 'PAID']);
-
 async function handleNotify(params: PlainObject) {
-  if (!params.out_trade_no || !params.money) {
+  if (!params.out_trade_no || !params.money || !params.pid || !params.type || !params.trade_no || !params.trade_status) {
     return failResponse('missing_fields');
   }
 
-  const { secret } = requiredZPayConfig();
-  console.log('[zpay.notify] raw params', params);
+  if (!/^\d{1,32}$/.test(params.out_trade_no)) {
+    return failResponse('invalid_order_number');
+  }
 
-  const payloadForSign = { ...params };
-  const providedSign = payloadForSign.sign;
-  delete payloadForSign.sign;
-  delete payloadForSign.sign_type;
+  if (params.sign_type !== undefined && params.sign_type !== 'MD5') {
+    return failResponse('unsupported_sign_type', { outTradeNo: params.out_trade_no });
+  }
 
-  const signaturePayload = buildSignaturePayload(payloadForSign);
-  const expectedSign = buildZPaySignature(payloadForSign, secret);
-  console.log('[zpay.notify] signature debug', {
-    payloadForSign,
-    signaturePayload,
-    expectedSign,
-    providedSign,
-    secretLength: secret.length,
-  });
-
-  const signValid = verifyZPaySignature(payloadForSign, secret, providedSign);
-  if (!signValid) {
-    console.error('[zpay.notify] signature mismatch', {
-      outTradeNo: params.out_trade_no,
-      expected: expectedSign,
-      received: providedSign,
-      payload: signaturePayload,
-    });
+  const { merchantId, secret } = requiredZPayConfig();
+  if (!verifyZPaySignature(params, secret, params.sign)) {
     return failResponse('sign_error', { outTradeNo: params.out_trade_no });
   }
 
-  const tradeStatus = (params.trade_status || params.status || '').toUpperCase();
-  if (!TRADE_SUCCESS_VALUES.has(tradeStatus)) {
-    return failResponse('invalid_status', { outTradeNo: params.out_trade_no, tradeStatus });
+  if (params.pid !== merchantId) {
+    return failResponse('merchant_identity_mismatch', { outTradeNo: params.out_trade_no });
+  }
+
+  if (params.trade_status !== 'TRADE_SUCCESS') {
+    return failResponse('invalid_status', { outTradeNo: params.out_trade_no });
+  }
+
+  if (!/^\d+(?:\.\d{1,2})?$/.test(params.money)) {
+    return failResponse('invalid_amount', { outTradeNo: params.out_trade_no });
+  }
+  const amount = new Decimal(params.money);
+  if (!amount.isFinite() || amount.lte(0)) {
+    return failResponse('invalid_amount', { outTradeNo: params.out_trade_no });
+  }
+
+  const order = await prisma.zPayRechargeOrder.findUnique({
+    where: { outTradeNo: params.out_trade_no },
+    select: { channel: true },
+  });
+  if (!order) {
+    return failResponse('order_not_found', { outTradeNo: params.out_trade_no });
+  }
+  if (params.type !== order.channel) {
+    return failResponse('channel_mismatch', { outTradeNo: params.out_trade_no });
   }
 
   const settlement = await settleRechargeOrderPayment({
     outTradeNo: params.out_trade_no,
-    amount: new Decimal(params.money).toDecimalPlaces(2),
-    gatewayTradeNo: params.trade_no ?? params.tradeNo ?? null,
-    notifyPayload: params,
-    payerReference: params.buyer ?? params.openid ?? params.trade_no ?? 'zpay_gateway',
+    amount,
+    gatewayTradeNo: params.trade_no,
+    notifyPayload: {
+      pid: params.pid,
+      out_trade_no: params.out_trade_no,
+      trade_no: params.trade_no,
+      type: params.type,
+      money: amount.toFixed(2),
+      trade_status: params.trade_status,
+    },
+    payerReference: params.trade_no,
     transactionType: '网站充值',
   });
 
@@ -124,26 +134,18 @@ async function handleNotify(params: PlainObject) {
 
 export async function POST(request: Request) {
   try {
-    if (!checkProxySecret()) {
-      return new Response('forbidden', { status: 403 });
-    }
     const params = await parseBody(request);
     return await handleNotify(params);
   } catch (error) {
-    console.error('[zpay.notify] POST error', error);
-    return failResponse('internal_error');
+    return failResponse('internal_error', { errorName: error instanceof Error ? error.name : 'UnknownError' });
   }
 }
 
 export async function GET(request: Request) {
   try {
-    if (!checkProxySecret()) {
-      return new Response('forbidden', { status: 403 });
-    }
     const params = Object.fromEntries(new URL(request.url).searchParams.entries());
     return await handleNotify(params);
   } catch (error) {
-    console.error('[zpay.notify] GET error', error);
-    return failResponse('internal_error');
+    return failResponse('internal_error', { errorName: error instanceof Error ? error.name : 'UnknownError' });
   }
 }

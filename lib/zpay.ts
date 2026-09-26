@@ -26,7 +26,7 @@ export const buildSignaturePayload = (params: Record<string, string | undefined 
       const value = params[key];
       return value !== undefined && value !== null && value !== '';
     })
-    .sort((a, b) => a.localeCompare(b));
+    .sort();
 
   return keys.map((key) => `${key}=${params[key]}`).join('&');
 };
@@ -39,9 +39,9 @@ export const verifyZPaySignature = (
   secret: string,
   providedSign?: string | null,
 ) => {
-  if (!providedSign) return false;
-  const expected = buildZPaySignature(params, secret).toLowerCase();
-  return expected === providedSign.toLowerCase();
+  if (!providedSign || !/^[a-fA-F0-9]{32}$/.test(providedSign)) return false;
+  const expected = Buffer.from(buildZPaySignature(params, secret), 'hex');
+  return crypto.timingSafeEqual(expected, Buffer.from(providedSign, 'hex'));
 };
 
 export const buildZPayUrl = (params: PlainParams, secret: string, gateway = DEFAULT_GATEWAY) => {

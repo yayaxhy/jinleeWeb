@@ -9,26 +9,13 @@ import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnounc
 import { VipRoleSyncPreferenceToggle } from '@/components/profile/VipRoleSyncPreferenceToggle';
 import { VoicePreviewManager } from '@/components/profile/VoicePreviewManager';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { isDiscordSnowflake } from '@/lib/discord-id';
 import { formatAmountDown, formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { formatTransactionType } from '@/lib/transaction-display';
-
-const BOSS_LEVELS = [
-  { vipLevel: 1, threshold: 500, label: '锦鲤' },
-  { vipLevel: 2, threshold: 1500, label: '金锦' },
-  { vipLevel: 3, threshold: 3000, label: '玉锦' },
-  { vipLevel: 4, threshold: 5000, label: '瑞锦' },
-  { vipLevel: 5, threshold: 10000, label: '祥锦' },
-  { vipLevel: 6, threshold: 20000, label: '福锦' },
-  { vipLevel: 7, threshold: 50000, label: '跃锦' },
-  { vipLevel: 8, threshold: 120000, label: '龙门锦' },
-  { vipLevel: 9, threshold: 210000, label: '化龙锦' },
-  { vipLevel: 10, threshold: 340000, label: '隐龙锦' },
-  { vipLevel: 11, threshold: 520000, label: '游龙锦' },
-  { vipLevel: 12, threshold: 880000, label: '御龙锦' },
-] as const;
+import { VIP_LEVELS } from '@/lib/vip-levels';
 
 const TRANSACTIONS_PER_PAGE = 10;
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -383,6 +370,24 @@ export default async function Profile(props: ProfilePageProps) {
     authoredPeiwanReviewsPromise,
     blacklistEntriesPromise,
   ]);
+  const counterpartyDiscordIds = Array.from(
+    new Set(
+      transactions
+        .map((transaction) => transaction.thirdPartydiscordId.trim())
+        .filter(isDiscordSnowflake),
+    ),
+  );
+  const counterparties = counterpartyDiscordIds.length
+    ? await prisma.member.findMany({
+        where: { discordUserId: { in: counterpartyDiscordIds } },
+        select: { discordUserId: true, serverDisplayName: true },
+      })
+    : [];
+  const counterpartyDisplayNames = new Map(
+    counterparties
+      .map((counterparty) => [counterparty.discordUserId, counterparty.serverDisplayName?.trim()] as const)
+      .filter(([, displayName]) => Boolean(displayName)),
+  );
   const authoredPeiwanReviewItems = authoredPeiwanReviews.map((review) => ({
     id: review.id,
     peiwanName:
@@ -441,10 +446,10 @@ export default async function Profile(props: ProfilePageProps) {
   ];
 
   const totalSpentValue = parseNumeric(totalSpentAmount) ?? 0;
-  const currentBossLevel = BOSS_LEVELS.reduce<
-    (typeof BOSS_LEVELS)[number] | undefined
+  const currentBossLevel = VIP_LEVELS.reduce<
+    (typeof VIP_LEVELS)[number] | undefined
   >((acc, role) => (totalSpentValue >= role.threshold ? role : acc), undefined);
-  const nextBossLevel = BOSS_LEVELS.find((role) => totalSpentValue < role.threshold);
+  const nextBossLevel = VIP_LEVELS.find((role) => totalSpentValue < role.threshold);
   const previousThreshold = currentBossLevel?.threshold ?? 0;
   const nextThreshold = nextBossLevel?.threshold ?? previousThreshold;
   const bossProgressRatio = nextBossLevel
@@ -453,7 +458,7 @@ export default async function Profile(props: ProfilePageProps) {
   const bossProgressPercent = Math.min(100, Math.max(0, bossProgressRatio * 100));
   const amountToNextBossLevel = nextBossLevel ? Math.max(0, nextBossLevel.threshold - totalSpentValue) : 0;
   const currentBossLevelName = currentBossLevel
-    ? `VIP ${currentBossLevel.vipLevel} · ${currentBossLevel.label}`
+    ? `VIP ${currentBossLevel.vipLevel} · ${currentBossLevel.name}`
     : '暂未达到 VIP 等级';
   const couponStatusLabel: Record<string, string> = {
     ACTIVE: '可用',
@@ -609,7 +614,9 @@ export default async function Profile(props: ProfilePageProps) {
                     <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceBefore, ledgerDigits)}</td>
                     <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
                     <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceAfter, ledgerDigits)}</td>
-                    <td className="py-4 pr-4 text-gray-500">{tx.thirdPartydiscordId ?? '—'}</td>
+                    <td className="py-4 pr-4 text-gray-500">
+                      {counterpartyDisplayNames.get(tx.thirdPartydiscordId.trim()) ?? tx.thirdPartydiscordId ?? '—'}
+                    </td>
                   </tr>
                 );
               })}
@@ -788,7 +795,7 @@ export default async function Profile(props: ProfilePageProps) {
                         <span>当前等级：{currentBossLevelName}</span>
                         {nextBossLevel ? (
                           <span>
-                            距离 VIP {nextBossLevel.vipLevel} · {nextBossLevel.label} 还差 {formatNumber(amountToNextBossLevel)}
+                            距离 VIP {nextBossLevel.vipLevel} · {nextBossLevel.name} 还差 {formatNumber(amountToNextBossLevel)}
                           </span>
                         ) : (
                           <span>已达到最高等级</span>
@@ -809,7 +816,7 @@ export default async function Profile(props: ProfilePageProps) {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-3 text-xs">
-                      {BOSS_LEVELS.map((role) => {
+                      {VIP_LEVELS.map((role) => {
                         const achieved = totalSpentValue >= role.threshold;
                         return (
                           <span
@@ -818,7 +825,7 @@ export default async function Profile(props: ProfilePageProps) {
                               achieved ? 'border-2 border-[#f5c04d] text-[#d69b00]' : 'border-black/10 text-gray-400'
                             }`}
                           >
-                            VIP {role.vipLevel} · {role.label} · {formatNumber(role.threshold)}
+                            VIP {role.vipLevel} · {role.name} · {formatNumber(role.threshold)}
                           </span>
                         );
                       })}

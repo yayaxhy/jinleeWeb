@@ -5,8 +5,6 @@ import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { SITE_ALTERNATE_NAME, SITE_URL } from '@/lib/site';
 import {
   buildOutTradeNo,
-  buildSignaturePayload,
-  buildZPaySignature,
   buildZPayUrl,
   getZPayGatewayUrl,
   requiredZPayConfig,
@@ -66,6 +64,12 @@ export async function POST(request: Request) {
 
   const amountDecimal = normalizeAmount(rawAmount);
   const amountText = amountDecimal.toFixed(2);
+  const { merchantId, secret } = requiredZPayConfig();
+  const notifyUrl = resolveAbsoluteUrl(process.env.ZPAY_NOTIFY_URL, '/api/payment/zpay/notify').toString();
+  const returnUrlObject = resolveAbsoluteUrl(process.env.ZPAY_RETURN_URL, '/recharge/result');
+  returnUrlObject.search = '';
+  returnUrlObject.hash = '';
+  const returnUrl = returnUrlObject.toString();
 
   const outTradeNo = buildOutTradeNo(currentUser.jinleeId);
 
@@ -85,19 +89,11 @@ export async function POST(request: Request) {
     currentUser.jinleeUser.wechatDisplayName ??
     currentUser.jinleeId;
 
-  const { merchantId, secret } = requiredZPayConfig();
-  const notifyUrl = resolveAbsoluteUrl(process.env.ZPAY_NOTIFY_URL, '/api/payment/zpay/notify').toString();
-  const returnUrlObject = resolveAbsoluteUrl(process.env.ZPAY_RETURN_URL, '/recharge/result');
-  returnUrlObject.searchParams.set('order', outTradeNo);
-  const returnUrl = returnUrlObject.toString();
-
   console.log('[zpay.order.create]', {
-    pid: merchantId,
-    type: requestedChannel,
-    notify_url: notifyUrl,
-    return_url: returnUrl,
-    out_trade_no: outTradeNo,
+    outTradeNo,
+    channel: requestedChannel,
     amount: amountText,
+    status: 'PENDING',
   });
 
   const orderTitle = sanitizeZPayText(
@@ -117,13 +113,7 @@ export async function POST(request: Request) {
     sitename: safeSiteName,
   };
 
-  const signaturePayload = buildSignaturePayload(params);
-  const signature = buildZPaySignature(params, secret);
-  console.log('[zpay.order.create] 签名参数字符串:', signaturePayload);
-  console.log('[zpay.order.create] 生成的签名:', signature);
-
   const payUrl = buildZPayUrl(params, secret, getZPayGatewayUrl());
-  console.log('[zpay.order.create] 最终支付链接:', payUrl);
 
   return NextResponse.json({
     ok: true,
