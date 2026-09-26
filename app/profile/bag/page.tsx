@@ -49,7 +49,14 @@ export default async function BagPage() {
 
   const [draws, coupons, pointShopGrants] = await Promise.all([
     prisma.lotteryDraw.findMany({
-      where: { jinleeId: currentUser.jinleeId, createdAt: newEntityOnlyTime() },
+      where: {
+        jinleeId: currentUser.jinleeId,
+        createdAt: newEntityOnlyTime(),
+        OR: [
+          { status: { not: LotteryStatus.USED } },
+          { consumeAt: newEntityOnlyTime() },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         prize: {
@@ -59,7 +66,14 @@ export default async function BagPage() {
       take: 200,
     }),
     prisma.coupon.findMany({
-      where: { jinleeId: currentUser.jinleeId, issuedAt: newEntityOnlyTime() },
+      where: {
+        jinleeId: currentUser.jinleeId,
+        issuedAt: newEntityOnlyTime(),
+        OR: [
+          { status: { not: CouponStatus.USED } },
+          { consumedAt: newEntityOnlyTime() },
+        ],
+      },
       orderBy: { issuedAt: 'desc' },
       take: 200,
     }),
@@ -69,6 +83,11 @@ export default async function BagPage() {
         issuedAt: newEntityOnlyTime(),
         deliveryType: PointShopDeliveryType.COUPON,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+        OR: [
+          { couponStatus: null },
+          { couponStatus: { not: CouponStatus.USED } },
+          { consumedAt: newEntityOnlyTime() },
+        ],
       },
       orderBy: { issuedAt: 'desc' },
       take: 200,
