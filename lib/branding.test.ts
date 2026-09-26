@@ -10,6 +10,7 @@ import {
 } from './site';
 import { SUPPORT_DISCORD_URL } from './legal';
 import { buildWechatPayOrderDescription } from './wechat-pay';
+import { VIP_LEVELS, getVipLevelLabel } from './vip-levels';
 import sitemap from '../app/sitemap';
 import robots from '../app/robots';
 
@@ -61,6 +62,31 @@ test('WeChat display description uses the new brand without overriding merchant 
     if (previous === undefined) delete process.env.WECHAT_PAY_ORDER_DESCRIPTION_PREFIX;
     else process.env.WECHAT_PAY_ORDER_DESCRIPTION_PREFIX = previous;
   }
+});
+
+test('VIP labels match current Discord school-grade roles without changing thresholds', () => {
+  assert.deepEqual(
+    VIP_LEVELS.map(({ vipLevel, name }) => [vipLevel, name]),
+    [
+      [1, '小班'],
+      [2, '中班'],
+      [3, '大班'],
+      [4, '一年级'],
+      [5, '二年级'],
+      [6, '三年级'],
+      [7, '四年级'],
+      [8, '五年级'],
+      [9, '六年级'],
+      [10, '初中生'],
+      [11, '高中生'],
+      [12, '大学生'],
+    ],
+  );
+  assert.deepEqual(
+    VIP_LEVELS.map(({ threshold }) => threshold),
+    [500, 1500, 3000, 5000, 10000, 20000, 50000, 120000, 210000, 340000, 520000, 880000],
+  );
+  assert.equal(getVipLevelLabel(7), 'VIP 7 四年级');
 });
 
 test('active sources do not reintroduce old public branding or invite links', () => {
