@@ -396,10 +396,10 @@ export function OpeningBenefitsPanel({
             <div className="mt-4 border-t border-[#f2dfbc] pt-4 text-sm leading-6 text-[#8c6736]">
               <p className="font-black text-[#77501f]">
                 <DiscordEmoji id="1552053520344027186" name="912405punkbunnyheart" />{' '}
-                新人首充福利每人仅限一次 不与其他充值返利叠加～
+                充值福利可以重复领取～
               </p>
               <p className="mt-2">
-                注：新人=之前从未在𝓓𝓛𝓜𝓒𝓛𝓤𝓑消费过的新老板；首充福利需找客服人工充值哦~ ꙳{' '}
+                注：充值福利需找客服人工充值哦~ ꙳{' '}
                 <DiscordEmoji id="1101206805683642381" name="im_blobcat_2cool4u" />{' '}
                 ˖ @everyone
               </p>
