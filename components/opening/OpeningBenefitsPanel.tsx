@@ -123,7 +123,7 @@ export function OpeningBenefitsPanel({
           <div className="absolute inset-0 -z-10 opacity-35 [background-image:radial-gradient(#f3a0b9_1.15px,transparent_1.15px)] [background-size:17px_17px]" />
           <div className="absolute -left-20 -top-24 -z-10 h-64 w-64 rounded-full bg-[#ffd2df] blur-2xl" />
           <div className="absolute -bottom-24 right-1/4 -z-10 h-52 w-52 rounded-full bg-[#ffe5a8]/75 blur-2xl" />
-          <div className="pointer-events-none absolute -left-6 bottom-[-18px] hidden h-32 w-32 -rotate-[12deg] overflow-hidden rounded-[1.8rem] bg-white shadow-[0_13px_14px_rgba(103,80,177,0.2)] sm:block">
+          <div className="pointer-events-none absolute -left-6 bottom-[-18px] hidden h-32 w-32 overflow-hidden rounded-[1.8rem] bg-white shadow-[0_13px_14px_rgba(103,80,177,0.2)] sm:block">
             <Image
               src={characterArt}
               alt="抽奖角色插画"
@@ -217,7 +217,7 @@ export function OpeningBenefitsPanel({
               alt="特殊九折券"
               width={650}
               height={433}
-              className="pointer-events-none absolute -right-14 -bottom-8 w-[52%] rotate-[10deg] opacity-95 drop-shadow-[0_13px_12px_rgba(160,62,96,0.16)] sm:w-[46%]"
+              className="pointer-events-none absolute -right-14 -bottom-8 w-[52%] opacity-95 drop-shadow-[0_13px_12px_rgba(160,62,96,0.16)] sm:w-[46%]"
             />
             <div className="relative max-w-[62%] sm:max-w-[60%]">
               <TinyLabel>每日领取</TinyLabel>
@@ -248,7 +248,7 @@ export function OpeningBenefitsPanel({
               alt="日冠七五折券"
               width={650}
               height={433}
-              className="pointer-events-none absolute -right-16 -bottom-9 w-[50%] rotate-[9deg] opacity-95 drop-shadow-[0_13px_12px_rgba(113,79,173,0.15)]"
+              className="pointer-events-none absolute -right-16 -bottom-9 w-[50%] opacity-95 drop-shadow-[0_13px_12px_rgba(113,79,173,0.15)]"
             />
             <div className="relative max-w-[62%] sm:max-w-[61%]">
               <TinyLabel tone="lavender">每周消费</TinyLabel>
@@ -280,7 +280,7 @@ export function OpeningBenefitsPanel({
           </article>
 
           <article className="relative overflow-hidden rounded-[2rem] border border-[#bfe9df] bg-[#f4fffb] p-6 shadow-[0_12px_30px_rgba(66,159,137,0.1)] sm:p-7">
-            <div className="pointer-events-none absolute -right-3 bottom-3 h-36 w-36 rotate-[4deg] overflow-hidden rounded-[1.75rem] bg-white shadow-[0_13px_12px_rgba(55,135,116,0.16)] sm:right-3 sm:h-40 sm:w-40">
+            <div className="pointer-events-none absolute -right-3 bottom-3 h-36 w-36 overflow-hidden rounded-[1.75rem] bg-white shadow-[0_13px_12px_rgba(55,135,116,0.16)] sm:right-3 sm:h-40 sm:w-40">
               <Image
                 src={characterArt}
                 alt="抽奖角色插画"
