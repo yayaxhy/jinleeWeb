@@ -7,7 +7,10 @@ import {
 } from '@/lib/session';
 
 const DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
-const DISCORD_SCOPE = 'identify guilds.members.read';
+// Login only needs the authenticated Discord identity. Guild member details
+// are optional display-name enrichment, and must not make sign-in depend on
+// the Bot's currently quarantined guild capabilities.
+const DISCORD_SCOPE = 'identify';
 
 const requireClientId = () => {
   const value = process.env.DISCORD_CLIENT_ID;
@@ -38,4 +41,3 @@ export async function GET(request: Request) {
   setLoginStateCookie(response, stateValue);
   return response;
 }
-

@@ -74,7 +74,8 @@ export async function GET(request: Request) {
     const tokens = await exchangeCodeForTokens(code, redirectUri);
     const discordUser = await fetchDiscordUser(tokens.access_token, tokens.token_type);
     let guildMember = null;
-    if (guildId) {
+    const grantedScopes = new Set(tokens.scope.split(/\s+/).filter(Boolean));
+    if (guildId && grantedScopes.has('guilds.members.read')) {
       try {
         guildMember = await fetchGuildMember(tokens.access_token, guildId, tokens.token_type);
       } catch (err) {
