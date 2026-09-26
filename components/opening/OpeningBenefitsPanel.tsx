@@ -123,7 +123,7 @@ export function OpeningBenefitsPanel({
           <div className="absolute inset-0 -z-10 opacity-35 [background-image:radial-gradient(#f3a0b9_1.15px,transparent_1.15px)] [background-size:17px_17px]" />
           <div className="absolute -left-20 -top-24 -z-10 h-64 w-64 rounded-full bg-[#ffd2df] blur-2xl" />
           <div className="absolute -bottom-24 right-1/4 -z-10 h-52 w-52 rounded-full bg-[#ffe5a8]/75 blur-2xl" />
-          <div className="pointer-events-none absolute -left-6 bottom-[-18px] hidden h-32 w-32 overflow-hidden rounded-[1.8rem] bg-white shadow-[0_13px_14px_rgba(103,80,177,0.2)] sm:block">
+          <div className="pointer-events-none absolute bottom-5 left-5 hidden h-28 w-28 overflow-hidden rounded-[1.8rem] bg-white shadow-[0_13px_14px_rgba(103,80,177,0.2)] sm:block">
             <Image
               src={characterArt}
               alt="抽奖角色插画"
@@ -217,9 +217,9 @@ export function OpeningBenefitsPanel({
               alt="特殊九折券"
               width={650}
               height={433}
-              className="pointer-events-none absolute -right-14 -bottom-8 w-[52%] opacity-95 drop-shadow-[0_13px_12px_rgba(160,62,96,0.16)] sm:w-[46%]"
+              className="pointer-events-none absolute bottom-5 right-5 w-[42%] opacity-95 drop-shadow-[0_13px_12px_rgba(160,62,96,0.16)] sm:bottom-6 sm:right-6 sm:w-[40%]"
             />
-            <div className="relative max-w-[62%] sm:max-w-[60%]">
+            <div className="relative max-w-[56%] sm:max-w-[57%]">
               <TinyLabel>每日领取</TinyLabel>
               <h2 className="mt-4 text-2xl font-black tracking-[-0.04em] text-[#63394f]">
                 今日的特殊 9 折券
@@ -248,9 +248,9 @@ export function OpeningBenefitsPanel({
               alt="日冠七五折券"
               width={650}
               height={433}
-              className="pointer-events-none absolute -right-16 -bottom-9 w-[50%] opacity-95 drop-shadow-[0_13px_12px_rgba(113,79,173,0.15)]"
+              className="pointer-events-none absolute bottom-5 right-5 w-[42%] opacity-95 drop-shadow-[0_13px_12px_rgba(113,79,173,0.15)] sm:bottom-6 sm:right-6 sm:w-[40%]"
             />
-            <div className="relative max-w-[62%] sm:max-w-[61%]">
+            <div className="relative max-w-[56%] sm:max-w-[57%]">
               <TinyLabel tone="lavender">每周消费</TinyLabel>
               <h2 className="mt-4 text-2xl font-black tracking-[-0.04em] text-[#5a477c]">
                 每周消费满 ¥1,000 领日冠券
@@ -280,7 +280,7 @@ export function OpeningBenefitsPanel({
           </article>
 
           <article className="relative overflow-hidden rounded-[2rem] border border-[#bfe9df] bg-[#f4fffb] p-6 shadow-[0_12px_30px_rgba(66,159,137,0.1)] sm:p-7">
-            <div className="pointer-events-none absolute -right-3 bottom-3 h-36 w-36 overflow-hidden rounded-[1.75rem] bg-white shadow-[0_13px_12px_rgba(55,135,116,0.16)] sm:right-3 sm:h-40 sm:w-40">
+            <div className="pointer-events-none absolute bottom-5 right-5 h-32 w-32 overflow-hidden rounded-[1.75rem] bg-white shadow-[0_13px_12px_rgba(55,135,116,0.16)] sm:bottom-6 sm:right-6 sm:h-36 sm:w-36">
               <Image
                 src={characterArt}
                 alt="抽奖角色插画"
@@ -290,7 +290,7 @@ export function OpeningBenefitsPanel({
                 className="object-contain"
               />
             </div>
-            <div className="relative max-w-[63%] sm:max-w-[60%]">
+            <div className="relative max-w-[56%] sm:max-w-[57%]">
               <TinyLabel tone="cream">全员两单任务</TinyLabel>
               <h2 className="mt-4 text-2xl font-black tracking-[-0.04em] text-[#3b756b]">
                 两笔消费超 ¥100，再送一张券
@@ -331,7 +331,7 @@ export function OpeningBenefitsPanel({
             充值返利由人工处理
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#987647]">
-            本期不自动发放充值返利；如符合运营公布的返利条件，请联系工作人员人工处理。
+            充值返利需要联系客服充值哦～
           </p>
         </article>
       </section>
