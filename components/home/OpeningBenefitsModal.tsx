@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const couponImage = '/lottery-fusion/business/抽奖特殊9折券.PNG';
-const cakeImage = '/lottery-fusion/business/小蛋糕.png';
+const couponImage = '/brand/dlm-v1/prizes/13-special-9-zhe-voucher.png';
+const characterArt = '/brand/dlm-v1/operations/17-lottery-special.png';
 
 export function OpeningBenefitsModal() {
   const pathname = usePathname();
@@ -23,7 +23,12 @@ export function OpeningBenefitsModal() {
   if (!open || pathname === '/opening-benefits') return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-labelledby="opening-benefits-title">
+    <div
+      className="fixed inset-0 z-50 grid place-items-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="opening-benefits-title"
+    >
       <button
         type="button"
         aria-label="关闭开业福利提示"
@@ -42,19 +47,29 @@ export function OpeningBenefitsModal() {
         >
           ×
         </button>
-        <Image
-          src={cakeImage}
-          alt=""
-          width={200}
-          height={200}
-          className="pointer-events-none absolute -left-5 top-9 w-20 -rotate-12"
-        />
-        <p className="relative text-xs font-black tracking-[0.26em] text-[#d64f79]">DLM OPENING PARTY</p>
-        <h2 id="opening-benefits-title" className="relative mt-3 text-3xl font-black tracking-[-0.055em]">
-          给你准备了一份<br />开业小礼物
+        <div className="pointer-events-none absolute -left-4 top-10 h-20 w-20 -rotate-6 overflow-hidden rounded-2xl shadow-[0_8px_12px_rgba(72,61,151,0.16)]">
+          <Image
+            src={characterArt}
+            alt="抽奖角色插画"
+            fill
+            sizes="80px"
+            className="object-cover object-[72%_center]"
+          />
+        </div>
+        <p className="relative text-xs font-black tracking-[0.26em] text-[#d64f79]">
+          DLM OPENING PARTY
+        </p>
+        <h2
+          id="opening-benefits-title"
+          className="relative mt-3 text-3xl font-black tracking-[-0.055em]"
+        >
+          给你准备了一份
+          <br />
+          开业小礼物
         </h2>
         <p className="relative mt-3 text-sm leading-6 text-[#8d6274]">
-          每日可领特殊 9 折券，消费满额还有日冠 75 折券。打开福利页，看看今天能领什么吧！
+          每日可领特殊 9 折券，消费满额还有日冠 75
+          折券。打开福利页，看看今天能领什么吧！
         </p>
         <Image
           src={couponImage}

@@ -1,16 +1,23 @@
-import { CouponSource, CouponStatus, CouponType, OrderStatus, Prisma, PrismaClient } from '@prisma/client';
+import {
+  CouponSource,
+  CouponStatus,
+  CouponType,
+  OrderStatus,
+  Prisma,
+  PrismaClient,
+} from '@prisma/client';
 import type { Prisma as PrismaNamespace } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
   OPENING_BENEFITS_END,
   OPENING_BENEFITS_START,
-  OPENING_NEW_USER_ORDER_TARGET,
+  OPENING_QUALIFYING_TRANSACTION_MIN_AMOUNT,
+  OPENING_TWO_ORDER_TARGET,
   OPENING_WEEKLY_SPEND_TARGET,
   getBerlinDateKey,
   getBerlinWeekKey,
   getBerlinWeekEnd,
   getBerlinWeekStart,
-  getNewUserTaskDeadline,
   getNextBerlinMidnight,
   getOpeningCouponExpiresAt,
   isOpeningBenefitsActive,
@@ -19,14 +26,30 @@ import {
 export const OPENING_BENEFIT = {
   DAILY_DISCOUNT: 'OPENING_DAILY_DISCOUNT',
   WEEKLY_CROWN: 'OPENING_WEEKLY_CROWN',
-  NEW_USER_TWO_ORDERS: 'OPENING_NEW_USER_TWO_ORDERS',
+  // Keep the original persisted key so someone who already claimed the old task cannot claim again.
+  TWO_ORDERS: 'OPENING_NEW_USER_TWO_ORDERS',
 } as const;
 
-export type OpeningBenefitName = (typeof OPENING_BENEFIT)[keyof typeof OPENING_BENEFIT];
+export type OpeningBenefitName =
+  (typeof OPENING_BENEFIT)[keyof typeof OPENING_BENEFIT];
 
-const ACTUAL_SPEND_TYPES = new Set(['点单', '打赏', '客服代打赏', '红包发出', '试音花费']);
-const ACTUAL_SPEND_REVERSAL_TYPES = new Set(['订单撤销', '打赏撤销', '红包退回', '优惠返利']);
-const ALL_ACTUAL_SPEND_TYPES = [...ACTUAL_SPEND_TYPES, ...ACTUAL_SPEND_REVERSAL_TYPES];
+const ACTUAL_SPEND_TYPES = new Set([
+  '点单',
+  '打赏',
+  '客服代打赏',
+  '红包发出',
+  '试音花费',
+]);
+const ACTUAL_SPEND_REVERSAL_TYPES = new Set([
+  '订单撤销',
+  '打赏撤销',
+  '红包退回',
+  '优惠返利',
+]);
+const ALL_ACTUAL_SPEND_TYPES = [
+  ...ACTUAL_SPEND_TYPES,
+  ...ACTUAL_SPEND_REVERSAL_TYPES,
+];
 type DbClient = PrismaClient | PrismaNamespace.TransactionClient;
 
 export class OpeningBenefitError extends Error {
@@ -34,31 +57,40 @@ export class OpeningBenefitError extends Error {
     public readonly code:
       | 'campaign_inactive'
       | 'already_claimed'
+      | 'two_order_task_already_claimed'
       | 'weekly_spend_not_met'
-      | 'new_user_task_not_eligible',
+      | 'two_order_task_not_eligible',
   ) {
     super(code);
   }
 }
 
-const toDecimal = (value: Prisma.Decimal | number | string | null | undefined) =>
-  new Prisma.Decimal(value ?? 0);
+const toDecimal = (
+  value: Prisma.Decimal | number | string | null | undefined,
+) => new Prisma.Decimal(value ?? 0);
 
 const isUniqueClaimError = (error: unknown) =>
-  error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+  error instanceof Prisma.PrismaClientKnownRequestError &&
+  error.code === 'P2002';
 
 const getEffectiveWeekStart = (now: Date) => {
   const weekStart = getBerlinWeekStart(now);
-  return weekStart < OPENING_BENEFITS_START ? OPENING_BENEFITS_START : weekStart;
+  return weekStart < OPENING_BENEFITS_START
+    ? OPENING_BENEFITS_START
+    : weekStart;
 };
 
 const calculateActualSpend = (
-  entries: Array<{ typeOfTransaction: string; amountChange: Prisma.Decimal | null }>,
+  entries: Array<{
+    typeOfTransaction: string;
+    amountChange: Prisma.Decimal | null;
+  }>,
 ) => {
   const total = entries.reduce((sum, entry) => {
     const amount = toDecimal(entry.amountChange).abs();
     if (ACTUAL_SPEND_TYPES.has(entry.typeOfTransaction)) return sum.add(amount);
-    if (ACTUAL_SPEND_REVERSAL_TYPES.has(entry.typeOfTransaction)) return sum.sub(amount);
+    if (ACTUAL_SPEND_REVERSAL_TYPES.has(entry.typeOfTransaction))
+      return sum.sub(amount);
     return sum;
   }, new Prisma.Decimal(0));
   return total.lt(0) ? new Prisma.Decimal(0) : total;
@@ -80,23 +112,56 @@ async function getWeeklyActualSpendTx(
   return calculateActualSpend(entries);
 }
 
-async function getNewUserOrderCountTx(
+async function getQualifyingCampaignTransactionCountTx(
   tx: DbClient,
   jinleeId: string,
-  accountCreatedAt: Date,
+  discordUserId: string | null,
   now: Date,
 ) {
-  return tx.order.count({
-    where: {
-      hostJinleeId: jinleeId,
-      status: OrderStatus.ENDED,
-      endedAt: { gte: accountCreatedAt, lte: now },
-    },
-  });
-}
+  const minimumAmount = new Prisma.Decimal(
+    OPENING_QUALIFYING_TRANSACTION_MIN_AMOUNT,
+  );
+  const [qualifyingOrders, qualifyingGifts] = await Promise.all([
+    tx.order.count({
+      where: {
+        hostJinleeId: jinleeId,
+        status: OrderStatus.ENDED,
+        endedAt: { gte: OPENING_BENEFITS_START, lte: now },
+        grossAmount: { gt: minimumAmount },
+      },
+    }),
+    discordUserId
+      ? tx.giftAudit.findMany({
+          where: {
+            giverId: discordUserId,
+            createdAt: { gte: OPENING_BENEFITS_START, lte: now },
+            payable: { gt: minimumAmount },
+          },
+          select: { individualTransactionId: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
-const canParticipateInNewUserTask = (accountCreatedAt: Date, now: Date) =>
-  accountCreatedAt >= OPENING_BENEFITS_START && now < getNewUserTaskDeadline(accountCreatedAt);
+  if (!qualifyingGifts.length) return qualifyingOrders;
+
+  const revertedGifts = await tx.revert.findMany({
+    where: {
+      originalTransactionId: {
+        in: qualifyingGifts.map((gift) => gift.individualTransactionId),
+      },
+    },
+    select: { originalTransactionId: true },
+  });
+  const revertedTransactionIds = new Set(
+    revertedGifts.map((revert) => revert.originalTransactionId),
+  );
+  return (
+    qualifyingOrders +
+    qualifyingGifts.filter(
+      (gift) => !revertedTransactionIds.has(gift.individualTransactionId),
+    ).length
+  );
+}
 
 export type OpeningBenefitsStatus = {
   active: boolean;
@@ -117,18 +182,20 @@ export type OpeningBenefitsStatus = {
     actualSpend: string;
     targetSpend: number;
   };
-  newUserTask: {
+  twoOrderTask: {
     eligible: boolean;
     claimed: boolean;
-    completedOrders: number;
-    targetOrders: number;
-    deadlineAt: string | null;
+    qualifyingTransactions: number;
+    targetTransactions: number;
+    minimumAmount: number;
   };
 };
 
-export async function getOpeningBenefitsStatus(
-  params: { jinleeId: string; discordUserId?: string | null; now?: Date },
-): Promise<OpeningBenefitsStatus> {
+export async function getOpeningBenefitsStatus(params: {
+  jinleeId: string;
+  discordUserId?: string | null;
+  now?: Date;
+}): Promise<OpeningBenefitsStatus> {
   const now = params.now ?? new Date();
   const active = isOpeningBenefitsActive(now);
   const weekKey = getBerlinWeekKey(now);
@@ -137,7 +204,7 @@ export async function getOpeningBenefitsStatus(
   const [user, claims, peiwan] = await Promise.all([
     prisma.jinleeUser.findUnique({
       where: { jinleeId: params.jinleeId },
-      select: { createdAt: true },
+      select: { discordUserId: true },
     }),
     prisma.openingBenefitClaim.findMany({
       where: {
@@ -145,30 +212,40 @@ export async function getOpeningBenefitsStatus(
         OR: [
           { benefit: OPENING_BENEFIT.DAILY_DISCOUNT, periodKey: dailyKey },
           { benefit: OPENING_BENEFIT.WEEKLY_CROWN, periodKey: weekKey },
-          { benefit: OPENING_BENEFIT.NEW_USER_TWO_ORDERS },
+          { benefit: OPENING_BENEFIT.TWO_ORDERS },
         ],
       },
       select: { benefit: true, periodKey: true },
     }),
     params.discordUserId
-      ? prisma.pEIWAN.findUnique({ where: { discordUserId: params.discordUserId }, select: { PEIWANID: true } })
+      ? prisma.pEIWAN.findUnique({
+          where: { discordUserId: params.discordUserId },
+          select: { PEIWANID: true },
+        })
       : Promise.resolve(null),
   ]);
 
-  const accountCreatedAt = user?.createdAt ?? now;
-  const newUserTaskActive = active && canParticipateInNewUserTask(accountCreatedAt, now);
-  const [weeklyActualSpend, completedOrders] = await Promise.all([
+  const [weeklyActualSpend, qualifyingTransactions] = await Promise.all([
     getWeeklyActualSpendTx(prisma, params.jinleeId, now),
-    newUserTaskActive
-      ? getNewUserOrderCountTx(prisma, params.jinleeId, accountCreatedAt, now)
+    active
+      ? getQualifyingCampaignTransactionCountTx(
+          prisma,
+          params.jinleeId,
+          user?.discordUserId ?? params.discordUserId ?? null,
+          now,
+        )
       : Promise.resolve(0),
   ]);
 
   const hasClaim = (benefit: OpeningBenefitName, periodKey?: string) =>
-    claims.some((claim) => claim.benefit === benefit && (!periodKey || claim.periodKey === periodKey));
+    claims.some(
+      (claim) =>
+        claim.benefit === benefit &&
+        (!periodKey || claim.periodKey === periodKey),
+    );
   const dailyClaimed = hasClaim(OPENING_BENEFIT.DAILY_DISCOUNT, dailyKey);
   const weeklyClaimed = hasClaim(OPENING_BENEFIT.WEEKLY_CROWN, weekKey);
-  const newUserClaimed = hasClaim(OPENING_BENEFIT.NEW_USER_TWO_ORDERS);
+  const twoOrderClaimed = hasClaim(OPENING_BENEFIT.TWO_ORDERS);
   const nextWeek = getBerlinWeekEnd(now);
 
   return {
@@ -187,22 +264,25 @@ export async function getOpeningBenefitsStatus(
       couponValidityDays: 30,
     },
     weeklyCrown: {
-      eligible: active && !weeklyClaimed && weeklyActualSpend.gte(OPENING_WEEKLY_SPEND_TARGET),
+      eligible:
+        active &&
+        !weeklyClaimed &&
+        weeklyActualSpend.gte(OPENING_WEEKLY_SPEND_TARGET),
       claimedThisWeek: weeklyClaimed,
       weekKey,
       weekEndsAt: nextWeek.toISOString(),
       actualSpend: weeklyActualSpend.toFixed(2),
       targetSpend: OPENING_WEEKLY_SPEND_TARGET,
     },
-    newUserTask: {
+    twoOrderTask: {
       eligible:
-        newUserTaskActive
-        && !newUserClaimed
-        && completedOrders >= OPENING_NEW_USER_ORDER_TARGET,
-      claimed: newUserClaimed,
-      completedOrders,
-      targetOrders: OPENING_NEW_USER_ORDER_TARGET,
-      deadlineAt: newUserTaskActive ? getNewUserTaskDeadline(accountCreatedAt).toISOString() : null,
+        active &&
+        !twoOrderClaimed &&
+        qualifyingTransactions >= OPENING_TWO_ORDER_TARGET,
+      claimed: twoOrderClaimed,
+      qualifyingTransactions,
+      targetTransactions: OPENING_TWO_ORDER_TARGET,
+      minimumAmount: OPENING_QUALIFYING_TRANSACTION_MIN_AMOUNT,
     },
   };
 }
@@ -245,7 +325,8 @@ export async function claimOpeningBenefit(params: {
   now?: Date;
 }) {
   const now = params.now ?? new Date();
-  if (!isOpeningBenefitsActive(now)) throw new OpeningBenefitError('campaign_inactive');
+  if (!isOpeningBenefitsActive(now))
+    throw new OpeningBenefitError('campaign_inactive');
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -262,12 +343,16 @@ export async function claimOpeningBenefit(params: {
 
       const user = await tx.jinleeUser.findUnique({
         where: { jinleeId: params.jinleeId },
-        select: { createdAt: true },
+        select: { discordUserId: true },
       });
-      if (!user) throw new OpeningBenefitError('new_user_task_not_eligible');
+      if (!user) throw new OpeningBenefitError('two_order_task_not_eligible');
 
       if (params.benefit === OPENING_BENEFIT.WEEKLY_CROWN) {
-        const actualSpend = await getWeeklyActualSpendTx(tx, params.jinleeId, now);
+        const actualSpend = await getWeeklyActualSpendTx(
+          tx,
+          params.jinleeId,
+          now,
+        );
         if (actualSpend.lt(OPENING_WEEKLY_SPEND_TARGET)) {
           throw new OpeningBenefitError('weekly_spend_not_met');
         }
@@ -281,24 +366,33 @@ export async function claimOpeningBenefit(params: {
         });
       }
 
-      if (!canParticipateInNewUserTask(user.createdAt, now)) {
-        throw new OpeningBenefitError('new_user_task_not_eligible');
-      }
-      const completedOrders = await getNewUserOrderCountTx(tx, params.jinleeId, user.createdAt, now);
-      if (completedOrders < OPENING_NEW_USER_ORDER_TARGET) {
-        throw new OpeningBenefitError('new_user_task_not_eligible');
+      const qualifyingTransactions =
+        await getQualifyingCampaignTransactionCountTx(
+          tx,
+          params.jinleeId,
+          user.discordUserId,
+          now,
+        );
+      if (qualifyingTransactions < OPENING_TWO_ORDER_TARGET) {
+        throw new OpeningBenefitError('two_order_task_not_eligible');
       }
       return createCouponClaimTx({
         tx,
         jinleeId: params.jinleeId,
-        benefit: params.benefit,
+        benefit: OPENING_BENEFIT.TWO_ORDERS,
         periodKey: 'once',
         couponType: CouponType.DISCOUNT_90_LOTTERY,
         now,
       });
     });
   } catch (error) {
-    if (isUniqueClaimError(error)) throw new OpeningBenefitError('already_claimed');
+    if (isUniqueClaimError(error)) {
+      throw new OpeningBenefitError(
+        params.benefit === OPENING_BENEFIT.TWO_ORDERS
+          ? 'two_order_task_already_claimed'
+          : 'already_claimed',
+      );
+    }
     throw error;
   }
 }
