@@ -14,6 +14,34 @@ const specialCouponImage = '/brand/dlm-v1/prizes/13-special-9-zhe-voucher.png';
 const crownCouponImage = '/brand/dlm-v1/prizes/17-day-crown-75-voucher.png';
 const characterArt = '/brand/dlm-v1/operations/18-thankBoss.gif';
 
+const firstRechargeBenefits = [
+  ['288 点点券', '15 点点券'],
+  ['688 点点券', '35 点点券'],
+  ['2288 点点券', '150 点点券'],
+  ['3888 点点券', '280 点点券'],
+  ['6888 点点券', '500 点点券'],
+] as const;
+
+function DiscordEmoji({
+  id,
+  name,
+  animated = false,
+}: {
+  id: string;
+  name: string;
+  animated?: boolean;
+}) {
+  return (
+    <img
+      src={`https://cdn.discordapp.com/emojis/${id}.${animated ? 'gif' : 'webp'}?size=64&quality=lossless`}
+      alt={name}
+      width={22}
+      height={22}
+      className="inline-block h-[1.1em] w-[1.1em] align-[-0.18em]"
+    />
+  );
+}
+
 const formatBerlinTime = (value: string | null) => {
   if (!value) return '—';
   const date = new Date(value);
@@ -333,6 +361,50 @@ export function OpeningBenefitsPanel({
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#987647]">
             充值返利需要联系客服充值哦～
           </p>
+          <div className="relative mt-5 max-w-4xl rounded-[1.5rem] border border-[#f2d7a4] bg-white/75 p-4 shadow-sm sm:p-5">
+            <h3 className="flex flex-wrap items-center gap-2 text-lg font-black text-[#74532b] sm:text-xl">
+              <DiscordEmoji id="1516466617825890394" name="owo" />
+              新人首充福利
+              <DiscordEmoji id="1516466617825890394" name="owo" />
+            </h3>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {firstRechargeBenefits.map(([recharge, bonus]) => (
+                <p
+                  key={recharge}
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-[#fff8e9] px-4 py-3 text-sm font-bold text-[#865d2a]"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <DiscordEmoji
+                      id="1140459660860731402"
+                      name="im_frog_vibe"
+                      animated
+                    />
+                    {recharge}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[#bd6b36]">
+                    <DiscordEmoji id="1552040534288240692" name="emoji" />
+                    <code className="rounded bg-[#ffe8b9] px-1.5 py-0.5 font-sans text-xs font-black">
+                      赠
+                    </code>
+                    {bonus}
+                  </span>
+                </p>
+              ))}
+            </div>
+
+            <div className="mt-4 border-t border-[#f2dfbc] pt-4 text-sm leading-6 text-[#8c6736]">
+              <p className="font-black text-[#77501f]">
+                <DiscordEmoji id="1552053520344027186" name="912405punkbunnyheart" />{' '}
+                新人首充福利每人仅限一次 不与其他充值返利叠加～
+              </p>
+              <p className="mt-2">
+                注：新人=之前从未在𝓓𝓛𝓜𝓒𝓛𝓤𝓑消费过的新老板；首充福利需找客服人工充值哦~ ꙳{' '}
+                <DiscordEmoji id="1101206805683642381" name="im_blobcat_2cool4u" />{' '}
+                ˖ @everyone
+              </p>
+            </div>
+          </div>
         </article>
       </section>
     </main>
