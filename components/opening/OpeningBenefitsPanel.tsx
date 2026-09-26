@@ -12,7 +12,7 @@ import {
 
 const specialCouponImage = '/brand/dlm-v1/prizes/13-special-9-zhe-voucher.png';
 const crownCouponImage = '/lottery-fusion/business/一日冠75折.PNG';
-const characterArt = '/brand/dlm-v1/operations/17-lottery-special.png';
+const characterArt = '/brand/dlm-v1/operations/18-thankBoss.gif';
 
 const formatBerlinTime = (value: string | null) => {
   if (!value) return '—';
@@ -123,13 +123,14 @@ export function OpeningBenefitsPanel({
           <div className="absolute inset-0 -z-10 opacity-35 [background-image:radial-gradient(#f3a0b9_1.15px,transparent_1.15px)] [background-size:17px_17px]" />
           <div className="absolute -left-20 -top-24 -z-10 h-64 w-64 rounded-full bg-[#ffd2df] blur-2xl" />
           <div className="absolute -bottom-24 right-1/4 -z-10 h-52 w-52 rounded-full bg-[#ffe5a8]/75 blur-2xl" />
-          <div className="pointer-events-none absolute -left-6 bottom-[-18px] hidden h-32 w-44 -rotate-[12deg] overflow-hidden rounded-[1.8rem] shadow-[0_13px_14px_rgba(103,80,177,0.2)] sm:block">
+          <div className="pointer-events-none absolute -left-6 bottom-[-18px] hidden h-32 w-32 -rotate-[12deg] overflow-hidden rounded-[1.8rem] bg-white shadow-[0_13px_14px_rgba(103,80,177,0.2)] sm:block">
             <Image
               src={characterArt}
               alt="抽奖角色插画"
               fill
               sizes="176px"
-              className="object-cover object-[72%_center]"
+              unoptimized
+              className="object-contain"
             />
           </div>
 
@@ -279,13 +280,14 @@ export function OpeningBenefitsPanel({
           </article>
 
           <article className="relative overflow-hidden rounded-[2rem] border border-[#bfe9df] bg-[#f4fffb] p-6 shadow-[0_12px_30px_rgba(66,159,137,0.1)] sm:p-7">
-            <div className="pointer-events-none absolute -right-3 bottom-3 h-36 w-40 rotate-[4deg] overflow-hidden rounded-[1.75rem] shadow-[0_13px_12px_rgba(55,135,116,0.16)] sm:right-3 sm:h-40 sm:w-48">
+            <div className="pointer-events-none absolute -right-3 bottom-3 h-36 w-36 rotate-[4deg] overflow-hidden rounded-[1.75rem] bg-white shadow-[0_13px_12px_rgba(55,135,116,0.16)] sm:right-3 sm:h-40 sm:w-40">
               <Image
                 src={characterArt}
                 alt="抽奖角色插画"
                 fill
                 sizes="192px"
-                className="object-cover object-[72%_center]"
+                unoptimized
+                className="object-contain"
               />
             </div>
             <div className="relative max-w-[63%] sm:max-w-[60%]">

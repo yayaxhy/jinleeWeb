@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const couponImage = '/brand/dlm-v1/prizes/13-special-9-zhe-voucher.png';
-const characterArt = '/brand/dlm-v1/operations/17-lottery-special.png';
+const characterArt = '/brand/dlm-v1/operations/18-thankBoss.gif';
 
 export function OpeningBenefitsModal() {
   const pathname = usePathname();
@@ -47,13 +47,14 @@ export function OpeningBenefitsModal() {
         >
           ×
         </button>
-        <div className="pointer-events-none absolute -left-4 top-10 h-20 w-20 -rotate-6 overflow-hidden rounded-2xl shadow-[0_8px_12px_rgba(72,61,151,0.16)]">
+        <div className="pointer-events-none absolute -left-4 top-10 h-20 w-20 -rotate-6 overflow-hidden rounded-2xl bg-white shadow-[0_8px_12px_rgba(72,61,151,0.16)]">
           <Image
             src={characterArt}
             alt="抽奖角色插画"
             fill
             sizes="80px"
-            className="object-cover object-[72%_center]"
+            unoptimized
+            className="object-contain"
           />
         </div>
         <p className="relative text-xs font-black tracking-[0.26em] text-[#d64f79]">

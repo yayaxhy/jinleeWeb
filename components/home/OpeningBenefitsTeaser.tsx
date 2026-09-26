@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 const couponImage = '/brand/dlm-v1/prizes/13-special-9-zhe-voucher.png';
 const crownCouponImage = '/lottery-fusion/business/一日冠75折.PNG';
-const characterArt = '/brand/dlm-v1/operations/17-lottery-special.png';
+const characterArt = '/brand/dlm-v1/operations/18-thankBoss.gif';
 
 export function OpeningBenefitsTeaser() {
   return (
@@ -13,13 +13,14 @@ export function OpeningBenefitsTeaser() {
         <div className="absolute -right-8 -top-12 h-48 w-48 rounded-full bg-[#fbd26b]/35 blur-2xl" />
         <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(#f7a5bd_1.1px,transparent_1.1px)] [background-size:16px_16px]" />
 
-        <div className="pointer-events-none absolute -bottom-6 left-[38%] hidden h-28 w-36 -rotate-6 overflow-hidden rounded-[1.6rem] shadow-[0_12px_14px_rgba(78,72,155,0.2)] md:block">
+        <div className="pointer-events-none absolute -bottom-6 left-[38%] hidden h-28 w-28 -rotate-6 overflow-hidden rounded-[1.6rem] bg-white shadow-[0_12px_14px_rgba(78,72,155,0.2)] md:block">
           <Image
             src={characterArt}
             alt="抽奖角色插画"
             fill
             sizes="144px"
-            className="object-cover object-[72%_center]"
+            unoptimized
+            className="object-contain"
           />
         </div>
         <div className="relative grid items-center gap-8 md:grid-cols-[1fr_0.92fr]">
