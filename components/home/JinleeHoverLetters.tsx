@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import type { CSSProperties, FocusEvent, PointerEvent } from 'react';
 import { SITE_WORDMARK } from '@/lib/site';
 
@@ -209,10 +210,16 @@ export function JinleeHoverLetters({
           </p>
         </div>
       ) : null}
-      <div className={`flex ${containerSizeClass} gap-2 overflow-hidden rounded-[2rem] border border-white/10 bg-black/18 px-3 py-4 shadow-[0_30px_90px_rgba(0,0,0,0.28)] backdrop-blur sm:gap-3 md:px-5`}>
+      <div className={`relative flex ${containerSizeClass} gap-2 overflow-hidden rounded-[2rem] border border-white/10 bg-black/18 px-3 py-4 shadow-[0_30px_90px_rgba(0,0,0,0.28)] backdrop-blur sm:gap-3 md:px-5`}>
         {wordLetters.map((item, index) => (
           <HoverLetter key={`${item.letter}-${index}-${item.mp4}`} item={item} index={index} maskSize={letterMaskSize} />
         ))}
+        <Link
+          href="/opening-benefits"
+          className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#ffd5df]/65 bg-[#e85c86]/92 px-5 py-2.5 text-sm font-black text-white shadow-[0_8px_0_#b73d62,0_18px_28px_rgba(232,92,134,0.3)] transition hover:-translate-y-0.5 hover:bg-[#f26d95] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ffd5df] active:translate-y-1 active:shadow-[0_4px_0_#b73d62]"
+        >
+          开业福利 <span aria-hidden="true">→</span>
+        </Link>
       </div>
     </section>
   );
