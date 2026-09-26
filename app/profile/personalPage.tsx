@@ -195,6 +195,7 @@ export default async function Profile(props: ProfilePageProps) {
 
   const navLinks = [
     { href: '/profile', label: '个人主页' },
+    { href: '/opening-benefits', label: '开业福利' },
     { href: '/profile/bag', label: '我的背包' },
     { href: '/profile/lottery-fusion', label: '奖品重铸' },
     { href: '/profile/heart', label: '心动值' },

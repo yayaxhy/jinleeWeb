@@ -231,32 +231,32 @@ model Activity {
 }
 
 model JinleeUser {
-  jinleeId           String   @id
-  discordUserId      String?  @unique
-  discordDisplayName String?
-  discordAvatarUrl   String?
-  wechatDisplayName  String?
-  wechatAvatarUrl    String?
-  sessionVersion     Int      @default(1)
-  totalBalance       Decimal  @default(0) @db.Decimal(19, 4)
-  income             Decimal  @default(0) @db.Decimal(19, 4)
-  recharge           Decimal  @default(0) @db.Decimal(19, 4)
-  totalSpent         Decimal  @default(0) @db.Decimal(19, 4)
-  loyaltyPoints      Decimal  @default(0) @db.Decimal(19, 4)
-  miniAvailability   MiniAvailabilityStatus @default(RESTING)
-  miniAvailabilitySetAt DateTime?
-  miniCriticalNotifications Boolean @default(false)
-  miniMessageNotifications  Boolean @default(false)
-  miniDispatchNotifications Boolean @default(false)
-  withdrawAccount1   String?
-  withdrawAccount2   String?
-  withdrawAccount3   String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  jinleeId                  String                 @id
+  discordUserId             String?                @unique
+  discordDisplayName        String?
+  discordAvatarUrl          String?
+  wechatDisplayName         String?
+  wechatAvatarUrl           String?
+  sessionVersion            Int                    @default(1)
+  totalBalance              Decimal                @default(0) @db.Decimal(19, 4)
+  income                    Decimal                @default(0) @db.Decimal(19, 4)
+  recharge                  Decimal                @default(0) @db.Decimal(19, 4)
+  totalSpent                Decimal                @default(0) @db.Decimal(19, 4)
+  loyaltyPoints             Decimal                @default(0) @db.Decimal(19, 4)
+  miniAvailability          MiniAvailabilityStatus @default(RESTING)
+  miniAvailabilitySetAt     DateTime?
+  miniCriticalNotifications Boolean                @default(false)
+  miniMessageNotifications  Boolean                @default(false)
+  miniDispatchNotifications Boolean                @default(false)
+  withdrawAccount1          String?
+  withdrawAccount2          String?
+  withdrawAccount3          String?
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
 
   member                  Member?                 @relation("JinleeUserMember", fields: [discordUserId], references: [discordUserId], onDelete: SetNull)
   accountBindings         AccountBinding[]
-  authLoginEvents        AuthLoginEvent[]
+  authLoginEvents         AuthLoginEvent[]
   wechatProgramSessions   WechatProgramSession[]
   hostedOrders            Order[]
   rechargeOrders          ZPayRechargeOrder[]
@@ -286,6 +286,7 @@ model JinleeUser {
   miniConversationsA      MiniConversation[]      @relation("MiniConversationUserA")
   miniConversationsB      MiniConversation[]      @relation("MiniConversationUserB")
   miniMessages            MiniMessage[]           @relation("MiniMessageSender")
+  openingBenefitClaims    OpeningBenefitClaim[]
 }
 
 model AccountBinding {
@@ -367,11 +368,11 @@ model DiscordMigrationAudit {
 /// server migration. It deliberately has no relation to Member because users
 /// who have never used the platform can still need their Role restored.
 model DiscordRoleMigrationSnapshot {
-  id            String                             @id @default(cuid())
+  id            String                               @id @default(cuid())
   sourceGuildId String
   targetGuildId String
-  capturedAt    DateTime                           @default(now())
-  createdAt     DateTime                           @default(now())
+  capturedAt    DateTime                             @default(now())
+  createdAt     DateTime                             @default(now())
   members       DiscordRoleMigrationSnapshotMember[]
 
   @@index([sourceGuildId, targetGuildId, capturedAt])
@@ -417,10 +418,10 @@ model Member {
   status        MemberStatus @default(LAOBAN)
 
   // Money
-  totalBalance  Decimal @default(0) @db.Decimal(19, 4)
-  income        Decimal @default(0) @db.Decimal(19, 4)
-  recharge      Decimal @default(0) @db.Decimal(19, 4)
-  totalSpent    Decimal @default(0) @db.Decimal(19, 4)
+  totalBalance Decimal @default(0) @db.Decimal(19, 4)
+  income       Decimal @default(0) @db.Decimal(19, 4)
+  recharge     Decimal @default(0) @db.Decimal(19, 4)
+  totalSpent   Decimal @default(0) @db.Decimal(19, 4)
 
   // Payout rate (user receives this share of gross), default 75%
   commissionRate     Decimal @default(0.75) @db.Decimal(7, 6)
@@ -432,8 +433,8 @@ model Member {
   commissionTo   Commission[]    @relation("CommissionTo")
   dailySnapshots DailySnapshot[]
 
-  sentTransactions     Transaction[]       @relation("FromMember")
-  receivedTransactions Transaction[]       @relation("ToMember")
+  sentTransactions     Transaction[]         @relation("FromMember")
+  receivedTransactions Transaction[]         @relation("ToMember")
   zpayRechargeOrders   ZPayRechargeOrder[]
   stripePayments       StripePayment[]
   wechatNativePayments WechatNativePayment[]
@@ -497,14 +498,14 @@ model Member {
   jinleeUser JinleeUser? @relation("JinleeUserMember")
 
   // Order request logs/clicks
-  orderRequestsCreated       OrderRequestLog[]   @relation("OrderRequestOwner")
-  orderRequestClicks         OrderRequestClick[] @relation("OrderRequestWorker")
-  dispatchRequestsFromDiscord DispatchRequest[]  @relation("DispatchRequestDiscordOwner")
+  orderRequestsCreated          OrderRequestLog[]   @relation("OrderRequestOwner")
+  orderRequestClicks            OrderRequestClick[] @relation("OrderRequestWorker")
+  dispatchRequestsFromDiscord   DispatchRequest[]   @relation("DispatchRequestDiscordOwner")
   dispatchCandidatesFromDiscord DispatchCandidate[] @relation("DispatchCandidateDiscordWorker")
-  bossProfile          BossProfile?
-  auditionRoom          AuditionRoom?    @relation("BossAuditionRoom")
-  bossAuditionInvites   AuditionInvite[] @relation("BossAuditionInvites")
-  workerAuditionInvites AuditionInvite[] @relation("WorkerAuditionInvites")
+  bossProfile                   BossProfile?
+  auditionRoom                  AuditionRoom?       @relation("BossAuditionRoom")
+  bossAuditionInvites           AuditionInvite[]    @relation("BossAuditionInvites")
+  workerAuditionInvites         AuditionInvite[]    @relation("WorkerAuditionInvites")
 
   // Expense & profit logs
   expensesAsOperator            Expense[]              @relation("ExpenseOperator")
@@ -512,8 +513,8 @@ model Member {
   monthlyManualExpensesAsEditor MonthlyManualExpense[] @relation("MonthlyManualExpenseEditor")
   profitsAsOperator             PureProfit[]           @relation("PureProfitOperator")
   profitsAsTarget               PureProfit[]           @relation("PureProfitTarget")
-  couponsAsConsumeTarget Coupon[]      @relation("CouponConsumeTarget")
-  lotteryConsumeTargets  LotteryDraw[] @relation("LotteryConsumeTarget")
+  couponsAsConsumeTarget        Coupon[]               @relation("CouponConsumeTarget")
+  lotteryConsumeTargets         LotteryDraw[]          @relation("LotteryConsumeTarget")
 }
 
 model Blacklist {
@@ -675,8 +676,8 @@ model Transaction {
   netAmount    Decimal  @db.Decimal(19, 4)
   createdAt    DateTime @default(now())
 
-  commissionById    Commission? @relation("commissionById")
-  commissionByOrder Commission? @relation("commissionByOrder")
+  commissionById    Commission?     @relation("commissionById")
+  commissionByOrder Commission?     @relation("commissionByOrder")
   auditionInvite    AuditionInvite?
 
   from           Member?     @relation("FromMember", fields: [fromId], references: [discordUserId])
@@ -836,6 +837,7 @@ enum CouponSource {
   MANUAL_GRANT
   VIP_BENEFIT
   GIFT_WALL
+  OPENING_CAMPAIGN
 }
 
 model Coupon {
@@ -860,6 +862,23 @@ model Coupon {
   @@index([jinleeId, status, expiresAt])
   @@index([consumeTargetJinleeId])
   @@index([source, issuedAt])
+}
+
+/// Immutable per-user claim keys for time-bounded promotional benefits.
+/// `periodKey` is a Berlin-local calendar day or ISO-week key depending on the benefit.
+model OpeningBenefitClaim {
+  id        String   @id @default(cuid())
+  jinleeId  String
+  benefit   String
+  periodKey String
+  couponId  String?
+  claimedAt DateTime @default(now())
+
+  jinleeUser JinleeUser @relation(fields: [jinleeId], references: [jinleeId], onDelete: Cascade)
+
+  @@unique([jinleeId, benefit, periodKey])
+  @@index([benefit, periodKey])
+  @@index([jinleeId, claimedAt])
 }
 
 model Expense {
@@ -1121,6 +1140,7 @@ model ZPayRechargeOrder {
 
   member     Member?     @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade, onUpdate: Cascade)
   jinleeUser JinleeUser? @relation(fields: [jinleeId], references: [jinleeId], onDelete: SetNull)
+
   @@index([status, createdAt])
   @@index([jinleeId, status, createdAt])
 }
@@ -1218,8 +1238,8 @@ model PEIWAN {
   balance               Decimal      @default(0) @db.Decimal(19, 4)
   MP_url                String?
   voicePreviewUrl       String?
-  voicePreviewFilename String?
-  auditionInviteEnabled Boolean     @default(false)
+  voicePreviewFilename  String?
+  auditionInviteEnabled Boolean      @default(false)
   status                PeiwanStatus @default(free)
   serverDisplayName     String?
   sex                   PeiwanSex    @default(小姐姐)
@@ -1233,8 +1253,8 @@ model PEIWAN {
   member Member @relation("MemberToPeiwan", fields: [discordUserId], references: [discordUserId], onDelete: Cascade)
 
   // Back-relation to Order for the peiwan relation
-  orders       Order[]             @relation("PeiwanOrders")
-  gameProfiles PeiwanGameProfile[]
+  orders             Order[]             @relation("PeiwanOrders")
+  gameProfiles       PeiwanGameProfile[]
   dispatchCandidates DispatchCandidate[] @relation("DispatchCandidatePeiwan")
 
   @@index([status])
@@ -1300,12 +1320,12 @@ model Order {
   commissionRate Decimal? @db.Decimal(7, 6) // snapshot of worker payout share at accept
   netAmount      Decimal? @db.Decimal(18, 2)
 
-  interId String?
+  interId             String?
   dispatchRequestId   String?
   dispatchCandidateId String?
 
   // Back-relation for WorkerLock (one active lock per order at most)
-  workerLock WorkerLock? @relation("OrderWorkerLock")
+  workerLock        WorkerLock?        @relation("OrderWorkerLock")
   dispatchRequest   DispatchRequest?   @relation(fields: [dispatchRequestId], references: [id], onDelete: SetNull)
   dispatchCandidate DispatchCandidate? @relation(fields: [dispatchCandidateId], references: [id], onDelete: SetNull)
   miniConversations MiniConversation[]
@@ -1404,17 +1424,17 @@ model DispatchCandidate {
 }
 
 model MiniConversation {
-  id            String               @id @default(cuid())
-  type          MiniConversationType @default(DIRECT)
-  peerKey       String?
-  userAId       String?
-  userBId       String?
-  linkedOrderId String?
-  adminWatched  Boolean              @default(false)
+  id              String               @id @default(cuid())
+  type            MiniConversationType @default(DIRECT)
+  peerKey         String?
+  userAId         String?
+  userBId         String?
+  linkedOrderId   String?
+  adminWatched    Boolean              @default(false)
   userALastReadAt DateTime?
   userBLastReadAt DateTime?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @default(now()) @updatedAt
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @default(now()) @updatedAt
 
   userA       JinleeUser?   @relation("MiniConversationUserA", fields: [userAId], references: [jinleeId], onDelete: SetNull)
   userB       JinleeUser?   @relation("MiniConversationUserB", fields: [userBId], references: [jinleeId], onDelete: SetNull)
@@ -1437,8 +1457,8 @@ model MiniMessage {
   status         MiniMessageStatus     @default(NORMAL)
   createdAt      DateTime              @default(now())
 
-  conversation     MiniConversation            @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderJinleeUser JinleeUser?                 @relation("MiniMessageSender", fields: [senderJinleeId], references: [jinleeId], onDelete: SetNull)
+  conversation     MiniConversation             @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderJinleeUser JinleeUser?                  @relation("MiniMessageSender", fields: [senderJinleeId], references: [jinleeId], onDelete: SetNull)
   moderationEvents MiniMessageModerationEvent[]
 
   @@index([conversationId, createdAt])
@@ -1447,16 +1467,16 @@ model MiniMessage {
 }
 
 model MiniMessageModerationEvent {
-  id             String               @id @default(cuid())
-  messageId      String?
-  conversationId String?
-  action         MiniModerationAction
-  riskLabels     Json?
-  rawText        String               @db.VarChar(1000)
-  reason         String?
-  createdAt      DateTime             @default(now())
-  reviewedAt     DateTime?
-  notifiedAt     DateTime?
+  id                String               @id @default(cuid())
+  messageId         String?
+  conversationId    String?
+  action            MiniModerationAction
+  riskLabels        Json?
+  rawText           String               @db.VarChar(1000)
+  reason            String?
+  createdAt         DateTime             @default(now())
+  reviewedAt        DateTime?
+  notifiedAt        DateTime?
   notificationError String?
 
   message MiniMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
@@ -1494,13 +1514,13 @@ model BossProfile {
 }
 
 model VipBenefitProfile {
-  discordUserId        String   @id
-  roleOptOut           Boolean  @default(false)
-  announcementEnabled  Boolean  @default(true)
-  lastSettledVipLevel  Int      @default(0)
-  dispatchImageUrl     String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  discordUserId       String   @id
+  roleOptOut          Boolean  @default(false)
+  announcementEnabled Boolean  @default(true)
+  lastSettledVipLevel Int      @default(0)
+  dispatchImageUrl    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   member Member @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade, onUpdate: Cascade)
 }
@@ -1552,26 +1572,26 @@ model HeartCounter {
 }
 
 model RedEnvelope {
-  id              String            @id @default(cuid())
-  creatorId       String
-  totalAmount     Decimal           @db.Decimal(19, 4)
-  pointsAwarded   Decimal           @default(0) @db.Decimal(19, 4)
-  remainingAmount Decimal           @db.Decimal(19, 4)
-  totalCount      Int
-  remainingCount  Int
-  note            String?
-  status          RedEnvelopeStatus @default(ACTIVE)
-  expiresAt       DateTime
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  messageId       String?
-  channelId       String?
-  keyword         String?
+  id               String             @id @default(cuid())
+  creatorId        String
+  totalAmount      Decimal            @db.Decimal(19, 4)
+  pointsAwarded    Decimal            @default(0) @db.Decimal(19, 4)
+  remainingAmount  Decimal            @db.Decimal(19, 4)
+  totalCount       Int
+  remainingCount   Int
+  note             String?
+  status           RedEnvelopeStatus  @default(ACTIVE)
+  expiresAt        DateTime
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  messageId        String?
+  channelId        String?
+  keyword          String?
   pendingMessageId String?
-  refundedAmount  Decimal?          @db.Decimal(19, 4)
-  incomePool      Decimal           @db.Decimal(19, 4)
-  rechargePool    Decimal           @db.Decimal(19, 4)
-  claims          RedEnvelopeClaim[]
+  refundedAmount   Decimal?           @db.Decimal(19, 4)
+  incomePool       Decimal            @db.Decimal(19, 4)
+  rechargePool     Decimal            @db.Decimal(19, 4)
+  claims           RedEnvelopeClaim[]
 
   @@index([status, expiresAt])
   @@index([keyword, status, channelId, expiresAt])
@@ -1616,7 +1636,7 @@ model VipBenefitGrant {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  member    Member                     @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade, onUpdate: Cascade)
+  member    Member                    @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade, onUpdate: Cascade)
   instances VipBenefitGrantInstance[]
 
   @@unique([discordUserId, benefitCode])
@@ -1672,19 +1692,19 @@ model CommissionBuff {
 }
 
 model AutoCommissionBuff {
-  userId          String    @id @map("user_id")
-  targetShare     Decimal   @default(0.91) @map("target_share") @db.Decimal(10, 4)
-  thresholdAmount Decimal   @default(12000) @map("threshold_amount") @db.Decimal(19, 4)
-  windowDays      Int       @default(30) @map("window_days")
-  windowStart     DateTime  @map("window_start")
-  windowEnd       DateTime  @map("window_end")
-  currentAmount   Decimal   @default(0) @map("current_amount") @db.Decimal(19, 4)
-  tierExpiries    Json?     @map("tier_expiries")
-  activeUntil     DateTime? @map("active_until")
-  lastQualifiedAt DateTime? @map("last_qualified_at")
+  userId             String    @id @map("user_id")
+  targetShare        Decimal   @default(0.91) @map("target_share") @db.Decimal(10, 4)
+  thresholdAmount    Decimal   @default(12000) @map("threshold_amount") @db.Decimal(19, 4)
+  windowDays         Int       @default(30) @map("window_days")
+  windowStart        DateTime  @map("window_start")
+  windowEnd          DateTime  @map("window_end")
+  currentAmount      Decimal   @default(0) @map("current_amount") @db.Decimal(19, 4)
+  tierExpiries       Json?     @map("tier_expiries")
+  activeUntil        DateTime? @map("active_until")
+  lastQualifiedAt    DateTime? @map("last_qualified_at")
   lastReminderSentAt DateTime? @map("reminder_sent_for_active_until")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@map("auto_commission_buff")
 }
