@@ -1,4 +1,5 @@
 import { OrderStatus, PeiwanGameCode, PeiwanGameTier, type Prisma, QuotationCode } from '@prisma/client';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
 
 type PortraitGameKey = PeiwanGameCode | 'STEAM';
@@ -331,10 +332,12 @@ export async function buildBossPortrait(bossId: string, sampleSize = 50): Promis
       ? {
           OR: [{ hostId: bossId }, { hostJinleeId: bossJinleeId }],
           status: OrderStatus.ENDED,
+          createdAt: newEntityOnlyTime(),
         }
       : {
           hostId: bossId,
           status: OrderStatus.ENDED,
+          createdAt: newEntityOnlyTime(),
         };
 
   const [member, totalRequestCount, requestLogs, totalEndedOrderCount, endedOrders, firstRequest, firstOrder] =
@@ -348,10 +351,10 @@ export async function buildBossPortrait(bossId: string, sampleSize = 50): Promis
         },
       }),
       prisma.orderRequestLog.count({
-        where: { ownerId: bossId },
+        where: { ownerId: bossId, createdAt: newEntityOnlyTime() },
       }),
       prisma.orderRequestLog.findMany({
-        where: { ownerId: bossId },
+        where: { ownerId: bossId, createdAt: newEntityOnlyTime() },
         orderBy: { createdAt: 'desc' },
         take,
         select: {
@@ -391,12 +394,14 @@ export async function buildBossPortrait(bossId: string, sampleSize = 50): Promis
         },
       }),
       prisma.orderRequestLog.findFirst({
-        where: { ownerId: bossId },
+        where: { ownerId: bossId, createdAt: newEntityOnlyTime() },
         orderBy: { createdAt: 'asc' },
         select: { createdAt: true },
       }),
       prisma.order.findFirst({
-        where: bossJinleeId != null ? { OR: [{ hostId: bossId }, { hostJinleeId: bossJinleeId }] } : { hostId: bossId },
+        where: bossJinleeId != null
+          ? { OR: [{ hostId: bossId }, { hostJinleeId: bossJinleeId }], createdAt: newEntityOnlyTime() }
+          : { hostId: bossId, createdAt: newEntityOnlyTime() },
         orderBy: { createdAt: 'asc' },
         select: { createdAt: true },
       }),
@@ -649,6 +654,7 @@ function normalizeStringArray(value: Prisma.JsonValue | null | undefined) {
 export async function listStoredBossPortraits(limit = 500): Promise<StoredBossPortrait[]> {
   const safeLimit = Math.min(Math.max(limit, 1), 1000);
   const rows = await prisma.bossProfile.findMany({
+    where: { firstSeenAt: newEntityOnlyTime() },
     orderBy: [{ updatedAt: 'desc' }, { bossId: 'asc' }],
     take: safeLimit,
     include: {
@@ -691,10 +697,12 @@ export async function generateBossPortraitBatch(
 ): Promise<BossPortraitBatchResult> {
   const [requestOwners, orderHosts, existingRows] = await Promise.all([
     prisma.orderRequestLog.findMany({
+      where: { createdAt: newEntityOnlyTime() },
       select: { ownerId: true },
       distinct: ['ownerId'],
     }),
     prisma.order.findMany({
+      where: { createdAt: newEntityOnlyTime() },
       select: { hostId: true },
       distinct: ['hostId'],
     }),

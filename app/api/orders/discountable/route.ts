@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 const MAX_FETCH = 50;
 const MAX_RETURN = 20;
@@ -13,7 +14,11 @@ export async function GET(request: Request) {
   }
 
   const orders = await prisma.order.findMany({
-    where: { hostJinleeId: currentUser.jinleeId, status: 'ENDED' },
+    where: {
+      hostJinleeId: currentUser.jinleeId,
+      status: 'ENDED',
+      createdAt: newEntityOnlyTime(),
+    },
     orderBy: { endedAt: 'desc' },
     take: MAX_FETCH,
     select: {

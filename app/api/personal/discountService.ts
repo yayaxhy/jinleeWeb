@@ -2,7 +2,7 @@ import { CouponStatus, CouponType, LotteryStatus, OrderStatus, PointShopDelivery
 import type { Prisma as PrismaNamespace } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
-import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
+import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 export type DiscountKind = 'coupon' | 'lottery';
 
@@ -15,6 +15,7 @@ export type ApplyDiscountResult =
       lotteryId?: string;
     }
   | { status: 'order_not_found' }
+  | { status: 'legacy_order' }
   | { status: 'not_order_host' }
   | { status: 'order_not_ended' }
   | { status: 'already_used' }
@@ -254,11 +255,15 @@ export async function applyDiscountForOrder(params: {
         hostJinleeId: true,
         workerId: true,
         status: true,
+        createdAt: true,
         unitPrice: true,
         totalMinutes: true,
       },
     });
     if (!order) return { status: 'order_not_found' };
+    if (order.createdAt.getTime() <= NEW_ENTITY_OPERATIONS_STARTED_AT.getTime()) {
+      return { status: 'legacy_order' };
+    }
     if ((order.hostJinleeId ?? null) !== jinleeId) return { status: 'not_order_host' };
     if (order.status !== OrderStatus.ENDED) return { status: 'order_not_ended' };
     await lockOrderForDiscountTx(tx, order.id);

@@ -10,6 +10,7 @@ import {
 } from '@/constants/peiwan';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { formatAmountDown2, parseNumeric } from '@/lib/numberFormat';
+import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
 import { getHighestVipLevelByTotalSpent } from '@/lib/vip-levels';
 
@@ -260,7 +261,7 @@ const addToAmountMap = (map: Map<string, number>, discordId: string | null, delt
 async function loadActualSpend(start: Date, end: Date) {
   const rows = await prisma.individualTransaction.findMany({
     where: {
-      timeCreatedAt: { gte: start, lt: end },
+      timeCreatedAt: { ...newEntityOnlyTime(start), lt: end },
       typeOfTransaction: { in: Array.from(new Set([...SPEND_POSITIVE_TYPES, ...REVERT_TYPES])) },
     },
     select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true },
@@ -290,7 +291,7 @@ async function loadActualSpend(start: Date, end: Date) {
 async function loadActualIncome(start: Date, end: Date) {
   const rows = await prisma.individualTransaction.findMany({
     where: {
-      timeCreatedAt: { gte: start, lt: end },
+      timeCreatedAt: { ...newEntityOnlyTime(start), lt: end },
       typeOfTransaction: { in: Array.from(new Set([...INCOME_POSITIVE_TYPES, ...REVERT_TYPES])) },
     },
     select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true },
@@ -487,6 +488,7 @@ async function buildBossRanking(period: PeriodKey, issues: string[]) {
           displayName: true,
           rankLabel: true,
           spendLevelLabel: true,
+          firstSeenAt: true,
         },
       },
     },
@@ -496,13 +498,16 @@ async function buildBossRanking(period: PeriodKey, issues: string[]) {
   return top.map(([discordUserId], index): RankingItem => {
     const member = memberMap.get(discordUserId);
     const profile = member?.bossProfile;
+    const currentProfile = profile && profile.firstSeenAt && profile.firstSeenAt.getTime() > NEW_ENTITY_OPERATIONS_STARTED_AT.getTime()
+      ? profile
+      : null;
     const anonymous = ANON_SPEND_USER_IDS.has(discordUserId);
-    const publicName = profile?.displayName?.trim() || member?.serverDisplayName?.trim() || null;
+    const publicName = currentProfile?.displayName?.trim() || member?.serverDisplayName?.trim() || null;
     const vipLevel = getHighestVipLevelByTotalSpent(member?.jinleeUser?.totalSpent?.toString());
 
     return {
       name: anonymous ? '匿名老板' : (publicName ?? `神秘老板 ${index + 1}`),
-      tag: profile?.rankLabel ?? profile?.spendLevelLabel ?? (anonymous ? '匿名老板' : '老板'),
+      tag: currentProfile?.rankLabel ?? currentProfile?.spendLevelLabel ?? (anonymous ? '匿名老板' : '老板'),
       tone: bossTones[index % bossTones.length],
       avatarUrl: getMemberAvatarUrl(member),
       anonymous,
@@ -547,12 +552,12 @@ const sanitizeOrderRequestContent = (value: string | null | undefined) => {
 async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
   try {
     const now = Date.now();
+    const recentOrderAndGiftCutoff = new Date(now - 14 * 24 * 60 * 60 * 1000);
+    const recentDispatchCutoff = new Date(now - 2 * 60 * 60 * 1000);
     const [rows, dispatchLogs, highValueGifts] = await Promise.all([
       prisma.order.findMany({
         where: {
-          createdAt: {
-            gte: new Date(now - 14 * 24 * 60 * 60 * 1000),
-          },
+          createdAt: newEntityOnlyTime(recentOrderAndGiftCutoff),
         },
         orderBy: { createdAt: 'desc' },
         take: 8,
@@ -567,9 +572,7 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
       }),
       prisma.orderRequestLog.findMany({
         where: {
-          createdAt: {
-            gte: new Date(now - 2 * 60 * 60 * 1000),
-          },
+          createdAt: newEntityOnlyTime(recentDispatchCutoff),
         },
         orderBy: { createdAt: 'desc' },
         take: 8,
@@ -583,9 +586,7 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
       prisma.giftAudit.findMany({
         where: {
           gross: { gt: 100 },
-          createdAt: {
-            gte: new Date(now - 14 * 24 * 60 * 60 * 1000),
-          },
+          createdAt: newEntityOnlyTime(recentOrderAndGiftCutoff),
         },
         orderBy: { createdAt: 'desc' },
         take: 6,

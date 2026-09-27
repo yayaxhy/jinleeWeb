@@ -3,7 +3,7 @@ import type { CurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { postInternalBot } from '@/lib/internal-bot';
 import { formatPeiwanGameProfile } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
-import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
+import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { formatTransactionType } from '@/lib/transaction-display';
 import { notifyMiniProgramUser } from '@/lib/mini-program-subscribe';
 
@@ -37,7 +37,7 @@ function displayName(user: {
 async function hasRunningWorkerOrder(currentUser: CurrentJinleeUser) {
   if (!currentUser.discordUserId) return false;
   return Boolean(await prisma.order.findFirst({
-    where: { workerId: currentUser.discordUserId, status: OrderStatus.RUNNING },
+    where: { workerId: currentUser.discordUserId, status: OrderStatus.RUNNING, createdAt: newEntityOnlyTime() },
     select: { id: true },
   }));
 }
@@ -138,7 +138,7 @@ export async function listMiniOrders(currentUser: CurrentJinleeUser) {
   }
 
   const rows = await prisma.order.findMany({
-    where: { OR: participantWhere },
+    where: { OR: participantWhere, createdAt: newEntityOnlyTime() },
     include: {
       hostJinleeUser: { include: { member: true } },
       worker: true,
@@ -169,10 +169,13 @@ export async function performMiniOrderAction(
       hostJinleeId: true,
       workerId: true,
       status: true,
+      createdAt: true,
       worker: { select: { jinleeUser: { select: { jinleeId: true } } } },
     },
   });
-  if (!order) return { ok: false, status: 404, error: 'order_not_found' } as const;
+  if (!order || order.createdAt.getTime() <= NEW_ENTITY_OPERATIONS_STARTED_AT.getTime()) {
+    return { ok: false, status: 404, error: 'order_not_found' } as const;
+  }
 
   const isHost = order.hostJinleeId === currentUser.jinleeId || Boolean(currentUser.discordUserId && order.hostId === currentUser.discordUserId);
   const isWorker = Boolean(currentUser.discordUserId && order.workerId === currentUser.discordUserId);
@@ -286,7 +289,7 @@ export async function getOwnPeiwanCard(currentUser: CurrentJinleeUser) {
 export async function getHomePendingTask(currentUser: CurrentJinleeUser) {
   if (currentUser.discordUserId) {
     const pendingWorkerOrder = await prisma.order.findFirst({
-      where: { workerId: currentUser.discordUserId, status: OrderStatus.PENDING },
+      where: { workerId: currentUser.discordUserId, status: OrderStatus.PENDING, createdAt: newEntityOnlyTime() },
       orderBy: { createdAt: 'asc' },
       select: { id: true, displayNo: true },
     });
@@ -304,6 +307,7 @@ export async function getHomePendingTask(currentUser: CurrentJinleeUser) {
   const runningOrder = await prisma.order.findFirst({
     where: {
       status: OrderStatus.RUNNING,
+      createdAt: newEntityOnlyTime(),
       OR: [
         { hostJinleeId: currentUser.jinleeId },
         ...(currentUser.discordUserId ? [{ hostId: currentUser.discordUserId }, { workerId: currentUser.discordUserId }] : []),
@@ -346,9 +350,12 @@ export async function getHomePendingTask(currentUser: CurrentJinleeUser) {
 }
 
 export async function getHomeRecommendationIds(currentUser: CurrentJinleeUser) {
-  const where: Prisma.OrderWhereInput = currentUser.discordUserId
-    ? { OR: [{ hostJinleeId: currentUser.jinleeId }, { hostId: currentUser.discordUserId }] }
-    : { hostJinleeId: currentUser.jinleeId };
+  const where: Prisma.OrderWhereInput = {
+    ...(currentUser.discordUserId
+      ? { OR: [{ hostJinleeId: currentUser.jinleeId }, { hostId: currentUser.discordUserId }] }
+      : { hostJinleeId: currentUser.jinleeId }),
+    createdAt: newEntityOnlyTime(),
+  };
   const rows = await prisma.order.findMany({
     where,
     select: { peiwanId: true },

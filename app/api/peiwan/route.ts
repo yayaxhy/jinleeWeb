@@ -8,6 +8,7 @@ import {
 } from '@/constants/peiwan';
 import { getPeiwanGameLabel, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { readPeiwanCardAssets } from '@/lib/peiwan/card-path';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
@@ -187,7 +188,7 @@ export async function GET(request: Request) {
               },
             },
             ordersAsWorker: {
-              where: { status: 'RUNNING' },
+              where: { status: 'RUNNING', createdAt: newEntityOnlyTime() },
               select: { id: true },
               take: 1,
             },
@@ -199,6 +200,7 @@ export async function GET(request: Request) {
         },
         orders: {
           where: {
+            createdAt: newEntityOnlyTime(),
             acceptedAt: { gte: recentActivityCutoff },
             status: { in: ['RUNNING', 'ENDED'] },
           },
@@ -209,7 +211,7 @@ export async function GET(request: Request) {
       orderBy: { PEIWANID: 'asc' },
     }),
     prisma.giftAudit.findMany({
-      where: { createdAt: { gte: recentActivityCutoff } },
+      where: { createdAt: newEntityOnlyTime(recentActivityCutoff) },
       select: { receiverId: true },
       distinct: ['receiverId'],
     }),

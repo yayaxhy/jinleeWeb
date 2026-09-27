@@ -19,6 +19,7 @@ import { QUOTATION_CODE_LABEL, QUOTATION_CODE_TO_FIELD, type QuotationCodeValue 
 import { type CurrentJinleeUser } from '@/lib/current-jinlee-user';
 import { ensureJinleeUserForDiscordMember } from '@/lib/jinlee-user';
 import { postInternalBot } from '@/lib/internal-bot';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
 import { checkMiniProgramMessageSecurity } from '@/lib/wechat';
 import { getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
@@ -366,6 +367,7 @@ export async function grabDispatchRequest(currentUser: CurrentJinleeUser, dispat
     where: {
       workerId: currentUser.discordUserId || peiwan.discordUserId,
       status: OrderStatus.RUNNING,
+      createdAt: newEntityOnlyTime(),
     },
     select: { id: true },
   });

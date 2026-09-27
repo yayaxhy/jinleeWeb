@@ -6,6 +6,8 @@ const mapErrorStatus = (status: string) => {
   switch (status) {
     case 'order_not_found':
       return { code: 404, message: '订单不存在' };
+    case 'legacy_order':
+      return { code: 400, message: '仅支持使用 DLMClub 成立后的订单' };
     case 'not_order_host':
       return { code: 403, message: '仅订单老板可使用优惠' };
     case 'order_not_ended':

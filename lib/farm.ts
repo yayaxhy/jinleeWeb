@@ -1,4 +1,5 @@
 import { FarmActionType, FarmSeedType, PeiwanStatus, Prisma } from '@prisma/client';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
 import {
   BALANCE_TO_COINS_RATE,
@@ -445,6 +446,7 @@ export async function getFarmCompanionLists(viewerDiscordId: string): Promise<Fa
     prisma.order.findMany({
       where: {
         OR: [{ hostId: viewerDiscordId }, { workerId: viewerDiscordId }],
+        createdAt: newEntityOnlyTime(),
       },
       select: {
         hostId: true,
@@ -459,6 +461,7 @@ export async function getFarmCompanionLists(viewerDiscordId: string): Promise<Fa
     prisma.giftAudit.findMany({
       where: {
         OR: [{ giverId: viewerDiscordId }, { receiverId: viewerDiscordId }],
+        createdAt: newEntityOnlyTime(),
       },
       select: {
         giverId: true,
@@ -965,7 +968,6 @@ export async function stealFarmPlot(viewerDiscordId: string, targetDiscordId: st
     };
   });
 }
-
 
 
 
