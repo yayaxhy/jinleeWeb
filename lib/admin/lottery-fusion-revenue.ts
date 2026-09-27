@@ -9,6 +9,7 @@ import {
   isLotteryFusionNonce,
   resolveLotteryFusionPoolFallback,
 } from '@/lib/lottery-fusion';
+import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { COUPON_VOUCHER_META } from '@/lib/voucherCatalog';
 
 const LOTTERY_FUSION_DRAW_NONCE_PREFIX = 'fusion:';
@@ -248,6 +249,7 @@ export const getLotteryFusionRevenueSummary = async (params: {
 
   const activeOutstandingWhere: Prisma.LotteryDrawWhereInput = {
     nonce: { startsWith: LOTTERY_FUSION_DRAW_NONCE_PREFIX },
+    createdAt: newEntityOnlyTime(),
     status: 'UNUSED',
     consumeAt: null,
     OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],

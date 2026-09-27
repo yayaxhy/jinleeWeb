@@ -216,9 +216,14 @@ export function JinleeHoverLetters({
         ))}
         <Link
           href="/opening-benefits"
-          className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#ffd5df]/65 bg-[#e85c86]/92 px-5 py-2.5 text-sm font-black text-white shadow-[0_8px_0_#b73d62,0_18px_28px_rgba(232,92,134,0.3)] transition hover:-translate-y-0.5 hover:bg-[#f26d95] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ffd5df] active:translate-y-1 active:shadow-[0_4px_0_#b73d62]"
+          className="group absolute top-6 left-1/2 z-10 inline-flex w-64 -translate-x-1/2 items-center justify-center rounded-full border-2 border-[#fff0bd] bg-gradient-to-r from-[#e63e78] via-[#f16596] to-[#db3673] px-12 py-3 text-white shadow-[0_10px_0_#9d204d,0_0_0_7px_rgba(255,205,112,0.16),0_0_38px_rgba(244,113,163,0.82)] transition hover:-translate-y-1 hover:scale-105 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#fff0bd] active:translate-y-1 active:shadow-[0_5px_0_#9d204d,0_0_0_5px_rgba(255,205,112,0.16)] before:absolute before:-inset-2 before:-z-10 before:rounded-full before:border before:border-[#ffdd75]/65 before:animate-ping"
         >
-          开业福利 <span aria-hidden="true">→</span>
+          <span aria-hidden="true" className="absolute left-6 text-xl text-[#fff0bd] drop-shadow-[0_0_8px_rgba(255,240,189,0.9)]">✦</span>
+          <span className="text-center leading-none">
+            <span className="mb-1 block text-[10px] font-bold tracking-[0.26em] text-[#fff0bd]">LIMITED OFFER</span>
+            <span className="text-xl font-black">开业福利</span>
+          </span>
+          <span aria-hidden="true" className="absolute right-6 text-2xl transition-transform group-hover:translate-x-1">→</span>
         </Link>
       </div>
     </section>

@@ -94,12 +94,12 @@ function ClaimButton({
   };
 
   return (
-    <div className="shrink-0 space-y-2 text-right">
+    <div className="shrink-0 space-y-2 text-center">
       <button
         type="button"
         disabled={disabled || pending}
         onClick={claim}
-        className="rounded-full bg-[#eb6089] px-5 py-2.5 text-sm font-black text-white shadow-[0_5px_0_#be4165] transition hover:-translate-y-0.5 hover:bg-[#f27198] active:translate-y-1 active:shadow-[0_2px_0_#be4165] disabled:cursor-not-allowed disabled:bg-[#d9c6cf] disabled:shadow-none"
+        className="relative inline-flex min-w-36 items-center justify-center rounded-full border-2 border-[#fff0bd] bg-gradient-to-r from-[#e63e78] via-[#f16596] to-[#db3673] px-6 py-3 text-sm font-black text-white shadow-[0_7px_0_#9d204d,0_0_24px_rgba(244,113,163,0.48)] transition hover:-translate-y-1 hover:scale-105 hover:brightness-110 active:translate-y-1 active:shadow-[0_3px_0_#9d204d] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-none disabled:bg-[#d9c6cf] disabled:shadow-none before:absolute before:-inset-2 before:rounded-full before:border before:border-[#f28bab]/60 enabled:before:animate-ping"
       >
         {pending ? '装进背包中…' : '立即领取'}
       </button>
@@ -151,17 +151,6 @@ export function OpeningBenefitsPanel({
           <div className="absolute inset-0 -z-10 opacity-35 [background-image:radial-gradient(#f3a0b9_1.15px,transparent_1.15px)] [background-size:17px_17px]" />
           <div className="absolute -left-20 -top-24 -z-10 h-64 w-64 rounded-full bg-[#ffd2df] blur-2xl" />
           <div className="absolute -bottom-24 right-1/4 -z-10 h-52 w-52 rounded-full bg-[#ffe5a8]/75 blur-2xl" />
-          <div className="pointer-events-none absolute bottom-5 left-5 hidden h-28 w-28 overflow-hidden rounded-[1.8rem] bg-white shadow-[0_13px_14px_rgba(103,80,177,0.2)] sm:block">
-            <Image
-              src={characterArt}
-              alt="抽奖角色插画"
-              fill
-              sizes="176px"
-              unoptimized
-              className="object-contain"
-            />
-          </div>
-
           <div className="relative flex flex-wrap items-start justify-between gap-5">
             <div className="max-w-2xl">
               <TinyLabel>WELCOME TO DLM CLUB</TinyLabel>
@@ -245,7 +234,7 @@ export function OpeningBenefitsPanel({
               alt="特殊九折券"
               width={650}
               height={433}
-              className="pointer-events-none absolute bottom-5 right-5 w-[42%] opacity-95 drop-shadow-[0_13px_12px_rgba(160,62,96,0.16)] sm:bottom-6 sm:right-6 sm:w-[40%]"
+              className="pointer-events-none absolute right-5 top-1/2 w-[42%] -translate-y-1/2 opacity-95 drop-shadow-[0_13px_12px_rgba(160,62,96,0.16)] sm:right-6 sm:w-[40%]"
             />
             <div className="relative max-w-[56%] sm:max-w-[57%]">
               <TinyLabel>每日领取</TinyLabel>
@@ -276,7 +265,7 @@ export function OpeningBenefitsPanel({
               alt="日冠七五折券"
               width={650}
               height={433}
-              className="pointer-events-none absolute bottom-5 right-5 w-[42%] opacity-95 drop-shadow-[0_13px_12px_rgba(113,79,173,0.15)] sm:bottom-6 sm:right-6 sm:w-[40%]"
+              className="pointer-events-none absolute right-5 top-1/2 w-[42%] -translate-y-1/2 opacity-95 drop-shadow-[0_13px_12px_rgba(113,79,173,0.15)] sm:right-6 sm:w-[40%]"
             />
             <div className="relative max-w-[56%] sm:max-w-[57%]">
               <TinyLabel tone="lavender">每周消费</TinyLabel>
@@ -308,7 +297,7 @@ export function OpeningBenefitsPanel({
           </article>
 
           <article className="relative overflow-hidden rounded-[2rem] border border-[#bfe9df] bg-[#f4fffb] p-6 shadow-[0_12px_30px_rgba(66,159,137,0.1)] sm:p-7">
-            <div className="pointer-events-none absolute bottom-5 right-5 h-32 w-32 overflow-hidden rounded-[1.75rem] bg-white shadow-[0_13px_12px_rgba(55,135,116,0.16)] sm:bottom-6 sm:right-6 sm:h-36 sm:w-36">
+            <div className="pointer-events-none absolute right-5 top-1/2 h-32 w-32 -translate-y-1/2 overflow-hidden rounded-[1.75rem] bg-white shadow-[0_13px_12px_rgba(55,135,116,0.16)] sm:right-6 sm:h-36 sm:w-36">
               <Image
                 src={characterArt}
                 alt="抽奖角色插画"
