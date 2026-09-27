@@ -247,8 +247,8 @@ export function OpeningBenefitsPanel({
               </p>
               <p className="mt-4 text-xs leading-5 text-[#aa7b8c]">
                 {status.dailyDiscount.claimedToday
-                  ? `今日已领取；下次可领：${formatBerlinTime(status.dailyDiscount.nextClaimAt)}`
-                  : `今日可领取；零点刷新：${formatBerlinTime(status.dailyDiscount.nextClaimAt)}`}
+                  ? `今日已领取；`
+                  : `今日可领取；`}
               </p>
               <div className="mt-4">
                 <ClaimButton
