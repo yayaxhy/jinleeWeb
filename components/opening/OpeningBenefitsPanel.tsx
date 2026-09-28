@@ -186,9 +186,9 @@ export function OpeningBenefitsPanel({
               </p>
             </div>
             <div className="rounded-2xl bg-white/75 px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs font-bold text-[#ba718c]">本周攒满</p>
+              <p className="text-xs font-bold text-[#ba718c]">一周内消费</p>
               <p className="mt-1 text-sm font-black text-[#6a3b52]">
-                ¥1,000 领日冠券
+                满 ¥1,000 领日冠 75 折券
               </p>
             </div>
             <div className="rounded-2xl bg-white/75 px-4 py-3 backdrop-blur-sm">
@@ -268,12 +268,12 @@ export function OpeningBenefitsPanel({
               className="pointer-events-none absolute right-5 top-1/2 w-[42%] -translate-y-1/2 opacity-95 drop-shadow-[0_13px_12px_rgba(113,79,173,0.15)] sm:right-6 sm:w-[40%]"
             />
             <div className="relative max-w-[56%] sm:max-w-[57%]">
-              <TinyLabel tone="lavender">每周消费</TinyLabel>
+              <TinyLabel tone="lavender">一周内消费</TinyLabel>
               <h2 className="mt-4 text-2xl font-black tracking-[-0.04em] text-[#5a477c]">
-                每周消费满 ¥1,000 领日冠券
+                一周内消费满 ¥1,000，领取日冠 75 折券
               </h2>
               <p className="mt-3 text-sm leading-6 text-[#796b92]">
-                按本周实际消费计算；每人每周限领一次。
+                按周实际消费累计，每人限领一次。
               </p>
               <div className="mt-5 h-3 overflow-hidden rounded-full bg-[#e5ddfb] p-0.5">
                 <div
@@ -282,10 +282,15 @@ export function OpeningBenefitsPanel({
                 />
               </div>
               <p className="mt-2 text-xs leading-5 text-[#8e7bad]">
-                本周实际消费 ¥{status.weeklyCrown.actualSpend} / ¥
+                本周已累计实际消费 ¥{status.weeklyCrown.actualSpend} / ¥
                 {status.weeklyCrown.targetSpend}
                 <br />
                 本周截止：{formatBerlinTime(status.weeklyCrown.weekEndsAt)}
+              </p>
+              <p className="mt-1 text-xs font-medium text-[#8e7bad]">
+                {status.weeklyCrown.claimed
+                  ? '日冠 75 折券已领取；本次活动期间仅限一次。'
+                  : '满足条件后，本次活动期间可领取一次。'}
               </p>
               <div className="mt-4">
                 <ClaimButton

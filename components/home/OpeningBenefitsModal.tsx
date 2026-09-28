@@ -69,7 +69,7 @@ export function OpeningBenefitsModal() {
           开业小礼物
         </h2>
         <p className="relative mt-3 text-sm leading-6 text-[#8d6274]">
-          每日可领特殊 9 折券，消费满额还有日冠 75
+          每日可领特殊 9 折券；一周内实际消费累计满 ¥1,000，还可领取日冠 75
           折券。打开福利页，看看今天能领什么吧！
         </p>
         <Image

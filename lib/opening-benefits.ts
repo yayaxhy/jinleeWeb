@@ -30,6 +30,8 @@ export const OPENING_BENEFIT = {
   TWO_ORDERS: 'OPENING_NEW_USER_TWO_ORDERS',
 } as const;
 
+const ONE_TIME_CLAIM_PERIOD_KEY = 'once';
+
 export type OpeningBenefitName =
   (typeof OPENING_BENEFIT)[keyof typeof OPENING_BENEFIT];
 
@@ -57,6 +59,7 @@ export class OpeningBenefitError extends Error {
     public readonly code:
       | 'campaign_inactive'
       | 'already_claimed'
+      | 'weekly_crown_already_claimed'
       | 'two_order_task_already_claimed'
       | 'weekly_spend_not_met'
       | 'two_order_task_not_eligible',
@@ -176,7 +179,7 @@ export type OpeningBenefitsStatus = {
   };
   weeklyCrown: {
     eligible: boolean;
-    claimedThisWeek: boolean;
+    claimed: boolean;
     weekKey: string;
     weekEndsAt: string;
     actualSpend: string;
@@ -211,7 +214,7 @@ export async function getOpeningBenefitsStatus(params: {
         jinleeId: params.jinleeId,
         OR: [
           { benefit: OPENING_BENEFIT.DAILY_DISCOUNT, periodKey: dailyKey },
-          { benefit: OPENING_BENEFIT.WEEKLY_CROWN, periodKey: weekKey },
+          { benefit: OPENING_BENEFIT.WEEKLY_CROWN },
           { benefit: OPENING_BENEFIT.TWO_ORDERS },
         ],
       },
@@ -244,7 +247,7 @@ export async function getOpeningBenefitsStatus(params: {
         (!periodKey || claim.periodKey === periodKey),
     );
   const dailyClaimed = hasClaim(OPENING_BENEFIT.DAILY_DISCOUNT, dailyKey);
-  const weeklyClaimed = hasClaim(OPENING_BENEFIT.WEEKLY_CROWN, weekKey);
+  const weeklyClaimed = hasClaim(OPENING_BENEFIT.WEEKLY_CROWN);
   const twoOrderClaimed = hasClaim(OPENING_BENEFIT.TWO_ORDERS);
   const nextWeek = getBerlinWeekEnd(now);
 
@@ -268,7 +271,7 @@ export async function getOpeningBenefitsStatus(params: {
         active &&
         !weeklyClaimed &&
         weeklyActualSpend.gte(OPENING_WEEKLY_SPEND_TARGET),
-      claimedThisWeek: weeklyClaimed,
+      claimed: weeklyClaimed,
       weekKey,
       weekEndsAt: nextWeek.toISOString(),
       actualSpend: weeklyActualSpend.toFixed(2),
@@ -348,6 +351,19 @@ export async function claimOpeningBenefit(params: {
       if (!user) throw new OpeningBenefitError('two_order_task_not_eligible');
 
       if (params.benefit === OPENING_BENEFIT.WEEKLY_CROWN) {
+        // Lock the user's row so the once-per-campaign rule stays true even
+        // when two claim requests arrive at the same time.
+        await tx.$executeRaw`SELECT 1 FROM "JinleeUser" WHERE "jinleeId" = ${params.jinleeId} FOR UPDATE`;
+        const existingClaim = await tx.openingBenefitClaim.findFirst({
+          where: {
+            jinleeId: params.jinleeId,
+            benefit: OPENING_BENEFIT.WEEKLY_CROWN,
+          },
+          select: { id: true },
+        });
+        if (existingClaim) {
+          throw new OpeningBenefitError('weekly_crown_already_claimed');
+        }
         const actualSpend = await getWeeklyActualSpendTx(
           tx,
           params.jinleeId,
@@ -360,7 +376,7 @@ export async function claimOpeningBenefit(params: {
           tx,
           jinleeId: params.jinleeId,
           benefit: params.benefit,
-          periodKey: getBerlinWeekKey(now),
+          periodKey: ONE_TIME_CLAIM_PERIOD_KEY,
           couponType: CouponType.CROWN_75_VOUCHER,
           now,
         });
@@ -390,7 +406,9 @@ export async function claimOpeningBenefit(params: {
       throw new OpeningBenefitError(
         params.benefit === OPENING_BENEFIT.TWO_ORDERS
           ? 'two_order_task_already_claimed'
-          : 'already_claimed',
+          : params.benefit === OPENING_BENEFIT.WEEKLY_CROWN
+            ? 'weekly_crown_already_claimed'
+            : 'already_claimed',
       );
     }
     throw error;

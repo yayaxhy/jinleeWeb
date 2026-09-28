@@ -13,7 +13,12 @@ const errorResponse = (error: OpeningBenefitError) => {
   switch (error.code) {
     case 'already_claimed':
       return NextResponse.json(
-        { error: '本周期已领取，请明天或下周再来。' },
+        { error: '今日已领取，请明天再来。' },
+        { status: 409 },
+      );
+    case 'weekly_crown_already_claimed':
+      return NextResponse.json(
+        { error: '日冠 75 折券在本次开业福利期间仅可领取一次。' },
         { status: 409 },
       );
     case 'two_order_task_already_claimed':
@@ -23,7 +28,7 @@ const errorResponse = (error: OpeningBenefitError) => {
       );
     case 'weekly_spend_not_met':
       return NextResponse.json(
-        { error: '本周实际消费尚未满 ¥1000。' },
+        { error: '一周内实际消费尚未满 ¥1,000。' },
         { status: 400 },
       );
     case 'two_order_task_not_eligible':

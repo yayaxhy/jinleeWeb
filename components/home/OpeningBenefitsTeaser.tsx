@@ -34,7 +34,7 @@ export function OpeningBenefitsTeaser() {
               今天也要被宠到。
             </h2>
             <p className="mt-4 max-w-lg text-sm leading-7 text-[#896577] md:text-base">
-              每天领券、每周攒福利，活动期内任意两笔点单或打赏每笔超过
+              每天领券；一周内实际消费累计满 ¥1,000 可领取日冠 75 折券。活动期内任意两笔点单或打赏每笔超过
               ¥100，还有额外惊喜。可领取资格和券的到期日，都能在福利页与背包里查看。
             </p>
             <div className="mt-6 flex flex-wrap gap-2 text-xs font-bold text-[#86445e]">
@@ -42,7 +42,7 @@ export function OpeningBenefitsTeaser() {
                 每日特殊 9 折券
               </span>
               <span className="rounded-full bg-white px-3 py-2 shadow-sm">
-                满 ¥1,000 领日冠 75 折
+                一周内满 ¥1,000 领日冠 75 折
               </span>
               <span className="rounded-full bg-white px-3 py-2 shadow-sm">
                 两笔消费超 ¥100 加赠

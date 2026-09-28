@@ -865,7 +865,7 @@ model Coupon {
 }
 
 /// Immutable per-user claim keys for time-bounded promotional benefits.
-/// `periodKey` is a Berlin-local calendar day or ISO-week key depending on the benefit.
+/// `periodKey` is a Berlin-local calendar day, week key, or the single-use `once` marker depending on the benefit.
 model OpeningBenefitClaim {
   id        String   @id @default(cuid())
   jinleeId  String
