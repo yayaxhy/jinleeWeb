@@ -10,7 +10,11 @@ import {
   parseCentralEuropeanDateRange,
 } from '@/lib/centralEuropeanDateRange';
 import { newEntityReportStart } from '@/lib/operating-entity-cutover';
-import { parseRevenueIdentityList, resolveRevenueExclusions } from '@/lib/admin/revenue-exclusion';
+import {
+  buildRevenueCouponIdentityExclusion,
+  parseRevenueIdentityList,
+  resolveRevenueExclusions,
+} from '@/lib/admin/revenue-exclusion';
 import {
   buildGiftReferralExpenseSummaryFromRows,
   buildRevenueExpenseBreakdown,
@@ -202,7 +206,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const excludeRechargeInput = (searchParams.get('excludeRecharge') ?? '').trim();
-  const excludeMemberInput = (searchParams.get('excludeMember') ?? '1441310169492361268').trim();
+  const excludeMemberInput = (searchParams.get('excludeMember') ?? '').trim();
   const excludeRechargeRawIds = excludeRechargeInput ? parseRevenueIdentityList(excludeRechargeInput) : [];
   const excludeMemberRawIds = excludeMemberInput ? parseRevenueIdentityList(excludeMemberInput) : [];
   const [excludeRechargeResolved, excludeMemberResolved] = await Promise.all([
@@ -299,12 +303,10 @@ export async function GET(request: NextRequest) {
     },
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
-    ...(buildIdentityExclusion(
-      'jinleeId',
-      'discordId',
+    ...buildRevenueCouponIdentityExclusion(
       excludeMemberResolved.excludeJinleeIds,
       excludeMemberResolved.excludeDiscordIds,
-    ) as Prisma.CouponWhereInput),
+    ),
   };
 
   const [

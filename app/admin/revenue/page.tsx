@@ -8,7 +8,11 @@ import { formatAmountDown2 } from '@/lib/numberFormat';
 import { RevenueTimeRangeActions } from '@/components/admin/RevenueTimeRangeActions';
 import { formatDateTimeInputCentralEuropean, parseCentralEuropeanDateRange } from '@/lib/centralEuropeanDateRange';
 import { newEntityReportStart } from '@/lib/operating-entity-cutover';
-import { parseRevenueIdentityList, resolveRevenueExclusions } from '@/lib/admin/revenue-exclusion';
+import {
+  buildRevenueCouponIdentityExclusion,
+  parseRevenueIdentityList,
+  resolveRevenueExclusions,
+} from '@/lib/admin/revenue-exclusion';
 import {
   buildRevenueExpenseBreakdown,
   getGiftReferralExpenseSummary,
@@ -121,8 +125,7 @@ export default async function AdminRevenuePage(props: PageProps) {
     : searchParams.excludeMember;
 
   const excludeRechargeInput = (excludeRechargeParam ?? '').trim();
-  const excludeMemberDefault = ['1441310169492361268'].join(', ');
-  const excludeMemberInput = (excludeMemberParam ?? excludeMemberDefault).trim();
+  const excludeMemberInput = (excludeMemberParam ?? '').trim();
 
   const excludeRechargeRawIds = excludeRechargeInput ? parseRevenueIdentityList(excludeRechargeInput) : [];
   const excludeMemberRawIds = excludeMemberInput ? parseRevenueIdentityList(excludeMemberInput) : [];
@@ -417,12 +420,10 @@ export default async function AdminRevenuePage(props: PageProps) {
     },
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
-    ...(buildIdentityExclusion(
-      'jinleeId',
-      'discordId',
+    ...buildRevenueCouponIdentityExclusion(
       excludeMemberResolved.excludeJinleeIds,
       excludeMemberResolved.excludeDiscordIds,
-    ) as Prisma.CouponWhereInput),
+    ),
   };
   const [
     expenseAgg,

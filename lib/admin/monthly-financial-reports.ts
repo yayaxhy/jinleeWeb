@@ -15,7 +15,11 @@ import {
   getCentralEuropeanMonthParts,
   getPreviousCentralEuropeanMonthRange,
 } from '@/lib/centralEuropeanDateRange';
-import { parseRevenueIdentityList, resolveRevenueExclusions } from '@/lib/admin/revenue-exclusion';
+import {
+  buildRevenueCouponIdentityExclusion,
+  parseRevenueIdentityList,
+  resolveRevenueExclusions,
+} from '@/lib/admin/revenue-exclusion';
 import {
   buildGiftReferralExpenseSummaryFromRows,
   buildRevenueExpenseBreakdown,
@@ -37,7 +41,6 @@ import {
   type LotteryFusionCountBucket,
 } from '@/lib/admin/lottery-fusion-revenue';
 
-const DEFAULT_EXCLUDE_MEMBER_INPUT = '1441310169492361268';
 const DEFAULT_CAPITAL_AMOUNT = 120000;
 const REPORT_STORAGE_DIR =
   process.env.ADMIN_REVENUE_REPORT_DIR || path.join(process.cwd(), 'storage', 'admin-revenue-files');
@@ -288,7 +291,7 @@ async function loadMonthlyRevenueData(params: {
   excludeMemberInput?: string;
 }) {
   const excludeRechargeInput = (params.excludeRechargeInput ?? '').trim();
-  const excludeMemberInput = (params.excludeMemberInput ?? DEFAULT_EXCLUDE_MEMBER_INPUT).trim();
+  const excludeMemberInput = (params.excludeMemberInput ?? '').trim();
   const excludeRechargeRawIds = excludeRechargeInput ? parseRevenueIdentityList(excludeRechargeInput) : [];
   const excludeMemberRawIds = excludeMemberInput ? parseRevenueIdentityList(excludeMemberInput) : [];
   const [excludeRechargeResolved, excludeMemberResolved] = await Promise.all([
@@ -379,12 +382,10 @@ async function loadMonthlyRevenueData(params: {
     },
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
-    ...(buildIdentityExclusion(
-      'jinleeId',
-      'discordId',
+    ...buildRevenueCouponIdentityExclusion(
       excludeMemberResolved.excludeJinleeIds,
       excludeMemberResolved.excludeDiscordIds,
-    ) as Prisma.CouponWhereInput),
+    ),
   };
 
   const [
@@ -1496,7 +1497,6 @@ const loadMonthlyFinancialReportContext = async (monthKey?: string) => {
       start: target.start,
       end: target.end,
       monthKey: target.monthKey,
-      excludeMemberInput: DEFAULT_EXCLUDE_MEMBER_INPUT,
     }),
   ]);
   return { target, adjustments, data };

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export const normalizeRevenueIdentity = (raw: string) => {
@@ -121,3 +122,35 @@ export async function resolveRevenueExclusions(
     preview,
   };
 }
+
+/**
+ * Coupon rows can be associated with a Jinlee ID, a Discord ID, or both.
+ * Explicitly allow a nullable identity column here: SQL's `NOT (A OR B)`
+ * treats `B = NULL` as unknown and would otherwise filter out unrelated rows.
+ */
+export const buildRevenueCouponIdentityExclusion = (
+  excludeJinleeIds: string[],
+  excludeDiscordIds: string[],
+): Prisma.CouponWhereInput => {
+  const clauses: Prisma.CouponWhereInput[] = [];
+
+  if (excludeJinleeIds.length) {
+    clauses.push({
+      OR: [
+        { jinleeId: null },
+        { jinleeId: { notIn: excludeJinleeIds } },
+      ],
+    });
+  }
+
+  if (excludeDiscordIds.length) {
+    clauses.push({
+      OR: [
+        { discordId: null },
+        { discordId: { notIn: excludeDiscordIds } },
+      ],
+    });
+  }
+
+  return clauses.length ? { AND: clauses } : {};
+};
