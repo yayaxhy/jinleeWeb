@@ -3,14 +3,54 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSessionContext } from '@/components/SessionProvider';
+import { getBerlinDateKey } from '@/lib/opening-benefit-rules';
 
 const couponImage = '/brand/dlm-v1/prizes/13-special-9-zhe-voucher.png';
 const characterArt = '/brand/dlm-v1/operations/18-thankBoss.gif';
+const DAILY_POPUP_STORAGE_PREFIX = 'dlm-opening-benefits-popup-shown';
 
 export function OpeningBenefitsModal() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(true);
+  const { session } = useSessionContext();
+  const [open, setOpen] = useState(false);
+  const lastCheckedRef = useRef<{ key: string; shouldShow: boolean } | null>(null);
+  const viewerKey = session?.jinleeId ?? session?.discordId ?? 'guest';
+
+  useEffect(() => {
+    const dayKey = getBerlinDateKey();
+    const storageKey = `${DAILY_POPUP_STORAGE_PREFIX}:${viewerKey}`;
+    const checkKey = `${storageKey}:${dayKey}`;
+    const effectKey = `${checkKey}:${pathname}`;
+    let shouldShow = false;
+
+    if (pathname === '/opening-benefits') {
+      try {
+        window.localStorage.setItem(storageKey, dayKey);
+      } catch {
+        // Storage can be unavailable in privacy-restricted browsers. The
+        // popup remains usable for the current page load in that case.
+      }
+    } else if (lastCheckedRef.current?.key === effectKey) {
+      // React Strict Mode runs effects twice during local development. Reuse
+      // the first decision so the second run cannot suppress that first show.
+      shouldShow = lastCheckedRef.current.shouldShow;
+    } else {
+      try {
+        shouldShow = window.localStorage.getItem(storageKey) !== dayKey;
+        if (shouldShow) window.localStorage.setItem(storageKey, dayKey);
+      } catch {
+        // Fall back to one display for this page load when browser storage is
+        // disabled; normal browsers retain the once-per-day setting.
+        shouldShow = true;
+      }
+    }
+
+    lastCheckedRef.current = { key: effectKey, shouldShow };
+    const timeoutId = window.setTimeout(() => setOpen(shouldShow), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [pathname, viewerKey]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

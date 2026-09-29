@@ -48,10 +48,6 @@ const ACTUAL_SPEND_REVERSAL_TYPES = new Set([
   '红包退回',
   '优惠返利',
 ]);
-const ALL_ACTUAL_SPEND_TYPES = [
-  ...ACTUAL_SPEND_TYPES,
-  ...ACTUAL_SPEND_REVERSAL_TYPES,
-];
 type DbClient = PrismaClient | PrismaNamespace.TransactionClient;
 
 export class OpeningBenefitError extends Error {
@@ -83,17 +79,25 @@ const getEffectiveWeekStart = (now: Date) => {
     : weekStart;
 };
 
-const calculateActualSpend = (
+export const calculateActualSpend = (
   entries: Array<{
     typeOfTransaction: string;
     amountChange: Prisma.Decimal | null;
   }>,
 ) => {
   const total = entries.reduce((sum, entry) => {
-    const amount = toDecimal(entry.amountChange).abs();
-    if (ACTUAL_SPEND_TYPES.has(entry.typeOfTransaction)) return sum.add(amount);
-    if (ACTUAL_SPEND_REVERSAL_TYPES.has(entry.typeOfTransaction))
-      return sum.sub(amount);
+    const amountChange = toDecimal(entry.amountChange);
+    // Transaction labels are shared by both parties. A worker's order income,
+    // for example, is also labelled “点单”, so only a balance decrease counts
+    // as the user's spend.
+    if (ACTUAL_SPEND_TYPES.has(entry.typeOfTransaction) && amountChange.lt(0)) {
+      return sum.add(amountChange.abs());
+    }
+    // Refunds and rebates only offset spend when they credit the same user's
+    // balance; a debit with one of these labels must not reduce their spend.
+    if (ACTUAL_SPEND_REVERSAL_TYPES.has(entry.typeOfTransaction) && amountChange.gt(0)) {
+      return sum.sub(amountChange);
+    }
     return sum;
   }, new Prisma.Decimal(0));
   return total.lt(0) ? new Prisma.Decimal(0) : total;
@@ -108,7 +112,16 @@ async function getWeeklyActualSpendTx(
     where: {
       jinleeId,
       timeCreatedAt: { gte: getEffectiveWeekStart(now), lte: now },
-      typeOfTransaction: { in: ALL_ACTUAL_SPEND_TYPES },
+      OR: [
+        {
+          typeOfTransaction: { in: Array.from(ACTUAL_SPEND_TYPES) },
+          amountChange: { lt: 0 },
+        },
+        {
+          typeOfTransaction: { in: Array.from(ACTUAL_SPEND_REVERSAL_TYPES) },
+          amountChange: { gt: 0 },
+        },
+      ],
     },
     select: { typeOfTransaction: true, amountChange: true },
   });
