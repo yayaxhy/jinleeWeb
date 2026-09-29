@@ -36,7 +36,7 @@ export default async function RechargePage() {
             
             <h1 className="text-3xl font-semibold tracking-wide">余额充值</h1>
             <p className="text-sm text-gray-500">
-              网页支持支付宝与信用卡/银行卡自动充值，如需其他方式请联系客服
+              网页支持信用卡/银行卡自动充值，如需其他方式请联系客服
             </p>
           </div>
         </div>
@@ -44,7 +44,9 @@ export default async function RechargePage() {
         <RechargeClient
           username={username}
           hasPriorRecharge={hasPriorRecharge}
-          visibleChannelIds={['alipay', 'stripe']}
+          initialChannel="stripe"
+          visibleChannelIds={['stripe']}
+          paymentInstructionText="使用信用卡/银行卡完成支付，无需上传凭证。"
           stripeCurrenciesByAmount={{
             500: ['gbp', 'eur', 'usd', 'cad'],
             1000: ['gbp', 'eur', 'usd', 'cad'],
