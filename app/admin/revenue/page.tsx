@@ -407,7 +407,14 @@ export default async function AdminRevenuePage(props: PageProps) {
   };
   const couponWhere: Prisma.CouponWhereInput = {
     status: CouponStatus.USED,
-    source: { in: [CouponSource.MANUAL_GRANT, CouponSource.VIP_BENEFIT, CouponSource.CHAT_DROP] },
+    source: {
+      in: [
+        CouponSource.MANUAL_GRANT,
+        CouponSource.VIP_BENEFIT,
+        CouponSource.CHAT_DROP,
+        CouponSource.OPENING_CAMPAIGN,
+      ],
+    },
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...(buildIdentityExclusion(
@@ -477,12 +484,17 @@ export default async function AdminRevenuePage(props: PageProps) {
   const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
   const vipBenefitCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.VIP_BENEFIT);
   const chatDropCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.CHAT_DROP);
+  const openingCampaignCouponRow = couponConsumedBySource.find(
+    (row) => row.source === CouponSource.OPENING_CAMPAIGN,
+  );
   const manualGrantCouponAmount = dec(manualGrantCouponRow?._sum.consumeAmount);
   const manualGrantCouponCount = manualGrantCouponRow?._count.id ?? 0;
   const vipBenefitCouponAmount = dec(vipBenefitCouponRow?._sum.consumeAmount);
   const vipBenefitCouponCount = vipBenefitCouponRow?._count.id ?? 0;
   const chatDropCouponAmount = dec(chatDropCouponRow?._sum.consumeAmount);
   const chatDropCouponCount = chatDropCouponRow?._count.id ?? 0;
+  const openingCampaignCouponAmount = dec(openingCampaignCouponRow?._sum.consumeAmount);
+  const openingCampaignCouponCount = openingCampaignCouponRow?._count.id ?? 0;
 
   const pointShopOrderWhere: Prisma.PointShopOrderWhereInput = {
     createdAt: { gte: start, lt: end },
@@ -732,6 +744,7 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>Coupon表格金额（手动送券）：{manualGrantCouponCount}笔，¥{formatNumber(manualGrantCouponAmount, 4)}</p>
             <p>Coupon表格金额（VIP福利）：{vipBenefitCouponCount}笔，¥{formatNumber(vipBenefitCouponAmount, 4)}</p>
             <p>Coupon表格金额（彩蛋）：{chatDropCouponCount}笔，¥{formatNumber(chatDropCouponAmount, 4)}</p>
+            <p>Coupon表格金额（开业活动）：{openingCampaignCouponCount}笔，¥{formatNumber(openingCampaignCouponAmount, 4)}</p>
             <p>总扣款金额(收入）：¥{formatNumber(pureProfitAgg._sum.amount, 4)}</p>
           </div>
           <div className="space-y-1 text-sm text-white/70">

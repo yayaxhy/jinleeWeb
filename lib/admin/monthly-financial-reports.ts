@@ -369,7 +369,14 @@ async function loadMonthlyRevenueData(params: {
   };
   const couponWhere: Prisma.CouponWhereInput = {
     status: CouponStatus.USED,
-    source: { in: [CouponSource.MANUAL_GRANT, CouponSource.VIP_BENEFIT, CouponSource.CHAT_DROP] },
+    source: {
+      in: [
+        CouponSource.MANUAL_GRANT,
+        CouponSource.VIP_BENEFIT,
+        CouponSource.CHAT_DROP,
+        CouponSource.OPENING_CAMPAIGN,
+      ],
+    },
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...(buildIdentityExclusion(
@@ -639,12 +646,17 @@ async function loadMonthlyRevenueData(params: {
   const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
   const vipBenefitCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.VIP_BENEFIT);
   const chatDropCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.CHAT_DROP);
+  const openingCampaignCouponRow = couponConsumedBySource.find(
+    (row) => row.source === CouponSource.OPENING_CAMPAIGN,
+  );
   const manualGrantCouponAmount = dec(manualGrantCouponRow?._sum.consumeAmount);
   const manualGrantCouponCount = manualGrantCouponRow?._count.id ?? 0;
   const vipBenefitCouponAmount = dec(vipBenefitCouponRow?._sum.consumeAmount);
   const vipBenefitCouponCount = vipBenefitCouponRow?._count.id ?? 0;
   const chatDropCouponAmount = dec(chatDropCouponRow?._sum.consumeAmount);
   const chatDropCouponCount = chatDropCouponRow?._count.id ?? 0;
+  const openingCampaignCouponAmount = dec(openingCampaignCouponRow?._sum.consumeAmount);
+  const openingCampaignCouponCount = openingCampaignCouponRow?._count.id ?? 0;
   const expenseByReasonMap = new Map<string, { count: number; amount: Prisma.Decimal }>();
   for (const row of expenseRows) {
     const key = String(row.reason ?? '未分类');
@@ -762,6 +774,8 @@ async function loadMonthlyRevenueData(params: {
       vipBenefitCouponCount,
       chatDropCouponAmount,
       chatDropCouponCount,
+      openingCampaignCouponAmount,
+      openingCampaignCouponCount,
       manualIncomeAdjustment,
     },
     summaries: {
@@ -1274,6 +1288,7 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
     { section: 'rows', key: 'Coupon(used MANUAL_GRANT)', value: data.totals.manualGrantCouponCount },
     { section: 'rows', key: 'Coupon(used VIP_BENEFIT)', value: data.totals.vipBenefitCouponCount },
     { section: 'rows', key: 'Coupon(used CHAT_DROP)', value: data.totals.chatDropCouponCount },
+    { section: 'rows', key: 'Coupon(used OPENING_CAMPAIGN)', value: data.totals.openingCampaignCouponCount },
   ]);
 
   addKeyValueSheet(workbook, '收益汇总', [
@@ -1330,6 +1345,8 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（VIP福利）', value: data.totals.vipBenefitCouponCount },
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格金额（彩蛋）', value: data.totals.chatDropCouponAmount.toString() },
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（彩蛋）', value: data.totals.chatDropCouponCount },
+    { section: '支出记录(Expense + 邀请)', key: 'Coupon表格金额（开业活动）', value: data.totals.openingCampaignCouponAmount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（开业活动）', value: data.totals.openingCampaignCouponCount },
     { section: '抽成详情', key: '打赏面值流水', value: data.totals.giftGrossNet.toString() },
     { section: '抽成详情', key: '打赏实付流水', value: data.totals.giftPaidNet.toString() },
     { section: '抽成详情', key: '打赏抽成', value: data.totals.giftFeeNet.toString() },
