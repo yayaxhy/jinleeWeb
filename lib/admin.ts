@@ -5,6 +5,7 @@ const ADMIN_DISCORD_IDS: readonly string[] = [
   '1552030874076315777',
   '308164614846414851',
   '734159747367829636',
+  '1030152342919716904',
 ];
 const KEFU_DISCORD_IDS: readonly string[] = [];
 const PEIWAN_INFO_ADMIN_DISCORD_IDS: readonly string[] = [];

@@ -82,21 +82,26 @@ const getEffectiveWeekStart = (now: Date) => {
 export const calculateActualSpend = (
   entries: Array<{
     typeOfTransaction: string;
-    amountChange: Prisma.Decimal | null;
+    balanceBefore: Prisma.Decimal | null;
+    balanceAfter: Prisma.Decimal | null;
   }>,
 ) => {
   const total = entries.reduce((sum, entry) => {
-    const amountChange = toDecimal(entry.amountChange);
+    // `amountChange` is stored as a positive magnitude for both credits and
+    // debits. The wallet balance delta is the reliable source of direction.
+    const balanceDelta = toDecimal(entry.balanceAfter).sub(
+      toDecimal(entry.balanceBefore),
+    );
     // Transaction labels are shared by both parties. A worker's order income,
     // for example, is also labelled “点单”, so only a balance decrease counts
     // as the user's spend.
-    if (ACTUAL_SPEND_TYPES.has(entry.typeOfTransaction) && amountChange.lt(0)) {
-      return sum.add(amountChange.abs());
+    if (ACTUAL_SPEND_TYPES.has(entry.typeOfTransaction) && balanceDelta.lt(0)) {
+      return sum.add(balanceDelta.abs());
     }
     // Refunds and rebates only offset spend when they credit the same user's
     // balance; a debit with one of these labels must not reduce their spend.
-    if (ACTUAL_SPEND_REVERSAL_TYPES.has(entry.typeOfTransaction) && amountChange.gt(0)) {
-      return sum.sub(amountChange);
+    if (ACTUAL_SPEND_REVERSAL_TYPES.has(entry.typeOfTransaction) && balanceDelta.gt(0)) {
+      return sum.sub(balanceDelta);
     }
     return sum;
   }, new Prisma.Decimal(0));
@@ -112,18 +117,18 @@ async function getWeeklyActualSpendTx(
     where: {
       jinleeId,
       timeCreatedAt: { gte: getEffectiveWeekStart(now), lte: now },
-      OR: [
-        {
-          typeOfTransaction: { in: Array.from(ACTUAL_SPEND_TYPES) },
-          amountChange: { lt: 0 },
-        },
-        {
-          typeOfTransaction: { in: Array.from(ACTUAL_SPEND_REVERSAL_TYPES) },
-          amountChange: { gt: 0 },
-        },
-      ],
+      typeOfTransaction: {
+        in: [
+          ...ACTUAL_SPEND_TYPES,
+          ...ACTUAL_SPEND_REVERSAL_TYPES,
+        ],
+      },
     },
-    select: { typeOfTransaction: true, amountChange: true },
+    select: {
+      typeOfTransaction: true,
+      balanceBefore: true,
+      balanceAfter: true,
+    },
   });
   return calculateActualSpend(entries);
 }

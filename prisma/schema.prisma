@@ -1260,6 +1260,36 @@ model PEIWAN {
   @@index([status])
 }
 
+// Records the per-channel cursor used by the admin-operated DLM namecard sync.
+// Keeping the cursor in the database avoids rescanning the two source channels
+// after the first historical pass.
+model PeiwanCardSyncCheckpoint {
+  sourceChannelId        String   @id
+  lastProcessedMessageId String?
+  lastProcessedAt        DateTime?
+  lastRunAt              DateTime @default(now())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+// Audit trail for every source image message handled by the DLM namecard sync.
+// `imageUrl` shows exactly which namecard was selected or skipped.
+model PeiwanCardSyncLog {
+  id              String   @id @default(cuid())
+  sourceChannelId String
+  sourceMessageId String
+  sourceTimestamp DateTime
+  peiwanId        Int?
+  action          String
+  detail          String?
+  imageUrl        String?
+  createdAt       DateTime @default(now())
+
+  @@unique([sourceChannelId, sourceMessageId])
+  @@index([peiwanId, sourceTimestamp])
+  @@index([sourceChannelId, sourceTimestamp])
+}
+
 model PeiwanGameProfile {
   id            String         @id @default(cuid())
   peiwanId      Int

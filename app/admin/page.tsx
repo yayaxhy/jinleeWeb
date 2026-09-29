@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AdminPeiwanActions } from '@/components/admin/AdminPeiwanActions';
 import { DeletePeiwanCard } from '@/components/admin/DeletePeiwanCard';
+import { SyncDlmPeiwanCardsCard } from '@/components/admin/SyncDlmPeiwanCardsCard';
 import { SyncAllPeiwanTagsCard } from '@/components/admin/SyncAllPeiwanTagsCard';
 import { getServerSession } from '@/lib/session';
 import { canViewAdminHome, canViewStripePricing, canViewTraffic, isAdminDiscordId } from '@/lib/admin';
@@ -398,8 +399,9 @@ export default async function AdminHomePage() {
       </div>
 
       <AdminPeiwanActions />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
         <SyncAllPeiwanTagsCard />
+        <SyncDlmPeiwanCardsCard />
         <DeletePeiwanCard />
       </div>
       <p className="text-xs text-white/60">
