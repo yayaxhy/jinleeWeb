@@ -586,6 +586,17 @@ export async function GET(request: NextRequest) {
     ),
     syntheticRows: [giftReferralExpenseRow, orderReferralExpenseRow, inviteRewardExpenseRow],
   });
+  const couponExpenseAmount = manualGrantCouponAmount
+    .add(vipBenefitCouponAmount)
+    .add(chatDropCouponAmount)
+    .add(openingCampaignCouponAmount);
+  const couponExpenseCount =
+    manualGrantCouponCount +
+    vipBenefitCouponCount +
+    chatDropCouponCount +
+    openingCampaignCouponCount;
+  const totalExpenseAmount = expenseBreakdown.totalAmount.add(couponExpenseAmount);
+  const totalExpenseCount = expenseBreakdown.totalCount + couponExpenseCount;
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'DLMClub admin';
@@ -687,6 +698,8 @@ export async function GET(request: NextRequest) {
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（彩蛋）', value: chatDropCouponCount },
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格金额（开业活动）', value: openingCampaignCouponAmount.toString() },
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（开业活动）', value: openingCampaignCouponCount },
+    { section: '支出记录(Expense + 邀请)', key: '总支出', value: totalExpenseAmount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: '总支出笔数', value: totalExpenseCount },
 
     { section: '抽成详情', key: '打赏面值流水', value: giftGrossNet.toString() },
     { section: '抽成详情', key: '打赏实付流水', value: giftPaidNet.toString() },

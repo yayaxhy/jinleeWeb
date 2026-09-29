@@ -496,6 +496,17 @@ export default async function AdminRevenuePage(props: PageProps) {
   const chatDropCouponCount = chatDropCouponRow?._count.id ?? 0;
   const openingCampaignCouponAmount = dec(openingCampaignCouponRow?._sum.consumeAmount);
   const openingCampaignCouponCount = openingCampaignCouponRow?._count.id ?? 0;
+  const couponExpenseAmount = manualGrantCouponAmount
+    .add(vipBenefitCouponAmount)
+    .add(chatDropCouponAmount)
+    .add(openingCampaignCouponAmount);
+  const couponExpenseCount =
+    manualGrantCouponCount +
+    vipBenefitCouponCount +
+    chatDropCouponCount +
+    openingCampaignCouponCount;
+  const totalExpenseAmount = expenseBreakdown.totalAmount.add(couponExpenseAmount);
+  const totalExpenseCount = expenseBreakdown.totalCount + couponExpenseCount;
 
   const pointShopOrderWhere: Prisma.PointShopOrderWhereInput = {
     createdAt: { gte: start, lt: end },
@@ -746,6 +757,7 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>Coupon表格金额（VIP福利）：{vipBenefitCouponCount}笔，¥{formatNumber(vipBenefitCouponAmount, 4)}</p>
             <p>Coupon表格金额（彩蛋）：{chatDropCouponCount}笔，¥{formatNumber(chatDropCouponAmount, 4)}</p>
             <p>Coupon表格金额（开业活动）：{openingCampaignCouponCount}笔，¥{formatNumber(openingCampaignCouponAmount, 4)}</p>
+            <p className="font-semibold text-white">总支出：{totalExpenseCount}笔，¥{formatNumber(totalExpenseAmount, 4)}</p>
             <p>总扣款金额(收入）：¥{formatNumber(pureProfitAgg._sum.amount, 4)}</p>
           </div>
           <div className="space-y-1 text-sm text-white/70">

@@ -684,6 +684,17 @@ async function loadMonthlyRevenueData(params: {
     ),
     syntheticRows: [giftReferralExpenseRow, orderReferralExpenseRow, inviteRewardExpenseRow],
   });
+  const couponExpenseAmount = manualGrantCouponAmount
+    .add(vipBenefitCouponAmount)
+    .add(chatDropCouponAmount)
+    .add(openingCampaignCouponAmount);
+  const couponExpenseCount =
+    manualGrantCouponCount +
+    vipBenefitCouponCount +
+    chatDropCouponCount +
+    openingCampaignCouponCount;
+  const totalExpenseAmount = expenseBreakdown.totalAmount.add(couponExpenseAmount);
+  const totalExpenseCount = expenseBreakdown.totalCount + couponExpenseCount;
   const manualIncomeAdjustment = dec(pureProfitAgg._sum.amount);
 
   return {
@@ -777,6 +788,8 @@ async function loadMonthlyRevenueData(params: {
       chatDropCouponCount,
       openingCampaignCouponAmount,
       openingCampaignCouponCount,
+      totalExpenseAmount,
+      totalExpenseCount,
       manualIncomeAdjustment,
     },
     summaries: {
@@ -1348,6 +1361,8 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（彩蛋）', value: data.totals.chatDropCouponCount },
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格金额（开业活动）', value: data.totals.openingCampaignCouponAmount.toString() },
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（开业活动）', value: data.totals.openingCampaignCouponCount },
+    { section: '支出记录(Expense + 邀请)', key: '总支出', value: data.totals.totalExpenseAmount.toString() },
+    { section: '支出记录(Expense + 邀请)', key: '总支出笔数', value: data.totals.totalExpenseCount },
     { section: '抽成详情', key: '打赏面值流水', value: data.totals.giftGrossNet.toString() },
     { section: '抽成详情', key: '打赏实付流水', value: data.totals.giftPaidNet.toString() },
     { section: '抽成详情', key: '打赏抽成', value: data.totals.giftFeeNet.toString() },
