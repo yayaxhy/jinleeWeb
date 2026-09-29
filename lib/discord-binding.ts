@@ -13,13 +13,13 @@ export class ChannelBindingError extends Error {
   }
 }
 
-const jinleeUserWithMemberAndBindings = {
+const dlmUserWithMemberAndBindings = {
   member: true,
   accountBindings: true,
-} satisfies Prisma.JinleeUserInclude;
+} satisfies Prisma.DlmUserInclude;
 
-export type JinleeUserBindingSnapshot = Prisma.JinleeUserGetPayload<{
-  include: typeof jinleeUserWithMemberAndBindings;
+export type DlmUserBindingSnapshot = Prisma.DlmUserGetPayload<{
+  include: typeof dlmUserWithMemberAndBindings;
 }>;
 
 const mergeWalletField = (
@@ -36,15 +36,15 @@ const pickPreferred = (current?: string | null, fallback?: string | null) => {
 async function mergeOpenPointShopCartsTx(
   tx: Prisma.TransactionClient,
   params: {
-    canonicalJinleeId: string;
-    incomingJinleeId: string;
+    canonicalDlmId: string;
+    incomingDlmId: string;
     canonicalDiscordUserId?: string | null;
   },
 ) {
   const [canonicalOpenCart, incomingOpenCart] = await Promise.all([
     tx.pointShopCart.findFirst({
       where: {
-        jinleeId: params.canonicalJinleeId,
+        dlmId: params.canonicalDlmId,
         status: PointShopCartStatus.OPEN,
       },
       orderBy: { updatedAt: 'desc' },
@@ -52,7 +52,7 @@ async function mergeOpenPointShopCartsTx(
     }),
     tx.pointShopCart.findFirst({
       where: {
-        jinleeId: params.incomingJinleeId,
+        dlmId: params.incomingDlmId,
         status: PointShopCartStatus.OPEN,
       },
       orderBy: { updatedAt: 'desc' },
@@ -68,7 +68,7 @@ async function mergeOpenPointShopCartsTx(
     await tx.pointShopCart.update({
       where: { id: incomingOpenCart.id },
       data: {
-        jinleeId: params.canonicalJinleeId,
+        dlmId: params.canonicalDlmId,
         discordUserId: params.canonicalDiscordUserId ?? null,
       },
     });
@@ -137,18 +137,18 @@ async function mergeOpenPointShopCartsTx(
 async function mergeLotteryPityTx(
   tx: Prisma.TransactionClient,
   params: {
-    canonicalJinleeId: string;
-    incomingJinleeId: string;
+    canonicalDlmId: string;
+    incomingDlmId: string;
     canonicalDiscordUserId?: string | null;
   },
 ) {
   const [canonicalPity, incomingPity] = await Promise.all([
     tx.lotteryPity.findUnique({
-      where: { jinleeId: params.canonicalJinleeId },
+      where: { dlmId: params.canonicalDlmId },
       select: { missCount: true },
     }),
     tx.lotteryPity.findUnique({
-      where: { jinleeId: params.incomingJinleeId },
+      where: { dlmId: params.incomingDlmId },
       select: { missCount: true },
     }),
   ]);
@@ -159,7 +159,7 @@ async function mergeLotteryPityTx(
 
   if (canonicalPity) {
     await tx.lotteryPity.update({
-      where: { jinleeId: params.canonicalJinleeId },
+      where: { dlmId: params.canonicalDlmId },
       data: {
         missCount: canonicalPity.missCount + incomingPity.missCount,
         userId: params.canonicalDiscordUserId ?? undefined,
@@ -167,28 +167,28 @@ async function mergeLotteryPityTx(
     });
 
     await tx.lotteryPity.delete({
-      where: { jinleeId: params.incomingJinleeId },
+      where: { dlmId: params.incomingDlmId },
     });
     return;
   }
 
   await tx.lotteryPity.create({
     data: {
-      jinleeId: params.canonicalJinleeId,
+      dlmId: params.canonicalDlmId,
       userId: params.canonicalDiscordUserId ?? null,
       missCount: incomingPity.missCount,
     },
   });
 
   await tx.lotteryPity.delete({
-    where: { jinleeId: params.incomingJinleeId },
+    where: { dlmId: params.incomingDlmId },
   });
 }
 
 async function syncDiscordMirrorDataTx(
   tx: Prisma.TransactionClient,
   params: {
-    jinleeId: string;
+    dlmId: string;
     discordUserId: string;
     discordDisplayName?: string | null;
     discordAvatarUrl?: string | null;
@@ -235,11 +235,11 @@ async function syncDiscordMirrorDataTx(
     where: { discordUserId: params.discordUserId },
     create: {
       discordUserId: params.discordUserId,
-      jinleeId: params.jinleeId,
+      dlmId: params.dlmId,
       points: params.mergedWallet.loyaltyPoints,
     },
     update: {
-      jinleeId: params.jinleeId,
+      dlmId: params.dlmId,
       points: params.mergedWallet.loyaltyPoints,
     },
   });
@@ -248,13 +248,13 @@ async function syncDiscordMirrorDataTx(
     where: { discordUserId: params.discordUserId },
     create: {
       discordUserId: params.discordUserId,
-      jinleeId: params.jinleeId,
+      dlmId: params.dlmId,
       account1: params.mergedWithdrawAccounts.withdrawAccount1,
       account2: params.mergedWithdrawAccounts.withdrawAccount2,
       account3: params.mergedWithdrawAccounts.withdrawAccount3,
     },
     update: {
-      jinleeId: params.jinleeId,
+      dlmId: params.dlmId,
       account1: params.mergedWithdrawAccounts.withdrawAccount1,
       account2: params.mergedWithdrawAccounts.withdrawAccount2,
       account3: params.mergedWithdrawAccounts.withdrawAccount3,
@@ -269,31 +269,31 @@ async function syncDiscordMirrorDataTx(
       },
     },
     create: {
-      jinleeId: params.jinleeId,
+      dlmId: params.dlmId,
       provider: AccountProvider.DISCORD,
       providerUserId: params.discordUserId,
       lastLoginAt: new Date(),
       ...(params.discordProfile !== undefined ? { profile: params.discordProfile } : {}),
     },
     update: {
-      jinleeId: params.jinleeId,
+      dlmId: params.dlmId,
       lastLoginAt: new Date(),
       ...(params.discordProfile !== undefined ? { profile: params.discordProfile } : {}),
     },
   });
 }
 
-export async function mergeWechatProgramJinleeUserIntoDiscordJinleeUser(params: {
-  sourceJinleeId: string;
-  targetWechatJinleeId: string;
+export async function mergeWechatProgramDlmUserIntoDiscordDlmUser(params: {
+  sourceDlmId: string;
+  targetWechatDlmId: string;
   discordUserId: string;
   discordDisplayName?: string | null;
   discordAvatarUrl?: string | null;
   discordProfile?: Prisma.InputJsonValue;
 }) {
-  return mergeWechatProgramJinleeUserIntoJinleeUser({
-    canonicalJinleeId: params.sourceJinleeId,
-    incomingWechatJinleeId: params.targetWechatJinleeId,
+  return mergeWechatProgramDlmUserIntoDlmUser({
+    canonicalDlmId: params.sourceDlmId,
+    incomingWechatDlmId: params.targetWechatDlmId,
     discordUserId: params.discordUserId,
     discordDisplayName: params.discordDisplayName,
     discordAvatarUrl: params.discordAvatarUrl,
@@ -301,39 +301,39 @@ export async function mergeWechatProgramJinleeUserIntoDiscordJinleeUser(params: 
   });
 }
 
-export async function mergeWechatProgramJinleeUserIntoJinleeUser(params: {
-  canonicalJinleeId: string;
-  incomingWechatJinleeId: string;
+export async function mergeWechatProgramDlmUserIntoDlmUser(params: {
+  canonicalDlmId: string;
+  incomingWechatDlmId: string;
   discordUserId?: string | null;
   discordDisplayName?: string | null;
   discordAvatarUrl?: string | null;
   discordProfile?: Prisma.InputJsonValue;
 }) {
   return prisma.$transaction(async (tx) => {
-    const [canonicalJinleeUser, incomingJinleeUser] = await Promise.all([
-      tx.jinleeUser.findUnique({
-        where: { jinleeId: params.canonicalJinleeId },
-        include: jinleeUserWithMemberAndBindings,
+    const [canonicalDlmUser, incomingDlmUser] = await Promise.all([
+      tx.dlmUser.findUnique({
+        where: { dlmId: params.canonicalDlmId },
+        include: dlmUserWithMemberAndBindings,
       }),
-      tx.jinleeUser.findUnique({
-        where: { jinleeId: params.incomingWechatJinleeId },
-        include: jinleeUserWithMemberAndBindings,
+      tx.dlmUser.findUnique({
+        where: { dlmId: params.incomingWechatDlmId },
+        include: dlmUserWithMemberAndBindings,
       }),
     ]);
 
-    if (!canonicalJinleeUser) {
+    if (!canonicalDlmUser) {
       throw new ChannelBindingError('canonical_user_not_found');
     }
 
-    if (!incomingJinleeUser) {
+    if (!incomingDlmUser) {
       throw new ChannelBindingError('wechat_user_not_found');
     }
 
-    if (canonicalJinleeUser.jinleeId === incomingJinleeUser.jinleeId) {
-      return canonicalJinleeUser;
+    if (canonicalDlmUser.dlmId === incomingDlmUser.dlmId) {
+      return canonicalDlmUser;
     }
 
-    const incomingWechatBindings = incomingJinleeUser.accountBindings.filter(
+    const incomingWechatBindings = incomingDlmUser.accountBindings.filter(
       (binding) => binding.provider === AccountProvider.WECHAT_MINIPROGRAM,
     );
 
@@ -341,7 +341,7 @@ export async function mergeWechatProgramJinleeUserIntoJinleeUser(params: {
       throw new ChannelBindingError('wechat_binding_not_found');
     }
 
-    const conflictingWechatBinding = canonicalJinleeUser.accountBindings.find(
+    const conflictingWechatBinding = canonicalDlmUser.accountBindings.find(
       (binding) =>
         binding.provider === AccountProvider.WECHAT_MINIPROGRAM &&
         !incomingWechatBindings.some(
@@ -350,158 +350,158 @@ export async function mergeWechatProgramJinleeUserIntoJinleeUser(params: {
     );
 
     if (conflictingWechatBinding) {
-      throw new ChannelBindingError('jinlee_user_already_bound_to_other_wechat');
+      throw new ChannelBindingError('dlm_user_already_bound_to_other_wechat');
     }
 
-    const canonicalDiscordUserId = params.discordUserId ?? canonicalJinleeUser.discordUserId ?? null;
+    const canonicalDiscordUserId = params.discordUserId ?? canonicalDlmUser.discordUserId ?? null;
     const canonicalDiscordDisplayName =
       params.discordDisplayName ??
-      canonicalJinleeUser.discordDisplayName ??
-      canonicalJinleeUser.member?.serverDisplayName ??
+      canonicalDlmUser.discordDisplayName ??
+      canonicalDlmUser.member?.serverDisplayName ??
       null;
-    const canonicalDiscordAvatarUrl = params.discordAvatarUrl ?? canonicalJinleeUser.discordAvatarUrl ?? null;
+    const canonicalDiscordAvatarUrl = params.discordAvatarUrl ?? canonicalDlmUser.discordAvatarUrl ?? null;
 
     await mergeOpenPointShopCartsTx(tx, {
-      canonicalJinleeId: canonicalJinleeUser.jinleeId,
-      incomingJinleeId: incomingJinleeUser.jinleeId,
+      canonicalDlmId: canonicalDlmUser.dlmId,
+      incomingDlmId: incomingDlmUser.dlmId,
       canonicalDiscordUserId,
     });
 
     await Promise.all([
       tx.wechatProgramSession.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.accountBinding.updateMany({
         where: {
-          jinleeId: incomingJinleeUser.jinleeId,
+          dlmId: incomingDlmUser.dlmId,
           provider: {
             not: AccountProvider.DISCORD,
           },
         },
         data: {
-          jinleeId: canonicalJinleeUser.jinleeId,
+          dlmId: canonicalDlmUser.dlmId,
           lastLoginAt: new Date(),
         },
       }),
       tx.order.updateMany({
-        where: { hostJinleeId: incomingJinleeUser.jinleeId },
-        data: { hostJinleeId: canonicalJinleeUser.jinleeId },
+        where: { hostDlmId: incomingDlmUser.dlmId },
+        data: { hostDlmId: canonicalDlmUser.dlmId },
       }),
       tx.orderAudit.updateMany({
-        where: { hostJinleeId: incomingJinleeUser.jinleeId },
-        data: { hostJinleeId: canonicalJinleeUser.jinleeId },
+        where: { hostDlmId: incomingDlmUser.dlmId },
+        data: { hostDlmId: canonicalDlmUser.dlmId },
       }),
       tx.orderAudit.updateMany({
-        where: { workerJinleeId: incomingJinleeUser.jinleeId },
-        data: { workerJinleeId: canonicalJinleeUser.jinleeId },
+        where: { workerDlmId: incomingDlmUser.dlmId },
+        data: { workerDlmId: canonicalDlmUser.dlmId },
       }),
       tx.zPayRechargeOrder.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.stripePayment.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.wechatNativePayment.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.recharge.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.withdraw.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.individualTransaction.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.coupon.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.coupon.updateMany({
-        where: { consumeTargetJinleeId: incomingJinleeUser.jinleeId },
-        data: { consumeTargetJinleeId: canonicalJinleeUser.jinleeId },
+        where: { consumeTargetDlmId: incomingDlmUser.dlmId },
+        data: { consumeTargetDlmId: canonicalDlmUser.dlmId },
       }),
       tx.transaction.updateMany({
-        where: { fromJinleeId: incomingJinleeUser.jinleeId },
-        data: { fromJinleeId: canonicalJinleeUser.jinleeId },
+        where: { fromDlmId: incomingDlmUser.dlmId },
+        data: { fromDlmId: canonicalDlmUser.dlmId },
       }),
       tx.transaction.updateMany({
-        where: { toJinleeId: incomingJinleeUser.jinleeId },
-        data: { toJinleeId: canonicalJinleeUser.jinleeId },
+        where: { toDlmId: incomingDlmUser.dlmId },
+        data: { toDlmId: canonicalDlmUser.dlmId },
       }),
       tx.commission.updateMany({
-        where: { fromJinleeId: incomingJinleeUser.jinleeId },
-        data: { fromJinleeId: canonicalJinleeUser.jinleeId },
+        where: { fromDlmId: incomingDlmUser.dlmId },
+        data: { fromDlmId: canonicalDlmUser.dlmId },
       }),
       tx.commission.updateMany({
-        where: { toJinleeId: incomingJinleeUser.jinleeId },
-        data: { toJinleeId: canonicalJinleeUser.jinleeId },
+        where: { toDlmId: incomingDlmUser.dlmId },
+        data: { toDlmId: canonicalDlmUser.dlmId },
       }),
       tx.lotteryDraw.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.lotteryDraw.updateMany({
-        where: { consumeTargetJinleeId: incomingJinleeUser.jinleeId },
-        data: { consumeTargetJinleeId: canonicalJinleeUser.jinleeId },
+        where: { consumeTargetDlmId: incomingDlmUser.dlmId },
+        data: { consumeTargetDlmId: canonicalDlmUser.dlmId },
       }),
       tx.pointShopCart.updateMany({
         where: {
-          jinleeId: incomingJinleeUser.jinleeId,
+          dlmId: incomingDlmUser.dlmId,
           status: {
             not: PointShopCartStatus.OPEN,
           },
         },
         data: {
-          jinleeId: canonicalJinleeUser.jinleeId,
+          dlmId: canonicalDlmUser.dlmId,
           discordUserId: canonicalDiscordUserId,
         },
       }),
       tx.pointShopOrder.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.pointShopGrant.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
       tx.pointShopGrant.updateMany({
-        where: { consumeTargetJinleeId: incomingJinleeUser.jinleeId },
-        data: { consumeTargetJinleeId: canonicalJinleeUser.jinleeId },
+        where: { consumeTargetDlmId: incomingDlmUser.dlmId },
+        data: { consumeTargetDlmId: canonicalDlmUser.dlmId },
       }),
       tx.pointShopPointLedger.updateMany({
-        where: { jinleeId: incomingJinleeUser.jinleeId },
-        data: { jinleeId: canonicalJinleeUser.jinleeId },
+        where: { dlmId: incomingDlmUser.dlmId },
+        data: { dlmId: canonicalDlmUser.dlmId },
       }),
     ]);
 
     await mergeLotteryPityTx(tx, {
-      canonicalJinleeId: canonicalJinleeUser.jinleeId,
-      incomingJinleeId: incomingJinleeUser.jinleeId,
+      canonicalDlmId: canonicalDlmUser.dlmId,
+      incomingDlmId: incomingDlmUser.dlmId,
       canonicalDiscordUserId,
     });
 
     const canonicalWallet = {
-      totalBalance: DEC(canonicalJinleeUser.member?.totalBalance ?? canonicalJinleeUser.totalBalance),
-      income: DEC(canonicalJinleeUser.member?.income ?? canonicalJinleeUser.income),
-      recharge: DEC(canonicalJinleeUser.member?.recharge ?? canonicalJinleeUser.recharge),
-      totalSpent: DEC(canonicalJinleeUser.member?.totalSpent ?? canonicalJinleeUser.totalSpent),
-      loyaltyPoints: DEC(canonicalJinleeUser.loyaltyPoints),
+      totalBalance: DEC(canonicalDlmUser.member?.totalBalance ?? canonicalDlmUser.totalBalance),
+      income: DEC(canonicalDlmUser.member?.income ?? canonicalDlmUser.income),
+      recharge: DEC(canonicalDlmUser.member?.recharge ?? canonicalDlmUser.recharge),
+      totalSpent: DEC(canonicalDlmUser.member?.totalSpent ?? canonicalDlmUser.totalSpent),
+      loyaltyPoints: DEC(canonicalDlmUser.loyaltyPoints),
     };
 
     const incomingWallet = {
-      totalBalance: DEC(incomingJinleeUser.totalBalance),
-      income: DEC(incomingJinleeUser.income),
-      recharge: DEC(incomingJinleeUser.recharge),
-      totalSpent: DEC(incomingJinleeUser.totalSpent),
-      loyaltyPoints: DEC(incomingJinleeUser.loyaltyPoints),
+      totalBalance: DEC(incomingDlmUser.totalBalance),
+      income: DEC(incomingDlmUser.income),
+      recharge: DEC(incomingDlmUser.recharge),
+      totalSpent: DEC(incomingDlmUser.totalSpent),
+      loyaltyPoints: DEC(incomingDlmUser.loyaltyPoints),
     };
 
     const mergedWallet = {
@@ -514,43 +514,43 @@ export async function mergeWechatProgramJinleeUserIntoJinleeUser(params: {
 
     const mergedWithdrawAccounts = {
       withdrawAccount1: pickPreferred(
-        canonicalJinleeUser.withdrawAccount1,
-        incomingJinleeUser.withdrawAccount1,
+        canonicalDlmUser.withdrawAccount1,
+        incomingDlmUser.withdrawAccount1,
       ),
       withdrawAccount2: pickPreferred(
-        canonicalJinleeUser.withdrawAccount2,
-        incomingJinleeUser.withdrawAccount2,
+        canonicalDlmUser.withdrawAccount2,
+        incomingDlmUser.withdrawAccount2,
       ),
       withdrawAccount3: pickPreferred(
-        canonicalJinleeUser.withdrawAccount3,
-        incomingJinleeUser.withdrawAccount3,
+        canonicalDlmUser.withdrawAccount3,
+        incomingDlmUser.withdrawAccount3,
       ),
     };
 
     if (canonicalDiscordUserId) {
       await syncDiscordMirrorDataTx(tx, {
-        jinleeId: canonicalJinleeUser.jinleeId,
+        dlmId: canonicalDlmUser.dlmId,
         discordUserId: canonicalDiscordUserId,
         discordDisplayName: canonicalDiscordDisplayName,
         discordAvatarUrl: canonicalDiscordAvatarUrl,
         discordProfile: params.discordProfile,
         mergedWallet,
         mergedWithdrawAccounts,
-        fallbackMemberDisplayName: canonicalJinleeUser.member?.serverDisplayName ?? null,
+        fallbackMemberDisplayName: canonicalDlmUser.member?.serverDisplayName ?? null,
       });
     }
 
-    await tx.jinleeUser.update({
-      where: { jinleeId: canonicalJinleeUser.jinleeId },
+    await tx.dlmUser.update({
+      where: { dlmId: canonicalDlmUser.dlmId },
       data: {
         discordUserId: canonicalDiscordUserId,
         discordDisplayName: canonicalDiscordDisplayName,
         discordAvatarUrl: canonicalDiscordAvatarUrl,
         wechatDisplayName: pickPreferred(
-          canonicalJinleeUser.wechatDisplayName,
-          incomingJinleeUser.wechatDisplayName,
+          canonicalDlmUser.wechatDisplayName,
+          incomingDlmUser.wechatDisplayName,
         ),
-        wechatAvatarUrl: pickPreferred(canonicalJinleeUser.wechatAvatarUrl, incomingJinleeUser.wechatAvatarUrl),
+        wechatAvatarUrl: pickPreferred(canonicalDlmUser.wechatAvatarUrl, incomingDlmUser.wechatAvatarUrl),
         totalBalance: mergedWallet.totalBalance,
         income: mergedWallet.income,
         recharge: mergedWallet.recharge,
@@ -560,32 +560,32 @@ export async function mergeWechatProgramJinleeUserIntoJinleeUser(params: {
       },
     });
 
-    await tx.jinleeUser.delete({
-      where: { jinleeId: incomingJinleeUser.jinleeId },
+    await tx.dlmUser.delete({
+      where: { dlmId: incomingDlmUser.dlmId },
     });
 
-    return tx.jinleeUser.findUniqueOrThrow({
-      where: { jinleeId: canonicalJinleeUser.jinleeId },
-      include: jinleeUserWithMemberAndBindings,
+    return tx.dlmUser.findUniqueOrThrow({
+      where: { dlmId: canonicalDlmUser.dlmId },
+      include: dlmUserWithMemberAndBindings,
     });
   });
 }
 
-export async function unbindJinleeUserChannel(params: {
-  jinleeId: string;
+export async function unbindDlmUserChannel(params: {
+  dlmId: string;
   provider: AccountProvider;
 }) {
   return prisma.$transaction(async (tx) => {
-    const jinleeUser = await tx.jinleeUser.findUnique({
-      where: { jinleeId: params.jinleeId },
-      include: jinleeUserWithMemberAndBindings,
+    const dlmUser = await tx.dlmUser.findUnique({
+      where: { dlmId: params.dlmId },
+      include: dlmUserWithMemberAndBindings,
     });
 
-    if (!jinleeUser) {
-      throw new ChannelBindingError('jinlee_user_not_found');
+    if (!dlmUser) {
+      throw new ChannelBindingError('dlm_user_not_found');
     }
 
-    const bindingsForProvider = jinleeUser.accountBindings.filter(
+    const bindingsForProvider = dlmUser.accountBindings.filter(
       (binding) => binding.provider === params.provider,
     );
 
@@ -593,37 +593,37 @@ export async function unbindJinleeUserChannel(params: {
       throw new ChannelBindingError('channel_not_bound');
     }
 
-    const remainingBindingCount = jinleeUser.accountBindings.length - bindingsForProvider.length;
+    const remainingBindingCount = dlmUser.accountBindings.length - bindingsForProvider.length;
     if (remainingBindingCount <= 0) {
       throw new ChannelBindingError('last_login_method_forbidden');
     }
 
-    if (params.provider === AccountProvider.DISCORD && jinleeUser.member?.status === MemberStatus.PEIWAN) {
+    if (params.provider === AccountProvider.DISCORD && dlmUser.member?.status === MemberStatus.PEIWAN) {
       throw new ChannelBindingError('peiwan_requires_discord');
     }
 
     if (params.provider === AccountProvider.WECHAT_MINIPROGRAM) {
       await tx.wechatProgramSession.deleteMany({
-        where: { jinleeId: jinleeUser.jinleeId },
+        where: { dlmId: dlmUser.dlmId },
       });
 
       await tx.accountBinding.deleteMany({
         where: {
-          jinleeId: jinleeUser.jinleeId,
+          dlmId: dlmUser.dlmId,
           provider: AccountProvider.WECHAT_MINIPROGRAM,
         },
       });
 
       const remainingWechatBindings = await tx.accountBinding.count({
         where: {
-          jinleeId: jinleeUser.jinleeId,
+          dlmId: dlmUser.dlmId,
           provider: AccountProvider.WECHAT_MINIPROGRAM,
         },
       });
 
       if (remainingWechatBindings === 0) {
-        await tx.jinleeUser.update({
-          where: { jinleeId: jinleeUser.jinleeId },
+        await tx.dlmUser.update({
+          where: { dlmId: dlmUser.dlmId },
           data: {
             wechatDisplayName: null,
             wechatAvatarUrl: null,
@@ -638,21 +638,21 @@ export async function unbindJinleeUserChannel(params: {
     }
 
     const memberWalletSnapshot = {
-      totalBalance: jinleeUser.member?.totalBalance ?? jinleeUser.totalBalance,
-      income: jinleeUser.member?.income ?? jinleeUser.income,
-      recharge: jinleeUser.member?.recharge ?? jinleeUser.recharge,
-      totalSpent: jinleeUser.member?.totalSpent ?? jinleeUser.totalSpent,
+      totalBalance: dlmUser.member?.totalBalance ?? dlmUser.totalBalance,
+      income: dlmUser.member?.income ?? dlmUser.income,
+      recharge: dlmUser.member?.recharge ?? dlmUser.recharge,
+      totalSpent: dlmUser.member?.totalSpent ?? dlmUser.totalSpent,
     };
 
     await tx.accountBinding.deleteMany({
       where: {
-        jinleeId: jinleeUser.jinleeId,
+        dlmId: dlmUser.dlmId,
         provider: AccountProvider.DISCORD,
       },
     });
 
-    await tx.jinleeUser.update({
-      where: { jinleeId: jinleeUser.jinleeId },
+    await tx.dlmUser.update({
+      where: { dlmId: dlmUser.dlmId },
       data: {
         discordUserId: null,
         discordDisplayName: null,

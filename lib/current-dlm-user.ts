@@ -1,17 +1,17 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { generateJinleeId } from '@/lib/jinlee-id';
+import { generateDlmId } from '@/lib/dlm-id';
 import { getServerSession } from '@/lib/session';
 import { getWechatProgramSessionFromRequest } from '@/lib/wechat-program-session';
 
-const jinleeUserWithMember = {
+const dlmUserWithMember = {
   member: true,
-} satisfies Prisma.JinleeUserInclude;
+} satisfies Prisma.DlmUserInclude;
 
-export type CurrentJinleeUser = {
+export type CurrentDlmUser = {
   sessionSource: 'wechat_program' | 'web';
-  jinleeUser: Prisma.JinleeUserGetPayload<{ include: typeof jinleeUserWithMember }>;
-  jinleeId: string;
+  dlmUser: Prisma.DlmUserGetPayload<{ include: typeof dlmUserWithMember }>;
+  dlmId: string;
   discordUserId: string | null;
 };
 
@@ -20,15 +20,15 @@ const buildDiscordAvatarUrl = (discordId: string, avatar?: string | null) => {
   return `https://cdn.discordapp.com/avatars/${discordId}/${avatar}.${avatar.startsWith('a_') ? 'gif' : 'png'}`;
 };
 
-export const getCurrentJinleeUser = async (request?: Request): Promise<CurrentJinleeUser | null> => {
+export const getCurrentDlmUser = async (request?: Request): Promise<CurrentDlmUser | null> => {
   if (request) {
     const wechatProgramSession = await getWechatProgramSessionFromRequest(request);
     if (wechatProgramSession) {
       return {
         sessionSource: 'wechat_program',
-        jinleeUser: wechatProgramSession.jinleeUser,
-        jinleeId: wechatProgramSession.jinleeUser.jinleeId,
-        discordUserId: wechatProgramSession.jinleeUser.discordUserId ?? null,
+        dlmUser: wechatProgramSession.dlmUser,
+        dlmId: wechatProgramSession.dlmUser.dlmId,
+        discordUserId: wechatProgramSession.dlmUser.discordUserId ?? null,
       };
     }
   }
@@ -51,14 +51,14 @@ export const getCurrentJinleeUser = async (request?: Request): Promise<CurrentJi
     },
   });
 
-  const jinleeUser = webSession.jinleeId
-    ? await prisma.jinleeUser.findUnique({
-        where: { jinleeId: webSession.jinleeId },
-        include: jinleeUserWithMember,
+  const dlmUser = webSession.dlmId
+    ? await prisma.dlmUser.findUnique({
+        where: { dlmId: webSession.dlmId },
+        include: dlmUserWithMember,
       })
     : null;
 
-  if (webSession.jinleeId && !jinleeUser) {
+  if (webSession.dlmId && !dlmUser) {
     return null;
   }
 
@@ -71,18 +71,18 @@ export const getCurrentJinleeUser = async (request?: Request): Promise<CurrentJi
       }
     : {};
 
-  const ensured = jinleeUser
-    ? await prisma.jinleeUser.update({
-        where: { jinleeId: jinleeUser.jinleeId },
+  const ensured = dlmUser
+    ? await prisma.dlmUser.update({
+        where: { dlmId: dlmUser.dlmId },
         data: {
           discordUserId: webSession.discordId,
           discordDisplayName: member?.serverDisplayName ?? webSession.username,
           discordAvatarUrl: fallbackDiscordAvatar,
           ...walletMirrorPatch,
         },
-        include: jinleeUserWithMember,
+        include: dlmUserWithMember,
       })
-    : await prisma.jinleeUser.upsert({
+    : await prisma.dlmUser.upsert({
         where: { discordUserId: webSession.discordId },
         update: {
           discordDisplayName: member?.serverDisplayName ?? webSession.username,
@@ -90,19 +90,19 @@ export const getCurrentJinleeUser = async (request?: Request): Promise<CurrentJi
           ...walletMirrorPatch,
         },
         create: {
-          jinleeId: generateJinleeId(),
+          dlmId: generateDlmId(),
           discordUserId: webSession.discordId,
           discordDisplayName: member?.serverDisplayName ?? webSession.username,
           discordAvatarUrl: fallbackDiscordAvatar,
           ...walletMirrorPatch,
         },
-        include: jinleeUserWithMember,
+        include: dlmUserWithMember,
       });
 
   return {
     sessionSource: 'web',
-    jinleeUser: ensured,
-    jinleeId: ensured.jinleeId,
+    dlmUser: ensured,
+    dlmId: ensured.dlmId,
     discordUserId: ensured.discordUserId ?? null,
   };
 };

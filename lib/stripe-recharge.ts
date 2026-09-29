@@ -195,10 +195,10 @@ export const isStripeRechargeAmountAllowed = (input: {
   return input.hasPriorRecharge || normalizedAmount.equals(getStripeFirstRechargeAmount());
 };
 
-export const buildStripeOutTradeNo = (jinleeId: string) => {
+export const buildStripeOutTradeNo = (dlmId: string) => {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = crypto.randomBytes(8).toString('hex').toUpperCase();
-  const suffix = jinleeId.slice(-4).toUpperCase();
+  const suffix = dlmId.slice(-4).toUpperCase();
   return `STRIPE${timestamp}${random}${suffix}`;
 };
 
@@ -212,7 +212,7 @@ export const createStripeCheckoutSession = async (input: {
   priceId: string;
   currency?: string | null;
   outTradeNo: string;
-  jinleeId: string;
+  dlmId: string;
   discordUserId?: string | null;
   rechargeAmount: string;
   successUrl: string;
@@ -235,10 +235,10 @@ export const createStripeCheckoutSession = async (input: {
     params.set('payment_intent_data[metadata][selected_currency]', input.currency);
   }
   params.set('metadata[out_trade_no]', input.outTradeNo);
-  params.set('metadata[jinlee_id]', input.jinleeId);
+  params.set('metadata[dlm_id]', input.dlmId);
   params.set('metadata[recharge_amount]', input.rechargeAmount);
   params.set('payment_intent_data[metadata][out_trade_no]', input.outTradeNo);
-  params.set('payment_intent_data[metadata][jinlee_id]', input.jinleeId);
+  params.set('payment_intent_data[metadata][dlm_id]', input.dlmId);
   params.set('payment_intent_data[metadata][recharge_amount]', input.rechargeAmount);
   if (input.discordUserId) {
     params.set('metadata[discord_user_id]', input.discordUserId);

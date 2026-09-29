@@ -1,22 +1,22 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { prisma } from '@/lib/prisma';
 import RechargeClient from './RechargeClient';
 
 export default async function RechargePage() {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/accounts/discord/login?callbackUrl=%2Frecharge');
   }
 
   const username =
-    currentUser.jinleeUser.discordDisplayName ??
-    currentUser.jinleeUser.member?.serverDisplayName ??
-    currentUser.jinleeUser.wechatDisplayName ??
+    currentUser.dlmUser.discordDisplayName ??
+    currentUser.dlmUser.member?.serverDisplayName ??
+    currentUser.dlmUser.wechatDisplayName ??
     '微信用户';
   const hasPriorRecharge = await prisma.recharge.count({
-    where: { jinleeId: currentUser.jinleeId },
+    where: { dlmId: currentUser.dlmId },
   }).then((count) => count > 0);
 
   return (

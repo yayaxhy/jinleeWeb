@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
   buildStripeOutTradeNo,
   createStripeCheckoutSession,
@@ -50,7 +50,7 @@ const parseCurrency = (raw: unknown) => {
 };
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
   }
 
   const priorRechargeCount = await prisma.recharge.count({
-    where: { jinleeId: currentUser.jinleeId },
+    where: { dlmId: currentUser.dlmId },
   });
   const hasPriorRecharge = priorRechargeCount > 0;
   if (!isStripeRechargeAmountAllowed({ amount: price.amount, hasPriorRecharge })) {
@@ -87,13 +87,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const outTradeNo = buildStripeOutTradeNo(currentUser.jinleeId);
+  const outTradeNo = buildStripeOutTradeNo(currentUser.dlmId);
 
   await prisma.stripePayment.create({
     data: {
       outTradeNo,
       discordUserId: currentUser.discordUserId,
-      jinleeId: currentUser.jinleeId,
+      dlmId: currentUser.dlmId,
       rechargeAmount: price.amount,
       priceId: price.priceId,
       selectedCurrency: currency,
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       priceId: price.priceId,
       currency,
       outTradeNo,
-      jinleeId: currentUser.jinleeId,
+      dlmId: currentUser.dlmId,
       discordUserId: currentUser.discordUserId,
       rechargeAmount: price.amountText,
       successUrl,

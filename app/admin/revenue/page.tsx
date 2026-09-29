@@ -67,14 +67,14 @@ const dec = (value: unknown) => {
 };
 
 const buildIdentityExclusion = (
-  jinleeField: string,
+  dlmField: string,
   discordField: string | null,
-  excludeJinleeIds: string[],
+  excludeDlmIds: string[],
   excludeDiscordIds: string[],
 ) => {
   const clauses: Record<string, unknown>[] = [];
-  if (excludeJinleeIds.length) {
-    clauses.push({ [jinleeField]: { in: excludeJinleeIds } });
+  if (excludeDlmIds.length) {
+    clauses.push({ [dlmField]: { in: excludeDlmIds } });
   }
   if (discordField && excludeDiscordIds.length) {
     clauses.push({ [discordField]: { in: excludeDiscordIds } });
@@ -161,9 +161,9 @@ export default async function AdminRevenuePage(props: PageProps) {
   const rechargeWhere: Prisma.RechargeWhereInput = {
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'toWhom',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.RechargeWhereInput),
   };
@@ -175,9 +175,9 @@ export default async function AdminRevenuePage(props: PageProps) {
   const withdrawWhere: Prisma.WithdrawWhereInput = {
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.WithdrawWhereInput),
   };
@@ -190,9 +190,9 @@ export default async function AdminRevenuePage(props: PageProps) {
     status: 'PAID',
     paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.ZPayRechargeOrderWhereInput),
   };
@@ -200,9 +200,9 @@ export default async function AdminRevenuePage(props: PageProps) {
     status: 'PAID',
     paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.StripePaymentWhereInput),
   };
@@ -210,9 +210,9 @@ export default async function AdminRevenuePage(props: PageProps) {
     status: 'PAID',
     paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.WechatNativePaymentWhereInput),
   };
@@ -238,20 +238,20 @@ export default async function AdminRevenuePage(props: PageProps) {
   const stripeTotal = dec(stripeAgg._sum.rechargeAmount);
   const wechatNativeTotal = dec(wechatNativeAgg._sum.rechargeAmount);
 
-  const jinleeWhere: Prisma.JinleeUserWhereInput = buildIdentityExclusion(
-    'jinleeId',
+  const dlmWhere: Prisma.DlmUserWhereInput = buildIdentityExclusion(
+    'dlmId',
     'discordUserId',
-    excludeMemberResolved.excludeJinleeIds,
+    excludeMemberResolved.excludeDlmIds,
     excludeMemberResolved.excludeDiscordIds,
-  ) as Prisma.JinleeUserWhereInput;
+  ) as Prisma.DlmUserWhereInput;
 
-  const jinleeAgg = await prisma.jinleeUser.aggregate({
+  const dlmAgg = await prisma.dlmUser.aggregate({
     _sum: {
       recharge: true,
       income: true,
       totalBalance: true,
     },
-    where: jinleeWhere,
+    where: dlmWhere,
   });
 
   const commissionAggAll = await prisma.commission.aggregate({
@@ -364,9 +364,9 @@ export default async function AdminRevenuePage(props: PageProps) {
   const lotteryWhere: Prisma.LotteryDrawWhereInput = {
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'userId',
-      excludeMemberResolved.excludeJinleeIds,
+      excludeMemberResolved.excludeDlmIds,
       excludeMemberResolved.excludeDiscordIds,
     ) as Prisma.LotteryDrawWhereInput),
   };
@@ -376,9 +376,9 @@ export default async function AdminRevenuePage(props: PageProps) {
     where: {
       consumeAt: { gte: start, lt: end },
       ...(buildIdentityExclusion(
-        'jinleeId',
+        'dlmId',
         'userId',
-        excludeMemberResolved.excludeJinleeIds,
+        excludeMemberResolved.excludeDlmIds,
         excludeMemberResolved.excludeDiscordIds,
       ) as Prisma.LotteryDrawWhereInput),
     },
@@ -421,7 +421,7 @@ export default async function AdminRevenuePage(props: PageProps) {
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...buildRevenueCouponIdentityExclusion(
-      excludeMemberResolved.excludeJinleeIds,
+      excludeMemberResolved.excludeDlmIds,
       excludeMemberResolved.excludeDiscordIds,
     ),
   };
@@ -511,9 +511,9 @@ export default async function AdminRevenuePage(props: PageProps) {
   const pointShopOrderWhere: Prisma.PointShopOrderWhereInput = {
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeMemberResolved.excludeJinleeIds,
+      excludeMemberResolved.excludeDlmIds,
       excludeMemberResolved.excludeDiscordIds,
     ) as Prisma.PointShopOrderWhereInput),
   };
@@ -530,9 +530,9 @@ export default async function AdminRevenuePage(props: PageProps) {
           deliveryType: 'COUPON',
           consumedAt: { gte: start, lt: end },
           ...(buildIdentityExclusion(
-            'jinleeId',
+            'dlmId',
             'discordUserId',
-            excludeMemberResolved.excludeJinleeIds,
+            excludeMemberResolved.excludeDlmIds,
             excludeMemberResolved.excludeDiscordIds,
           ) as Prisma.PointShopGrantWhereInput),
         },
@@ -543,9 +543,9 @@ export default async function AdminRevenuePage(props: PageProps) {
           deliveryType: 'BALANCE',
           issuedAt: { gte: start, lt: end },
           ...(buildIdentityExclusion(
-            'jinleeId',
+            'dlmId',
             'discordUserId',
-            excludeMemberResolved.excludeJinleeIds,
+            excludeMemberResolved.excludeDlmIds,
             excludeMemberResolved.excludeDiscordIds,
           ) as Prisma.PointShopGrantWhereInput),
         },
@@ -555,7 +555,7 @@ export default async function AdminRevenuePage(props: PageProps) {
   const fusionRevenue = await getLotteryFusionRevenueSummary({
     start,
     end,
-    excludeJinleeIds: excludeMemberResolved.excludeJinleeIds,
+    excludeDlmIds: excludeMemberResolved.excludeDlmIds,
     excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
   });
   const fusionPoolBreakdownText = formatBreakdownText(
@@ -689,9 +689,9 @@ export default async function AdminRevenuePage(props: PageProps) {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <h3 className="text-lg font-semibold">会员余额汇总</h3>
           <div className="space-y-1 text-sm text-white/70">
-            <p>JinleeUser.recharge 合计：¥{formatNumber(jinleeAgg._sum.recharge)}</p>
-            <p>JinleeUser.income 合计：¥{formatNumber(jinleeAgg._sum.income)}</p>
-            <p>JinleeUser.totalBalance 合计：¥{formatNumber(jinleeAgg._sum.totalBalance)}</p>
+            <p>DlmUser.recharge 合计：¥{formatNumber(dlmAgg._sum.recharge)}</p>
+            <p>DlmUser.income 合计：¥{formatNumber(dlmAgg._sum.income)}</p>
+            <p>DlmUser.totalBalance 合计：¥{formatNumber(dlmAgg._sum.totalBalance)}</p>
             <p>当月 Commission 合计：¥{formatNumber(commissionTotalNetAll)}</p>
           </div>
         </div>

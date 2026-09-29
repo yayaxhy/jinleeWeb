@@ -181,7 +181,7 @@ export async function GET(request: Request) {
           select: {
             serverDisplayName: true,
             discordUserId: true,
-            jinleeUser: {
+            dlmUser: {
               select: {
                 miniAvailability: true,
                 miniAvailabilitySetAt: true,
@@ -251,8 +251,8 @@ export async function GET(request: Request) {
     const displayName =
       row.serverDisplayName ?? row.member?.serverDisplayName ?? row.discordUserId;
     const type = PEIWAN_TYPE_OPTIONS.find((option) => option === row.type) ?? PEIWAN_TYPE_OPTIONS[0];
-    const selectedAvailability = row.member?.jinleeUser?.miniAvailabilitySetAt
-      ? row.member.jinleeUser.miniAvailability
+    const selectedAvailability = row.member?.dlmUser?.miniAvailabilitySetAt
+      ? row.member.dlmUser.miniAvailability
       : 'RESTING';
     const availability = row.member?.ordersAsWorker.length
       ? 'BUSY'

@@ -49,15 +49,15 @@ async function sendSubscribeMessage(openId: string, kind: NotificationKind, titl
 }
 
 export async function notifyMiniProgramUser(
-  jinleeId: string | null | undefined,
+  dlmId: string | null | undefined,
   kind: NotificationKind,
   title: string,
   body: string,
   page: string,
 ) {
-  if (!jinleeId || !templateIds[kind]) return { sent: false, reason: 'disabled' };
-  const user = await prisma.jinleeUser.findUnique({
-    where: { jinleeId },
+  if (!dlmId || !templateIds[kind]) return { sent: false, reason: 'disabled' };
+  const user = await prisma.dlmUser.findUnique({
+    where: { dlmId },
     select: {
       miniCriticalNotifications: true,
       miniMessageNotifications: true,
@@ -78,10 +78,10 @@ export async function notifyMiniProgramUser(
 
 export async function notifyDispatchSubscribers(title: string, body: string) {
   if (!templateIds.dispatch) return;
-  const users = await prisma.jinleeUser.findMany({
+  const users = await prisma.dlmUser.findMany({
     where: { miniDispatchNotifications: true, accountBindings: { some: { provider: AccountProvider.WECHAT_MINIPROGRAM } } },
-    select: { jinleeId: true },
+    select: { dlmId: true },
     take: 500,
   });
-  await Promise.allSettled(users.map((user) => notifyMiniProgramUser(user.jinleeId, 'dispatch', title, body, 'pages/favorites/index')));
+  await Promise.allSettled(users.map((user) => notifyMiniProgramUser(user.dlmId, 'dispatch', title, body, 'pages/favorites/index')));
 }

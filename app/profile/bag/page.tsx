@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { DiscountUsageButton } from '@/components/profile/DiscountUsageButton';
 import { GiftUsageButton, SelfUseButton } from '@/components/profile/GiftAndSelfUseButtons';
@@ -41,7 +41,7 @@ const toMillis = (value?: Date | string | null) => {
 };
 
 export default async function BagPage() {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/');
   }
@@ -50,7 +50,7 @@ export default async function BagPage() {
   const [draws, coupons, pointShopGrants] = await Promise.all([
     prisma.lotteryDraw.findMany({
       where: {
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         createdAt: newEntityOnlyTime(),
         OR: [
           { status: { not: LotteryStatus.USED } },
@@ -67,7 +67,7 @@ export default async function BagPage() {
     }),
     prisma.coupon.findMany({
       where: {
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         issuedAt: newEntityOnlyTime(),
         OR: [
           { status: { not: CouponStatus.USED } },
@@ -79,7 +79,7 @@ export default async function BagPage() {
     }),
     prisma.pointShopGrant.findMany({
       where: {
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         issuedAt: newEntityOnlyTime(),
         deliveryType: PointShopDeliveryType.COUPON,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,

@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   }
   if (hostId) {
     filters.push({
-      OR: [{ hostId }, { hostJinleeId: hostId }],
+      OR: [{ hostId }, { hostDlmId: hostId }],
     });
   }
   if (workerId) filters.push({ workerId });
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       id: true,
       displayNo: true,
       hostId: true,
-      hostJinleeId: true,
+      hostDlmId: true,
       workerId: true,
       peiwanId: true,
       unitPrice: true,
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
       acceptedAt: true,
       stopwatchStartAt: true,
       cutoffAt: true,
-      hostJinleeUser: { select: { jinleeId: true, discordDisplayName: true, wechatDisplayName: true } },
+      hostDlmUser: { select: { dlmId: true, discordDisplayName: true, wechatDisplayName: true } },
       host: { select: { discordUserId: true, serverDisplayName: true } },
       worker: { select: { discordUserId: true, serverDisplayName: true } },
     },
@@ -131,11 +131,11 @@ export async function GET(request: NextRequest) {
   for (const row of rows) {
     const hostName =
       row.host?.serverDisplayName ??
-      row.hostJinleeUser?.discordDisplayName ??
-      row.hostJinleeUser?.wechatDisplayName ??
+      row.hostDlmUser?.discordDisplayName ??
+      row.hostDlmUser?.wechatDisplayName ??
       row.host?.discordUserId ??
       row.hostId ??
-      row.hostJinleeId ??
+      row.hostDlmId ??
       '';
     const workerName = row.worker?.serverDisplayName ?? row.worker?.discordUserId ?? row.workerId;
     worksheet.addRow({
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
       displayNo: row.displayNo,
       id: row.id,
       hostName,
-      hostId: row.hostJinleeId ?? row.hostId,
+      hostId: row.hostDlmId ?? row.hostId,
       hostDiscordId: row.hostId ?? '',
       workerName,
       workerId: row.workerId,

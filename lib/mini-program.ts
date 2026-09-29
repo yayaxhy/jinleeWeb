@@ -16,13 +16,13 @@ import {
   QuotationCode,
 } from '@prisma/client';
 import { QUOTATION_CODE_LABEL, QUOTATION_CODE_TO_FIELD, type QuotationCodeValue } from '@/constants/peiwan';
-import { type CurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { ensureJinleeUserForDiscordMember } from '@/lib/jinlee-user';
+import { type CurrentDlmUser } from '@/lib/current-dlm-user';
+import { ensureDlmUserForDiscordMember } from '@/lib/dlm-user';
 import { postInternalBot } from '@/lib/internal-bot';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
 import { checkMiniProgramMessageSecurity } from '@/lib/wechat';
-import { getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
+import { getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
 import { notifyDispatchSubscribers, notifyMiniProgramUser } from '@/lib/mini-program-subscribe';
 import { findPeiwanCardPath } from '@/lib/peiwan/card-path';
 
@@ -42,10 +42,10 @@ const QUOTATION_CODE_BY_LABEL = Object.fromEntries(
 
 type DispatchWithRelations = Prisma.DispatchRequestGetPayload<{
   include: {
-    ownerJinleeUser: { include: { member: true } };
+    ownerDlmUser: { include: { member: true } };
     candidates: {
       include: {
-        workerJinleeUser: { include: { member: true } };
+        workerDlmUser: { include: { member: true } };
         peiwan: {
           include: {
             member: { include: { receivedPeiwanReviews: true } };
@@ -99,7 +99,7 @@ function normalizeTags(value: unknown): string[] {
 function displayNameForUser(
   user:
     | {
-        jinleeId: string;
+        dlmId: string;
         discordDisplayName?: string | null;
         wechatDisplayName?: string | null;
         member?: { serverDisplayName?: string | null } | null;
@@ -111,12 +111,12 @@ function displayNameForUser(
     user?.discordDisplayName?.trim() ||
     user?.member?.serverDisplayName?.trim() ||
     user?.wechatDisplayName?.trim() ||
-    (user?.jinleeId ? `用户 ${user.jinleeId}` : '未知用户')
+    (user?.dlmId ? `用户 ${user.dlmId}` : '未知用户')
   );
 }
 
-function displayNameForCurrentUser(currentUser: CurrentJinleeUser) {
-  return displayNameForUser(currentUser.jinleeUser);
+function displayNameForCurrentUser(currentUser: CurrentDlmUser) {
+  return displayNameForUser(currentUser.dlmUser);
 }
 
 function sexLabel(value?: string | null) {
@@ -179,7 +179,7 @@ function serializeCandidate(candidate: CandidateWithRelations) {
     candidate.workerDisplayName?.trim() ||
     peiwan.serverDisplayName?.trim() ||
     peiwan.member?.serverDisplayName?.trim() ||
-    displayNameForUser(candidate.workerJinleeUser) ||
+    displayNameForUser(candidate.workerDlmUser) ||
     `陪玩 #${peiwan.PEIWANID}`;
   const quoteOptions = getQuoteOptions(peiwan as unknown as Record<string, unknown>);
   const defaultPrice = getDefaultPrice(peiwan as unknown as Record<string, unknown> & { defaultQuotationCode: QuotationCode });
@@ -214,15 +214,15 @@ function serializeCandidate(candidate: CandidateWithRelations) {
   };
 }
 
-function serializeDispatch(dispatch: DispatchWithRelations, currentUser?: CurrentJinleeUser | null) {
+function serializeDispatch(dispatch: DispatchWithRelations, currentUser?: CurrentDlmUser | null) {
   const sexRequirement = toStringArray(dispatch.sexRequirement);
   const tags = normalizeTags(dispatch.tags);
-  const ownerDisplayName = dispatch.ownerDisplayName?.trim() || displayNameForUser(dispatch.ownerJinleeUser);
+  const ownerDisplayName = dispatch.ownerDisplayName?.trim() || displayNameForUser(dispatch.ownerDlmUser);
 
   return {
     id: dispatch.id,
     bossName: dispatch.anonymous ? '匿名老板' : ownerDisplayName,
-    ownerId: currentUser && dispatch.ownerJinleeId === currentUser.jinleeId ? 'me' : dispatch.ownerJinleeId || dispatch.ownerDiscordUserId || '',
+    ownerId: currentUser && dispatch.ownerDlmId === currentUser.dlmId ? 'me' : dispatch.ownerDlmId || dispatch.ownerDiscordUserId || '',
     anonymous: dispatch.anonymous,
     requirement: dispatch.requirement,
     sexRequirement,
@@ -239,10 +239,10 @@ function serializeDispatch(dispatch: DispatchWithRelations, currentUser?: Curren
   };
 }
 
-async function getWechatOpenId(jinleeId: string) {
+async function getWechatOpenId(dlmId: string) {
   const binding = await prisma.accountBinding.findFirst({
     where: {
-      jinleeId,
+      dlmId,
       provider: AccountProvider.WECHAT_MINIPROGRAM,
     },
     select: { providerUserId: true },
@@ -253,10 +253,10 @@ async function getWechatOpenId(jinleeId: string) {
 }
 
 const dispatchInclude = {
-  ownerJinleeUser: { include: { member: true } },
+  ownerDlmUser: { include: { member: true } },
   candidates: {
     include: {
-      workerJinleeUser: { include: { member: true } },
+      workerDlmUser: { include: { member: true } },
       peiwan: {
         include: {
           member: { include: { receivedPeiwanReviews: true } },
@@ -268,7 +268,7 @@ const dispatchInclude = {
   },
 } satisfies Prisma.DispatchRequestInclude;
 
-export async function listDispatchRequests(currentUser: CurrentJinleeUser, scope: string | null) {
+export async function listDispatchRequests(currentUser: CurrentDlmUser, scope: string | null) {
   const now = new Date();
   await prisma.dispatchRequest.updateMany({
     where: { status: DispatchRequestStatus.OPEN, expiresAt: { lte: now } },
@@ -277,12 +277,12 @@ export async function listDispatchRequests(currentUser: CurrentJinleeUser, scope
   const where: Prisma.DispatchRequestWhereInput =
     scope === 'mine'
       ? {
-          ownerJinleeId: currentUser.jinleeId,
+          ownerDlmId: currentUser.dlmId,
           status: DispatchRequestStatus.OPEN,
           expiresAt: { gt: now },
         }
       : scope === 'history'
-        ? { ownerJinleeId: currentUser.jinleeId }
+        ? { ownerDlmId: currentUser.dlmId }
         : {
             status: DispatchRequestStatus.OPEN,
             expiresAt: { gt: now },
@@ -298,7 +298,7 @@ export async function listDispatchRequests(currentUser: CurrentJinleeUser, scope
   return rows.map((item) => serializeDispatch(item, currentUser));
 }
 
-export async function createDispatchRequest(currentUser: CurrentJinleeUser, payload: Record<string, unknown>) {
+export async function createDispatchRequest(currentUser: CurrentDlmUser, payload: Record<string, unknown>) {
   const sexRequirement = normalizeSexRequirement(payload);
   if (!sexRequirement.length) {
     return { ok: false, status: 400, error: '请选择男生或女生，至少选择一个。' };
@@ -310,10 +310,10 @@ export async function createDispatchRequest(currentUser: CurrentJinleeUser, payl
   }
 
   const now = new Date();
-  const ownerWechatOpenId = await getWechatOpenId(currentUser.jinleeId);
+  const ownerWechatOpenId = await getWechatOpenId(currentUser.dlmId);
   const dispatch = await prisma.dispatchRequest.create({
     data: {
-      ownerJinleeId: currentUser.jinleeId,
+      ownerDlmId: currentUser.dlmId,
       ownerDiscordUserId: currentUser.discordUserId,
       ownerWechatOpenId,
       ownerDisplayName: displayNameForCurrentUser(currentUser),
@@ -343,7 +343,7 @@ export async function createDispatchRequest(currentUser: CurrentJinleeUser, payl
   };
 }
 
-async function resolveCurrentPeiwan(currentUser: CurrentJinleeUser) {
+async function resolveCurrentPeiwan(currentUser: CurrentDlmUser) {
   if (!currentUser.discordUserId) return null;
 
   return prisma.pEIWAN.findUnique({
@@ -352,9 +352,9 @@ async function resolveCurrentPeiwan(currentUser: CurrentJinleeUser) {
   });
 }
 
-export async function grabDispatchRequest(currentUser: CurrentJinleeUser, dispatchId: string) {
+export async function grabDispatchRequest(currentUser: CurrentDlmUser, dispatchId: string) {
   const peiwan = await resolveCurrentPeiwan(currentUser);
-  if (!peiwan || currentUser.jinleeUser.member?.status !== MemberStatus.PEIWAN) {
+  if (!peiwan || currentUser.dlmUser.member?.status !== MemberStatus.PEIWAN) {
     return { ok: false, status: 403, error: '需要先完善陪玩资料后才能抢单。' };
   }
 
@@ -381,20 +381,20 @@ export async function grabDispatchRequest(currentUser: CurrentJinleeUser, dispat
         where: { id: dispatchId },
         select: {
           id: true,
-          ownerJinleeId: true,
+          ownerDlmId: true,
           ownerDiscordUserId: true,
           status: true,
           expiresAt: true,
         },
       });
       if (!dispatch) throw new Error('派单不存在。');
-      if (dispatch.ownerJinleeId === currentUser.jinleeId) throw new Error('不能抢自己的派单。');
+      if (dispatch.ownerDlmId === currentUser.dlmId) throw new Error('不能抢自己的派单。');
       if (dispatch.status !== DispatchRequestStatus.OPEN || dispatch.expiresAt <= new Date()) {
         throw new Error('派单已关闭。');
       }
 
-      await tx.jinleeUser.update({
-        where: { jinleeId: currentUser.jinleeId },
+      await tx.dlmUser.update({
+        where: { dlmId: currentUser.dlmId },
         data: {
           miniAvailability: MiniAvailabilityStatus.AVAILABLE,
           miniAvailabilitySetAt: new Date(),
@@ -408,14 +408,14 @@ export async function grabDispatchRequest(currentUser: CurrentJinleeUser, dispat
       const candidate = await tx.dispatchCandidate.create({
         data: {
           dispatchRequestId: dispatch.id,
-          workerJinleeId: currentUser.jinleeId,
+          workerDlmId: currentUser.dlmId,
           workerDiscordUserId: currentUser.discordUserId,
           workerDisplayName: displayNameForCurrentUser(currentUser),
           peiwanId: peiwan.PEIWANID,
           status: DispatchCandidateStatus.ACTIVE,
         },
         include: {
-          workerJinleeUser: { include: { member: true } },
+          workerDlmUser: { include: { member: true } },
           peiwan: {
             include: {
               member: { include: { receivedPeiwanReviews: true } },
@@ -424,16 +424,16 @@ export async function grabDispatchRequest(currentUser: CurrentJinleeUser, dispat
           },
         },
       });
-      if (dispatch.ownerJinleeId) {
+      if (dispatch.ownerDlmId) {
         await createSystemNotificationTx(
           tx,
-          dispatch.ownerJinleeId,
+          dispatch.ownerDlmId,
           `${displayNameForCurrentUser(currentUser)} 已抢单，打开“点单”查看陪玩名片。`,
         );
       }
       return {
         candidate,
-        ownerJinleeId: dispatch.ownerJinleeId,
+        ownerDlmId: dispatch.ownerDlmId,
         ownerDiscordUserId: dispatch.ownerDiscordUserId,
       };
     });
@@ -448,7 +448,7 @@ export async function grabDispatchRequest(currentUser: CurrentJinleeUser, dispat
       });
     }
     notifyMiniProgramUser(
-      candidate.ownerJinleeId,
+      candidate.ownerDlmId,
       'critical',
       '有陪玩抢单',
       `${displayNameForCurrentUser(currentUser)} 已进入候选列表`,
@@ -466,7 +466,7 @@ export async function grabDispatchRequest(currentUser: CurrentJinleeUser, dispat
 }
 
 export async function selectDispatchCandidate(
-  currentUser: CurrentJinleeUser,
+  currentUser: CurrentDlmUser,
   dispatchId: string,
   payload: Record<string, unknown>,
 ) {
@@ -487,7 +487,7 @@ export async function selectDispatchCandidate(
     if (!candidate || candidate.dispatchRequestId !== dispatchId) {
       throw new Error('候选陪玩不存在。');
     }
-    if (candidate.request.ownerJinleeId !== currentUser.jinleeId) {
+    if (candidate.request.ownerDlmId !== currentUser.dlmId) {
       throw new Error('无权限选择该候选。');
     }
     if (candidate.selectedOrderId) {
@@ -500,7 +500,7 @@ export async function selectDispatchCandidate(
           order: existingOrder,
           quotationCode: existingOrder.quotationCode,
           unitPrice: existingOrder.unitPrice.toNumber(),
-          workerJinleeId: candidate.workerJinleeId,
+          workerDlmId: candidate.workerDlmId,
         };
       }
     }
@@ -520,9 +520,9 @@ export async function selectDispatchCandidate(
       throw new Error('该价格档位暂不可用。');
     }
 
-    await tx.$executeRaw`SELECT 1 FROM "JinleeUser" WHERE "jinleeId" = ${currentUser.jinleeId} FOR UPDATE`;
-    const wallet = await getJinleeWalletSnapshotTx(tx, {
-      jinleeId: currentUser.jinleeId,
+    await tx.$executeRaw`SELECT 1 FROM "DlmUser" WHERE "dlmId" = ${currentUser.dlmId} FOR UPDATE`;
+    const wallet = await getDlmWalletSnapshotTx(tx, {
+      dlmId: currentUser.dlmId,
       discordUserId: currentUser.discordUserId,
     });
     if (wallet.totalBalance.lt(100)) {
@@ -532,7 +532,7 @@ export async function selectDispatchCandidate(
     const order = await tx.order.create({
       data: {
         hostId: currentUser.discordUserId,
-        hostJinleeId: currentUser.jinleeId,
+        hostDlmId: currentUser.dlmId,
         workerId: candidate.workerDiscordUserId,
         peiwanId: candidate.peiwanId,
         mode: candidate.request.anonymous ? OrderMode.ANONYMOUS : OrderMode.REALNAME,
@@ -553,10 +553,10 @@ export async function selectDispatchCandidate(
         selectedOrderId: order.id,
       },
     });
-    if (candidate.workerJinleeId) {
+    if (candidate.workerDlmId) {
       await createSystemNotificationTx(
         tx,
-        candidate.workerJinleeId,
+        candidate.workerDlmId,
         `老板已选择你并创建订单 #${order.displayNo}，请尽快确认接单。`,
       );
     }
@@ -565,12 +565,12 @@ export async function selectDispatchCandidate(
       order,
       quotationCode,
       unitPrice,
-      workerJinleeId: candidate.workerJinleeId,
+      workerDlmId: candidate.workerDlmId,
     };
   });
 
   notifyMiniProgramUser(
-    result.workerJinleeId,
+    result.workerDlmId,
     'critical',
     '老板已选择你',
     `订单 #${result.order.displayNo} 等待确认`,
@@ -594,14 +594,14 @@ function buildDirectPeerKey(a: string, b: string) {
 
 async function createSystemNotificationTx(
   tx: Prisma.TransactionClient,
-  jinleeId: string,
+  dlmId: string,
   body: string,
 ) {
   return tx.miniConversation.upsert({
     where: {
       type_peerKey: {
         type: MiniConversationType.SYSTEM,
-        peerKey: `system:${jinleeId}`,
+        peerKey: `system:${dlmId}`,
       },
     },
     update: {
@@ -616,8 +616,8 @@ async function createSystemNotificationTx(
     },
     create: {
       type: MiniConversationType.SYSTEM,
-      peerKey: `system:${jinleeId}`,
-      userAId: jinleeId,
+      peerKey: `system:${dlmId}`,
+      userAId: dlmId,
       messages: {
         create: {
           senderType: MiniMessageSenderType.SYSTEM,
@@ -629,21 +629,21 @@ async function createSystemNotificationTx(
   });
 }
 
-function canAccessConversation(conversation: { userAId?: string | null; userBId?: string | null }, currentUser: CurrentJinleeUser) {
-  return conversation.userAId === currentUser.jinleeId || conversation.userBId === currentUser.jinleeId;
+function canAccessConversation(conversation: { userAId?: string | null; userBId?: string | null }, currentUser: CurrentDlmUser) {
+  return conversation.userAId === currentUser.dlmId || conversation.userBId === currentUser.dlmId;
 }
 
-function getPeer(conversation: ConversationWithRelations | ConversationSummary, currentUser: CurrentJinleeUser) {
+function getPeer(conversation: ConversationWithRelations | ConversationSummary, currentUser: CurrentDlmUser) {
   if (conversation.type === MiniConversationType.SYSTEM) return null;
-  if (conversation.userAId === currentUser.jinleeId) return conversation.userB;
+  if (conversation.userAId === currentUser.dlmId) return conversation.userB;
   return conversation.userA;
 }
 
-function serializeMiniMessage(message: ConversationWithRelations['messages'][number], currentUser: CurrentJinleeUser) {
+function serializeMiniMessage(message: ConversationWithRelations['messages'][number], currentUser: CurrentDlmUser) {
   const from =
     message.senderType === MiniMessageSenderType.SYSTEM || message.senderType === MiniMessageSenderType.BOT
       ? 'system'
-      : message.senderJinleeId === currentUser.jinleeId
+      : message.senderDlmId === currentUser.dlmId
         ? 'me'
         : 'peer';
 
@@ -656,13 +656,13 @@ function serializeMiniMessage(message: ConversationWithRelations['messages'][num
   };
 }
 
-function serializeConversationSummary(conversation: ConversationSummary, currentUser: CurrentJinleeUser, unread = 0) {
+function serializeConversationSummary(conversation: ConversationSummary, currentUser: CurrentDlmUser, unread = 0) {
   const peer = getPeer(conversation, currentUser);
   const latestMessage = conversation.messages[0] ?? null;
 
   return {
     id: conversation.id,
-    peerId: peer?.jinleeId ?? 'system',
+    peerId: peer?.dlmId ?? 'system',
     peerName: peer ? displayNameForUser(peer) : '机器人通知',
     peerRole: peer?.member?.status === MemberStatus.PEIWAN ? '陪玩' : conversation.type === MiniConversationType.SYSTEM ? '系统' : '用户',
     peerAvatarUrl: peer?.wechatAvatarUrl ?? peer?.discordAvatarUrl ?? null,
@@ -674,17 +674,17 @@ function serializeConversationSummary(conversation: ConversationSummary, current
   };
 }
 
-function serializeConversation(conversation: ConversationWithRelations, currentUser: CurrentJinleeUser) {
+function serializeConversation(conversation: ConversationWithRelations, currentUser: CurrentDlmUser) {
   return {
     ...serializeConversationSummary(conversation, currentUser),
     messages: conversation.messages.map((message) => serializeMiniMessage(message, currentUser)),
   };
 }
 
-export async function listConversations(currentUser: CurrentJinleeUser) {
+export async function listConversations(currentUser: CurrentDlmUser) {
   const rows = await prisma.miniConversation.findMany({
     where: {
-      OR: [{ userAId: currentUser.jinleeId }, { userBId: currentUser.jinleeId }],
+      OR: [{ userAId: currentUser.dlmId }, { userBId: currentUser.dlmId }],
     },
     include: {
       userA: { include: { member: true } },
@@ -700,13 +700,13 @@ export async function listConversations(currentUser: CurrentJinleeUser) {
   });
 
   return Promise.all(rows.map(async (row) => {
-    const lastReadAt = row.userAId === currentUser.jinleeId ? row.userALastReadAt : row.userBLastReadAt;
+    const lastReadAt = row.userAId === currentUser.dlmId ? row.userALastReadAt : row.userBLastReadAt;
     const unread = await prisma.miniMessage.count({
       where: {
         conversationId: row.id,
         OR: [
-          { senderJinleeId: { not: currentUser.jinleeId } },
-          { senderJinleeId: null },
+          { senderDlmId: { not: currentUser.dlmId } },
+          { senderDlmId: null },
         ],
         ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
       },
@@ -715,7 +715,7 @@ export async function listConversations(currentUser: CurrentJinleeUser) {
   }));
 }
 
-export async function getConversation(currentUser: CurrentJinleeUser, conversationId: string) {
+export async function getConversation(currentUser: CurrentDlmUser, conversationId: string) {
   const conversation = await prisma.miniConversation.findUnique({
     where: { id: conversationId },
     include: {
@@ -732,18 +732,18 @@ export async function getConversation(currentUser: CurrentJinleeUser, conversati
   if (!conversation || !canAccessConversation(conversation, currentUser)) return null;
   await prisma.miniConversation.update({
     where: { id: conversation.id },
-    data: conversation.userAId === currentUser.jinleeId
+    data: conversation.userAId === currentUser.dlmId
       ? { userALastReadAt: new Date() }
       : { userBLastReadAt: new Date() },
   });
   return serializeConversation(conversation, currentUser);
 }
 
-export async function startConversation(currentUser: CurrentJinleeUser, payload: Record<string, unknown>) {
+export async function startConversation(currentUser: CurrentDlmUser, payload: Record<string, unknown>) {
   const peiwanId = Number(payload.peiwanId);
-  let peerJinleeId = String(payload.peerJinleeId || '').trim();
+  let peerDlmId = String(payload.peerDlmId || '').trim();
 
-  if (!peerJinleeId && Number.isInteger(peiwanId) && peiwanId > 0) {
+  if (!peerDlmId && Number.isInteger(peiwanId) && peiwanId > 0) {
     const peiwan = await prisma.pEIWAN.findUnique({
       where: { PEIWANID: peiwanId },
       include: { member: true },
@@ -752,26 +752,26 @@ export async function startConversation(currentUser: CurrentJinleeUser, payload:
       return { ok: false, status: 404, error: '未找到陪玩。' };
     }
 
-    const ensured = await ensureJinleeUserForDiscordMember({
+    const ensured = await ensureDlmUserForDiscordMember({
       discordUserId: peiwan.discordUserId,
       displayName: peiwan.serverDisplayName ?? peiwan.member.serverDisplayName,
     });
-    peerJinleeId = ensured.jinleeId;
+    peerDlmId = ensured.dlmId;
   }
 
-  if (!peerJinleeId || peerJinleeId === currentUser.jinleeId) {
+  if (!peerDlmId || peerDlmId === currentUser.dlmId) {
     return { ok: false, status: 400, error: '无法发起该聊天。' };
   }
 
-  const peer = await prisma.jinleeUser.findUnique({
-    where: { jinleeId: peerJinleeId },
+  const peer = await prisma.dlmUser.findUnique({
+    where: { dlmId: peerDlmId },
     include: { member: true },
   });
   if (!peer) {
     return { ok: false, status: 404, error: '未找到聊天对象。' };
   }
 
-  const peerKey = buildDirectPeerKey(currentUser.jinleeId, peer.jinleeId);
+  const peerKey = buildDirectPeerKey(currentUser.dlmId, peer.dlmId);
   const conversation = await prisma.miniConversation.upsert({
     where: {
       type_peerKey: {
@@ -783,10 +783,10 @@ export async function startConversation(currentUser: CurrentJinleeUser, payload:
     create: {
       type: MiniConversationType.DIRECT,
       peerKey,
-      userAId: currentUser.jinleeId < peer.jinleeId ? currentUser.jinleeId : peer.jinleeId,
-      userBId: currentUser.jinleeId < peer.jinleeId ? peer.jinleeId : currentUser.jinleeId,
+      userAId: currentUser.dlmId < peer.dlmId ? currentUser.dlmId : peer.dlmId,
+      userBId: currentUser.dlmId < peer.dlmId ? peer.dlmId : currentUser.dlmId,
       adminWatched: true,
-      ...(currentUser.jinleeId < peer.jinleeId
+      ...(currentUser.dlmId < peer.dlmId
         ? { userALastReadAt: new Date() }
         : { userBLastReadAt: new Date() }),
       messages: {
@@ -810,7 +810,7 @@ export async function startConversation(currentUser: CurrentJinleeUser, payload:
 
   await prisma.miniConversation.update({
     where: { id: conversation.id },
-    data: conversation.userAId === currentUser.jinleeId
+    data: conversation.userAId === currentUser.dlmId
       ? { userALastReadAt: new Date() }
       : { userBLastReadAt: new Date() },
   });
@@ -823,7 +823,7 @@ function shouldBlockMessage(text: string) {
   return SENSITIVE_MESSAGE_KEYWORDS.some((keyword) => value.includes(keyword));
 }
 
-async function moderateMessage(currentUser: CurrentJinleeUser, text: string) {
+async function moderateMessage(currentUser: CurrentDlmUser, text: string) {
   if (shouldBlockMessage(text)) {
     return {
       blocked: true,
@@ -833,7 +833,7 @@ async function moderateMessage(currentUser: CurrentJinleeUser, text: string) {
     };
   }
 
-  const openId = await getWechatOpenId(currentUser.jinleeId);
+  const openId = await getWechatOpenId(currentUser.dlmId);
   if (!openId) {
     return { blocked: false, review: true, riskLabels: ['security_check_unavailable'], reason: '微信内容安全校验缺少 openId' };
   }
@@ -855,7 +855,7 @@ async function moderateMessage(currentUser: CurrentJinleeUser, text: string) {
   }
 }
 
-export async function sendMiniMessage(currentUser: CurrentJinleeUser, payload: Record<string, unknown>) {
+export async function sendMiniMessage(currentUser: CurrentDlmUser, payload: Record<string, unknown>) {
   const conversationId = String(payload.conversationId || '').trim();
   const text = String(payload.text || payload.body || '').trim();
   if (!conversationId || !text) {
@@ -878,7 +878,7 @@ export async function sendMiniMessage(currentUser: CurrentJinleeUser, payload: R
     const message = await tx.miniMessage.create({
       data: {
         conversationId,
-        senderJinleeId: currentUser.jinleeId,
+        senderDlmId: currentUser.dlmId,
         senderType: MiniMessageSenderType.USER,
         body,
         rawBody: text,
@@ -909,7 +909,7 @@ export async function sendMiniMessage(currentUser: CurrentJinleeUser, payload: R
       await postInternalBot('/internal/mini-program/moderation-alert', {
         eventId: result.event.id,
         conversationId,
-        senderJinleeId: currentUser.jinleeId,
+        senderDlmId: currentUser.dlmId,
         action: result.event.action,
         reason: result.event.reason,
         rawText: text,
@@ -926,11 +926,11 @@ export async function sendMiniMessage(currentUser: CurrentJinleeUser, payload: R
     }
   }
 
-  const peerJinleeId = conversation.userAId === currentUser.jinleeId
+  const peerDlmId = conversation.userAId === currentUser.dlmId
     ? conversation.userBId
     : conversation.userAId;
   notifyMiniProgramUser(
-    peerJinleeId,
+    peerDlmId,
     'message',
     displayNameForCurrentUser(currentUser),
     body,

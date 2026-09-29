@@ -9,17 +9,25 @@ type SyncSummary = {
   updated?: number;
   unchanged?: number;
   supersededByNewer?: number;
-  initializedChannels?: string[];
-  skippedUnregistered?: Array<{ peiwanId: number; messageId: string }>;
-  skippedUnlabelledMessageIds?: string[];
-  skippedOtherMessageIds?: string[];
+  skippedUnregistered?: Array<{ peiwanId: number; messageId: string; channelId: string }>;
+  skippedUnlabelled?: Array<{ messageId: string; channelId: string }>;
+  skippedOther?: Array<{ messageId: string; channelId: string; action: string; detail: string | null }>;
   completionMessageSent?: boolean;
   completionMessageError?: string | null;
 };
 
-function compactIds(ids: string[], limit = 8): string {
-  const visible = ids.slice(0, limit).join('、');
-  return ids.length > limit ? `${visible} 等 ${ids.length} 条` : visible;
+const DLM_GUILD_ID = '1552040603804631110';
+
+function messageUrl(channelId: string, messageId: string): string {
+  return `https://discord.com/channels/${DLM_GUILD_ID}/${channelId}/${messageId}`;
+}
+
+function MessageLink({ channelId, messageId }: { channelId: string; messageId: string }) {
+  return (
+    <a href={messageUrl(channelId, messageId)} target="_blank" rel="noreferrer" className="text-[#f1b73d] underline underline-offset-2 hover:text-[#ffd36f]">
+      打开消息
+    </a>
+  );
 }
 
 export function SyncDlmPeiwanCardsCard() {
@@ -49,8 +57,8 @@ export function SyncDlmPeiwanCardsCard() {
   };
 
   const unregistered = summary?.skippedUnregistered ?? [];
-  const unlabelled = summary?.skippedUnlabelledMessageIds ?? [];
-  const otherSkipped = summary?.skippedOtherMessageIds ?? [];
+  const unlabelled = summary?.skippedUnlabelled ?? [];
+  const otherSkipped = summary?.skippedOther ?? [];
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
@@ -75,15 +83,38 @@ export function SyncDlmPeiwanCardsCard() {
       ) : null}
       {summary ? (
         <div className="space-y-2 text-xs leading-5 text-white/65">
-          {summary.initializedChannels?.length ? <p>首次扫描已为 {summary.initializedChannels.length} 个来源频道建立同步记录。</p> : null}
-          {summary.supersededByNewer ? <p>已忽略 {summary.supersededByNewer} 条被更新名片替代的旧记录。</p> : null}
           {unregistered.length ? (
-            <p>
-              未在后台登记的陪玩编号（已跳过）：{unregistered.map((row) => `${row.peiwanId}（消息 ${row.messageId}）`).join('、')}
-            </p>
+            <div>
+              <p>未在后台登记的陪玩编号（已跳过）：</p>
+              <ul className="list-disc pl-4">
+                {unregistered.map((row) => <li key={row.messageId}>{row.peiwanId}（<MessageLink channelId={row.channelId} messageId={row.messageId} />）</li>)}
+              </ul>
+            </div>
           ) : null}
-          {unlabelled.length ? <p>未填写陪玩编号的图片消息（已跳过）：{compactIds(unlabelled)}</p> : null}
-          {otherSkipped.length ? <p>需人工确认的图片消息（已跳过）：{compactIds(otherSkipped)}</p> : null}
+          {unlabelled.length ? (
+            <div>
+              <p>以下图片消息未填写陪玩 ID，已跳过：</p>
+              <ul className="list-disc pl-4">
+                {unlabelled.map((row) => <li key={row.messageId}><MessageLink channelId={row.channelId} messageId={row.messageId} /></li>)}
+              </ul>
+            </div>
+          ) : null}
+          {otherSkipped.length ? (
+            <div>
+              <p>以下图片消息需要调整后重新上传：</p>
+              <ul className="list-disc pl-4">
+                {otherSkipped.map((row) => (
+                  <li key={row.messageId}>
+                    {row.action === 'SKIPPED_MULTIPLE_PEIWAN_IDS'
+                      ? '请在消息文字中仅填写一个陪玩 ID'
+                      : row.action === 'SKIPPED_MULTIPLE_IMAGES'
+                        ? '请每条消息只保留一张名片图片'
+                        : row.detail ?? '请检查消息内容'}（<MessageLink channelId={row.channelId} messageId={row.messageId} />）
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {summary.completionMessageSent ? (
             <p>已在「名片」频道发送“以上名片已经上传完成”。</p>
           ) : summary.completionMessageError ? (

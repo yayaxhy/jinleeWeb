@@ -7,7 +7,7 @@
 - 网站标题、描述、Open Graph / Twitter、Organization / WebSite 结构化数据、canonical、sitemap 和 robots 改用新品牌与域名。
 - 原始 Logo：`public/DLMLOGO.png`。用于导航、匿名头像、重铸页面和结构化数据。
 - 分享图：`public/og-dlmclub-logo.png`（1200×630）；浏览器图标：`app/favicon.ico`；Apple 图标：`app/apple-icon.png`。
-- `npm run brand:assets` 只做原图的等比例尺寸和格式导出，不重绘、不裁切。旧 favicon 保存在 `docs/branding/legacy/favicon-jinlee.ico`，旧分享图及其他素材没有删除。
+- `npm run brand:assets` 只做原图的等比例尺寸和格式导出，不重绘、不裁切。旧 favicon 保存在 `docs/branding/legacy/favicon-dlm.ico`，旧分享图及其他素材没有删除。
 - Discord 邀请：`https://discord.gg/7zrsT2ysYd`。
 - Discord 客服：`1552030874076315777`；桌面客户端唤起失败时转到同一用户的网页版资料页，而不是旧邀请链接。陪玩入职联系人单独保留。
 - 微信支付默认描述：`点了么娱乐公会账户充值`；ZPay 默认站点名：`DLMClub`。显式环境变量仍有优先权。
@@ -15,7 +15,7 @@
 
 ## 明确保留的内容
 
-不修改数据库结构、会员 ID、`jinleeId` / `JinleeUser` 等内部字段、会话 Cookie 名称、金额、抽成、奖励数值、业务权限和 Discord 角色 ID。
+不修改数据库结构、会员 ID、`dlmId` / `DlmUser` 等内部字段、会话 Cookie 名称、金额、抽成、奖励数值、业务权限和 Discord 角色 ID。
 
 VIP 等级名称已按 Discord 当前角色统一为“小班”至“大学生”。恋爱等级、作物“锦鲤花”和“锦鲤附体”祝福语不是 VIP 等级名称，暂时保留。数据库里的历史订单、礼物及图片不做批量改写。
 
@@ -25,16 +25,16 @@ Bot 的其他通知动图、VIP 图片和临时 Discord 附件地址不在这次
 
 ## 2026-09-25 线上环境只读核对
 
-检查对象：网站服务器 `43.131.41.173` 上 `/root/jinleeWeb/.env` 的以下公开配置项；未读取或输出密钥、商户私钥、数据库连接串。这里记录的是文件内容，不等同于已验证运行进程的实时环境。
+检查对象：网站服务器 `43.131.41.173` 上 `/root/dlmWeb/.env` 的以下公开配置项；未读取或输出密钥、商户私钥、数据库连接串。这里记录的是文件内容，不等同于已验证运行进程的实时环境。
 
 | 配置 | 线上文件当前值 | 新域名正式切换时的目标 |
 | --- | --- | --- |
-| `NEXTAUTH_URL` | `https://jinleeclub.vip` | `https://dlmclub.com` |
-| `SITE_ORIGIN` | `https://jinleeclub.vip` | `https://dlmclub.com` |
-| `ZPAY_PRODUCTION_ORIGIN` | `https://jinleeclub.vip` | `https://dlmclub.com` |
-| `ZPAY_NOTIFY_URL` | `https://jinleeclub.vip/api/payment/zpay/notify` | `https://dlmclub.com/api/payment/zpay/notify` |
-| `ZPAY_RETURN_URL` | `https://jinleeclub.vip/recharge/result` | `https://dlmclub.com/recharge/result` |
-| `WECHAT_PAY_NOTIFY_URL` | `https://jinleeclub.vip/api/payment/wechat/notify` | `https://dlmclub.com/api/payment/wechat/notify` |
+| `NEXTAUTH_URL` | `https://dlmclub.vip` | `https://dlmclub.com` |
+| `SITE_ORIGIN` | `https://dlmclub.vip` | `https://dlmclub.com` |
+| `ZPAY_PRODUCTION_ORIGIN` | `https://dlmclub.vip` | `https://dlmclub.com` |
+| `ZPAY_NOTIFY_URL` | `https://dlmclub.vip/api/payment/zpay/notify` | `https://dlmclub.com/api/payment/zpay/notify` |
+| `ZPAY_RETURN_URL` | `https://dlmclub.vip/recharge/result` | `https://dlmclub.com/recharge/result` |
+| `WECHAT_PAY_NOTIFY_URL` | `https://dlmclub.vip/api/payment/wechat/notify` | `https://dlmclub.com/api/payment/wechat/notify` |
 | `WECHAT_PAY_ORDER_DESCRIPTION_PREFIX` | `锦鲤俱乐部账户充值` | `点了么娱乐公会账户充值` |
 | `ZPAY_SITE_NAME` | 文件未显式设置 | `DLMClub`（或使用新代码默认值） |
 
@@ -47,7 +47,7 @@ Bot 的其他通知动图、VIP 图片和临时 Discord 附件地址不在这次
 3. 在 Discord 应用后台登记实际使用的新域名回调地址，再切换 `NEXTAUTH_URL`。项目包含登录、绑定和迁移等入口，应逐一核对代码中的 redirect URI；此文不表示后台白名单已配置。
 4. 核对微信/ZPay/Stripe 后台域名、回调及展示名称。不要改商户号、AppID、密钥、订单号前缀或支付金额；支付平台上的产品名称和收款主体不是网站文案，需单独审核。
 5. 按上表备份并逐项更新网站生产环境；核对 Bot 的 `SUPPORT_STAFF_USER_ID=1552030874076315777` 和 `PROFILE_PERSONALISATION_URL=https://dlmclub.com/profile?tab=profile-personalisation` 等显式覆盖值。当前没有修改 Bot 线上配置。
-6. 网站需要重新构建并按实际部署方式重启 PM2 进程（线上观察到名称为 `jinlee`，不能直接照搬文档中的 `jinlee-web`）。Bot 需要编译和发布新图片；不要在未获明确许可时运行 Bot 启动流程，其 watcher 可能创建数据库触发器。
+6. 网站需要重新构建并按实际部署方式重启 PM2 进程（线上观察到名称为 `dlm`，不能直接照搬文档中的 `dlm-web`）。Bot 需要编译和发布新图片；不要在未获明确许可时运行 Bot 启动流程，其 watcher 可能创建数据库触发器。
 7. 验证首页、个人中心、后台、客服入口、邀请链接、分享图片、favicon 和 sitemap；使用授权测试账号完成登录及支付回调验证，不凭页面展示断言支付已打通。
 8. 旧域名及支付回调兼容应保留到旧订单和旧入口不再依赖后再单独安排下线。
 

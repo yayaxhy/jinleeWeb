@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { isAdminDiscordId } from '@/lib/admin';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import RechargeClient from '../RechargeClient';
 
 export default async function StripeRechargePage() {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/accounts/discord/login?callbackUrl=%2Frecharge%2Fstripe');
   }
@@ -14,9 +14,9 @@ export default async function StripeRechargePage() {
   }
 
   const username =
-    currentUser.jinleeUser.discordDisplayName ??
-    currentUser.jinleeUser.member?.serverDisplayName ??
-    currentUser.jinleeUser.wechatDisplayName ??
+    currentUser.dlmUser.discordDisplayName ??
+    currentUser.dlmUser.member?.serverDisplayName ??
+    currentUser.dlmUser.wechatDisplayName ??
     '微信用户';
 
   return (

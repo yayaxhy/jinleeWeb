@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
   OPENING_BENEFIT,
   OpeningBenefitError,
@@ -48,7 +48,7 @@ const errorResponse = (error: OpeningBenefitError) => {
 };
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   try {
     const coupon = await claimOpeningBenefit({
-      jinleeId: currentUser.jinleeId,
+      dlmId: currentUser.dlmId,
       benefit: body.benefit as OpeningBenefitName,
     });
     return NextResponse.json({

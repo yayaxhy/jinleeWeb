@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
   buildVoicePreviewAudioResponse,
   resolveStoredVoicePreviewFileNameFromUrl,
@@ -51,7 +51,7 @@ const normalizeContentType = (contentType?: string | null) =>
     .toLowerCase();
 
 const ensurePeiwan = async (request?: Request) => {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   const discordUserId = currentUser?.discordUserId?.trim();
   if (!discordUserId) {
     return { error: NextResponse.json({ error: '未登录' }, { status: 401 }) };

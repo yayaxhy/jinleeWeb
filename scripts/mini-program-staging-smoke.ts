@@ -11,11 +11,11 @@ import { GET as getConversation } from '@/app/api/messages/conversations/[conver
 import { POST as sendMessage } from '@/app/api/messages/route';
 
 const FIXTURE = {
-  ownerJinleeId: 'stg_smoke_owner',
+  ownerDlmId: 'stg_smoke_owner',
   ownerDiscordId: 'stg_smoke_owner_discord',
   workers: [
-    { jinleeId: 'stg_smoke_worker_1', discordId: 'stg_smoke_worker_discord_1', peiwanId: 990001, name: '测试陪玩一' },
-    { jinleeId: 'stg_smoke_worker_2', discordId: 'stg_smoke_worker_discord_2', peiwanId: 990002, name: '测试陪玩二' },
+    { dlmId: 'stg_smoke_worker_1', discordId: 'stg_smoke_worker_discord_1', peiwanId: 990001, name: '测试陪玩一' },
+    { dlmId: 'stg_smoke_worker_2', discordId: 'stg_smoke_worker_discord_2', peiwanId: 990002, name: '测试陪玩二' },
   ],
 };
 
@@ -51,11 +51,11 @@ async function body<T>(response: Response): Promise<T> {
 }
 
 async function cleanup() {
-  const jinleeIds = [FIXTURE.ownerJinleeId, ...FIXTURE.workers.map((worker) => worker.jinleeId)];
+  const dlmIds = [FIXTURE.ownerDlmId, ...FIXTURE.workers.map((worker) => worker.dlmId)];
   const discordIds = [FIXTURE.ownerDiscordId, ...FIXTURE.workers.map((worker) => worker.discordId)];
 
   const dispatches = await prisma.dispatchRequest.findMany({
-    where: { ownerJinleeId: FIXTURE.ownerJinleeId },
+    where: { ownerDlmId: FIXTURE.ownerDlmId },
     select: { id: true },
   });
   const dispatchIds = dispatches.map((dispatch) => dispatch.id);
@@ -63,11 +63,11 @@ async function cleanup() {
   await prisma.order.deleteMany({ where: { dispatchRequestId: { in: dispatchIds } } });
   await prisma.dispatchRequest.deleteMany({ where: { id: { in: dispatchIds } } });
   await prisma.miniConversation.deleteMany({
-    where: { OR: [{ userAId: { in: jinleeIds } }, { userBId: { in: jinleeIds } }] },
+    where: { OR: [{ userAId: { in: dlmIds } }, { userBId: { in: dlmIds } }] },
   });
-  await prisma.wechatProgramSession.deleteMany({ where: { jinleeId: { in: jinleeIds } } });
-  await prisma.accountBinding.deleteMany({ where: { jinleeId: { in: jinleeIds } } });
-  await prisma.jinleeUser.deleteMany({ where: { jinleeId: { in: jinleeIds } } });
+  await prisma.wechatProgramSession.deleteMany({ where: { dlmId: { in: dlmIds } } });
+  await prisma.accountBinding.deleteMany({ where: { dlmId: { in: dlmIds } } });
+  await prisma.dlmUser.deleteMany({ where: { dlmId: { in: dlmIds } } });
   await prisma.pEIWAN.deleteMany({ where: { PEIWANID: { in: FIXTURE.workers.map((worker) => worker.peiwanId) } } });
   await prisma.member.deleteMany({ where: { discordUserId: { in: discordIds } } });
 }
@@ -84,9 +84,9 @@ async function createFixtures() {
       recharge: 1000,
     },
   });
-  await prisma.jinleeUser.create({
+  await prisma.dlmUser.create({
     data: {
-      jinleeId: FIXTURE.ownerJinleeId,
+      dlmId: FIXTURE.ownerDlmId,
       discordUserId: FIXTURE.ownerDiscordId,
       discordDisplayName: '测试老板',
       totalBalance: 1000,
@@ -102,9 +102,9 @@ async function createFixtures() {
         serverDisplayName: worker.name,
       },
     });
-    await prisma.jinleeUser.create({
+    await prisma.dlmUser.create({
       data: {
-        jinleeId: worker.jinleeId,
+        dlmId: worker.dlmId,
         discordUserId: worker.discordId,
         discordDisplayName: worker.name,
       },
@@ -120,9 +120,9 @@ async function createFixtures() {
     });
   }
 
-  const ownerSession = await createWechatProgramSession({ jinleeId: FIXTURE.ownerJinleeId });
+  const ownerSession = await createWechatProgramSession({ dlmId: FIXTURE.ownerDlmId });
   const workerSessions = await Promise.all(
-    FIXTURE.workers.map((worker) => createWechatProgramSession({ jinleeId: worker.jinleeId })),
+    FIXTURE.workers.map((worker) => createWechatProgramSession({ dlmId: worker.dlmId })),
   );
 
   return {
@@ -132,8 +132,8 @@ async function createFixtures() {
 }
 
 async function run() {
-  if (process.env.JINLEE_ENV !== 'staging') {
-    throw new Error('This smoke test only runs with JINLEE_ENV=staging.');
+  if (process.env.DLM_ENV !== 'staging') {
+    throw new Error('This smoke test only runs with DLM_ENV=staging.');
   }
 
   const { ownerToken, workerTokens } = await createFixtures();
@@ -212,7 +212,7 @@ async function run() {
 
   const conversationResponse = await startConversation(
     request('http://staging.local/api/messages/conversations', ownerToken, {
-      peerJinleeId: FIXTURE.workers[0].jinleeId,
+      peerDlmId: FIXTURE.workers[0].dlmId,
     }),
   );
   assert.equal(conversationResponse.status, 200);

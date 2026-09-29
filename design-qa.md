@@ -2,11 +2,11 @@
 
 - Date: 2026-06-20
 - Page: `http://localhost:3017/profile/lottery-fusion/demo`
-- Reference image: `/Users/user/Documents/GitHub/jinleeWeb/public/lottery-fusion/reference/source-reference.png`
-- Idle-state capture: `/Users/user/Documents/GitHub/jinleeWeb/output/design-audit/reroll-demo-2026-06-20/01-idle.png`
-- Inline charging capture: `/Users/user/Documents/GitHub/jinleeWeb/output/design-audit/reroll-demo-2026-06-20/05-inline-charging-final.png`
-- Inline complete capture: `/Users/user/Documents/GitHub/jinleeWeb/output/design-audit/reroll-demo-2026-06-20/06-inline-complete-final.png`
-- Result panel crop asset: `/Users/user/Documents/GitHub/jinleeWeb/public/lottery-fusion/reference/result-panel-complete.png`
+- Reference image: `/Users/user/Documents/GitHub/dlmWeb/public/lottery-fusion/reference/source-reference.png`
+- Idle-state capture: `/Users/user/Documents/GitHub/dlmWeb/output/design-audit/reroll-demo-2026-06-20/01-idle.png`
+- Inline charging capture: `/Users/user/Documents/GitHub/dlmWeb/output/design-audit/reroll-demo-2026-06-20/05-inline-charging-final.png`
+- Inline complete capture: `/Users/user/Documents/GitHub/dlmWeb/output/design-audit/reroll-demo-2026-06-20/06-inline-complete-final.png`
+- Result panel crop asset: `/Users/user/Documents/GitHub/dlmWeb/public/lottery-fusion/reference/result-panel-complete.png`
 - Viewport: `1487 x 1058`
 - Checked state: six-item reroll selected, `蝶光之翼` already revealed in the right-side result panel
 

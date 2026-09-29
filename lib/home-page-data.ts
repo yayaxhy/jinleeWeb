@@ -250,8 +250,8 @@ type AvatarSource = {
   wechatAvatarUrl?: string | null;
 };
 
-const getMemberAvatarUrl = (member?: { jinleeUser?: AvatarSource | null } | null) =>
-  member?.jinleeUser?.discordAvatarUrl ?? member?.jinleeUser?.wechatAvatarUrl ?? null;
+const getMemberAvatarUrl = (member?: { dlmUser?: AvatarSource | null } | null) =>
+  member?.dlmUser?.discordAvatarUrl ?? member?.dlmUser?.wechatAvatarUrl ?? null;
 
 const addToAmountMap = (map: Map<string, number>, discordId: string | null, delta: number) => {
   if (!discordId || EXCLUDED_USER_IDS.has(discordId) || delta === 0) return;
@@ -433,7 +433,7 @@ async function buildCompanionRanking(period: PeriodKey, issues: string[]) {
     select: {
       discordUserId: true,
       serverDisplayName: true,
-      jinleeUser: { select: { discordAvatarUrl: true, wechatAvatarUrl: true } },
+      dlmUser: { select: { discordAvatarUrl: true, wechatAvatarUrl: true } },
       peiwan: {
         select: {
           PEIWANID: true,
@@ -482,7 +482,7 @@ async function buildBossRanking(period: PeriodKey, issues: string[]) {
     select: {
       discordUserId: true,
       serverDisplayName: true,
-      jinleeUser: { select: { discordAvatarUrl: true, wechatAvatarUrl: true, totalSpent: true } },
+      dlmUser: { select: { discordAvatarUrl: true, wechatAvatarUrl: true, totalSpent: true } },
       bossProfile: {
         select: {
           displayName: true,
@@ -503,7 +503,7 @@ async function buildBossRanking(period: PeriodKey, issues: string[]) {
       : null;
     const anonymous = ANON_SPEND_USER_IDS.has(discordUserId);
     const publicName = currentProfile?.displayName?.trim() || member?.serverDisplayName?.trim() || null;
-    const vipLevel = getHighestVipLevelByTotalSpent(member?.jinleeUser?.totalSpent?.toString());
+    const vipLevel = getHighestVipLevelByTotalSpent(member?.dlmUser?.totalSpent?.toString());
 
     return {
       name: anonymous ? '匿名老板' : (publicName ?? `神秘老板 ${index + 1}`),
@@ -740,7 +740,7 @@ export async function loadHomePageData(): Promise<HomePageData> {
   const issues: string[] = [
     '老板榜：官网当前复用 Discord 榜单的固定匿名 ID；正式后台可追加“是否匿名上榜”偏好字段。',
     '陪玩推荐：推荐理由、主推文案、展示顺序目前不是后台字段，当前从推荐图、游戏标签和状态自动生成。',
-    '头像：榜单会优先读取 JinleeUser 的 Discord/微信头像；没有头像时回退为首字母占位。',
+    '头像：榜单会优先读取 DlmUser 的 Discord/微信头像；没有头像时回退为首字母占位。',
     '榜单：官网日榜/周榜/月榜已按 Discord 榜单口径读取实际流水，并使用 Europe/Rome 时区。',
   ];
 

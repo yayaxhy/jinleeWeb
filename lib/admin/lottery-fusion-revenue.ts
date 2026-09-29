@@ -66,14 +66,14 @@ export type LotteryFusionRevenueSummary = {
 } & LotteryFusionActivityBreakdown;
 
 const buildIdentityExclusion = (
-  jinleeField: string,
+  dlmField: string,
   discordField: string | null,
-  excludeJinleeIds: string[],
+  excludeDlmIds: string[],
   excludeDiscordIds: string[],
 ) => {
   const clauses: Record<string, unknown>[] = [];
-  if (excludeJinleeIds.length) {
-    clauses.push({ [jinleeField]: { in: excludeJinleeIds } });
+  if (excludeDlmIds.length) {
+    clauses.push({ [dlmField]: { in: excludeDlmIds } });
   }
   if (discordField && excludeDiscordIds.length) {
     clauses.push({ [discordField]: { in: excludeDiscordIds } });
@@ -219,19 +219,19 @@ export const buildLotteryFusionActivityBreakdown = (params: {
 export const getLotteryFusionRevenueSummary = async (params: {
   start: Date;
   end: Date;
-  excludeJinleeIds: string[];
+  excludeDlmIds: string[];
   excludeDiscordIds: string[];
   now?: Date;
 }): Promise<LotteryFusionRevenueSummary> => {
-  const { start, end, excludeJinleeIds, excludeDiscordIds, now = new Date() } = params;
+  const { start, end, excludeDlmIds, excludeDiscordIds, now = new Date() } = params;
 
   const createdWhere: Prisma.LotteryDrawWhereInput = {
     nonce: { startsWith: LOTTERY_FUSION_DRAW_NONCE_PREFIX },
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'userId',
-      excludeJinleeIds,
+      excludeDlmIds,
       excludeDiscordIds,
     ) as Prisma.LotteryDrawWhereInput),
   };
@@ -240,9 +240,9 @@ export const getLotteryFusionRevenueSummary = async (params: {
     nonce: { startsWith: LOTTERY_FUSION_DRAW_NONCE_PREFIX },
     consumeAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'userId',
-      excludeJinleeIds,
+      excludeDlmIds,
       excludeDiscordIds,
     ) as Prisma.LotteryDrawWhereInput),
   };
@@ -254,9 +254,9 @@ export const getLotteryFusionRevenueSummary = async (params: {
     consumeAt: null,
     OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'userId',
-      excludeJinleeIds,
+      excludeDlmIds,
       excludeDiscordIds,
     ) as Prisma.LotteryDrawWhereInput),
   };

@@ -13,8 +13,8 @@ if (!fs.existsSync(envPath)) {
 const loaded = dotenv.config({ path: envPath, override: true });
 if (loaded.error) throw loaded.error;
 
-if (process.env.JINLEE_ENV !== 'staging') {
-  console.error('[staging] JINLEE_ENV must be exactly "staging".');
+if (process.env.DLM_ENV !== 'staging') {
+  console.error('[staging] DLM_ENV must be exactly "staging".');
   process.exit(1);
 }
 

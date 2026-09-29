@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PointShopClient } from '@/components/profile/PointShopClient';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { getPointShopDashboard } from '@/lib/pointShop';
 
 export const dynamic = 'force-dynamic';
@@ -11,13 +11,13 @@ const decToString = (value: { toString(): string } | null | undefined) =>
   value ? value.toString() : '0';
 
 export default async function PointShopPage() {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/');
   }
 
   const dashboard = await getPointShopDashboard({
-    jinleeId: currentUser.jinleeId,
+    dlmId: currentUser.dlmId,
     discordUserId: currentUser.discordUserId,
   });
 

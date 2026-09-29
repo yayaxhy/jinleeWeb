@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 import { AccountProvider } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { prisma } from '@/lib/prisma';
 import { createWechatBindSceneCode } from '@/lib/wechat-bind-scene';
 import { createWechatBindToken } from '@/lib/wechat-bind-token';
@@ -11,9 +11,9 @@ import {
   generateMiniProgramUrlLink,
 } from '@/lib/wechat';
 
-const resolveWechatBindingStatus = async (jinleeId: string) => {
-  const jinleeUser = await prisma.jinleeUser.findUnique({
-    where: { jinleeId },
+const resolveWechatBindingStatus = async (dlmId: string) => {
+  const dlmUser = await prisma.dlmUser.findUnique({
+    where: { dlmId },
     select: {
       wechatDisplayName: true,
       accountBindings: {
@@ -27,14 +27,14 @@ const resolveWechatBindingStatus = async (jinleeId: string) => {
     },
   });
 
-  if (!jinleeUser) {
+  if (!dlmUser) {
     return null;
   }
 
   return {
-    bound: jinleeUser.accountBindings.length > 0,
-    wechatDisplayName: jinleeUser.wechatDisplayName ?? null,
-    canUnbind: jinleeUser.accountBindings.length > 0,
+    bound: dlmUser.accountBindings.length > 0,
+    wechatDisplayName: dlmUser.wechatDisplayName ?? null,
+    canUnbind: dlmUser.accountBindings.length > 0,
   };
 };
 
@@ -74,7 +74,7 @@ const buildBindErrorResponse = (error: unknown) => {
 };
 
 export async function GET() {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -83,9 +83,9 @@ export async function GET() {
     return buildUnsupportedResponse();
   }
 
-  const status = await resolveWechatBindingStatus(currentUser.jinleeId);
+  const status = await resolveWechatBindingStatus(currentUser.dlmId);
   if (!status) {
-    return NextResponse.json({ ok: false, error: 'jinlee_user_not_found' }, { status: 404 });
+    return NextResponse.json({ ok: false, error: 'dlm_user_not_found' }, { status: 404 });
   }
 
   return NextResponse.json({
@@ -95,7 +95,7 @@ export async function GET() {
 }
 
 export async function POST() {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -104,9 +104,9 @@ export async function POST() {
     return buildUnsupportedResponse();
   }
 
-  const status = await resolveWechatBindingStatus(currentUser.jinleeId);
+  const status = await resolveWechatBindingStatus(currentUser.dlmId);
   if (!status) {
-    return NextResponse.json({ ok: false, error: 'jinlee_user_not_found' }, { status: 404 });
+    return NextResponse.json({ ok: false, error: 'dlm_user_not_found' }, { status: 404 });
   }
 
   if (status.bound) {
@@ -117,7 +117,7 @@ export async function POST() {
   }
 
   try {
-    const { token, expiresAt } = createWechatBindToken(currentUser.jinleeId);
+    const { token, expiresAt } = createWechatBindToken(currentUser.dlmId);
     try {
       const urlLink = await generateMiniProgramUrlLink({
         path: 'pages/wechat-bind/index',

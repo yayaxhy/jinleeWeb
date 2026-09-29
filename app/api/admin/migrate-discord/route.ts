@@ -105,14 +105,14 @@ const MANUAL_DISCORD_ID_UPDATES = [
 
 type MigrateBody = { oldDiscordId?: string; newDiscordId?: string; forceTakeover?: boolean };
 
-type TakeoverClient = Pick<typeof prisma, 'member' | 'jinleeUser' | 'accountBinding'>;
+type TakeoverClient = Pick<typeof prisma, 'member' | 'dlmUser' | 'accountBinding'>;
 
 type TakeoverSummary = {
   occupied: boolean;
-  occupiedJinleeIds: string[];
+  occupiedDlmIds: string[];
   member: {
     discordUserId: string;
-    linkedJinleeId: string | null;
+    linkedDlmId: string | null;
     status: string;
     totalBalance: string;
     income: string;
@@ -120,8 +120,8 @@ type TakeoverSummary = {
     totalSpent: string;
     serverDisplayName: string | null;
   } | null;
-  jinleeUser: {
-    jinleeId: string;
+  dlmUser: {
+    dlmId: string;
     discordUserId: string | null;
     sessionVersion: number;
     totalBalance: string;
@@ -134,7 +134,7 @@ type TakeoverSummary = {
   } | null;
   discordBinding: {
     id: string;
-    jinleeId: string;
+    dlmId: string;
     providerUserId: string;
     lastLoginAt: string | null;
     createdAt: string;
@@ -152,19 +152,19 @@ const toIsoString = (value: Date | null) => value?.toISOString() ?? null;
 const buildArchivedDiscordId = (discordId: string) =>
   `archived_${discordId}_${Date.now()}_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
 
-const collectTakeoverJinleeIds = (summary: TakeoverSummary) =>
+const collectTakeoverDlmIds = (summary: TakeoverSummary) =>
   Array.from(
     new Set(
       [
-        summary.member?.linkedJinleeId ?? null,
-        summary.jinleeUser?.jinleeId ?? null,
-        summary.discordBinding?.jinleeId ?? null,
+        summary.member?.linkedDlmId ?? null,
+        summary.dlmUser?.dlmId ?? null,
+        summary.discordBinding?.dlmId ?? null,
       ].filter((value): value is string => Boolean(value)),
     ),
   );
 
 const loadTakeoverSummary = async (client: TakeoverClient, discordId: string): Promise<TakeoverSummary> => {
-  const [member, jinleeUser, discordBinding] = await Promise.all([
+  const [member, dlmUser, discordBinding] = await Promise.all([
     client.member.findUnique({
       where: { discordUserId: discordId },
       select: {
@@ -175,15 +175,15 @@ const loadTakeoverSummary = async (client: TakeoverClient, discordId: string): P
         recharge: true,
         totalSpent: true,
         serverDisplayName: true,
-        jinleeUser: {
-          select: { jinleeId: true },
+        dlmUser: {
+          select: { dlmId: true },
         },
       },
     }),
-    client.jinleeUser.findUnique({
+    client.dlmUser.findUnique({
       where: { discordUserId: discordId },
       select: {
-        jinleeId: true,
+        dlmId: true,
         discordUserId: true,
         sessionVersion: true,
         totalBalance: true,
@@ -204,7 +204,7 @@ const loadTakeoverSummary = async (client: TakeoverClient, discordId: string): P
       },
       select: {
         id: true,
-        jinleeId: true,
+        dlmId: true,
         providerUserId: true,
         lastLoginAt: true,
         createdAt: true,
@@ -214,12 +214,12 @@ const loadTakeoverSummary = async (client: TakeoverClient, discordId: string): P
   ]);
 
   const summary: TakeoverSummary = {
-    occupied: Boolean(member || jinleeUser || discordBinding),
-    occupiedJinleeIds: [],
+    occupied: Boolean(member || dlmUser || discordBinding),
+    occupiedDlmIds: [],
     member: member
       ? {
           discordUserId: member.discordUserId,
-          linkedJinleeId: member.jinleeUser?.jinleeId ?? null,
+          linkedDlmId: member.dlmUser?.dlmId ?? null,
           status: member.status,
           totalBalance: member.totalBalance.toString(),
           income: member.income.toString(),
@@ -228,24 +228,24 @@ const loadTakeoverSummary = async (client: TakeoverClient, discordId: string): P
           serverDisplayName: member.serverDisplayName ?? null,
         }
       : null,
-    jinleeUser: jinleeUser
+    dlmUser: dlmUser
       ? {
-          jinleeId: jinleeUser.jinleeId,
-          discordUserId: jinleeUser.discordUserId ?? null,
-          sessionVersion: jinleeUser.sessionVersion,
-          totalBalance: jinleeUser.totalBalance.toString(),
-          income: jinleeUser.income.toString(),
-          recharge: jinleeUser.recharge.toString(),
-          totalSpent: jinleeUser.totalSpent.toString(),
-          loyaltyPoints: jinleeUser.loyaltyPoints.toString(),
-          createdAt: jinleeUser.createdAt.toISOString(),
-          updatedAt: jinleeUser.updatedAt.toISOString(),
+          dlmId: dlmUser.dlmId,
+          discordUserId: dlmUser.discordUserId ?? null,
+          sessionVersion: dlmUser.sessionVersion,
+          totalBalance: dlmUser.totalBalance.toString(),
+          income: dlmUser.income.toString(),
+          recharge: dlmUser.recharge.toString(),
+          totalSpent: dlmUser.totalSpent.toString(),
+          loyaltyPoints: dlmUser.loyaltyPoints.toString(),
+          createdAt: dlmUser.createdAt.toISOString(),
+          updatedAt: dlmUser.updatedAt.toISOString(),
         }
       : null,
     discordBinding: discordBinding
       ? {
           id: discordBinding.id,
-          jinleeId: discordBinding.jinleeId,
+          dlmId: discordBinding.dlmId,
           providerUserId: discordBinding.providerUserId,
           lastLoginAt: toIsoString(discordBinding.lastLoginAt),
           createdAt: discordBinding.createdAt.toISOString(),
@@ -254,7 +254,7 @@ const loadTakeoverSummary = async (client: TakeoverClient, discordId: string): P
       : null,
   };
 
-  summary.occupiedJinleeIds = collectTakeoverJinleeIds(summary);
+  summary.occupiedDlmIds = collectTakeoverDlmIds(summary);
   return summary;
 };
 
@@ -322,9 +322,9 @@ export async function POST(request: NextRequest) {
 
     await prisma.$transaction(
       async (tx) => {
-        const oldJinleeUser = await tx.jinleeUser.findUnique({
+        const oldDlmUser = await tx.dlmUser.findUnique({
           where: { discordUserId: oldId },
-          select: { jinleeId: true },
+          select: { dlmId: true },
         });
 
         const targetTakeover = await loadTakeoverSummary(tx as TakeoverClient, newId);
@@ -336,28 +336,28 @@ export async function POST(request: NextRequest) {
           finalTakeover = targetTakeover;
           archiveDiscordId = buildArchivedDiscordId(newId);
 
-          for (const jinleeId of targetTakeover.occupiedJinleeIds) {
-            await tx.jinleeUser.update({
-              where: { jinleeId },
+          for (const dlmId of targetTakeover.occupiedDlmIds) {
+            await tx.dlmUser.update({
+              where: { dlmId },
               data: { sessionVersion: { increment: 1 } },
             });
           }
-          changed['ArchivedTarget.JinleeUser.sessionVersion'] = targetTakeover.occupiedJinleeIds.length;
+          changed['ArchivedTarget.DlmUser.sessionVersion'] = targetTakeover.occupiedDlmIds.length;
 
           const archivedMemberChanged = await tx.$executeRaw`UPDATE "Member" SET "discordUserId" = ${archiveDiscordId} WHERE "discordUserId" = ${newId}`;
           changed['ArchivedTarget.Member.discordUserId'] = toChangedCount(archivedMemberChanged);
 
-          const archivedJinleeUsers = await tx.jinleeUser.updateMany({
+          const archivedDlmUsers = await tx.dlmUser.updateMany({
             where: { discordUserId: newId },
             data: { discordUserId: archiveDiscordId },
           });
-          changed['ArchivedTarget.JinleeUser.discordUserId'] = archivedJinleeUsers.count;
+          changed['ArchivedTarget.DlmUser.discordUserId'] = archivedDlmUsers.count;
 
           await runManualDiscordIdSql(tx, MANUAL_DISCORD_ID_UPDATES, archiveDiscordId, newId, changed, 'ArchivedTarget.');
         } else {
-          changed['ArchivedTarget.JinleeUser.sessionVersion'] = 0;
+          changed['ArchivedTarget.DlmUser.sessionVersion'] = 0;
           changed['ArchivedTarget.Member.discordUserId'] = 0;
-          changed['ArchivedTarget.JinleeUser.discordUserId'] = 0;
+          changed['ArchivedTarget.DlmUser.discordUserId'] = 0;
         }
 
         const memberChanged = await tx.$executeRaw`UPDATE "Member" SET "discordUserId" = ${newId} WHERE "discordUserId" = ${oldId}`;
@@ -366,14 +366,14 @@ export async function POST(request: NextRequest) {
           throw new Error('旧账号不存在或已被其他事务修改，请刷新后重试');
         }
 
-        if (oldJinleeUser) {
-          await tx.jinleeUser.update({
-            where: { jinleeId: oldJinleeUser.jinleeId },
+        if (oldDlmUser) {
+          await tx.dlmUser.update({
+            where: { dlmId: oldDlmUser.dlmId },
             data: { sessionVersion: { increment: 1 } },
           });
-          changed['JinleeUser.sessionVersion'] = 1;
+          changed['DlmUser.sessionVersion'] = 1;
         } else {
-          changed['JinleeUser.sessionVersion'] = 0;
+          changed['DlmUser.sessionVersion'] = 0;
         }
 
         await runManualDiscordIdSql(tx, MANUAL_DISCORD_ID_UPDATES, newId, oldId, changed);
@@ -384,7 +384,7 @@ export async function POST(request: NextRequest) {
             oldDiscordId: oldId,
             newDiscordId: newId,
             archiveDiscordId,
-            sourceJinleeId: oldJinleeUser?.jinleeId ?? null,
+            sourceDlmId: oldDlmUser?.dlmId ?? null,
             forceTakeover: Boolean(archiveDiscordId),
             takeoverSnapshot: finalTakeover ? (finalTakeover as Prisma.InputJsonValue) : undefined,
             changed: changed as Prisma.InputJsonValue,

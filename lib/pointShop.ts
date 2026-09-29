@@ -9,7 +9,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx, type JinleeWalletIdentity } from '@/lib/jinlee-wallet';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx, type DlmWalletIdentity } from '@/lib/dlm-wallet';
 import { GIFT_NAME_BY_PRIZE_NAME } from '@/lib/voucherCatalog';
 
 const DEC = (value: Prisma.Decimal | number | string) =>
@@ -67,7 +67,7 @@ export type PointShopDashboard = {
   cart: PointShopCartView | null;
 };
 
-export type PointShopUserIdentity = JinleeWalletIdentity;
+export type PointShopUserIdentity = DlmWalletIdentity;
 
 export type AddCartItemResult =
   | { status: 'ok'; cart: PointShopCartView }
@@ -154,7 +154,7 @@ async function withSerializableRetry<T>(fn: () => Promise<T>): Promise<T> {
 
 async function getOrCreateOpenCartTx(tx: Prisma.TransactionClient, identity: PointShopUserIdentity) {
   const existing = await tx.pointShopCart.findFirst({
-    where: { jinleeId: identity.jinleeId, status: PointShopCartStatus.OPEN },
+    where: { dlmId: identity.dlmId, status: PointShopCartStatus.OPEN },
     orderBy: { updatedAt: 'desc' },
   });
   if (existing) return existing;
@@ -163,7 +163,7 @@ async function getOrCreateOpenCartTx(tx: Prisma.TransactionClient, identity: Poi
     return await tx.pointShopCart.create({
       data: {
         discordUserId: identity.discordUserId ?? null,
-        jinleeId: identity.jinleeId,
+        dlmId: identity.dlmId,
         status: PointShopCartStatus.OPEN,
         version: 1,
       },
@@ -172,7 +172,7 @@ async function getOrCreateOpenCartTx(tx: Prisma.TransactionClient, identity: Poi
     // The DB enforces one OPEN cart per user via partial unique index.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       const fallback = await tx.pointShopCart.findFirst({
-        where: { jinleeId: identity.jinleeId, status: PointShopCartStatus.OPEN },
+        where: { dlmId: identity.dlmId, status: PointShopCartStatus.OPEN },
         orderBy: { updatedAt: 'desc' },
       });
       if (fallback) return fallback;
@@ -186,7 +186,7 @@ async function loadOpenCartViewTx(
   identity: PointShopUserIdentity,
 ): Promise<PointShopCartView | null> {
   const cart = await tx.pointShopCart.findFirst({
-    where: { jinleeId: identity.jinleeId, status: PointShopCartStatus.OPEN },
+    where: { dlmId: identity.dlmId, status: PointShopCartStatus.OPEN },
     orderBy: { updatedAt: 'desc' },
     include: {
       items: {
@@ -239,8 +239,8 @@ async function getCurrentPointsTx(
   tx: Prisma.TransactionClient,
   identity: PointShopUserIdentity,
 ): Promise<Prisma.Decimal> {
-  const row = await tx.jinleeUser.findUnique({
-    where: { jinleeId: identity.jinleeId },
+  const row = await tx.dlmUser.findUnique({
+    where: { dlmId: identity.dlmId },
     select: { loyaltyPoints: true },
   });
   return DEC(row?.loyaltyPoints ?? 0);
@@ -367,7 +367,7 @@ export async function removePointShopCartItem(params: {
 
   return prisma.$transaction(async (tx) => {
     const cart = await tx.pointShopCart.findFirst({
-      where: { jinleeId: params.identity.jinleeId, status: PointShopCartStatus.OPEN },
+      where: { dlmId: params.identity.dlmId, status: PointShopCartStatus.OPEN },
       orderBy: { updatedAt: 'desc' },
       select: { id: true },
     });
@@ -409,7 +409,7 @@ export async function removePointShopCartItem(params: {
 export async function clearPointShopCart(identity: PointShopUserIdentity): Promise<ClearCartResult> {
   return prisma.$transaction(async (tx) => {
     const cart = await tx.pointShopCart.findFirst({
-      where: { jinleeId: identity.jinleeId, status: PointShopCartStatus.OPEN },
+      where: { dlmId: identity.dlmId, status: PointShopCartStatus.OPEN },
       orderBy: { updatedAt: 'desc' },
       select: { id: true, version: true },
     });
@@ -479,7 +479,7 @@ async function deliverOrderItemTx(
         orderId,
         orderItemId,
         discordUserId: owner.discordUserId ?? null,
-        jinleeId: owner.jinleeId,
+        dlmId: owner.dlmId,
         deliveryType: PointShopDeliveryType.COUPON,
         itemSku,
         itemName,
@@ -514,7 +514,7 @@ async function deliverOrderItemTx(
         orderId,
         orderItemId,
         discordUserId: owner.discordUserId ?? null,
-        jinleeId: owner.jinleeId,
+        dlmId: owner.dlmId,
         deliveryType: PointShopDeliveryType.COUPON,
         itemSku,
         itemName,
@@ -550,7 +550,7 @@ async function deliverOrderItemTx(
         orderId,
         orderItemId,
         discordUserId: owner.discordUserId ?? null,
-        jinleeId: owner.jinleeId,
+        dlmId: owner.dlmId,
         deliveryType: PointShopDeliveryType.COUPON,
         itemSku,
         itemName,
@@ -581,7 +581,7 @@ async function deliverOrderItemTx(
         orderId,
         orderItemId,
         discordUserId: owner.discordUserId ?? null,
-        jinleeId: owner.jinleeId,
+        dlmId: owner.dlmId,
         deliveryType: PointShopDeliveryType.COUPON,
         itemSku,
         itemName,
@@ -612,7 +612,7 @@ async function deliverOrderItemTx(
           orderId,
           orderItemId,
           discordUserId: owner.discordUserId ?? null,
-          jinleeId: owner.jinleeId,
+          dlmId: owner.dlmId,
           deliveryType: PointShopDeliveryType.BALANCE,
           itemSku,
           itemName,
@@ -636,9 +636,9 @@ async function deliverOrderItemTx(
     }
 
     const amountChange = unitCredit.mul(quantity);
-    const walletBefore = await getJinleeWalletSnapshotTx(tx, owner);
-    const walletAfter = await applyJinleeWalletDeltaTx(tx, {
-      jinleeId: owner.jinleeId,
+    const walletBefore = await getDlmWalletSnapshotTx(tx, owner);
+    const walletAfter = await applyDlmWalletDeltaTx(tx, {
+      dlmId: owner.dlmId,
       discordUserId: owner.discordUserId ?? null,
       totalBalanceDelta: amountChange,
       rechargeDelta: amountChange,
@@ -647,7 +647,7 @@ async function deliverOrderItemTx(
     await tx.individualTransaction.create({
       data: {
         discordId: owner.discordUserId ?? null,
-        jinleeId: owner.jinleeId,
+        dlmId: owner.dlmId,
         thirdPartydiscordId: POINT_SHOP_SYSTEM_ACCOUNT,
         balanceBefore: walletBefore.totalBalance,
         amountChange,
@@ -662,7 +662,7 @@ async function deliverOrderItemTx(
         orderId,
         orderItemId,
         discordUserId: owner.discordUserId ?? null,
-        jinleeId: owner.jinleeId,
+        dlmId: owner.dlmId,
         deliveryType: PointShopDeliveryType.BALANCE,
         itemSku,
         itemName,
@@ -691,7 +691,7 @@ async function deliverOrderItemTx(
       orderId,
       orderItemId,
       discordUserId: owner.discordUserId ?? null,
-      jinleeId: owner.jinleeId,
+      dlmId: owner.dlmId,
       deliveryType,
       itemSku,
       itemName,
@@ -724,7 +724,7 @@ export async function checkoutPointShopCart(params: {
         Prisma.sql`
           SELECT "id", "version"
           FROM "PointShopCart"
-          WHERE "jinleeId" = ${params.identity.jinleeId}
+          WHERE "dlmId" = ${params.identity.dlmId}
             AND "status" = 'OPEN'
           ORDER BY "updatedAt" DESC
           LIMIT 1
@@ -741,7 +741,7 @@ export async function checkoutPointShopCart(params: {
 
       const existing = await tx.pointShopOrder.findFirst({
         where: {
-          jinleeId: params.identity.jinleeId,
+          dlmId: params.identity.dlmId,
           requestKey,
         },
         select: {
@@ -810,7 +810,7 @@ export async function checkoutPointShopCart(params: {
         totalItems += line.quantity;
       }
 
-      const walletBefore = await getJinleeWalletSnapshotTx(tx, params.identity);
+      const walletBefore = await getDlmWalletSnapshotTx(tx, params.identity);
       const pointsBefore = DEC(walletBefore.loyaltyPoints);
 
       if (pointsBefore.lt(totalPoints)) {
@@ -869,8 +869,8 @@ export async function checkoutPointShopCart(params: {
       }
 
       const pointsAfter = pointsBefore.sub(totalPoints);
-      await applyJinleeWalletDeltaTx(tx, {
-        jinleeId: params.identity.jinleeId,
+      await applyDlmWalletDeltaTx(tx, {
+        dlmId: params.identity.dlmId,
         discordUserId: params.identity.discordUserId ?? null,
         loyaltyPointsDelta: totalPoints.negated(),
       });
@@ -879,11 +879,11 @@ export async function checkoutPointShopCart(params: {
           where: { discordUserId: params.identity.discordUserId },
           create: {
             discordUserId: params.identity.discordUserId,
-            jinleeId: params.identity.jinleeId,
+            dlmId: params.identity.dlmId,
             points: pointsAfter,
           },
           update: {
-            jinleeId: params.identity.jinleeId,
+            dlmId: params.identity.dlmId,
             points: pointsAfter,
           },
         });
@@ -892,7 +892,7 @@ export async function checkoutPointShopCart(params: {
       const order = await tx.pointShopOrder.create({
         data: {
           discordUserId: params.identity.discordUserId ?? null,
-          jinleeId: params.identity.jinleeId,
+          dlmId: params.identity.dlmId,
           cartId: cart.id,
           requestKey,
           status: PointShopOrderStatus.SUCCESS,
@@ -905,7 +905,7 @@ export async function checkoutPointShopCart(params: {
       await tx.pointShopPointLedger.create({
         data: {
           discordUserId: params.identity.discordUserId ?? null,
-          jinleeId: params.identity.jinleeId,
+          dlmId: params.identity.dlmId,
           orderId: order.id,
           ledgerType: PointShopPointLedgerType.DEBIT,
           deltaPoints: totalPoints,

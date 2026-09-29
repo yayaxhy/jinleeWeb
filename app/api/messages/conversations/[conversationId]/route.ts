@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { getConversation } from '@/lib/mini-program';
 
 type RouteParams = { conversationId: string };
 
 export async function GET(request: Request, context: { params: Promise<RouteParams> }) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }

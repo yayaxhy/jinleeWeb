@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     loadAssetAccountSummary(prisma, targetDiscordId),
   ]);
 
-  if (!sourceSummary.memberExists || !sourceSummary.jinleeId) {
+  if (!sourceSummary.memberExists || !sourceSummary.dlmId) {
     return NextResponse.json({ error: '源账号不存在，或尚未建立 DLMClub 身份' }, { status: 404 });
   }
 
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '源账号当前没有可转移的资产' }, { status: 400 });
   }
 
-  if (!targetSummary.memberExists || !targetSummary.jinleeId) {
+  if (!targetSummary.memberExists || !targetSummary.dlmId) {
     return NextResponse.json({ error: '目标账号不存在，或尚未建立 DLMClub 身份' }, { status: 404 });
   }
 

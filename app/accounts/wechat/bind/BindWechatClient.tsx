@@ -42,7 +42,7 @@ const extractMessage = (payload?: { error?: string; message?: string } | null) =
       return '当前登录态无效，请重新登录后再试。';
     case 'unsupported_session_source':
       return '当前页面只支持网站端发起绑定微信。';
-    case 'jinlee_user_not_found':
+    case 'dlm_user_not_found':
       return '当前账号未找到，请重新登录后再试。';
     case 'bind_token_secret_missing':
       return '网站绑定配置缺失，请联系管理员检查登录密钥配置。';

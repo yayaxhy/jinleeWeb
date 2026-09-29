@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { resolveRechargeResultOrderId, type RechargeResultSearchParams } from '@/lib/recharge-result';
 import RechargeResultClient from './RechargeResultClient';
 
 export default async function RechargeResult({ searchParams }: { searchParams: Promise<RechargeResultSearchParams> }) {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/');
   }

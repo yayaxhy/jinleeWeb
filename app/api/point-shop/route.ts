@@ -6,7 +6,7 @@ import {
   getPointShopDashboard,
   removePointShopCartItem,
 } from '@/lib/pointShop';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 
 const parseQuantity = (value: unknown, fallback = 1) => {
   if (value === undefined || value === null || value === '') return fallback;
@@ -16,20 +16,20 @@ const parseQuantity = (value: unknown, fallback = 1) => {
 };
 
 export async function GET(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
   const data = await getPointShopDashboard({
-    jinleeId: currentUser.jinleeId,
+    dlmId: currentUser.dlmId,
     discordUserId: currentUser.discordUserId,
   });
   return NextResponse.json({ ok: true, data });
 }
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     const result = await addPointShopCartItem({
       identity: {
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         discordUserId: currentUser.discordUserId,
       },
       sku,
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
 
     const result = await removePointShopCartItem({
       identity: {
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         discordUserId: currentUser.discordUserId,
       },
       sku,
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
 
   if (action === 'clear') {
     const result = await clearPointShopCart({
-      jinleeId: currentUser.jinleeId,
+      dlmId: currentUser.dlmId,
       discordUserId: currentUser.discordUserId,
     });
     return NextResponse.json({ ok: true, result });
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     const requestKey = typeof body.requestKey === 'string' ? body.requestKey : null;
     const result = await checkoutPointShopCart({
       identity: {
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         discordUserId: currentUser.discordUserId,
       },
       requestKey,

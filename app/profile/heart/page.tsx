@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -37,17 +37,17 @@ const HEART_ROLE_TIERS: Tier[] = [
 ];
 
 export default async function HeartPage() {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/');
   }
 
   const discordId = currentUser.discordUserId;
   const displayName =
-    currentUser.jinleeUser.discordDisplayName ??
-    currentUser.jinleeUser.member?.serverDisplayName ??
-    currentUser.jinleeUser.wechatDisplayName ??
-    currentUser.jinleeId;
+    currentUser.dlmUser.discordDisplayName ??
+    currentUser.dlmUser.member?.serverDisplayName ??
+    currentUser.dlmUser.wechatDisplayName ??
+    currentUser.dlmId;
 
   if (!discordId) {
     return (

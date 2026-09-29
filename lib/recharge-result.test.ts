@@ -17,11 +17,11 @@ test('recharge result resolves ZPay and Stripe order IDs without trusting browse
 });
 
 test('only an owned order can expose recharge status, including accounts without Discord', () => {
-  const user = { jinleeId: 'USER1', discordUserId: null };
-  assert.equal(belongsToRechargeUser({ jinleeId: 'USER1', discordUserId: null }, user), true);
-  assert.equal(belongsToRechargeUser({ jinleeId: 'USER2', discordUserId: null }, user), false);
-  assert.equal(belongsToRechargeUser({ jinleeId: null, discordUserId: null }, user), false);
-  assert.equal(belongsToRechargeUser({ jinleeId: null, discordUserId: '123' }, { ...user, discordUserId: '123' }), true);
+  const user = { dlmId: 'USER1', discordUserId: null };
+  assert.equal(belongsToRechargeUser({ dlmId: 'USER1', discordUserId: null }, user), true);
+  assert.equal(belongsToRechargeUser({ dlmId: 'USER2', discordUserId: null }, user), false);
+  assert.equal(belongsToRechargeUser({ dlmId: null, discordUserId: null }, user), false);
+  assert.equal(belongsToRechargeUser({ dlmId: null, discordUserId: '123' }, { ...user, discordUserId: '123' }), true);
 });
 
 test('recharge success is displayed only for a valid local PAID order', () => {

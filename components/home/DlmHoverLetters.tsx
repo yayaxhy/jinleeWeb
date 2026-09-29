@@ -169,7 +169,7 @@ function buildWordLetters(word: string) {
   });
 }
 
-export function JinleeHoverLetters({
+export function DlmHoverLetters({
   showIntro = true,
   className = '',
   size = 'default',

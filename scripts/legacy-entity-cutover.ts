@@ -133,12 +133,12 @@ async function exportLegacyLedger(params: {
 async function settleBalances(cutoverAt: Date) {
   return prisma.$transaction(
     async (tx) => {
-      await tx.$executeRawUnsafe('LOCK TABLE "JinleeUser", "Member", "PEIWAN", "IndividualTransaction" IN SHARE ROW EXCLUSIVE MODE');
+      await tx.$executeRawUnsafe('LOCK TABLE "DlmUser", "Member", "PEIWAN", "IndividualTransaction" IN SHARE ROW EXCLUSIVE MODE');
 
       const [users, peiwan] = await Promise.all([
-        tx.jinleeUser.findMany({
+        tx.dlmUser.findMany({
           select: {
-            jinleeId: true,
+            dlmId: true,
             discordUserId: true,
             totalBalance: true,
             income: true,
@@ -147,7 +147,7 @@ async function settleBalances(cutoverAt: Date) {
             loyaltyPoints: true,
             member: { select: { totalBalance: true, income: true, recharge: true, totalSpent: true } },
           },
-          orderBy: { jinleeId: 'asc' },
+          orderBy: { dlmId: 'asc' },
         }),
         tx.pEIWAN.findMany({
           select: { PEIWANID: true, discordUserId: true, balance: true, totalEarn: true, member: { select: { totalBalance: true } } },
@@ -156,7 +156,7 @@ async function settleBalances(cutoverAt: Date) {
       ]);
 
       const preCutoverWallets = users.map((user) => ({
-        jinleeId: user.jinleeId,
+        dlmId: user.dlmId,
         discordUserId: user.discordUserId,
         totalBalance: effectiveBalance(user).toString(),
         income: (user.member?.income ?? user.income).toString(),
@@ -182,7 +182,7 @@ async function settleBalances(cutoverAt: Date) {
       await tx.individualTransaction.createMany({
         data: settlementRows.map(({ user, balance }) => ({
           discordId: user.discordUserId,
-          jinleeId: user.jinleeId,
+          dlmId: user.dlmId,
           thirdPartydiscordId: user.discordUserId ?? 'SYSTEM',
           balanceBefore: balance,
           amountChange: balance.negated(),
@@ -193,7 +193,7 @@ async function settleBalances(cutoverAt: Date) {
       });
 
       await Promise.all([
-        tx.jinleeUser.updateMany({ data: { income: ZERO, recharge: ZERO } }),
+        tx.dlmUser.updateMany({ data: { income: ZERO, recharge: ZERO } }),
         tx.member.updateMany({ data: { income: ZERO, recharge: ZERO } }),
         tx.pEIWAN.updateMany({ data: { balance: ZERO } }),
       ]);

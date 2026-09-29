@@ -1,7 +1,7 @@
 type DiscordLoginDisplayNames = {
   guildNickname?: string | null;
   memberDisplayName?: string | null;
-  jinleeDisplayName?: string | null;
+  dlmDisplayName?: string | null;
   peiwanDisplayName?: string | null;
   globalName?: string | null;
   username: string;
@@ -11,7 +11,7 @@ type DiscordLoginDisplayNames = {
 export function resolveDiscordLoginDisplayName(names: DiscordLoginDisplayNames): string {
   return names.guildNickname?.trim()
     || names.memberDisplayName?.trim()
-    || names.jinleeDisplayName?.trim()
+    || names.dlmDisplayName?.trim()
     || names.peiwanDisplayName?.trim()
     || names.globalName?.trim()
     || names.username;

@@ -13,7 +13,7 @@ Recommended topology:
 Start the app with PM2 so it only binds to localhost:
 
 ```bash
-cd /www/wwwroot/jinleeWeb
+cd /www/wwwroot/dlmWeb
 npm install
 npm run build
 pm2 start ecosystem.config.cjs

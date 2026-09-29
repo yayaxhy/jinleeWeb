@@ -24,7 +24,7 @@ import {
   type RecommendedCompanion,
   type RecentDispatchItem,
 } from '@/lib/home-page-data';
-import { JinleeHoverLetters } from '@/components/home/JinleeHoverLetters';
+import { DlmHoverLetters } from '@/components/home/DlmHoverLetters';
 import { RankingPeriodCard } from '@/components/home/RankingPeriodCard';
 import { DiscordSupportLink } from '@/components/home/DiscordSupportLink';
 import { DispatchTicker } from '@/components/home/DispatchTicker';
@@ -120,22 +120,22 @@ const faqs = [
 function HomeStyles() {
   return (
     <style>{`
-      @keyframes jinlee-home-flow {
+      @keyframes dlm-home-flow {
         0% { transform: translate3d(-8%, -5%, 0) scale(1); filter: hue-rotate(0deg); }
         45% { transform: translate3d(5%, 7%, 0) scale(1.08); filter: hue-rotate(-18deg); }
         100% { transform: translate3d(10%, -2%, 0) scale(1.04); filter: hue-rotate(26deg); }
       }
 
-      .jinlee-home-field {
+      .dlm-home-field {
         background:
           radial-gradient(circle at 16% 18%, rgba(255, 113, 68, 0.36), transparent 26%),
           radial-gradient(circle at 72% 20%, rgba(123, 92, 255, 0.32), transparent 24%),
           radial-gradient(circle at 55% 76%, rgba(19, 168, 129, 0.22), transparent 30%),
           linear-gradient(135deg, #050506 0%, #11100d 38%, #281206 66%, #08090b 100%);
-        animation: jinlee-home-flow 18s ease-in-out infinite alternate;
+        animation: dlm-home-flow 18s ease-in-out infinite alternate;
       }
 
-      .jinlee-home-noise {
+      .dlm-home-noise {
         background-image:
           linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
           linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
@@ -143,21 +143,21 @@ function HomeStyles() {
         mask-image: linear-gradient(to bottom, black, transparent 88%);
       }
 
-      .jinlee-home-scrollbar {
+      .dlm-home-scrollbar {
         scrollbar-width: thin;
         scrollbar-color: rgba(251,146,60,0.65) rgba(255,255,255,0.08);
       }
 
-      .jinlee-home-scrollbar::-webkit-scrollbar {
+      .dlm-home-scrollbar::-webkit-scrollbar {
         height: 8px;
       }
 
-      .jinlee-home-scrollbar::-webkit-scrollbar-track {
+      .dlm-home-scrollbar::-webkit-scrollbar-track {
         background: rgba(255,255,255,0.08);
         border-radius: 999px;
       }
 
-      .jinlee-home-scrollbar::-webkit-scrollbar-thumb {
+      .dlm-home-scrollbar::-webkit-scrollbar-thumb {
         background: rgba(251,146,60,0.65);
         border-radius: 999px;
       }
@@ -178,7 +178,7 @@ function HeroPanel({ dispatches }: { dispatches: RecentDispatchItem[] }) {
           </p>
         </div>
 
-        <JinleeHoverLetters word={SITE_WORDMARK} showIntro={false} className="mt-0" size="hero" />
+        <DlmHoverLetters word={SITE_WORDMARK} showIntro={false} className="mt-0" size="hero" />
 
         <div className="mx-auto mt-6 max-w-4xl text-center">
           <div className="flex flex-wrap justify-center gap-3">
@@ -246,7 +246,7 @@ function RankingRail({
         {description ? <p className="max-w-xl text-sm leading-7 text-white/54">{description}</p> : null}
       </div>
 
-      <div className="jinlee-home-scrollbar flex snap-x gap-5 overflow-x-auto pb-5">
+      <div className="dlm-home-scrollbar flex snap-x gap-5 overflow-x-auto pb-5">
         {periods.map((period) => (
           <RankingPeriodCard
             key={period}
@@ -526,8 +526,8 @@ export default async function Home() {
         }}
       />
       <HomeStyles />
-      <div className="jinlee-home-field fixed inset-0 -z-30" />
-      <div className="jinlee-home-noise pointer-events-none fixed inset-0 -z-20 opacity-55" />
+      <div className="dlm-home-field fixed inset-0 -z-30" />
+      <div className="dlm-home-noise pointer-events-none fixed inset-0 -z-20 opacity-55" />
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_center,transparent_0,rgba(0,0,0,0.18)_45%,rgba(0,0,0,0.74)_100%)]" />
 
       <NavBar />

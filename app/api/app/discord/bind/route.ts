@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { createDiscordBindToken } from '@/lib/discord-bind-token';
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const { token, expiresAt } = createDiscordBindToken(currentUser.jinleeId);
+  const { token, expiresAt } = createDiscordBindToken(currentUser.dlmId);
   const origin = process.env.NEXTAUTH_URL ?? new URL(request.url).origin;
   const bindUrl = new URL('/accounts/discord/bind', origin);
   bindUrl.searchParams.set('bindToken', token);

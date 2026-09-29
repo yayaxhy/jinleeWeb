@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 type DiscordBindTokenPayload = {
-  jinleeId: string;
+  dlmId: string;
   issuedAt: number;
   expiresAt: number;
   version: 1;
@@ -30,9 +30,9 @@ const encodeToken = (payload: DiscordBindTokenPayload) => {
   return `${encoded}.${signature}`;
 };
 
-export const createDiscordBindToken = (jinleeId: string) => {
+export const createDiscordBindToken = (dlmId: string) => {
   const payload: DiscordBindTokenPayload = {
-    jinleeId,
+    dlmId,
     issuedAt: Date.now(),
     expiresAt: Date.now() + DISCORD_BIND_TOKEN_TTL_MS,
     version: 1,
@@ -61,7 +61,7 @@ export const verifyDiscordBindToken = (token?: string | null): DiscordBindTokenP
 
   try {
     const payload = JSON.parse(base64UrlDecode(encoded).toString()) as DiscordBindTokenPayload;
-    if (payload.version !== 1 || payload.expiresAt < Date.now() || !payload.jinleeId) {
+    if (payload.version !== 1 || payload.expiresAt < Date.now() || !payload.dlmId) {
       return null;
     }
 

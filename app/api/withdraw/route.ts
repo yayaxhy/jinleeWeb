@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
 import { parseStoredWithdrawAccount } from '@/lib/withdrawAccounts';
 import {
   validateWithdrawAccountDetail,
@@ -51,11 +51,11 @@ type WithdrawalNotificationRequest = {
   remainingIncome: string;
 };
 
-async function buildWithdrawPagePayload(currentUser: NonNullable<Awaited<ReturnType<typeof getCurrentJinleeUser>>>) {
+async function buildWithdrawPagePayload(currentUser: NonNullable<Awaited<ReturnType<typeof getCurrentDlmUser>>>) {
   const withdrawCooldownMs = WITHDRAW_COOLDOWN_MS;
   const [walletSnapshot, lastWithdraw, legacyAccounts] = await Promise.all([
-    prisma.jinleeUser.findUnique({
-      where: { jinleeId: currentUser.jinleeId },
+    prisma.dlmUser.findUnique({
+      where: { dlmId: currentUser.dlmId },
       select: {
         totalBalance: true,
         income: true,
@@ -65,14 +65,14 @@ async function buildWithdrawPagePayload(currentUser: NonNullable<Awaited<ReturnT
       },
     }),
     prisma.withdraw.findFirst({
-      where: { jinleeId: currentUser.jinleeId },
+      where: { dlmId: currentUser.dlmId },
       orderBy: { createdAt: 'desc' },
       select: { createdAt: true },
     }),
     currentUser.discordUserId &&
-    !currentUser.jinleeUser.withdrawAccount1 &&
-    !currentUser.jinleeUser.withdrawAccount2 &&
-    !currentUser.jinleeUser.withdrawAccount3
+    !currentUser.dlmUser.withdrawAccount1 &&
+    !currentUser.dlmUser.withdrawAccount2 &&
+    !currentUser.dlmUser.withdrawAccount3
       ? prisma.withdrawalAccount.findUnique({
           where: { discordUserId: currentUser.discordUserId },
           select: { account1: true, account2: true, account3: true },
@@ -80,8 +80,8 @@ async function buildWithdrawPagePayload(currentUser: NonNullable<Awaited<ReturnT
       : Promise.resolve(null),
   ]);
 
-  const totalBalance = currentUser.jinleeUser.member?.totalBalance ?? walletSnapshot?.totalBalance ?? 0;
-  const income = currentUser.jinleeUser.member?.income ?? walletSnapshot?.income ?? 0;
+  const totalBalance = currentUser.dlmUser.member?.totalBalance ?? walletSnapshot?.totalBalance ?? 0;
+  const income = currentUser.dlmUser.member?.income ?? walletSnapshot?.income ?? 0;
   const lastWithdrawAt = lastWithdraw?.createdAt ?? null;
   const nextAvailableAt =
     lastWithdrawAt !== null ? new Date(lastWithdrawAt.getTime() + withdrawCooldownMs) : null;
@@ -95,9 +95,9 @@ async function buildWithdrawPagePayload(currentUser: NonNullable<Awaited<ReturnT
     lastWithdrawAt: lastWithdrawAt?.toISOString() ?? null,
     nextAvailableAt: nextAvailableAt?.toISOString() ?? null,
     savedAccounts: {
-      account1: currentUser.jinleeUser.withdrawAccount1 ?? legacyAccounts?.account1 ?? null,
-      account2: currentUser.jinleeUser.withdrawAccount2 ?? legacyAccounts?.account2 ?? null,
-      account3: currentUser.jinleeUser.withdrawAccount3 ?? legacyAccounts?.account3 ?? null,
+      account1: currentUser.dlmUser.withdrawAccount1 ?? legacyAccounts?.account1 ?? null,
+      account2: currentUser.dlmUser.withdrawAccount2 ?? legacyAccounts?.account2 ?? null,
+      account3: currentUser.dlmUser.withdrawAccount3 ?? legacyAccounts?.account3 ?? null,
     },
   };
 }
@@ -143,7 +143,7 @@ async function notifyBotWithdrawal(payload: WithdrawalNotificationRequest) {
 }
 
 export async function GET(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -152,7 +152,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -176,16 +176,16 @@ export async function POST(request: Request) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       const withdrawalAccount =
-        currentUser.discordUserId && !currentUser.jinleeUser.withdrawAccount1 && !currentUser.jinleeUser.withdrawAccount2 && !currentUser.jinleeUser.withdrawAccount3
+        currentUser.discordUserId && !currentUser.dlmUser.withdrawAccount1 && !currentUser.dlmUser.withdrawAccount2 && !currentUser.dlmUser.withdrawAccount3
           ? await tx.withdrawalAccount.findUnique({
               where: { discordUserId: currentUser.discordUserId },
               select: { account1: true, account2: true, account3: true },
             })
           : null;
       const savedMethods = [
-        currentUser.jinleeUser.withdrawAccount1 ?? withdrawalAccount?.account1,
-        currentUser.jinleeUser.withdrawAccount2 ?? withdrawalAccount?.account2,
-        currentUser.jinleeUser.withdrawAccount3 ?? withdrawalAccount?.account3,
+        currentUser.dlmUser.withdrawAccount1 ?? withdrawalAccount?.account1,
+        currentUser.dlmUser.withdrawAccount2 ?? withdrawalAccount?.account2,
+        currentUser.dlmUser.withdrawAccount3 ?? withdrawalAccount?.account3,
       ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
 
       if (!savedMethods.includes(method)) {
@@ -206,7 +206,7 @@ export async function POST(request: Request) {
       }
 
       const lastWithdraw = await tx.withdraw.findFirst({
-        where: { jinleeId: currentUser.jinleeId },
+        where: { dlmId: currentUser.dlmId },
         orderBy: { createdAt: 'desc' },
         select: { createdAt: true },
       });
@@ -221,8 +221,8 @@ export async function POST(request: Request) {
       }
 
       const amountDecimal = new Prisma.Decimal(amountNumber);
-      const walletSnapshot = await getJinleeWalletSnapshotTx(tx, {
-        jinleeId: currentUser.jinleeId,
+      const walletSnapshot = await getDlmWalletSnapshotTx(tx, {
+        dlmId: currentUser.dlmId,
         discordUserId: currentUser.discordUserId,
       });
       const incomeDecimal = new Prisma.Decimal(walletSnapshot.income);
@@ -232,8 +232,8 @@ export async function POST(request: Request) {
         throw new WithdrawError('insufficient_balance');
       }
 
-      const updatedWallet = await applyJinleeWalletDeltaTx(tx, {
-        jinleeId: currentUser.jinleeId,
+      const updatedWallet = await applyDlmWalletDeltaTx(tx, {
+        dlmId: currentUser.dlmId,
         discordUserId: currentUser.discordUserId,
         incomeDelta: amountDecimal.negated(),
         totalBalanceDelta: amountDecimal.negated(),
@@ -242,7 +242,7 @@ export async function POST(request: Request) {
       const withdrawRecord = await tx.withdraw.create({
         data: {
           discordId: currentUser.discordUserId,
-          jinleeId: currentUser.jinleeId,
+          dlmId: currentUser.dlmId,
           amount: amountDecimal,
           method,
         },
@@ -258,7 +258,7 @@ export async function POST(request: Request) {
       await tx.individualTransaction.create({
         data: {
           discordId: currentUser.discordUserId,
-          jinleeId: currentUser.jinleeId,
+          dlmId: currentUser.dlmId,
           thirdPartydiscordId: method,
           balanceBefore: balanceDecimal,
           amountChange: amountDecimal.mul(-1),

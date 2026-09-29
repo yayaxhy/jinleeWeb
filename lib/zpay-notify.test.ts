@@ -59,7 +59,7 @@ const setup = (t: TestContext) => {
     amount: new Prisma.Decimal(100),
     status: 'PENDING' as 'PENDING' | 'PAID',
     channel: 'alipay',
-    jinleeId: 'FIXTUREUSER',
+    dlmId: 'FIXTUREUSER',
     discordUserId: null,
     gatewayTradeNo: null as string | null,
     notifyPayload: undefined as unknown,
@@ -86,7 +86,7 @@ const setup = (t: TestContext) => {
         return { count: 1 };
       },
     },
-    jinleeUser: {
+    dlmUser: {
       findUnique: async () => ({ ...wallet }),
       update: async ({ data }: { data: Record<keyof typeof wallet, { increment: Prisma.Decimal }> }) => {
         for (const key of Object.keys(wallet) as (keyof typeof wallet)[]) {

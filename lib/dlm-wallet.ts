@@ -5,12 +5,12 @@ const DEC = (value: Prisma.Decimal | number | string | null | undefined) =>
 
 type WalletTx = Prisma.TransactionClient;
 
-export type JinleeWalletIdentity = {
-  jinleeId: string;
+export type DlmWalletIdentity = {
+  dlmId: string;
   discordUserId?: string | null;
 };
 
-type WalletDeltaInput = JinleeWalletIdentity & {
+type WalletDeltaInput = DlmWalletIdentity & {
   totalBalanceDelta?: Prisma.Decimal | number | string;
   incomeDelta?: Prisma.Decimal | number | string;
   rechargeDelta?: Prisma.Decimal | number | string;
@@ -18,12 +18,12 @@ type WalletDeltaInput = JinleeWalletIdentity & {
   loyaltyPointsDelta?: Prisma.Decimal | number | string;
 };
 
-export const getJinleeWalletSnapshotTx = async (
+export const getDlmWalletSnapshotTx = async (
   tx: WalletTx,
-  identity: JinleeWalletIdentity,
+  identity: DlmWalletIdentity,
 ) => {
-  const jinleeUser = await tx.jinleeUser.findUnique({
-    where: { jinleeId: identity.jinleeId },
+  const dlmUser = await tx.dlmUser.findUnique({
+    where: { dlmId: identity.dlmId },
     select: {
       totalBalance: true,
       income: true,
@@ -33,17 +33,17 @@ export const getJinleeWalletSnapshotTx = async (
     },
   });
 
-  if (!jinleeUser) {
-    throw new Error(`jinlee_user_not_found:${identity.jinleeId}`);
+  if (!dlmUser) {
+    throw new Error(`dlm_user_not_found:${identity.dlmId}`);
   }
 
   if (!identity.discordUserId) {
     return {
-      totalBalance: DEC(jinleeUser.totalBalance),
-      income: DEC(jinleeUser.income),
-      recharge: DEC(jinleeUser.recharge),
-      totalSpent: DEC(jinleeUser.totalSpent),
-      loyaltyPoints: DEC(jinleeUser.loyaltyPoints),
+      totalBalance: DEC(dlmUser.totalBalance),
+      income: DEC(dlmUser.income),
+      recharge: DEC(dlmUser.recharge),
+      totalSpent: DEC(dlmUser.totalSpent),
+      loyaltyPoints: DEC(dlmUser.loyaltyPoints),
     };
   }
 
@@ -58,15 +58,15 @@ export const getJinleeWalletSnapshotTx = async (
   });
 
   return {
-    totalBalance: DEC(member?.totalBalance ?? jinleeUser.totalBalance),
-    income: DEC(member?.income ?? jinleeUser.income),
-    recharge: DEC(member?.recharge ?? jinleeUser.recharge),
-    totalSpent: DEC(member?.totalSpent ?? jinleeUser.totalSpent),
-    loyaltyPoints: DEC(jinleeUser.loyaltyPoints),
+    totalBalance: DEC(member?.totalBalance ?? dlmUser.totalBalance),
+    income: DEC(member?.income ?? dlmUser.income),
+    recharge: DEC(member?.recharge ?? dlmUser.recharge),
+    totalSpent: DEC(member?.totalSpent ?? dlmUser.totalSpent),
+    loyaltyPoints: DEC(dlmUser.loyaltyPoints),
   };
 };
 
-export const applyJinleeWalletDeltaTx = async (
+export const applyDlmWalletDeltaTx = async (
   tx: WalletTx,
   params: WalletDeltaInput,
 ) => {
@@ -76,8 +76,8 @@ export const applyJinleeWalletDeltaTx = async (
   const totalSpentDelta = DEC(params.totalSpentDelta);
   const loyaltyPointsDelta = DEC(params.loyaltyPointsDelta);
 
-  const updatedJinleeUser = await tx.jinleeUser.update({
-    where: { jinleeId: params.jinleeId },
+  const updatedDlmUser = await tx.dlmUser.update({
+    where: { dlmId: params.dlmId },
     data: {
       totalBalance: { increment: totalBalanceDelta },
       income: { increment: incomeDelta },
@@ -131,10 +131,10 @@ export const applyJinleeWalletDeltaTx = async (
   }
 
   return {
-    totalBalance: DEC(updatedMember?.totalBalance ?? updatedJinleeUser.totalBalance),
-    income: DEC(updatedMember?.income ?? updatedJinleeUser.income),
-    recharge: DEC(updatedMember?.recharge ?? updatedJinleeUser.recharge),
-    totalSpent: DEC(updatedMember?.totalSpent ?? updatedJinleeUser.totalSpent),
-    loyaltyPoints: DEC(updatedJinleeUser.loyaltyPoints),
+    totalBalance: DEC(updatedMember?.totalBalance ?? updatedDlmUser.totalBalance),
+    income: DEC(updatedMember?.income ?? updatedDlmUser.income),
+    recharge: DEC(updatedMember?.recharge ?? updatedDlmUser.recharge),
+    totalSpent: DEC(updatedMember?.totalSpent ?? updatedDlmUser.totalSpent),
+    loyaltyPoints: DEC(updatedDlmUser.loyaltyPoints),
   };
 };

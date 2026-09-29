@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession, normalizeRedirectTarget } from '@/lib/session';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { mergeWechatProgramJinleeUserIntoDiscordJinleeUser, isDiscordBindingError } from '@/lib/discord-binding';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
+import { mergeWechatProgramDlmUserIntoDiscordDlmUser, isDiscordBindingError } from '@/lib/discord-binding';
 import { verifyDiscordBindToken } from '@/lib/discord-bind-token';
 
 const buildResultUrl = (origin: string, status: string, code?: string) => {
@@ -34,24 +34,24 @@ export async function GET(request: Request) {
   }
 
   try {
-    const currentDiscordUser = await getCurrentJinleeUser();
+    const currentDiscordUser = await getCurrentDlmUser();
     if (!currentDiscordUser || !currentDiscordUser.discordUserId) {
       return NextResponse.redirect(buildResultUrl(origin, 'error', 'discord_session_missing'), { status: 302 });
     }
 
-    if (currentDiscordUser.jinleeId === tokenPayload.jinleeId) {
+    if (currentDiscordUser.dlmId === tokenPayload.dlmId) {
       return NextResponse.redirect(buildResultUrl(origin, 'success', 'already_bound'), { status: 302 });
     }
 
-    await mergeWechatProgramJinleeUserIntoDiscordJinleeUser({
-      sourceJinleeId: currentDiscordUser.jinleeId,
-      targetWechatJinleeId: tokenPayload.jinleeId,
+    await mergeWechatProgramDlmUserIntoDiscordDlmUser({
+      sourceDlmId: currentDiscordUser.dlmId,
+      targetWechatDlmId: tokenPayload.dlmId,
       discordUserId: currentDiscordUser.discordUserId,
       discordDisplayName:
-        currentDiscordUser.jinleeUser.discordDisplayName ??
-        currentDiscordUser.jinleeUser.member?.serverDisplayName ??
+        currentDiscordUser.dlmUser.discordDisplayName ??
+        currentDiscordUser.dlmUser.member?.serverDisplayName ??
         session.username,
-      discordAvatarUrl: currentDiscordUser.jinleeUser.discordAvatarUrl ?? null,
+      discordAvatarUrl: currentDiscordUser.dlmUser.discordAvatarUrl ?? null,
       discordProfile: {
         username: session.username,
         discriminator: session.discriminator ?? null,

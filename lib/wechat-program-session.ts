@@ -4,8 +4,8 @@ import { prisma } from '@/lib/prisma';
 
 const WECHAT_PROGRAM_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 
-const sessionWithJinleeUser = {
-  jinleeUser: {
+const sessionWithDlmUser = {
+  dlmUser: {
     include: {
       member: true,
     },
@@ -14,7 +14,7 @@ const sessionWithJinleeUser = {
 } satisfies Prisma.WechatProgramSessionInclude;
 
 export type WechatProgramSessionRecord = Prisma.WechatProgramSessionGetPayload<{
-  include: typeof sessionWithJinleeUser;
+  include: typeof sessionWithDlmUser;
 }>;
 
 const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
@@ -32,10 +32,10 @@ const extractBearerToken = (request: Request) => {
 };
 
 export const createWechatProgramSession = async ({
-  jinleeId,
+  dlmId,
   providerAccountId,
 }: {
-  jinleeId: string;
+  dlmId: string;
   providerAccountId?: string | null;
 }) => {
   const token = crypto.randomBytes(32).toString('base64url');
@@ -44,7 +44,7 @@ export const createWechatProgramSession = async ({
   await prisma.wechatProgramSession.create({
     data: {
       tokenHash: hashToken(token),
-      jinleeId,
+      dlmId,
       providerAccountId: providerAccountId ?? null,
       expiresAt,
       lastUsedAt: new Date(),
@@ -80,7 +80,7 @@ export const getWechatProgramSessionFromRequest = async (
     where: {
       tokenHash: hashToken(token),
     },
-    include: sessionWithJinleeUser,
+    include: sessionWithDlmUser,
   });
 
   if (!session) {

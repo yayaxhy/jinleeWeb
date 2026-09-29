@@ -11,7 +11,7 @@ export default async function MiniModerationPage() {
   if (!session?.discordId || !canViewTransactions(session.discordId)) redirect('/');
 
   const events = await prisma.miniMessageModerationEvent.findMany({
-    include: { message: { include: { senderJinleeUser: true } } },
+    include: { message: { include: { senderDlmUser: true } } },
     orderBy: { createdAt: 'desc' },
     take: 200,
   });
@@ -41,7 +41,7 @@ export default async function MiniModerationPage() {
             <p className="mt-4 whitespace-pre-wrap break-words rounded-xl bg-black/20 p-4 text-base text-white">{event.rawText}</p>
             <div className="mt-3 grid gap-2 text-sm text-white/60 md:grid-cols-2">
               <span>原因：{event.reason || '未填写'}</span>
-              <span>发送者：{event.message?.senderJinleeUser?.discordDisplayName || event.message?.senderJinleeUser?.wechatDisplayName || event.message?.senderJinleeId || '未知'}</span>
+              <span>发送者：{event.message?.senderDlmUser?.discordDisplayName || event.message?.senderDlmUser?.wechatDisplayName || event.message?.senderDlmId || '未知'}</span>
               <span>会话：{event.conversationId || '未知'}</span>
               <span>事件：{event.id}</span>
             </div>

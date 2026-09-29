@@ -189,14 +189,14 @@ const formatBreakdownText = (
 };
 
 const buildIdentityExclusion = (
-  jinleeField: string,
+  dlmField: string,
   discordField: string | null,
-  excludeJinleeIds: string[],
+  excludeDlmIds: string[],
   excludeDiscordIds: string[],
 ) => {
   const clauses: Record<string, unknown>[] = [];
-  if (excludeJinleeIds.length) {
-    clauses.push({ [jinleeField]: { in: excludeJinleeIds } });
+  if (excludeDlmIds.length) {
+    clauses.push({ [dlmField]: { in: excludeDlmIds } });
   }
   if (discordField && excludeDiscordIds.length) {
     clauses.push({ [discordField]: { in: excludeDiscordIds } });
@@ -307,9 +307,9 @@ async function loadMonthlyRevenueData(params: {
   const rechargeWhere: Prisma.RechargeWhereInput = {
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'toWhom',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.RechargeWhereInput),
   };
@@ -317,9 +317,9 @@ async function loadMonthlyRevenueData(params: {
   const withdrawWhere: Prisma.WithdrawWhereInput = {
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.WithdrawWhereInput),
   };
@@ -328,9 +328,9 @@ async function loadMonthlyRevenueData(params: {
     status: 'PAID',
     paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.ZPayRechargeOrderWhereInput),
   };
@@ -342,9 +342,9 @@ async function loadMonthlyRevenueData(params: {
     status: 'PAID',
     paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.StripePaymentWhereInput),
   };
@@ -352,19 +352,19 @@ async function loadMonthlyRevenueData(params: {
     status: 'PAID',
     paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.WechatNativePaymentWhereInput),
   };
 
-  const jinleeWhere: Prisma.JinleeUserWhereInput = buildIdentityExclusion(
-    'jinleeId',
+  const dlmWhere: Prisma.DlmUserWhereInput = buildIdentityExclusion(
+    'dlmId',
     'discordUserId',
-    excludeMemberResolved.excludeJinleeIds,
+    excludeMemberResolved.excludeDlmIds,
     excludeMemberResolved.excludeDiscordIds,
-  ) as Prisma.JinleeUserWhereInput;
+  ) as Prisma.DlmUserWhereInput;
 
   const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
     typeOfTransaction: '优惠返利',
@@ -383,7 +383,7 @@ async function loadMonthlyRevenueData(params: {
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...buildRevenueCouponIdentityExclusion(
-      excludeMemberResolved.excludeJinleeIds,
+      excludeMemberResolved.excludeDlmIds,
       excludeMemberResolved.excludeDiscordIds,
     ),
   };
@@ -421,11 +421,11 @@ async function loadMonthlyRevenueData(params: {
     prisma.zPayRechargeOrder.findMany({ where: zpayWhere, orderBy: { paidAt: 'desc' } }),
     prisma.stripePayment.findMany({ where: stripeWhere, orderBy: { paidAt: 'desc' } }),
     prisma.wechatNativePayment.findMany({ where: wechatNativeWhere, orderBy: { paidAt: 'desc' } }),
-    prisma.jinleeUser.findMany({
-      where: jinleeWhere,
-      orderBy: { jinleeId: 'asc' },
+    prisma.dlmUser.findMany({
+      where: dlmWhere,
+      orderBy: { dlmId: 'asc' },
       select: {
-        jinleeId: true,
+        dlmId: true,
         discordUserId: true,
         discordDisplayName: true,
         wechatDisplayName: true,
@@ -462,9 +462,9 @@ async function loadMonthlyRevenueData(params: {
       where: {
         createdAt: { gte: start, lt: end },
         ...(buildIdentityExclusion(
-          'jinleeId',
+          'dlmId',
           'userId',
-          excludeMemberResolved.excludeJinleeIds,
+          excludeMemberResolved.excludeDlmIds,
           excludeMemberResolved.excludeDiscordIds,
         ) as Prisma.LotteryDrawWhereInput),
       },
@@ -474,9 +474,9 @@ async function loadMonthlyRevenueData(params: {
       where: {
         consumeAt: { gte: start, lt: end },
         ...(buildIdentityExclusion(
-          'jinleeId',
+          'dlmId',
           'userId',
-          excludeMemberResolved.excludeJinleeIds,
+          excludeMemberResolved.excludeDlmIds,
           excludeMemberResolved.excludeDiscordIds,
         ) as Prisma.LotteryDrawWhereInput),
       },
@@ -601,7 +601,7 @@ async function loadMonthlyRevenueData(params: {
   const fusionRevenue = await getLotteryFusionRevenueSummary({
     start,
     end,
-    excludeJinleeIds: excludeMemberResolved.excludeJinleeIds,
+    excludeDlmIds: excludeMemberResolved.excludeDlmIds,
     excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
   });
   const fusionCreatedRows = lotteryCreatedRows.filter((row) =>
@@ -1273,9 +1273,9 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
     { section: 'filters', key: 'end(exclusive)', value: formatDateTimeTextCentralEuropean(data.end) },
     { section: 'filters', key: 'excludeRecharge(raw)', value: data.excludeRechargeInput },
     { section: 'filters', key: 'excludeMember(raw)', value: data.excludeMemberInput },
-    { section: 'filters', key: 'excludeRechargeJinleeIds', value: data.excludeRechargeResolved.excludeJinleeIds.join(', ') },
+    { section: 'filters', key: 'excludeRechargeDlmIds', value: data.excludeRechargeResolved.excludeDlmIds.join(', ') },
     { section: 'filters', key: 'excludeRechargeDiscordIds', value: data.excludeRechargeResolved.excludeDiscordIds.join(', ') },
-    { section: 'filters', key: 'excludeMemberJinleeIds', value: data.excludeMemberResolved.excludeJinleeIds.join(', ') },
+    { section: 'filters', key: 'excludeMemberDlmIds', value: data.excludeMemberResolved.excludeDlmIds.join(', ') },
     { section: 'filters', key: 'excludeMemberDiscordIds', value: data.excludeMemberResolved.excludeDiscordIds.join(', ') },
     { section: 'rows', key: 'BlockStackGame', value: data.rows.blockStackRows.length },
     { section: 'rows', key: 'Recharge', value: data.rows.rechargeRows.length },
@@ -1283,7 +1283,7 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
     { section: 'rows', key: 'ZPayRechargeOrder(PAID)', value: data.rows.zpayRows.length },
     { section: 'rows', key: 'WechatNativePayment(PAID)', value: data.rows.wechatNativeRows.length },
     { section: 'rows', key: 'StripePayment(PAID)', value: data.rows.stripeRows.length },
-    { section: 'rows', key: 'JinleeUser(filtered)', value: data.rows.memberRows.length },
+    { section: 'rows', key: 'DlmUser(filtered)', value: data.rows.memberRows.length },
     { section: 'rows', key: 'Commission(all)', value: data.rows.commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: data.rows.giftAuditRows.length },
     { section: 'rows', key: 'Order(ENDED all)', value: data.rows.orderRows.length },
@@ -1312,9 +1312,9 @@ function buildAdminRevenueDataWorkbook(data: Awaited<ReturnType<typeof loadMonth
     { section: '当月充值提现', key: 'Stripe 已支付', value: data.totals.stripeTotal.toString() },
     { section: '当月充值提现', key: '提现总额', value: data.totals.withdrawTotal.toString() },
     { section: '当月充值提现', key: '净充值', value: data.totals.netRecharge.toString() },
-    { section: '会员余额汇总', key: 'JinleeUser.recharge 合计', value: data.totals.memberRechargeTotal.toString() },
-    { section: '会员余额汇总', key: 'JinleeUser.income 合计', value: data.totals.memberIncomeTotal.toString() },
-    { section: '会员余额汇总', key: 'JinleeUser.totalBalance 合计', value: data.totals.memberBalanceTotal.toString() },
+    { section: '会员余额汇总', key: 'DlmUser.recharge 合计', value: data.totals.memberRechargeTotal.toString() },
+    { section: '会员余额汇总', key: 'DlmUser.income 合计', value: data.totals.memberIncomeTotal.toString() },
+    { section: '会员余额汇总', key: 'DlmUser.totalBalance 合计', value: data.totals.memberBalanceTotal.toString() },
     { section: '会员余额汇总', key: '当月 Commission 合计', value: data.totals.commissionTotalNetAll.toString() },
     { section: '抽奖收益', key: '抽奖次数', value: data.totals.drawCount },
     { section: '抽奖收益', key: '毛收入（次数×29）', value: data.totals.grossIncome.toString() },

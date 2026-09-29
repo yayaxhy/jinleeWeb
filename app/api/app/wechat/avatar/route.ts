@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 
 export const runtime = 'nodejs';
 
@@ -31,9 +31,9 @@ const resolveExtension = (file: File) => {
   }
 };
 
-const buildFileName = (jinleeId: string, buffer: Buffer, extension: string) => {
+const buildFileName = (dlmId: string, buffer: Buffer, extension: string) => {
   const hash = crypto.createHash('sha1').update(buffer).digest('hex').slice(0, 12);
-  return `wechat_${jinleeId}_${hash}${extension}`;
+  return `wechat_${dlmId}_${hash}${extension}`;
 };
 
 const resolveManagedFileName = (avatarUrl?: string | null) => {
@@ -58,7 +58,7 @@ const resolveManagedFileName = (avatarUrl?: string | null) => {
 };
 
 export async function POST(request: NextRequest) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
   }
 
   const buffer = await toBuffer(avatar);
-  const fileName = buildFileName(currentUser.jinleeId, buffer, extension);
+  const fileName = buildFileName(currentUser.dlmId, buffer, extension);
   const targetPath = path.join(TARGET_DIR, fileName);
 
   await fs.mkdir(TARGET_DIR, { recursive: true });
@@ -88,10 +88,10 @@ export async function POST(request: NextRequest) {
 
   const avatarPath = `/wechat-avatars/${fileName}`;
   const avatarUrl = new URL(avatarPath, request.url).toString();
-  const previousFileName = resolveManagedFileName(currentUser.jinleeUser.wechatAvatarUrl);
+  const previousFileName = resolveManagedFileName(currentUser.dlmUser.wechatAvatarUrl);
 
-  await prisma.jinleeUser.update({
-    where: { jinleeId: currentUser.jinleeId },
+  await prisma.dlmUser.update({
+    where: { dlmId: currentUser.dlmId },
     data: {
       wechatAvatarUrl: avatarPath,
     },

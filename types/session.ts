@@ -1,5 +1,5 @@
 export type SessionSnapshot = {
-  jinleeId?: string | null;
+  dlmId?: string | null;
   discordId: string;
   username: string;
   discriminator?: string | null;

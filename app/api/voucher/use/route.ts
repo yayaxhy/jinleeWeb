@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { CouponStatus, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { resolveSpecialVoucher } from '@/lib/voucher';
 import { SPECIAL_ACTION_COUPON_TYPE_BY_PRIZE } from '@/lib/voucherCatalog';
@@ -16,7 +16,7 @@ type UseVoucherPayload = {
 
 type VoucherSelectionParams = {
   currentUser: {
-    jinleeId: string;
+    dlmId: string;
     discordUserId: string | null;
   };
   prizeName: string;
@@ -108,7 +108,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
       ? await prisma.coupon.findFirst({
           where: {
             id: couponId,
-            jinleeId: currentUser.jinleeId,
+            dlmId: currentUser.dlmId,
             type: couponType,
             status: CouponStatus.ACTIVE,
             issuedAt: newEntityOnlyTime(),
@@ -118,7 +118,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
         })
       : await prisma.coupon.findFirst({
           where: {
-            jinleeId: currentUser.jinleeId,
+            dlmId: currentUser.dlmId,
             type: couponType,
             status: CouponStatus.ACTIVE,
             issuedAt: newEntityOnlyTime(),
@@ -133,7 +133,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
       ? await prisma.pointShopGrant.findFirst({
           where: {
             id: couponId,
-            jinleeId: currentUser.jinleeId,
+            dlmId: currentUser.dlmId,
             deliveryType: PointShopDeliveryType.COUPON,
             deliveryStatus: PointShopDeliveryStatus.DELIVERED,
             couponType,
@@ -145,7 +145,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
         })
       : await prisma.pointShopGrant.findFirst({
           where: {
-            jinleeId: currentUser.jinleeId,
+            dlmId: currentUser.dlmId,
             deliveryType: PointShopDeliveryType.COUPON,
             deliveryStatus: PointShopDeliveryStatus.DELIVERED,
             couponType,
@@ -163,7 +163,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
     ? await prisma.lotteryDraw.findFirst({
         where: {
           id: lotteryId,
-          jinleeId: currentUser.jinleeId,
+          dlmId: currentUser.dlmId,
           status: LotteryStatus.UNUSED,
           createdAt: newEntityOnlyTime(),
           prize: { name: prizeName },
@@ -173,7 +173,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
       })
     : await prisma.lotteryDraw.findFirst({
         where: {
-          jinleeId: currentUser.jinleeId,
+          dlmId: currentUser.dlmId,
           status: LotteryStatus.UNUSED,
           createdAt: newEntityOnlyTime(),
           prize: { name: prizeName },
@@ -187,7 +187,7 @@ async function selectSpecialVoucherId(params: VoucherSelectionParams): Promise<s
 }
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }

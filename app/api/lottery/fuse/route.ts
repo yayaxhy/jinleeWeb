@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { CouponStatus, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
   buildLotteryFusionApiError,
   LotteryFusionApiError,
@@ -20,13 +20,13 @@ const INTERNAL_PORT = process.env.INTERNAL_API_PORT;
 const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN;
 const ALLOWED_FUSION_COUNTS = new Set([3, 4, 6]);
 
-const buildRequestId = (jinleeId: string, lotteryIds: string[]) => {
-  const digest = createHash('sha256').update(`${jinleeId}:${lotteryIds.join(',')}`).digest('hex');
+const buildRequestId = (dlmId: string, lotteryIds: string[]) => {
+  const digest = createHash('sha256').update(`${dlmId}:${lotteryIds.join(',')}`).digest('hex');
   return `WEB_FUSION:${digest.slice(0, 24)}`;
 };
 
 const hasOnlyAvailableNewEntityFusionSources = async (params: {
-  jinleeId: string;
+  dlmId: string;
   sourceIds: string[];
   now: Date;
 }) => {
@@ -47,7 +47,7 @@ const hasOnlyAvailableNewEntityFusionSources = async (params: {
       ? prisma.lotteryDraw.count({
           where: {
             id: { in: lotteryIds },
-            jinleeId: params.jinleeId,
+            dlmId: params.dlmId,
             createdAt: newEntityOnlyTime(),
             status: LotteryStatus.UNUSED,
             consumeAt: null,
@@ -59,7 +59,7 @@ const hasOnlyAvailableNewEntityFusionSources = async (params: {
       ? prisma.coupon.count({
           where: {
             id: { in: couponIds },
-            jinleeId: params.jinleeId,
+            dlmId: params.dlmId,
             issuedAt: newEntityOnlyTime(),
             status: CouponStatus.ACTIVE,
             consumedAt: null,
@@ -71,7 +71,7 @@ const hasOnlyAvailableNewEntityFusionSources = async (params: {
       ? prisma.pointShopGrant.count({
           where: {
             id: { in: pointShopIds },
-            jinleeId: params.jinleeId,
+            dlmId: params.dlmId,
             issuedAt: newEntityOnlyTime(),
             deliveryType: PointShopDeliveryType.COUPON,
             deliveryStatus: PointShopDeliveryStatus.DELIVERED,
@@ -87,7 +87,7 @@ const hasOnlyAvailableNewEntityFusionSources = async (params: {
 };
 
 const callInternalFusion = async (params: {
-  jinleeId: string;
+  dlmId: string;
   sourceIds: string[];
   requestId: string;
 }) => {
@@ -134,7 +134,7 @@ const callInternalFusion = async (params: {
 };
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '仅支持 3 / 4 / 6 个券或奖品融合' }, { status: 400 });
   }
   if (!await hasOnlyAvailableNewEntityFusionSources({
-    jinleeId: currentUser.jinleeId,
+    dlmId: currentUser.dlmId,
     sourceIds,
     now: new Date(),
   })) {
@@ -159,9 +159,9 @@ export async function POST(request: Request) {
 
   try {
     const data = await callInternalFusion({
-      jinleeId: currentUser.jinleeId,
+      dlmId: currentUser.dlmId,
       sourceIds,
-      requestId: buildRequestId(currentUser.jinleeId, sourceIds),
+      requestId: buildRequestId(currentUser.dlmId, sourceIds),
     });
     return NextResponse.json({ ok: true, result: data?.result ?? null });
   } catch (error) {

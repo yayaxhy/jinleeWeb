@@ -279,10 +279,10 @@ export const buildWechatPayOrderDescription = (name?: string | null) => {
   return truncateUtf8(description, 127);
 };
 
-export const buildWechatNativeOutTradeNo = (jinleeId: string) => {
+export const buildWechatNativeOutTradeNo = (dlmId: string) => {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = crypto.randomBytes(8).toString('hex').toUpperCase();
-  const suffix = jinleeId.replace(/[^A-Za-z0-9]/g, '').slice(-4).toUpperCase().padStart(4, '0');
+  const suffix = dlmId.replace(/[^A-Za-z0-9]/g, '').slice(-4).toUpperCase().padStart(4, '0');
   return `WN${timestamp}${random}${suffix}`;
 };
 

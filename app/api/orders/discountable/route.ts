@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 const MAX_FETCH = 50;
@@ -8,14 +8,14 @@ const MAX_RETURN = 20;
 const DISCOUNT_PRIZE_NAMES = ['8折券', '7折券', '特殊9折券', '特殊九折券'];
 
 export async function GET(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
   const orders = await prisma.order.findMany({
     where: {
-      hostJinleeId: currentUser.jinleeId,
+      hostDlmId: currentUser.dlmId,
       status: 'ENDED',
       createdAt: newEntityOnlyTime(),
     },

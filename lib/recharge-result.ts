@@ -16,10 +16,10 @@ export const resolveRechargeResultOrderId = (params: RechargeResultSearchParams)
 };
 
 export const belongsToRechargeUser = (
-  order: { jinleeId: string | null; discordUserId: string | null },
-  user: { jinleeId: string; discordUserId: string | null },
+  order: { dlmId: string | null; discordUserId: string | null },
+  user: { dlmId: string; discordUserId: string | null },
 ) => {
-  if (order.jinleeId) return order.jinleeId === user.jinleeId;
+  if (order.dlmId) return order.dlmId === user.dlmId;
   return Boolean(order.discordUserId && user.discordUserId && order.discordUserId === user.discordUserId);
 };
 

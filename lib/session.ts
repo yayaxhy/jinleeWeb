@@ -12,7 +12,7 @@ type SessionPayload = AppSession & {
   version: 1;
 };
 
-const SESSION_COOKIE_NAME = 'jinlee_session';
+const SESSION_COOKIE_NAME = 'dlm_session';
 const LOGIN_REDIRECT_COOKIE = 'discord_login_next';
 const LOGIN_STATE_COOKIE = 'discord_login_state';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
@@ -65,32 +65,32 @@ export const getServerSession = async (): Promise<AppSession | null> => {
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   const payload = decodeSessionToken(token);
   if (!payload) return null;
-  if (payload.jinleeId) {
-    const jinleeUser = await prisma.jinleeUser.findUnique({
-      where: { jinleeId: payload.jinleeId },
-      select: { jinleeId: true, discordUserId: true, sessionVersion: true },
+  if (payload.dlmId) {
+    const dlmUser = await prisma.dlmUser.findUnique({
+      where: { dlmId: payload.dlmId },
+      select: { dlmId: true, discordUserId: true, sessionVersion: true },
     });
-    if (!jinleeUser?.discordUserId) {
+    if (!dlmUser?.discordUserId) {
       return null;
     }
 
     const tokenSessionVersion = payload.sessionVersion ?? 1;
-    if (tokenSessionVersion !== jinleeUser.sessionVersion) {
+    if (tokenSessionVersion !== dlmUser.sessionVersion) {
       return null;
     }
 
     return {
-      jinleeId: jinleeUser.jinleeId,
-      discordId: jinleeUser.discordUserId,
+      dlmId: dlmUser.dlmId,
+      discordId: dlmUser.discordUserId,
       username: payload.username,
       discriminator: payload.discriminator ?? null,
       avatar: payload.avatar ?? null,
-      sessionVersion: jinleeUser.sessionVersion,
+      sessionVersion: dlmUser.sessionVersion,
     };
   }
 
   return {
-    jinleeId: payload.jinleeId ?? null,
+    dlmId: payload.dlmId ?? null,
     discordId: payload.discordId,
     username: payload.username,
     discriminator: payload.discriminator ?? null,
@@ -194,6 +194,6 @@ export const normalizeRedirectTarget = (value?: string | null, fallback = '/prof
 
 export const summarizeSession = (session: AppSession | null) => {
   if (!session) return null;
-  const { jinleeId, discordId, username, discriminator, avatar, sessionVersion } = session;
-  return { jinleeId: jinleeId ?? null, discordId, username, discriminator, avatar, sessionVersion: sessionVersion ?? null };
+  const { dlmId, discordId, username, discriminator, avatar, sessionVersion } = session;
+  return { dlmId: dlmId ?? null, discordId, username, discriminator, avatar, sessionVersion: sessionVersion ?? null };
 };

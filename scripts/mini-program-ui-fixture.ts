@@ -9,13 +9,13 @@ import { POST as sendMessage } from '@/app/api/messages/route';
 
 const FIXTURE = {
   owner: {
-    jinleeId: 'stg_ui_owner',
+    dlmId: 'stg_ui_owner',
     discordId: 'stg_ui_owner_discord',
     name: '界面测试老板',
   },
   workers: [
-    { jinleeId: 'stg_ui_worker_1', discordId: 'stg_ui_worker_discord_1', peiwanId: 990021, name: '界面测试陪玩一' },
-    { jinleeId: 'stg_ui_worker_2', discordId: 'stg_ui_worker_discord_2', peiwanId: 990022, name: '界面测试陪玩二' },
+    { dlmId: 'stg_ui_worker_1', discordId: 'stg_ui_worker_discord_1', peiwanId: 990021, name: '界面测试陪玩一' },
+    { dlmId: 'stg_ui_worker_2', discordId: 'stg_ui_worker_discord_2', peiwanId: 990022, name: '界面测试陪玩二' },
   ],
 };
 
@@ -38,10 +38,10 @@ async function responseBody<T>(response: Response): Promise<T> {
 }
 
 async function cleanup() {
-  const jinleeIds = [FIXTURE.owner.jinleeId, ...FIXTURE.workers.map((worker) => worker.jinleeId)];
+  const dlmIds = [FIXTURE.owner.dlmId, ...FIXTURE.workers.map((worker) => worker.dlmId)];
   const discordIds = [FIXTURE.owner.discordId, ...FIXTURE.workers.map((worker) => worker.discordId)];
   const dispatches = await prisma.dispatchRequest.findMany({
-    where: { ownerJinleeId: FIXTURE.owner.jinleeId },
+    where: { ownerDlmId: FIXTURE.owner.dlmId },
     select: { id: true },
   });
   const dispatchIds = dispatches.map((dispatch) => dispatch.id);
@@ -50,18 +50,18 @@ async function cleanup() {
     where: {
       OR: [
         { dispatchRequestId: { in: dispatchIds } },
-        { hostJinleeId: FIXTURE.owner.jinleeId },
+        { hostDlmId: FIXTURE.owner.dlmId },
         { workerId: { in: FIXTURE.workers.map((worker) => worker.discordId) } },
       ],
     },
   });
   await prisma.dispatchRequest.deleteMany({ where: { id: { in: dispatchIds } } });
   await prisma.miniConversation.deleteMany({
-    where: { OR: [{ userAId: { in: jinleeIds } }, { userBId: { in: jinleeIds } }] },
+    where: { OR: [{ userAId: { in: dlmIds } }, { userBId: { in: dlmIds } }] },
   });
-  await prisma.wechatProgramSession.deleteMany({ where: { jinleeId: { in: jinleeIds } } });
-  await prisma.accountBinding.deleteMany({ where: { jinleeId: { in: jinleeIds } } });
-  await prisma.jinleeUser.deleteMany({ where: { jinleeId: { in: jinleeIds } } });
+  await prisma.wechatProgramSession.deleteMany({ where: { dlmId: { in: dlmIds } } });
+  await prisma.accountBinding.deleteMany({ where: { dlmId: { in: dlmIds } } });
+  await prisma.dlmUser.deleteMany({ where: { dlmId: { in: dlmIds } } });
   await prisma.pEIWAN.deleteMany({ where: { PEIWANID: { in: FIXTURE.workers.map((worker) => worker.peiwanId) } } });
   await prisma.member.deleteMany({ where: { discordUserId: { in: discordIds } } });
 }
@@ -78,9 +78,9 @@ async function seed() {
       recharge: 3000,
     },
   });
-  await prisma.jinleeUser.create({
+  await prisma.dlmUser.create({
     data: {
-      jinleeId: FIXTURE.owner.jinleeId,
+      dlmId: FIXTURE.owner.dlmId,
       discordUserId: FIXTURE.owner.discordId,
       discordDisplayName: FIXTURE.owner.name,
       totalBalance: 3000,
@@ -96,9 +96,9 @@ async function seed() {
         serverDisplayName: worker.name,
       },
     });
-    await prisma.jinleeUser.create({
+    await prisma.dlmUser.create({
       data: {
-        jinleeId: worker.jinleeId,
+        dlmId: worker.dlmId,
         discordUserId: worker.discordId,
         discordDisplayName: worker.name,
       },
@@ -114,9 +114,9 @@ async function seed() {
     });
   }
 
-  const ownerSession = await createWechatProgramSession({ jinleeId: FIXTURE.owner.jinleeId });
+  const ownerSession = await createWechatProgramSession({ dlmId: FIXTURE.owner.dlmId });
   const workerSessions = await Promise.all(
-    FIXTURE.workers.map((worker) => createWechatProgramSession({ jinleeId: worker.jinleeId })),
+    FIXTURE.workers.map((worker) => createWechatProgramSession({ dlmId: worker.dlmId })),
   );
 
   const dispatchResponse = await createDispatch(request(
@@ -142,7 +142,7 @@ async function seed() {
   const conversationResponse = await startConversation(request(
     'http://staging.local/api/messages/conversations',
     ownerSession.token,
-    { peerJinleeId: FIXTURE.workers[0].jinleeId },
+    { peerDlmId: FIXTURE.workers[0].dlmId },
   ));
   const conversationId = (
     await responseBody<{ conversation: { id: string } }>(conversationResponse)
@@ -163,8 +163,8 @@ async function seed() {
 }
 
 async function main() {
-  if (process.env.JINLEE_ENV !== 'staging') {
-    throw new Error('Refusing to run unless JINLEE_ENV=staging.');
+  if (process.env.DLM_ENV !== 'staging') {
+    throw new Error('Refusing to run unless DLM_ENV=staging.');
   }
 
   if (process.argv.includes('--cleanup')) {

@@ -5,7 +5,7 @@ import {
   PointShopDeliveryStatus,
   PointShopDeliveryType,
 } from '@prisma/client';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
   buildLotteryFusionHistoryEntries,
   buildLotteryFusionSourceRef,
@@ -106,7 +106,7 @@ const buildMembership = (totalSpent: number): FusionMembershipView => {
 };
 
 export const getLotteryFusionPageData = async () => {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     return null;
   }
@@ -115,7 +115,7 @@ export const getLotteryFusionPageData = async () => {
   const [draws, coupons, pointShopGrants] = await Promise.all([
     prisma.lotteryDraw.findMany({
       where: {
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         createdAt: newEntityOnlyTime(),
         status: LotteryStatus.UNUSED,
         consumeAt: null,
@@ -137,7 +137,7 @@ export const getLotteryFusionPageData = async () => {
     }),
     prisma.coupon.findMany({
       where: {
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         issuedAt: newEntityOnlyTime(),
         status: CouponStatus.ACTIVE,
         expiresAt: { gt: now },
@@ -148,7 +148,7 @@ export const getLotteryFusionPageData = async () => {
     }),
     prisma.pointShopGrant.findMany({
       where: {
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         issuedAt: newEntityOnlyTime(),
         deliveryType: PointShopDeliveryType.COUPON,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
@@ -230,21 +230,21 @@ export const getLotteryFusionPageData = async () => {
     initialItems: [...drawItems, ...couponItems, ...pointShopItems].sort(
       (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
     ),
-    membership: buildMembership(toNumber(currentUser.jinleeUser.totalSpent)),
+    membership: buildMembership(toNumber(currentUser.dlmUser.totalSpent)),
   };
 };
 
 export const getLotteryFusionHistoryPageData = async (): Promise<{
   historyEntries: LotteryFusionHistoryEntry[];
 } | null> => {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     return null;
   }
 
   const outputDraws = await prisma.lotteryDraw.findMany({
     where: {
-      jinleeId: currentUser.jinleeId,
+      dlmId: currentUser.dlmId,
       createdAt: newEntityOnlyTime(),
       nonce: { startsWith: 'fusion:' },
     },
@@ -275,7 +275,7 @@ export const getLotteryFusionHistoryPageData = async (): Promise<{
       ? await Promise.all([
           prisma.lotteryDraw.findMany({
             where: {
-              jinleeId: currentUser.jinleeId,
+              dlmId: currentUser.dlmId,
               createdAt: newEntityOnlyTime(),
               requestId: { in: requestIds },
               id: { notIn: outputIds },
@@ -295,7 +295,7 @@ export const getLotteryFusionHistoryPageData = async (): Promise<{
           }),
           prisma.coupon.findMany({
             where: {
-              jinleeId: currentUser.jinleeId,
+              dlmId: currentUser.dlmId,
               issuedAt: newEntityOnlyTime(),
               orderId: { in: requestIds },
             },
@@ -304,7 +304,7 @@ export const getLotteryFusionHistoryPageData = async (): Promise<{
           }),
           prisma.pointShopGrant.findMany({
             where: {
-              jinleeId: currentUser.jinleeId,
+              dlmId: currentUser.dlmId,
               issuedAt: newEntityOnlyTime(),
               consumeOrderId: { in: requestIds },
             },

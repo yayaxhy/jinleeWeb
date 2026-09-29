@@ -1,7 +1,7 @@
 import { CouponStatus, CouponType, LotteryStatus, OrderStatus, PointShopDeliveryType, Prisma } from '@prisma/client';
 import type { Prisma as PrismaNamespace } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
 import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 export type DiscountKind = 'coupon' | 'lottery';
@@ -47,7 +47,7 @@ const suppressRechargeNotifications = async (_tx: PrismaNamespace.TransactionCli
 const recordIndividualTransaction = async (
   tx: PrismaNamespace.TransactionClient,
   data: {
-    jinleeId: string;
+    dlmId: string;
     discordId?: string | null;
     thirdPartydiscordId: string;
     balanceBefore: Prisma.Decimal;
@@ -60,7 +60,7 @@ const recordIndividualTransaction = async (
   await tx.individualTransaction.create({
     data: {
       discordId: data.discordId ?? null,
-      jinleeId: data.jinleeId,
+      dlmId: data.dlmId,
       thirdPartydiscordId: data.thirdPartydiscordId,
       balanceBefore: data.balanceBefore,
       amountChange: data.amountChange,
@@ -114,21 +114,21 @@ async function consumeCouponCandidateTx(
   tx: PrismaNamespace.TransactionClient,
   params: {
     candidate: CouponSelectionCandidate;
-    jinleeId: string;
+    dlmId: string;
     orderId: string;
     discountAmount: Prisma.Decimal;
     workerDiscordUserId: string | null;
-    workerJinleeId: string | null;
+    workerDlmId: string | null;
     now: Date;
   },
 ) {
-  const { candidate, jinleeId, orderId, discountAmount, workerDiscordUserId, workerJinleeId, now } = params;
+  const { candidate, dlmId, orderId, discountAmount, workerDiscordUserId, workerDlmId, now } = params;
 
   if (candidate.source === 'point_shop_coupon') {
     const result = await tx.pointShopGrant.updateMany({
       where: {
         id: candidate.id,
-        jinleeId,
+        dlmId,
         deliveryType: PointShopDeliveryType.COUPON,
         couponType: candidate.couponType,
         couponStatus: CouponStatus.ACTIVE,
@@ -142,7 +142,7 @@ async function consumeCouponCandidateTx(
         consumeOrderId: orderId,
         consumeAmount: discountAmount,
         consumeTargetId: workerDiscordUserId,
-        consumeTargetJinleeId: workerJinleeId,
+        consumeTargetDlmId: workerDlmId,
         couponStatus: CouponStatus.USED,
       },
     });
@@ -152,7 +152,7 @@ async function consumeCouponCandidateTx(
   const result = await tx.coupon.updateMany({
     where: {
       id: candidate.id,
-      jinleeId,
+      dlmId,
       type: candidate.couponType,
       status: CouponStatus.ACTIVE,
       issuedAt: newEntityOnlyTime(),
@@ -165,7 +165,7 @@ async function consumeCouponCandidateTx(
       orderId,
       consumeAmount: discountAmount,
       consumeTargetId: workerDiscordUserId,
-      consumeTargetJinleeId: workerJinleeId,
+      consumeTargetDlmId: workerDlmId,
       status: CouponStatus.USED,
     },
   });
@@ -176,20 +176,20 @@ async function consumeLotteryVoucherTx(
   tx: PrismaNamespace.TransactionClient,
   params: {
     voucherId: string;
-    jinleeId: string;
+    dlmId: string;
     orderId: string;
     prizeNames: string[];
     discountAmount: Prisma.Decimal;
     workerDiscordUserId: string | null;
-    workerJinleeId: string | null;
+    workerDlmId: string | null;
     now: Date;
   },
 ) {
-  const { voucherId, jinleeId, orderId, prizeNames, discountAmount, workerDiscordUserId, workerJinleeId, now } = params;
+  const { voucherId, dlmId, orderId, prizeNames, discountAmount, workerDiscordUserId, workerDlmId, now } = params;
   const result = await tx.lotteryDraw.updateMany({
     where: {
       id: voucherId,
-      jinleeId,
+      dlmId,
       status: LotteryStatus.UNUSED,
       createdAt: newEntityOnlyTime(),
       expiresAt: { gt: now },
@@ -202,7 +202,7 @@ async function consumeLotteryVoucherTx(
       consumeAt: now,
       consumeAmount: discountAmount,
       consumeTargetId: workerDiscordUserId,
-      consumeTargetJinleeId: workerJinleeId,
+      consumeTargetDlmId: workerDlmId,
       consumeOrderId: orderId,
     },
   });
@@ -234,14 +234,14 @@ function computeDiscountAmount(params: {
  */
 export async function applyDiscountForOrder(params: {
   orderId: string;
-  jinleeId: string;
+  dlmId: string;
   discordUserId?: string | null;
   kind: DiscountKind;
   lotteryId?: string;
   couponId?: string;
   now?: Date;
 }): Promise<ApplyDiscountResult> {
-  const { orderId, jinleeId, discordUserId, kind, lotteryId: targetLotteryId, couponId: targetCouponId } = params;
+  const { orderId, dlmId, discordUserId, kind, lotteryId: targetLotteryId, couponId: targetCouponId } = params;
   const now = params.now ?? new Date();
 
   return prisma.$transaction(async (tx) => {
@@ -252,7 +252,7 @@ export async function applyDiscountForOrder(params: {
       select: {
         id: true,
         hostId: true,
-        hostJinleeId: true,
+        hostDlmId: true,
         workerId: true,
         status: true,
         createdAt: true,
@@ -264,13 +264,13 @@ export async function applyDiscountForOrder(params: {
     if (order.createdAt.getTime() <= NEW_ENTITY_OPERATIONS_STARTED_AT.getTime()) {
       return { status: 'legacy_order' };
     }
-    if ((order.hostJinleeId ?? null) !== jinleeId) return { status: 'not_order_host' };
+    if ((order.hostDlmId ?? null) !== dlmId) return { status: 'not_order_host' };
     if (order.status !== OrderStatus.ENDED) return { status: 'order_not_ended' };
     await lockOrderForDiscountTx(tx, order.id);
     const workerTarget = order.workerId
-      ? await tx.jinleeUser.findUnique({
+      ? await tx.dlmUser.findUnique({
           where: { discordUserId: order.workerId },
-          select: { jinleeId: true },
+          select: { dlmId: true },
         })
       : null;
     if (!order.unitPrice || order.totalMinutes == null) {
@@ -288,7 +288,7 @@ export async function applyDiscountForOrder(params: {
       tx.pointShopGrant.findFirst({
         where: {
           consumeOrderId: orderId,
-          jinleeId,
+          dlmId,
           deliveryType: PointShopDeliveryType.COUPON,
           couponStatus: CouponStatus.USED,
         },
@@ -296,7 +296,7 @@ export async function applyDiscountForOrder(params: {
       }),
       tx.lotteryDraw.findFirst({
         where: {
-          jinleeId,
+          dlmId,
           status: LotteryStatus.USED,
           consumeOrderId: orderId,
           prize: { name: { in: Object.keys(DISCOUNT_PRIZE_CONFIG) } },
@@ -310,12 +310,12 @@ export async function applyDiscountForOrder(params: {
 
     // expire outdated vouchers
     await tx.coupon.updateMany({
-      where: { jinleeId, status: 'ACTIVE', issuedAt: newEntityOnlyTime(), expiresAt: { lte: now } },
+      where: { dlmId, status: 'ACTIVE', issuedAt: newEntityOnlyTime(), expiresAt: { lte: now } },
       data: { status: 'EXPIRED' },
     });
     await tx.lotteryDraw.updateMany({
       where: {
-        jinleeId,
+        dlmId,
         status: LotteryStatus.UNUSED,
         createdAt: newEntityOnlyTime(),
         expiresAt: { lte: now },
@@ -337,7 +337,7 @@ export async function applyDiscountForOrder(params: {
           const availableCoupon = await tx.coupon.findFirst({
             where: {
               id: targetCouponId,
-              jinleeId,
+              dlmId,
               status: CouponStatus.ACTIVE,
               issuedAt: newEntityOnlyTime(),
               expiresAt: { gt: now },
@@ -359,7 +359,7 @@ export async function applyDiscountForOrder(params: {
           const availablePointShopCoupon = await tx.pointShopGrant.findFirst({
             where: {
               id: targetCouponId,
-              jinleeId,
+              dlmId,
               deliveryType: PointShopDeliveryType.COUPON,
               couponStatus: CouponStatus.ACTIVE,
               issuedAt: newEntityOnlyTime(),
@@ -383,7 +383,7 @@ export async function applyDiscountForOrder(params: {
         const [availableCoupon, availablePointShopCoupon] = await Promise.all([
           tx.coupon.findFirst({
             where: {
-              jinleeId,
+              dlmId,
               status: CouponStatus.ACTIVE,
               issuedAt: newEntityOnlyTime(),
               expiresAt: { gt: now },
@@ -394,7 +394,7 @@ export async function applyDiscountForOrder(params: {
           }),
           tx.pointShopGrant.findFirst({
             where: {
-              jinleeId,
+              dlmId,
               deliveryType: PointShopDeliveryType.COUPON,
               couponStatus: CouponStatus.ACTIVE,
               issuedAt: newEntityOnlyTime(),
@@ -447,11 +447,11 @@ export async function applyDiscountForOrder(params: {
 
         const consumed = await consumeCouponCandidateTx(tx, {
           candidate: selectedCoupon,
-          jinleeId,
+          dlmId,
           orderId: order.id,
           discountAmount: candidateDiscountAmount,
           workerDiscordUserId: order.workerId ?? null,
-          workerJinleeId: workerTarget?.jinleeId ?? null,
+          workerDlmId: workerTarget?.dlmId ?? null,
           now,
         });
 
@@ -477,7 +477,7 @@ export async function applyDiscountForOrder(params: {
           ? await tx.lotteryDraw.findFirst({
               where: {
                 id: targetLotteryId,
-                jinleeId,
+                dlmId,
                 status: LotteryStatus.UNUSED,
                 createdAt: newEntityOnlyTime(),
                 expiresAt: { gt: now },
@@ -487,7 +487,7 @@ export async function applyDiscountForOrder(params: {
             })
           : await tx.lotteryDraw.findFirst({
               where: {
-                jinleeId,
+                dlmId,
                 status: LotteryStatus.UNUSED,
                 createdAt: newEntityOnlyTime(),
                 expiresAt: { gt: now },
@@ -514,12 +514,12 @@ export async function applyDiscountForOrder(params: {
 
         const consumed = await consumeLotteryVoucherTx(tx, {
           voucherId: voucher.id,
-          jinleeId,
+          dlmId,
           orderId: order.id,
           prizeNames,
           discountAmount: candidateDiscountAmount,
           workerDiscordUserId: order.workerId ?? null,
-          workerJinleeId: workerTarget?.jinleeId ?? null,
+          workerDlmId: workerTarget?.dlmId ?? null,
           now,
         });
 
@@ -553,21 +553,21 @@ export async function applyDiscountForOrder(params: {
     if (discountAmount.lte(0)) return { status: 'no_fee' };
 
     await suppressRechargeNotifications(tx);
-    const walletBefore = await getJinleeWalletSnapshotTx(tx, {
-      jinleeId,
+    const walletBefore = await getDlmWalletSnapshotTx(tx, {
+      dlmId,
       discordUserId: discordUserId ?? null,
     });
     const balanceBefore = new Prisma.Decimal(walletBefore.totalBalance);
 
-    const walletAfter = await applyJinleeWalletDeltaTx(tx, {
-      jinleeId,
+    const walletAfter = await applyDlmWalletDeltaTx(tx, {
+      dlmId,
       discordUserId: discordUserId ?? null,
       rechargeDelta: discountAmount,
       totalBalanceDelta: discountAmount,
     });
 
     await recordIndividualTransaction(tx, {
-      jinleeId,
+      dlmId,
       discordId: discordUserId ?? null,
       thirdPartydiscordId: order.workerId ?? 'SYSTEM',
       balanceBefore,

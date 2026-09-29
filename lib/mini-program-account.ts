@@ -1,5 +1,5 @@
 import { MiniAvailabilityStatus, OrderStatus, PeiwanStatus, Prisma } from '@prisma/client';
-import type { CurrentJinleeUser } from '@/lib/current-jinlee-user';
+import type { CurrentDlmUser } from '@/lib/current-dlm-user';
 import { postInternalBot } from '@/lib/internal-bot';
 import { formatPeiwanGameProfile } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
@@ -26,7 +26,7 @@ const availabilityByInput: Record<string, MiniAvailabilityStatus> = {
 };
 
 function displayName(user: {
-  jinleeId?: string | null;
+  dlmId?: string | null;
   discordDisplayName?: string | null;
   wechatDisplayName?: string | null;
   member?: { serverDisplayName?: string | null } | null;
@@ -34,7 +34,7 @@ function displayName(user: {
   return user?.discordDisplayName || user?.member?.serverDisplayName || user?.wechatDisplayName || '用户';
 }
 
-async function hasRunningWorkerOrder(currentUser: CurrentJinleeUser) {
+async function hasRunningWorkerOrder(currentUser: CurrentDlmUser) {
   if (!currentUser.discordUserId) return false;
   return Boolean(await prisma.order.findFirst({
     where: { workerId: currentUser.discordUserId, status: OrderStatus.RUNNING, createdAt: newEntityOnlyTime() },
@@ -42,10 +42,10 @@ async function hasRunningWorkerOrder(currentUser: CurrentJinleeUser) {
   }));
 }
 
-export async function getMiniAvailability(currentUser: CurrentJinleeUser) {
+export async function getMiniAvailability(currentUser: CurrentDlmUser) {
   const forcedBusy = await hasRunningWorkerOrder(currentUser);
-  const selected = currentUser.jinleeUser.miniAvailabilitySetAt
-    ? currentUser.jinleeUser.miniAvailability
+  const selected = currentUser.dlmUser.miniAvailabilitySetAt
+    ? currentUser.dlmUser.miniAvailability
     : MiniAvailabilityStatus.RESTING;
   const effective = forcedBusy ? MiniAvailabilityStatus.BUSY : selected;
   return {
@@ -54,11 +54,11 @@ export async function getMiniAvailability(currentUser: CurrentJinleeUser) {
     effective,
     effectiveLabel: availabilityLabels[effective],
     forcedBusy,
-    canGrab: Boolean(currentUser.discordUserId && currentUser.jinleeUser.member?.status === 'PEIWAN' && !forcedBusy),
+    canGrab: Boolean(currentUser.discordUserId && currentUser.dlmUser.member?.status === 'PEIWAN' && !forcedBusy),
   };
 }
 
-export async function setMiniAvailability(currentUser: CurrentJinleeUser, rawStatus: unknown) {
+export async function setMiniAvailability(currentUser: CurrentDlmUser, rawStatus: unknown) {
   const normalized = availabilityByInput[String(rawStatus || '').trim().toUpperCase()] ?? availabilityByInput[String(rawStatus || '').trim()];
   if (!normalized) {
     return { ok: false, status: 400, error: 'invalid_availability' } as const;
@@ -70,12 +70,12 @@ export async function setMiniAvailability(currentUser: CurrentJinleeUser, rawSta
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.jinleeUser.update({
-      where: { jinleeId: currentUser.jinleeId },
+    await tx.dlmUser.update({
+      where: { dlmId: currentUser.dlmId },
       data: { miniAvailability: normalized, miniAvailabilitySetAt: new Date() },
     });
 
-    if (currentUser.discordUserId && currentUser.jinleeUser.member?.status === 'PEIWAN') {
+    if (currentUser.discordUserId && currentUser.dlmUser.member?.status === 'PEIWAN') {
       await tx.pEIWAN.updateMany({
         where: { discordUserId: currentUser.discordUserId },
         data: { status: normalized === MiniAvailabilityStatus.AVAILABLE && !forcedBusy ? PeiwanStatus.free : PeiwanStatus.busy },
@@ -98,12 +98,12 @@ export async function setMiniAvailability(currentUser: CurrentJinleeUser, rawSta
 
 function serializeOrder(order: Prisma.OrderGetPayload<{
   include: {
-    hostJinleeUser: { include: { member: true } };
+    hostDlmUser: { include: { member: true } };
     worker: true;
     peiwan: true;
   };
-}>, currentUser: CurrentJinleeUser) {
-  const isHost = order.hostJinleeId === currentUser.jinleeId || Boolean(currentUser.discordUserId && order.hostId === currentUser.discordUserId);
+}>, currentUser: CurrentDlmUser) {
+  const isHost = order.hostDlmId === currentUser.dlmId || Boolean(currentUser.discordUserId && order.hostId === currentUser.discordUserId);
   const isWorker = Boolean(currentUser.discordUserId && order.workerId === currentUser.discordUserId);
   const actions: string[] = [];
 
@@ -118,7 +118,7 @@ function serializeOrder(order: Prisma.OrderGetPayload<{
     mode: order.mode,
     counterpartName: isHost
       ? order.peiwan.serverDisplayName || order.worker.serverDisplayName || `陪玩 #${order.peiwanId}`
-      : displayName(order.hostJinleeUser),
+      : displayName(order.hostDlmUser),
     peiwanId: order.peiwanId,
     quotationCode: order.quotationCode,
     unitPrice: order.unitPrice.toString(),
@@ -131,8 +131,8 @@ function serializeOrder(order: Prisma.OrderGetPayload<{
   };
 }
 
-export async function listMiniOrders(currentUser: CurrentJinleeUser) {
-  const participantWhere: Prisma.OrderWhereInput[] = [{ hostJinleeId: currentUser.jinleeId }];
+export async function listMiniOrders(currentUser: CurrentDlmUser) {
+  const participantWhere: Prisma.OrderWhereInput[] = [{ hostDlmId: currentUser.dlmId }];
   if (currentUser.discordUserId) {
     participantWhere.push({ hostId: currentUser.discordUserId }, { workerId: currentUser.discordUserId });
   }
@@ -140,7 +140,7 @@ export async function listMiniOrders(currentUser: CurrentJinleeUser) {
   const rows = await prisma.order.findMany({
     where: { OR: participantWhere, createdAt: newEntityOnlyTime() },
     include: {
-      hostJinleeUser: { include: { member: true } },
+      hostDlmUser: { include: { member: true } },
       worker: true,
       peiwan: true,
     },
@@ -152,7 +152,7 @@ export async function listMiniOrders(currentUser: CurrentJinleeUser) {
 }
 
 export async function performMiniOrderAction(
-  currentUser: CurrentJinleeUser,
+  currentUser: CurrentDlmUser,
   orderId: string,
   action: unknown,
 ) {
@@ -166,18 +166,18 @@ export async function performMiniOrderAction(
     select: {
       displayNo: true,
       hostId: true,
-      hostJinleeId: true,
+      hostDlmId: true,
       workerId: true,
       status: true,
       createdAt: true,
-      worker: { select: { jinleeUser: { select: { jinleeId: true } } } },
+      worker: { select: { dlmUser: { select: { dlmId: true } } } },
     },
   });
   if (!order || order.createdAt.getTime() <= NEW_ENTITY_OPERATIONS_STARTED_AT.getTime()) {
     return { ok: false, status: 404, error: 'order_not_found' } as const;
   }
 
-  const isHost = order.hostJinleeId === currentUser.jinleeId || Boolean(currentUser.discordUserId && order.hostId === currentUser.discordUserId);
+  const isHost = order.hostDlmId === currentUser.dlmId || Boolean(currentUser.discordUserId && order.hostId === currentUser.discordUserId);
   const isWorker = Boolean(currentUser.discordUserId && order.workerId === currentUser.discordUserId);
   if ((normalizedAction === 'accept' || normalizedAction === 'decline') ? !isWorker : !isHost && !isWorker) {
     return { ok: false, status: 403, error: 'not_order_participant' } as const;
@@ -188,7 +188,7 @@ export async function performMiniOrderAction(
     {
       orderId,
       action: normalizedAction,
-      actorJinleeId: currentUser.jinleeId,
+      actorDlmId: currentUser.dlmId,
       actorDiscordId: currentUser.discordUserId,
     },
   );
@@ -198,19 +198,19 @@ export async function performMiniOrderAction(
       ? `订单 #${order.displayNo} 已被陪玩拒绝，可以返回派单继续选择。`
       : `订单 #${order.displayNo} 已结束，结算结果已写入账户流水。`;
   await Promise.allSettled([
-    notifyMiniProgramUser(order.hostJinleeId, 'critical', `订单 #${order.displayNo}`, notificationText, 'pages/my-orders/index'),
-    notifyMiniProgramUser(order.worker.jinleeUser?.jinleeId, 'critical', `订单 #${order.displayNo}`, notificationText, 'pages/my-orders/index'),
+    notifyMiniProgramUser(order.hostDlmId, 'critical', `订单 #${order.displayNo}`, notificationText, 'pages/my-orders/index'),
+    notifyMiniProgramUser(order.worker.dlmUser?.dlmId, 'critical', `订单 #${order.displayNo}`, notificationText, 'pages/my-orders/index'),
   ]);
   return { ok: true, order: result.order } as const;
 }
 
-export async function listMiniTransactions(currentUser: CurrentJinleeUser) {
+export async function listMiniTransactions(currentUser: CurrentDlmUser) {
   const rows = await prisma.individualTransaction.findMany({
     where: {
       AND: [
         currentUser.discordUserId
-          ? { OR: [{ jinleeId: currentUser.jinleeId }, { discordId: currentUser.discordUserId }] }
-          : { jinleeId: currentUser.jinleeId },
+          ? { OR: [{ dlmId: currentUser.dlmId }, { discordId: currentUser.discordUserId }] }
+          : { dlmId: currentUser.dlmId },
         { timeCreatedAt: newEntityOnlyTime() },
       ],
     },
@@ -228,17 +228,17 @@ export async function listMiniTransactions(currentUser: CurrentJinleeUser) {
   }));
 }
 
-export function getMiniNotificationSettings(currentUser: CurrentJinleeUser) {
+export function getMiniNotificationSettings(currentUser: CurrentDlmUser) {
   return {
-    critical: currentUser.jinleeUser.miniCriticalNotifications,
-    messages: currentUser.jinleeUser.miniMessageNotifications,
-    dispatches: currentUser.jinleeUser.miniDispatchNotifications,
+    critical: currentUser.dlmUser.miniCriticalNotifications,
+    messages: currentUser.dlmUser.miniMessageNotifications,
+    dispatches: currentUser.dlmUser.miniDispatchNotifications,
   };
 }
 
-export async function setMiniNotificationSettings(currentUser: CurrentJinleeUser, payload: Record<string, unknown>) {
-  const updated = await prisma.jinleeUser.update({
-    where: { jinleeId: currentUser.jinleeId },
+export async function setMiniNotificationSettings(currentUser: CurrentDlmUser, payload: Record<string, unknown>) {
+  const updated = await prisma.dlmUser.update({
+    where: { dlmId: currentUser.dlmId },
     data: {
       miniCriticalNotifications: payload.critical === true,
       miniMessageNotifications: payload.messages === true,
@@ -258,7 +258,7 @@ export async function setMiniNotificationSettings(currentUser: CurrentJinleeUser
   };
 }
 
-export async function getOwnPeiwanCard(currentUser: CurrentJinleeUser) {
+export async function getOwnPeiwanCard(currentUser: CurrentDlmUser) {
   if (!currentUser.discordUserId) return { exists: false, reason: 'discord_not_bound' };
 
   const row = await prisma.pEIWAN.findUnique({
@@ -286,7 +286,7 @@ export async function getOwnPeiwanCard(currentUser: CurrentJinleeUser) {
   };
 }
 
-export async function getHomePendingTask(currentUser: CurrentJinleeUser) {
+export async function getHomePendingTask(currentUser: CurrentDlmUser) {
   if (currentUser.discordUserId) {
     const pendingWorkerOrder = await prisma.order.findFirst({
       where: { workerId: currentUser.discordUserId, status: OrderStatus.PENDING, createdAt: newEntityOnlyTime() },
@@ -309,7 +309,7 @@ export async function getHomePendingTask(currentUser: CurrentJinleeUser) {
       status: OrderStatus.RUNNING,
       createdAt: newEntityOnlyTime(),
       OR: [
-        { hostJinleeId: currentUser.jinleeId },
+        { hostDlmId: currentUser.dlmId },
         ...(currentUser.discordUserId ? [{ hostId: currentUser.discordUserId }, { workerId: currentUser.discordUserId }] : []),
       ],
     },
@@ -328,7 +328,7 @@ export async function getHomePendingTask(currentUser: CurrentJinleeUser) {
 
   const dispatch = await prisma.dispatchRequest.findFirst({
     where: {
-      ownerJinleeId: currentUser.jinleeId,
+      ownerDlmId: currentUser.dlmId,
       status: 'OPEN',
       expiresAt: { gt: new Date() },
       candidates: { some: { status: 'ACTIVE' } },
@@ -349,11 +349,11 @@ export async function getHomePendingTask(currentUser: CurrentJinleeUser) {
   return null;
 }
 
-export async function getHomeRecommendationIds(currentUser: CurrentJinleeUser) {
+export async function getHomeRecommendationIds(currentUser: CurrentDlmUser) {
   const where: Prisma.OrderWhereInput = {
     ...(currentUser.discordUserId
-      ? { OR: [{ hostJinleeId: currentUser.jinleeId }, { hostId: currentUser.discordUserId }] }
-      : { hostJinleeId: currentUser.jinleeId }),
+      ? { OR: [{ hostDlmId: currentUser.dlmId }, { hostId: currentUser.discordUserId }] }
+      : { hostDlmId: currentUser.dlmId }),
     createdAt: newEntityOnlyTime(),
   };
   const rows = await prisma.order.findMany({

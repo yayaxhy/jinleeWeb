@@ -205,7 +205,7 @@ export default async function AdminTrafficPage(props: PageProps) {
       ipCity: true,
       createdAt: true,
       member: { select: { serverDisplayName: true } },
-      jinleeUser: { select: { discordDisplayName: true } },
+      dlmUser: { select: { discordDisplayName: true } },
     },
   });
 
@@ -379,7 +379,7 @@ export default async function AdminTrafficPage(props: PageProps) {
                 loginEvents.map((event) => {
                   const displayName =
                     event.member?.serverDisplayName?.trim() ||
-                    event.jinleeUser?.discordDisplayName?.trim() ||
+                    event.dlmUser?.discordDisplayName?.trim() ||
                     '未知昵称';
                   return (
                     <tr key={event.id}>

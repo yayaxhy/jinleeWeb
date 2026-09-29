@@ -1,5 +1,5 @@
 import { MemberStatus, OrderStatus, PeiwanStatus, Prisma, type PrismaClient } from '@prisma/client';
-import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
 import { getHighestVipLevelByTotalSpent } from '@/lib/vip-levels';
 
 const DEC = (value: Prisma.Decimal | number | string | null | undefined) =>
@@ -59,7 +59,7 @@ export type AssetAccountSummary = {
   discordId: string;
   exists: boolean;
   memberExists: boolean;
-  jinleeId: string | null;
+  dlmId: string | null;
   serverDisplayName: string | null;
   memberStatus: string | null;
   wallet: WalletSummary;
@@ -126,7 +126,7 @@ export const loadAssetAccountSummary = async (
 
   const [
     member,
-    jinleeUser,
+    dlmUser,
     loyaltyPoint,
     vipProfile,
     commissionBuff,
@@ -159,10 +159,10 @@ export const loadAssetAccountSummary = async (
           },
         },
       }),
-      client.jinleeUser.findUnique({
+      client.dlmUser.findUnique({
         where: { discordUserId: discordId },
         select: {
-          jinleeId: true,
+          dlmId: true,
           totalBalance: true,
           income: true,
           recharge: true,
@@ -233,11 +233,11 @@ export const loadAssetAccountSummary = async (
     ]);
 
   const wallet = serializeWallet(
-    member?.totalBalance ?? jinleeUser?.totalBalance,
-    member?.income ?? jinleeUser?.income,
-    member?.recharge ?? jinleeUser?.recharge,
-    member?.totalSpent ?? jinleeUser?.totalSpent,
-    loyaltyPoint?.points ?? jinleeUser?.loyaltyPoints,
+    member?.totalBalance ?? dlmUser?.totalBalance,
+    member?.income ?? dlmUser?.income,
+    member?.recharge ?? dlmUser?.recharge,
+    member?.totalSpent ?? dlmUser?.totalSpent,
+    loyaltyPoint?.points ?? dlmUser?.loyaltyPoints,
   );
 
   const vipDerivedLevel = getHighestVipLevelByTotalSpent(wallet.totalSpent);
@@ -300,9 +300,9 @@ export const loadAssetAccountSummary = async (
 
   return {
     discordId,
-    exists: Boolean(member || jinleeUser),
+    exists: Boolean(member || dlmUser),
     memberExists: Boolean(member),
-    jinleeId: jinleeUser?.jinleeId ?? null,
+    dlmId: dlmUser?.dlmId ?? null,
     serverDisplayName: member?.serverDisplayName ?? null,
     memberStatus: member?.status ?? null,
     wallet,
@@ -801,17 +801,17 @@ export const executeAssetTransfer = async (
     FOR UPDATE
   `;
 
-  const [sourceSummaryBefore, targetSummaryBefore, sourceJinleeUser, targetJinleeUser, sourceVipProfile, targetVipProfile, sourceLoyaltyPoint] =
+  const [sourceSummaryBefore, targetSummaryBefore, sourceDlmUser, targetDlmUser, sourceVipProfile, targetVipProfile, sourceLoyaltyPoint] =
     await Promise.all([
       loadAssetAccountSummary(tx, params.sourceDiscordId),
       loadAssetAccountSummary(tx, params.targetDiscordId),
-      tx.jinleeUser.findUnique({
+      tx.dlmUser.findUnique({
         where: { discordUserId: params.sourceDiscordId },
-        select: { jinleeId: true },
+        select: { dlmId: true },
       }),
-      tx.jinleeUser.findUnique({
+      tx.dlmUser.findUnique({
         where: { discordUserId: params.targetDiscordId },
-        select: { jinleeId: true },
+        select: { dlmId: true },
       }),
       tx.vipBenefitProfile.findUnique({
         where: { discordUserId: params.sourceDiscordId },
@@ -825,24 +825,24 @@ export const executeAssetTransfer = async (
       }),
     ]);
 
-  if (!sourceSummaryBefore.memberExists || !sourceJinleeUser?.jinleeId) {
+  if (!sourceSummaryBefore.memberExists || !sourceDlmUser?.dlmId) {
     throw new Error('源账号不存在，或尚未建立 DLMClub 身份');
   }
-  if (!targetSummaryBefore.memberExists || !targetJinleeUser?.jinleeId) {
+  if (!targetSummaryBefore.memberExists || !targetDlmUser?.dlmId) {
     throw new Error('目标账号不存在，或尚未建立 DLMClub 身份');
   }
 
-  const sourceWalletBefore = await getJinleeWalletSnapshotTx(tx, {
-    jinleeId: sourceJinleeUser.jinleeId,
+  const sourceWalletBefore = await getDlmWalletSnapshotTx(tx, {
+    dlmId: sourceDlmUser.dlmId,
     discordUserId: params.sourceDiscordId,
   });
-  const targetWalletBefore = await getJinleeWalletSnapshotTx(tx, {
-    jinleeId: targetJinleeUser.jinleeId,
+  const targetWalletBefore = await getDlmWalletSnapshotTx(tx, {
+    dlmId: targetDlmUser.dlmId,
     discordUserId: params.targetDiscordId,
   });
 
-  const targetWalletAfter = await applyJinleeWalletDeltaTx(tx, {
-    jinleeId: targetJinleeUser.jinleeId,
+  const targetWalletAfter = await applyDlmWalletDeltaTx(tx, {
+    dlmId: targetDlmUser.dlmId,
     discordUserId: params.targetDiscordId,
     totalBalanceDelta: sourceWalletBefore.totalBalance,
     incomeDelta: sourceWalletBefore.income,
@@ -851,8 +851,8 @@ export const executeAssetTransfer = async (
     loyaltyPointsDelta: sourceWalletBefore.loyaltyPoints,
   });
 
-  const sourceWalletAfter = await applyJinleeWalletDeltaTx(tx, {
-    jinleeId: sourceJinleeUser.jinleeId,
+  const sourceWalletAfter = await applyDlmWalletDeltaTx(tx, {
+    dlmId: sourceDlmUser.dlmId,
     discordUserId: params.sourceDiscordId,
     totalBalanceDelta: sourceWalletBefore.totalBalance.negated(),
     incomeDelta: sourceWalletBefore.income.negated(),
@@ -872,11 +872,11 @@ export const executeAssetTransfer = async (
     where: { discordUserId: params.targetDiscordId },
     create: {
       discordUserId: params.targetDiscordId,
-      jinleeId: targetJinleeUser.jinleeId,
+      dlmId: targetDlmUser.dlmId,
       points: targetWalletAfter.loyaltyPoints,
     },
     update: {
-      jinleeId: targetJinleeUser.jinleeId,
+      dlmId: targetDlmUser.dlmId,
       points: targetWalletAfter.loyaltyPoints,
     },
   });
@@ -892,7 +892,7 @@ export const executeAssetTransfer = async (
     await tx.individualTransaction.create({
       data: {
         discordId: params.sourceDiscordId,
-        jinleeId: sourceJinleeUser.jinleeId,
+        dlmId: sourceDlmUser.dlmId,
         thirdPartydiscordId: params.targetDiscordId,
         balanceBefore: sourceWalletBefore.totalBalance,
         amountChange: sourceWalletBefore.totalBalance,
@@ -904,7 +904,7 @@ export const executeAssetTransfer = async (
     await tx.individualTransaction.create({
       data: {
         discordId: params.targetDiscordId,
-        jinleeId: targetJinleeUser.jinleeId,
+        dlmId: targetDlmUser.dlmId,
         thirdPartydiscordId: params.sourceDiscordId,
         balanceBefore: targetWalletBefore.totalBalance,
         amountChange: sourceWalletBefore.totalBalance,
@@ -998,8 +998,8 @@ export const executeAssetTransfer = async (
       operatorDiscordId: params.operatorDiscordId,
       sourceDiscordId: params.sourceDiscordId,
       targetDiscordId: params.targetDiscordId,
-      sourceJinleeId: sourceJinleeUser.jinleeId,
-      targetJinleeId: targetJinleeUser.jinleeId,
+      sourceDlmId: sourceDlmUser.dlmId,
+      targetDlmId: targetDlmUser.dlmId,
       forceMerge: params.forceMerge,
       sourceSnapshot: sourceSummaryBefore,
       targetSnapshot: targetSummaryBefore,

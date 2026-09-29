@@ -92,7 +92,7 @@ export const decryptAuthAuditIp = (encryptedValue?: string | null) => {
 
 export const recordAuthLoginEvent = async (input: {
   request: Request;
-  jinleeId: string;
+  dlmId: string;
   discordUserId?: string | null;
   provider: AccountProvider;
 }) => {
@@ -109,7 +109,7 @@ export const recordAuthLoginEvent = async (input: {
 
   await prisma.authLoginEvent.create({
     data: {
-      jinleeId: input.jinleeId,
+      dlmId: input.dlmId,
       discordUserId: input.discordUserId ?? null,
       provider: input.provider,
       ipAddressEncrypted: encryptedIp?.encrypted ?? null,

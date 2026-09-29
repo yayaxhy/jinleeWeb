@@ -110,12 +110,12 @@ export const calculateActualSpend = (
 
 async function getWeeklyActualSpendTx(
   tx: DbClient,
-  jinleeId: string,
+  dlmId: string,
   now: Date,
 ) {
   const entries = await tx.individualTransaction.findMany({
     where: {
-      jinleeId,
+      dlmId,
       timeCreatedAt: { gte: getEffectiveWeekStart(now), lte: now },
       typeOfTransaction: {
         in: [
@@ -135,7 +135,7 @@ async function getWeeklyActualSpendTx(
 
 async function getQualifyingCampaignTransactionCountTx(
   tx: DbClient,
-  jinleeId: string,
+  dlmId: string,
   discordUserId: string | null,
   now: Date,
 ) {
@@ -145,7 +145,7 @@ async function getQualifyingCampaignTransactionCountTx(
   const [qualifyingOrders, qualifyingGifts] = await Promise.all([
     tx.order.count({
       where: {
-        hostJinleeId: jinleeId,
+        hostDlmId: dlmId,
         status: OrderStatus.ENDED,
         endedAt: { gte: OPENING_BENEFITS_START, lte: now },
         grossAmount: { gt: minimumAmount },
@@ -213,7 +213,7 @@ export type OpeningBenefitsStatus = {
 };
 
 export async function getOpeningBenefitsStatus(params: {
-  jinleeId: string;
+  dlmId: string;
   discordUserId?: string | null;
   now?: Date;
 }): Promise<OpeningBenefitsStatus> {
@@ -223,13 +223,13 @@ export async function getOpeningBenefitsStatus(params: {
   const dailyKey = getBerlinDateKey(now);
 
   const [user, claims, peiwan] = await Promise.all([
-    prisma.jinleeUser.findUnique({
-      where: { jinleeId: params.jinleeId },
+    prisma.dlmUser.findUnique({
+      where: { dlmId: params.dlmId },
       select: { discordUserId: true },
     }),
     prisma.openingBenefitClaim.findMany({
       where: {
-        jinleeId: params.jinleeId,
+        dlmId: params.dlmId,
         OR: [
           { benefit: OPENING_BENEFIT.DAILY_DISCOUNT, periodKey: dailyKey },
           { benefit: OPENING_BENEFIT.WEEKLY_CROWN },
@@ -247,11 +247,11 @@ export async function getOpeningBenefitsStatus(params: {
   ]);
 
   const [weeklyActualSpend, qualifyingTransactions] = await Promise.all([
-    getWeeklyActualSpendTx(prisma, params.jinleeId, now),
+    getWeeklyActualSpendTx(prisma, params.dlmId, now),
     active
       ? getQualifyingCampaignTransactionCountTx(
           prisma,
-          params.jinleeId,
+          params.dlmId,
           user?.discordUserId ?? params.discordUserId ?? null,
           now,
         )
@@ -310,7 +310,7 @@ export async function getOpeningBenefitsStatus(params: {
 
 async function createCouponClaimTx(params: {
   tx: PrismaNamespace.TransactionClient;
-  jinleeId: string;
+  dlmId: string;
   benefit: OpeningBenefitName;
   periodKey: string;
   couponType: CouponType;
@@ -318,14 +318,14 @@ async function createCouponClaimTx(params: {
 }) {
   const claim = await params.tx.openingBenefitClaim.create({
     data: {
-      jinleeId: params.jinleeId,
+      dlmId: params.dlmId,
       benefit: params.benefit,
       periodKey: params.periodKey,
     },
   });
   const coupon = await params.tx.coupon.create({
     data: {
-      jinleeId: params.jinleeId,
+      dlmId: params.dlmId,
       type: params.couponType,
       source: CouponSource.OPENING_CAMPAIGN,
       status: CouponStatus.ACTIVE,
@@ -341,7 +341,7 @@ async function createCouponClaimTx(params: {
 }
 
 export async function claimOpeningBenefit(params: {
-  jinleeId: string;
+  dlmId: string;
   benefit: OpeningBenefitName;
   now?: Date;
 }) {
@@ -354,7 +354,7 @@ export async function claimOpeningBenefit(params: {
       if (params.benefit === OPENING_BENEFIT.DAILY_DISCOUNT) {
         return createCouponClaimTx({
           tx,
-          jinleeId: params.jinleeId,
+          dlmId: params.dlmId,
           benefit: params.benefit,
           periodKey: getBerlinDateKey(now),
           couponType: CouponType.DISCOUNT_90_LOTTERY,
@@ -362,8 +362,8 @@ export async function claimOpeningBenefit(params: {
         });
       }
 
-      const user = await tx.jinleeUser.findUnique({
-        where: { jinleeId: params.jinleeId },
+      const user = await tx.dlmUser.findUnique({
+        where: { dlmId: params.dlmId },
         select: { discordUserId: true },
       });
       if (!user) throw new OpeningBenefitError('two_order_task_not_eligible');
@@ -371,10 +371,10 @@ export async function claimOpeningBenefit(params: {
       if (params.benefit === OPENING_BENEFIT.WEEKLY_CROWN) {
         // Lock the user's row so the once-per-campaign rule stays true even
         // when two claim requests arrive at the same time.
-        await tx.$executeRaw`SELECT 1 FROM "JinleeUser" WHERE "jinleeId" = ${params.jinleeId} FOR UPDATE`;
+        await tx.$executeRaw`SELECT 1 FROM "DlmUser" WHERE "dlmId" = ${params.dlmId} FOR UPDATE`;
         const existingClaim = await tx.openingBenefitClaim.findFirst({
           where: {
-            jinleeId: params.jinleeId,
+            dlmId: params.dlmId,
             benefit: OPENING_BENEFIT.WEEKLY_CROWN,
           },
           select: { id: true },
@@ -384,7 +384,7 @@ export async function claimOpeningBenefit(params: {
         }
         const actualSpend = await getWeeklyActualSpendTx(
           tx,
-          params.jinleeId,
+          params.dlmId,
           now,
         );
         if (actualSpend.lt(OPENING_WEEKLY_SPEND_TARGET)) {
@@ -392,7 +392,7 @@ export async function claimOpeningBenefit(params: {
         }
         return createCouponClaimTx({
           tx,
-          jinleeId: params.jinleeId,
+          dlmId: params.dlmId,
           benefit: params.benefit,
           periodKey: ONE_TIME_CLAIM_PERIOD_KEY,
           couponType: CouponType.CROWN_75_VOUCHER,
@@ -403,7 +403,7 @@ export async function claimOpeningBenefit(params: {
       const qualifyingTransactions =
         await getQualifyingCampaignTransactionCountTx(
           tx,
-          params.jinleeId,
+          params.dlmId,
           user.discordUserId,
           now,
         );
@@ -412,7 +412,7 @@ export async function claimOpeningBenefit(params: {
       }
       return createCouponClaimTx({
         tx,
-        jinleeId: params.jinleeId,
+        dlmId: params.dlmId,
         benefit: OPENING_BENEFIT.TWO_ORDERS,
         periodKey: 'once',
         couponType: CouponType.DISCOUNT_90_LOTTERY,

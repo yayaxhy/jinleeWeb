@@ -8,7 +8,7 @@ import { SentPeiwanReviewHistory } from '@/components/profile/SentPeiwanReviewHi
 import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnouncementPreferenceToggle';
 import { VipRoleSyncPreferenceToggle } from '@/components/profile/VipRoleSyncPreferenceToggle';
 import { VoicePreviewManager } from '@/components/profile/VoicePreviewManager';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { isDiscordSnowflake } from '@/lib/discord-id';
 import { formatAmountDown, formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
@@ -208,12 +208,12 @@ export default async function Profile(props: ProfilePageProps) {
     (link) => link.href !== '/profile' && link.href !== '/recharge' && link.href !== '/profile/withdraw',
   );
 
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/');
   }
 
-  const { jinleeUser, jinleeId, discordUserId } = currentUser;
+  const { dlmUser, dlmId, discordUserId } = currentUser;
   const member = discordUserId
       ? await prisma.member.findUnique({
         where: { discordUserId },
@@ -241,8 +241,8 @@ export default async function Profile(props: ProfilePageProps) {
   const now = new Date();
   const level = peiwan?.level ?? '—';
   const displayName =
-    jinleeUser.discordDisplayName ?? member?.serverDisplayName ?? jinleeUser.wechatDisplayName ?? '微信用户';
-  const avatarUrl = jinleeUser.discordAvatarUrl ?? jinleeUser.wechatAvatarUrl ?? undefined;
+    dlmUser.discordDisplayName ?? member?.serverDisplayName ?? dlmUser.wechatDisplayName ?? '微信用户';
+  const avatarUrl = dlmUser.discordAvatarUrl ?? dlmUser.wechatAvatarUrl ?? undefined;
   const avatarLetter = displayName?.[0]?.toUpperCase?.() ?? 'M';
   const primaryIdLabel = discordUserId ? 'Discord ID' : null;
   const primaryIdValue = discordUserId ?? null;
@@ -253,15 +253,15 @@ export default async function Profile(props: ProfilePageProps) {
   const skip = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
 
   const couponsPromise = prisma.coupon.findMany({
-    where: { jinleeId, issuedAt: newEntityOnlyTime() },
+    where: { dlmId, issuedAt: newEntityOnlyTime() },
     orderBy: { issuedAt: 'desc' },
   });
   type CouponRecord = Awaited<typeof couponsPromise>[number];
   const totalTransactionsPromise = prisma.individualTransaction.count({
-    where: { jinleeId, timeCreatedAt: newEntityOnlyTime() },
+    where: { dlmId, timeCreatedAt: newEntityOnlyTime() },
   });
   const transactionsPromise = prisma.individualTransaction.findMany({
-    where: { jinleeId, timeCreatedAt: newEntityOnlyTime() },
+    where: { dlmId, timeCreatedAt: newEntityOnlyTime() },
     orderBy: { timeCreatedAt: 'desc' },
     skip,
     take: TRANSACTIONS_PER_PAGE,
@@ -287,7 +287,7 @@ export default async function Profile(props: ProfilePageProps) {
       })
     : Promise.resolve(null);
   const loyaltyPointPromise = prisma.loyaltyPoint.findFirst({
-    where: { jinleeId },
+    where: { dlmId },
   });
   const peiwanReviewsPromise = isPeiwanMember && discordUserId
     ? prisma.peiwanReview.findMany({
@@ -419,7 +419,7 @@ export default async function Profile(props: ProfilePageProps) {
   const autoCommissionIncomeRows = isPeiwanMember
     ? await prisma.individualTransaction.findMany({
         where: {
-          jinleeId,
+          dlmId,
           timeCreatedAt: {
             ...newEntityOnlyTime(autoCommissionWindowStart),
             lte: autoCommissionWindowEnd,
@@ -435,15 +435,15 @@ export default async function Profile(props: ProfilePageProps) {
   const prevPage = Math.max(1, currentPage - 1);
   const nextPage = Math.min(totalPages, currentPage + 1);
 
-  const totalBalanceValue = member?.totalBalance ?? jinleeUser.totalBalance;
-  const balanceValue = member?.income ?? jinleeUser.income;
-  const totalSpentAmount = member?.totalSpent ?? jinleeUser.totalSpent;
+  const totalBalanceValue = member?.totalBalance ?? dlmUser.totalBalance;
+  const balanceValue = member?.income ?? dlmUser.income;
+  const totalSpentAmount = member?.totalSpent ?? dlmUser.totalSpent;
   const stats = [
     { label: '账户余额', value: totalBalanceValue },
     { label: '可提现余额', value: balanceValue },
     { label: '累计消费', value: totalSpentAmount },
     { label: '累计流水', value: peiwan?.totalEarn ?? null },
-    { label: '点了么积分', value: loyaltyPoint?.points ?? jinleeUser.loyaltyPoints ?? 0 },
+    { label: '点了么积分', value: loyaltyPoint?.points ?? dlmUser.loyaltyPoints ?? 0 },
   ];
 
   const totalSpentValue = parseNumeric(totalSpentAmount) ?? 0;

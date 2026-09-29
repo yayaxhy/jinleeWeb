@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import WithdrawForm from '@/components/profile/WithdrawForm';
 import { WithdrawAccountsManager } from '@/components/profile/WithdrawAccountsManager';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { prisma } from '@/lib/prisma';
 
@@ -14,17 +14,17 @@ const formatNumber = (value: unknown) => {
 };
 
 export default async function WithdrawPage() {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/');
   }
 
-  const totalBalance = currentUser.jinleeUser.member?.totalBalance ?? currentUser.jinleeUser.totalBalance;
-  const income = currentUser.jinleeUser.member?.income ?? currentUser.jinleeUser.income;
+  const totalBalance = currentUser.dlmUser.member?.totalBalance ?? currentUser.dlmUser.totalBalance;
+  const income = currentUser.dlmUser.member?.income ?? currentUser.dlmUser.income;
 
   const withdrawCooldownMs = 3 * 24 * 60 * 60 * 1000;
   const lastWithdraw = await prisma.withdraw.findFirst({
-    where: { jinleeId: currentUser.jinleeId },
+    where: { dlmId: currentUser.dlmId },
     orderBy: { createdAt: 'desc' },
     select: { createdAt: true },
   });
@@ -36,18 +36,18 @@ export default async function WithdrawPage() {
   const nextAvailableAtIso = nextAvailableAt?.toISOString() ?? null;
   const legacyAccounts =
     currentUser.discordUserId &&
-    !currentUser.jinleeUser.withdrawAccount1 &&
-    !currentUser.jinleeUser.withdrawAccount2 &&
-    !currentUser.jinleeUser.withdrawAccount3
+    !currentUser.dlmUser.withdrawAccount1 &&
+    !currentUser.dlmUser.withdrawAccount2 &&
+    !currentUser.dlmUser.withdrawAccount3
       ? await prisma.withdrawalAccount.findUnique({
           where: { discordUserId: currentUser.discordUserId },
           select: { account1: true, account2: true, account3: true },
         })
       : null;
   const savedAccounts = {
-    account1: currentUser.jinleeUser.withdrawAccount1 ?? legacyAccounts?.account1 ?? null,
-    account2: currentUser.jinleeUser.withdrawAccount2 ?? legacyAccounts?.account2 ?? null,
-    account3: currentUser.jinleeUser.withdrawAccount3 ?? legacyAccounts?.account3 ?? null,
+    account1: currentUser.dlmUser.withdrawAccount1 ?? legacyAccounts?.account1 ?? null,
+    account2: currentUser.dlmUser.withdrawAccount2 ?? legacyAccounts?.account2 ?? null,
+    account3: currentUser.dlmUser.withdrawAccount3 ?? legacyAccounts?.account3 ?? null,
   };
 
   return (

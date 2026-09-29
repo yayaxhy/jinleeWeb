@@ -124,7 +124,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
   const skip = (currentPage - 1) * PAGE_SIZE;
   const whereClause: Prisma.IndividualTransactionWhereInput = {};
   if (fromId) {
-    whereClause.OR = [{ discordId: fromId }, { jinleeId: fromId }];
+    whereClause.OR = [{ discordId: fromId }, { dlmId: fromId }];
   }
   if (toId) {
     whereClause.thirdPartydiscordId = toId;
@@ -140,12 +140,12 @@ export default async function AdminTransactionsPage(props: PageProps) {
   const hasFilters = Object.keys(whereClause).length > 0;
 
   const userSummary = fromId
-    ? await prisma.jinleeUser.findFirst({
+    ? await prisma.dlmUser.findFirst({
         where: {
-          OR: [{ jinleeId: fromId }, { discordUserId: fromId }],
+          OR: [{ dlmId: fromId }, { discordUserId: fromId }],
         },
         select: {
-          jinleeId: true,
+          dlmId: true,
           discordUserId: true,
           discordDisplayName: true,
           wechatDisplayName: true,
@@ -192,10 +192,10 @@ export default async function AdminTransactionsPage(props: PageProps) {
         .filter((id) => /^\d+$/.test(id))
     )
   );
-  const relatedJinleeIds = Array.from(
+  const relatedDlmIds = Array.from(
     new Set(
       transactions
-        .map((tx) => tx.jinleeId?.trim())
+        .map((tx) => tx.dlmId?.trim())
         .filter((id): id is string => Boolean(id))
     )
   );
@@ -205,11 +205,11 @@ export default async function AdminTransactionsPage(props: PageProps) {
         select: { discordUserId: true, serverDisplayName: true },
       })
     : [];
-  const relatedJinleeUsers = relatedJinleeIds.length
-    ? await prisma.jinleeUser.findMany({
-        where: { jinleeId: { in: relatedJinleeIds } },
+  const relatedDlmUsers = relatedDlmIds.length
+    ? await prisma.dlmUser.findMany({
+        where: { dlmId: { in: relatedDlmIds } },
         select: {
-          jinleeId: true,
+          dlmId: true,
           discordDisplayName: true,
           wechatDisplayName: true,
         },
@@ -218,15 +218,15 @@ export default async function AdminTransactionsPage(props: PageProps) {
   const displayNameMap = new Map(
     relatedMembers.map((row) => [row.discordUserId, row.serverDisplayName?.trim() ?? ''])
   );
-  const jinleeNameMap = new Map(
-    relatedJinleeUsers.map((row) => [
-      row.jinleeId,
+  const dlmNameMap = new Map(
+    relatedDlmUsers.map((row) => [
+      row.dlmId,
       row.discordDisplayName?.trim() || row.wechatDisplayName?.trim() || '',
     ])
   );
-  const resolveDisplayName = (params: { discordUserId?: string | null; jinleeId?: string | null }) => {
-    const jinleeMapped = params.jinleeId ? jinleeNameMap.get(params.jinleeId)?.trim() : '';
-    if (jinleeMapped) return jinleeMapped;
+  const resolveDisplayName = (params: { discordUserId?: string | null; dlmId?: string | null }) => {
+    const dlmMapped = params.dlmId ? dlmNameMap.get(params.dlmId)?.trim() : '';
+    if (dlmMapped) return dlmMapped;
     const discordUserId = params.discordUserId;
     if (!discordUserId) return '—';
     const mapped = displayNameMap.get(discordUserId)?.trim();
@@ -336,9 +336,9 @@ export default async function AdminTransactionsPage(props: PageProps) {
                       userSummary?.discordDisplayName ??
                       userSummary?.wechatDisplayName ??
                       userSummary?.discordUserId ??
-                      userSummary?.jinleeId ??
+                      userSummary?.dlmId ??
                       '—'
-                    }（${userSummary?.jinleeId ?? fromId}）`
+                    }（${userSummary?.dlmId ?? fromId}）`
                   : '全部流水'}
                 {toId ? ` · 第三方关联ID：${toId}` : null}
                 {startDate || endDate ? (
@@ -391,10 +391,10 @@ export default async function AdminTransactionsPage(props: PageProps) {
                         <td className="py-3 pr-4">
                           <div className="space-y-1">
                             <div className="text-white/90">
-                              {resolveDisplayName({ discordUserId: tx.discordId, jinleeId: tx.jinleeId })}
+                              {resolveDisplayName({ discordUserId: tx.discordId, dlmId: tx.dlmId })}
                             </div>
-                            <div className="text-xs text-white/50 font-mono">{tx.jinleeId ?? tx.discordId ?? '—'}</div>
-                            {tx.discordId && tx.jinleeId ? (
+                            <div className="text-xs text-white/50 font-mono">{tx.dlmId ?? tx.discordId ?? '—'}</div>
+                            {tx.discordId && tx.dlmId ? (
                               <div className="text-xs text-white/40 font-mono">Discord: {tx.discordId}</div>
                             ) : null}
                           </div>

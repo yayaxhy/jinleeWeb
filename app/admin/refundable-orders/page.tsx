@@ -50,12 +50,12 @@ export default async function RefundableOrdersPage(props: PageProps) {
   const filters: Prisma.OrderAuditWhereInput[] = [{ createdAt: newEntityOnlyTime() }];
   if (hostId) {
     filters.push({
-      OR: [{ hostId }, { hostJinleeId: hostId }],
+      OR: [{ hostId }, { hostDlmId: hostId }],
     });
   }
   if (workerId) {
     filters.push({
-      OR: [{ workerId }, { workerJinleeId: workerId }],
+      OR: [{ workerId }, { workerDlmId: workerId }],
     });
   }
   const whereClause: Prisma.OrderAuditWhereInput = filters.length ? { AND: filters } : {};
@@ -72,10 +72,10 @@ export default async function RefundableOrdersPage(props: PageProps) {
         orderId: true,
         paymentTransactionId: true,
         hostId: true,
-        hostJinleeId: true,
+        hostDlmId: true,
         hostWechatOpenId: true,
         workerId: true,
-        workerJinleeId: true,
+        workerDlmId: true,
         peiwanId: true,
         gross: true,
         pointsEarned: true,
@@ -103,27 +103,27 @@ export default async function RefundableOrdersPage(props: PageProps) {
         .map((value) => value.trim()),
     ),
   );
-  const relatedJinleeIds = Array.from(
+  const relatedDlmIds = Array.from(
     new Set(
       records
-        .flatMap((record) => [record.hostJinleeId, record.workerJinleeId])
+        .flatMap((record) => [record.hostDlmId, record.workerDlmId])
         .filter((value): value is string => Boolean(value?.trim()))
         .map((value) => value.trim()),
     ),
   );
 
-  const [relatedMembers, relatedJinleeUsers] = await Promise.all([
+  const [relatedMembers, relatedDlmUsers] = await Promise.all([
     relatedDiscordIds.length
       ? prisma.member.findMany({
           where: { discordUserId: { in: relatedDiscordIds } },
           select: { discordUserId: true, serverDisplayName: true },
         })
       : Promise.resolve([]),
-    relatedJinleeIds.length
-      ? prisma.jinleeUser.findMany({
-          where: { jinleeId: { in: relatedJinleeIds } },
+    relatedDlmIds.length
+      ? prisma.dlmUser.findMany({
+          where: { dlmId: { in: relatedDlmIds } },
           select: {
-            jinleeId: true,
+            dlmId: true,
             discordUserId: true,
             discordDisplayName: true,
             wechatDisplayName: true,
@@ -135,25 +135,25 @@ export default async function RefundableOrdersPage(props: PageProps) {
   const discordDisplayNameMap = new Map(
     relatedMembers.map((row) => [row.discordUserId, row.serverDisplayName?.trim() ?? '']),
   );
-  const jinleeUserMap = new Map(
-    relatedJinleeUsers.map((row) => [row.jinleeId, row]),
+  const dlmUserMap = new Map(
+    relatedDlmUsers.map((row) => [row.dlmId, row]),
   );
 
-  const resolveDisplayName = (params: { discordUserId?: string | null; jinleeId?: string | null }) => {
+  const resolveDisplayName = (params: { discordUserId?: string | null; dlmId?: string | null }) => {
     const discordUserId = params.discordUserId?.trim() ?? '';
     if (discordUserId) {
       const discordDisplayName = discordDisplayNameMap.get(discordUserId)?.trim();
       if (discordDisplayName) return discordDisplayName;
     }
 
-    const jinleeId = params.jinleeId?.trim() ?? '';
-    if (jinleeId) {
-      const jinleeUser = jinleeUserMap.get(jinleeId);
-      const jinleeDisplayName =
-        jinleeUser?.discordDisplayName?.trim() ||
-        jinleeUser?.wechatDisplayName?.trim() ||
+    const dlmId = params.dlmId?.trim() ?? '';
+    if (dlmId) {
+      const dlmUser = dlmUserMap.get(dlmId);
+      const dlmDisplayName =
+        dlmUser?.discordDisplayName?.trim() ||
+        dlmUser?.wechatDisplayName?.trim() ||
         '';
-      if (jinleeDisplayName) return jinleeDisplayName;
+      if (dlmDisplayName) return dlmDisplayName;
     }
 
     if (discordUserId) return discordUserId;
@@ -181,7 +181,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.6em] text-white/60">ADMIN</p>
             <h1 className="text-3xl font-semibold">可撤回订单</h1>
-            <p className="text-sm text-white/60">按 `jinleeId` 优先检索，Discord 仅保留为审计快照。</p>
+            <p className="text-sm text-white/60">按 `dlmId` 优先检索，Discord 仅保留为审计快照。</p>
           </div>
           <Link
             href="/admin"
@@ -208,7 +208,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
                 name="hostId"
                 defaultValue={hostId}
                 className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-                placeholder="jinleeId 或 discord id"
+                placeholder="dlmId 或 discord id"
               />
             </div>
             <div className="space-y-1">
@@ -218,7 +218,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
                 name="workerId"
                 defaultValue={workerId}
                 className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#5c43a3]"
-                placeholder="jinleeId 或 discord id"
+                placeholder="dlmId 或 discord id"
               />
             </div>
             <div className="flex gap-3 sm:col-span-2">
@@ -265,11 +265,11 @@ export default async function RefundableOrdersPage(props: PageProps) {
                 {records.map((record) => {
                   const hostDisplayName = resolveDisplayName({
                     discordUserId: record.hostId,
-                    jinleeId: record.hostJinleeId,
+                    dlmId: record.hostDlmId,
                   });
                   const workerDisplayName = resolveDisplayName({
                     discordUserId: record.workerId,
-                    jinleeId: record.workerJinleeId,
+                    dlmId: record.workerDlmId,
                   });
 
                   return (
@@ -288,8 +288,8 @@ export default async function RefundableOrdersPage(props: PageProps) {
                           {record.hostId ? (
                             <div className="font-mono text-[11px] text-white/80">Discord: {record.hostId}</div>
                           ) : null}
-                          {record.hostJinleeId ? (
-                            <div className="font-mono text-[11px] text-white/50">DLMClub: {record.hostJinleeId}</div>
+                          {record.hostDlmId ? (
+                            <div className="font-mono text-[11px] text-white/50">DLMClub: {record.hostDlmId}</div>
                           ) : null}
                           {!record.hostId && record.hostWechatOpenId ? (
                             <div className="text-[11px] text-white/50">微信用户</div>
@@ -300,7 +300,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
                         <div className="space-y-1">
                           <div className="text-white/90">{workerDisplayName}</div>
                           <div className="font-mono text-[11px] text-white/80">Discord: {record.workerId}</div>
-                          <div className="font-mono text-[11px] text-white/50">DLMClub: {record.workerJinleeId}</div>
+                          <div className="font-mono text-[11px] text-white/50">DLMClub: {record.workerDlmId}</div>
                         </div>
                       </td>
                       <td className="px-3 py-3">{formatNumber(record.gross)}</td>

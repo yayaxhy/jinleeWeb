@@ -28,14 +28,14 @@ test('login audit IP encryption round-trips only with the configured key', async
 });
 
 test('login audit only accepts a single X-Real-IP address', () => {
-  assert.equal(getTrustedClientIp(new Request('https://jinlee.vip', { headers: { 'x-real-ip': '203.0.113.42' } })), '203.0.113.42');
-  assert.equal(getTrustedClientIp(new Request('https://jinlee.vip', { headers: { 'x-real-ip': '203.0.113.42, 10.0.0.1' } })), null);
-  assert.equal(getTrustedClientIp(new Request('https://jinlee.vip', { headers: { 'x-real-ip': 'not-an-ip' } })), null);
+  assert.equal(getTrustedClientIp(new Request('https://dlm.vip', { headers: { 'x-real-ip': '203.0.113.42' } })), '203.0.113.42');
+  assert.equal(getTrustedClientIp(new Request('https://dlm.vip', { headers: { 'x-real-ip': '203.0.113.42, 10.0.0.1' } })), null);
+  assert.equal(getTrustedClientIp(new Request('https://dlm.vip', { headers: { 'x-real-ip': 'not-an-ip' } })), null);
 });
 
 test('login audit reads coarse location only from reverse-proxy headers', () => {
   const location = getTrustedClientLocation(
-    new Request('https://jinlee.vip', {
+    new Request('https://dlm.vip', {
       headers: {
         'x-geo-country': 'Canada',
         'x-geo-region': 'Ontario',
@@ -45,7 +45,7 @@ test('login audit reads coarse location only from reverse-proxy headers', () => 
   );
 
   assert.deepEqual(location, { country: 'Canada', region: 'Ontario', city: 'Toronto' });
-  assert.deepEqual(getTrustedClientLocation(new Request('https://jinlee.vip')), {
+  assert.deepEqual(getTrustedClientLocation(new Request('https://dlm.vip')), {
     country: null,
     region: null,
     city: null,

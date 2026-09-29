@@ -313,12 +313,12 @@ function formatDateShort(date: Date) {
 
 export async function buildBossPortrait(bossId: string, sampleSize = 50): Promise<BossPortrait | null> {
   const take = Math.min(Math.max(sampleSize, 20), 200);
-  const bossJinleeUser = await prisma.jinleeUser.findFirst({
+  const bossDlmUser = await prisma.dlmUser.findFirst({
     where: {
-      OR: [{ discordUserId: bossId }, { jinleeId: bossId }],
+      OR: [{ discordUserId: bossId }, { dlmId: bossId }],
     },
     select: {
-      jinleeId: true,
+      dlmId: true,
       discordUserId: true,
       discordDisplayName: true,
       wechatDisplayName: true,
@@ -326,11 +326,11 @@ export async function buildBossPortrait(bossId: string, sampleSize = 50): Promis
       totalBalance: true,
     },
   });
-  const bossJinleeId = bossJinleeUser?.jinleeId ?? null;
+  const bossDlmId = bossDlmUser?.dlmId ?? null;
   const orderHostWhere: Prisma.OrderWhereInput =
-    bossJinleeId != null
+    bossDlmId != null
       ? {
-          OR: [{ hostId: bossId }, { hostJinleeId: bossJinleeId }],
+          OR: [{ hostId: bossId }, { hostDlmId: bossDlmId }],
           status: OrderStatus.ENDED,
           createdAt: newEntityOnlyTime(),
         }
@@ -399,8 +399,8 @@ export async function buildBossPortrait(bossId: string, sampleSize = 50): Promis
         select: { createdAt: true },
       }),
       prisma.order.findFirst({
-        where: bossJinleeId != null
-          ? { OR: [{ hostId: bossId }, { hostJinleeId: bossJinleeId }], createdAt: newEntityOnlyTime() }
+        where: bossDlmId != null
+          ? { OR: [{ hostId: bossId }, { hostDlmId: bossDlmId }], createdAt: newEntityOnlyTime() }
           : { hostId: bossId, createdAt: newEntityOnlyTime() },
         orderBy: { createdAt: 'asc' },
         select: { createdAt: true },
@@ -411,13 +411,13 @@ export async function buildBossPortrait(bossId: string, sampleSize = 50): Promis
 
   const displayName =
     member?.serverDisplayName?.trim()
-    || bossJinleeUser?.discordDisplayName?.trim()
-    || bossJinleeUser?.wechatDisplayName?.trim()
+    || bossDlmUser?.discordDisplayName?.trim()
+    || bossDlmUser?.wechatDisplayName?.trim()
     || requestLogs.find((row) => row.ownerDisplayName?.trim())?.ownerDisplayName?.trim()
     || bossId;
 
-  const totalSpent = toNumber(member?.totalSpent ?? bossJinleeUser?.totalSpent);
-  const totalBalance = toNumber(member?.totalBalance ?? bossJinleeUser?.totalBalance);
+  const totalSpent = toNumber(member?.totalSpent ?? bossDlmUser?.totalSpent);
+  const totalBalance = toNumber(member?.totalBalance ?? bossDlmUser?.totalBalance);
 
   const gameSignals = new Map<PortraitGameKey, GameSignal>();
   const rankCounts = new Map<string, number>();

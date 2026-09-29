@@ -1,8 +1,8 @@
 import { AccountProvider, Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
-import { summarizeJinleeUser } from '@/lib/jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
+import { summarizeDlmUser } from '@/lib/dlm-user';
 
 const normalizeNickname = (value: unknown) => {
   if (typeof value !== 'string') {
@@ -28,7 +28,7 @@ const mergeWechatProfile = (profile: Prisma.JsonValue | null, nickname: string) 
 };
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const updated = await prisma.$transaction(async (tx) => {
       const binding = await tx.accountBinding.findFirst({
         where: {
-          jinleeId: currentUser.jinleeId,
+          dlmId: currentUser.dlmId,
           provider: AccountProvider.WECHAT_MINIPROGRAM,
         },
         select: {
@@ -69,8 +69,8 @@ export async function POST(request: Request) {
         },
       });
 
-      return tx.jinleeUser.update({
-        where: { jinleeId: currentUser.jinleeId },
+      return tx.dlmUser.update({
+        where: { dlmId: currentUser.dlmId },
         data: {
           wechatDisplayName: nickname,
         },
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      user: summarizeJinleeUser(updated),
+      user: summarizeDlmUser(updated),
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'wechat_binding_not_found') {

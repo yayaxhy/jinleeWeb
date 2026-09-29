@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { AccountProvider, Prisma } from '@prisma/client';
-import { ensureJinleeUserForWechatProgram, summarizeJinleeUser } from '@/lib/jinlee-user';
+import { ensureDlmUserForWechatProgram, summarizeDlmUser } from '@/lib/dlm-user';
 import { createWechatProgramSession } from '@/lib/wechat-program-session';
 import { WeChatMiniProgramAuthError, exchangeMiniProgramCode } from '@/lib/wechat';
 import { recordAuthLoginEvent } from '@/lib/auth-login-audit';
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       Object.assign(profilePayload, profile.payload as Record<string, string>);
     }
 
-    const { jinleeUser, bindingId } = await ensureJinleeUserForWechatProgram({
+    const { dlmUser, bindingId } = await ensureDlmUserForWechatProgram({
       openId: loginData.openid,
       unionId: loginData.unionid,
       displayName: profile.nickname,
@@ -77,19 +77,19 @@ export async function POST(request: Request) {
     });
 
     const session = await createWechatProgramSession({
-      jinleeId: jinleeUser.jinleeId,
+      dlmId: dlmUser.dlmId,
       providerAccountId: bindingId,
     });
     await recordAuthLoginEvent({
       request,
-      jinleeId: jinleeUser.jinleeId,
-      discordUserId: jinleeUser.discordUserId,
+      dlmId: dlmUser.dlmId,
+      discordUserId: dlmUser.discordUserId,
       provider: AccountProvider.WECHAT_MINIPROGRAM,
     }).catch((error) => console.error('[wechat.mini-program.login] login audit failed', error));
 
     return NextResponse.json({
       ok: true,
-      user: summarizeJinleeUser(jinleeUser),
+      user: summarizeDlmUser(dlmUser),
       session: {
         token: session.token,
         expiresAt: session.expiresAt.toISOString(),

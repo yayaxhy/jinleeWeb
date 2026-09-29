@@ -44,7 +44,7 @@ export function DispatchTicker({ dispatches }: { dispatches: RecentDispatchItem[
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-[#050506] to-transparent md:w-12" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-[#050506] to-transparent md:w-12" />
         <div
-          className="flex w-max animate-[jinlee-dispatch-marquee_var(--dispatch-duration)_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none"
+          className="flex w-max animate-[dlm-dispatch-marquee_var(--dispatch-duration)_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none"
           style={{ '--dispatch-duration': `${animationSeconds}s` } as CSSProperties}
         >
           {[false, true].map((isDuplicate) => (
@@ -58,7 +58,7 @@ export function DispatchTicker({ dispatches }: { dispatches: RecentDispatchItem[
       </div>
 
       <style>{`
-        @keyframes jinlee-dispatch-marquee {
+        @keyframes dlm-dispatch-marquee {
           from { transform: translate3d(0, 0, 0); }
           to { transform: translate3d(-50%, 0, 0); }
         }

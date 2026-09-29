@@ -88,14 +88,14 @@ const toCellValue = (value: unknown): string | number | boolean | null => {
 };
 
 const buildIdentityExclusion = (
-  jinleeField: string,
+  dlmField: string,
   discordField: string | null,
-  excludeJinleeIds: string[],
+  excludeDlmIds: string[],
   excludeDiscordIds: string[],
 ) => {
   const clauses: Record<string, unknown>[] = [];
-  if (excludeJinleeIds.length) {
-    clauses.push({ [jinleeField]: { in: excludeJinleeIds } });
+  if (excludeDlmIds.length) {
+    clauses.push({ [dlmField]: { in: excludeDlmIds } });
   }
   if (discordField && excludeDiscordIds.length) {
     clauses.push({ [discordField]: { in: excludeDiscordIds } });
@@ -224,9 +224,9 @@ export async function GET(request: NextRequest) {
   const rechargeWhere: Prisma.RechargeWhereInput = {
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'toWhom',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.RechargeWhereInput),
   };
@@ -234,9 +234,9 @@ export async function GET(request: NextRequest) {
   const withdrawWhere: Prisma.WithdrawWhereInput = {
     createdAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.WithdrawWhereInput),
   };
@@ -245,9 +245,9 @@ export async function GET(request: NextRequest) {
     status: 'PAID',
     paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.ZPayRechargeOrderWhereInput),
   };
@@ -259,9 +259,9 @@ export async function GET(request: NextRequest) {
     status: 'PAID',
     paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.StripePaymentWhereInput),
   };
@@ -269,19 +269,19 @@ export async function GET(request: NextRequest) {
     status: 'PAID',
     paidAt: { gte: start, lt: end },
     ...(buildIdentityExclusion(
-      'jinleeId',
+      'dlmId',
       'discordUserId',
-      excludeRechargeResolved.excludeJinleeIds,
+      excludeRechargeResolved.excludeDlmIds,
       excludeRechargeResolved.excludeDiscordIds,
     ) as Prisma.WechatNativePaymentWhereInput),
   };
 
-  const jinleeWhere: Prisma.JinleeUserWhereInput = buildIdentityExclusion(
-    'jinleeId',
+  const dlmWhere: Prisma.DlmUserWhereInput = buildIdentityExclusion(
+    'dlmId',
     'discordUserId',
-    excludeMemberResolved.excludeJinleeIds,
+    excludeMemberResolved.excludeDlmIds,
     excludeMemberResolved.excludeDiscordIds,
-  ) as Prisma.JinleeUserWhereInput;
+  ) as Prisma.DlmUserWhereInput;
 
   const commissionWhere: Prisma.CommissionWhereInput = {
     createdAt: { gte: start, lt: end },
@@ -304,7 +304,7 @@ export async function GET(request: NextRequest) {
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...buildRevenueCouponIdentityExclusion(
-      excludeMemberResolved.excludeJinleeIds,
+      excludeMemberResolved.excludeDlmIds,
       excludeMemberResolved.excludeDiscordIds,
     ),
   };
@@ -340,11 +340,11 @@ export async function GET(request: NextRequest) {
     prisma.zPayRechargeOrder.findMany({ where: zpayWhere, orderBy: { paidAt: 'desc' } }),
     prisma.stripePayment.findMany({ where: stripeWhere, orderBy: { paidAt: 'desc' } }),
     prisma.wechatNativePayment.findMany({ where: wechatNativeWhere, orderBy: { paidAt: 'desc' } }),
-    prisma.jinleeUser.findMany({
-      where: jinleeWhere,
-      orderBy: { jinleeId: 'asc' },
+    prisma.dlmUser.findMany({
+      where: dlmWhere,
+      orderBy: { dlmId: 'asc' },
       select: {
-        jinleeId: true,
+        dlmId: true,
         discordUserId: true,
         discordDisplayName: true,
         wechatDisplayName: true,
@@ -381,9 +381,9 @@ export async function GET(request: NextRequest) {
       where: {
         createdAt: { gte: start, lt: end },
         ...(buildIdentityExclusion(
-          'jinleeId',
+          'dlmId',
           'userId',
-          excludeMemberResolved.excludeJinleeIds,
+          excludeMemberResolved.excludeDlmIds,
           excludeMemberResolved.excludeDiscordIds,
         ) as Prisma.LotteryDrawWhereInput),
       },
@@ -393,9 +393,9 @@ export async function GET(request: NextRequest) {
       where: {
         consumeAt: { gte: start, lt: end },
         ...(buildIdentityExclusion(
-          'jinleeId',
+          'dlmId',
           'userId',
-          excludeMemberResolved.excludeJinleeIds,
+          excludeMemberResolved.excludeDlmIds,
           excludeMemberResolved.excludeDiscordIds,
         ) as Prisma.LotteryDrawWhereInput),
       },
@@ -504,7 +504,7 @@ export async function GET(request: NextRequest) {
   const fusionRevenue = await getLotteryFusionRevenueSummary({
     start,
     end,
-    excludeJinleeIds: excludeMemberResolved.excludeJinleeIds,
+    excludeDlmIds: excludeMemberResolved.excludeDlmIds,
     excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
   });
   const fusionCreatedRows = lotteryCreatedRows.filter((row) =>
@@ -607,9 +607,9 @@ export async function GET(request: NextRequest) {
     { section: 'filters', key: 'end(exclusive)', value: formatDateTimeTextCentralEuropean(end) },
     { section: 'filters', key: 'excludeRecharge(raw)', value: excludeRechargeInput },
     { section: 'filters', key: 'excludeMember(raw)', value: excludeMemberInput },
-    { section: 'filters', key: 'excludeRechargeJinleeIds', value: excludeRechargeResolved.excludeJinleeIds.join(', ') },
+    { section: 'filters', key: 'excludeRechargeDlmIds', value: excludeRechargeResolved.excludeDlmIds.join(', ') },
     { section: 'filters', key: 'excludeRechargeDiscordIds', value: excludeRechargeResolved.excludeDiscordIds.join(', ') },
-    { section: 'filters', key: 'excludeMemberJinleeIds', value: excludeMemberResolved.excludeJinleeIds.join(', ') },
+    { section: 'filters', key: 'excludeMemberDlmIds', value: excludeMemberResolved.excludeDlmIds.join(', ') },
     { section: 'filters', key: 'excludeMemberDiscordIds', value: excludeMemberResolved.excludeDiscordIds.join(', ') },
     { section: 'rows', key: 'BlockStackGame', value: blockStackRows.length },
     { section: 'rows', key: 'Recharge', value: rechargeRows.length },
@@ -617,7 +617,7 @@ export async function GET(request: NextRequest) {
     { section: 'rows', key: 'ZPayRechargeOrder(PAID)', value: zpayRows.length },
     { section: 'rows', key: 'WechatNativePayment(PAID)', value: wechatNativeRows.length },
     { section: 'rows', key: 'StripePayment(PAID)', value: stripeRows.length },
-    { section: 'rows', key: 'JinleeUser(filtered)', value: memberRows.length },
+    { section: 'rows', key: 'DlmUser(filtered)', value: memberRows.length },
     { section: 'rows', key: 'Commission(all)', value: commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: giftAuditRows.length },
     { section: 'rows', key: 'Order(ENDED all)', value: orderRows.length },
@@ -646,9 +646,9 @@ export async function GET(request: NextRequest) {
     { section: '当月充值提现', key: '提现总额', value: withdrawTotal.toString() },
     { section: '当月充值提现', key: '净充值', value: netRecharge.toString() },
 
-    { section: '会员余额汇总', key: 'JinleeUser.recharge 合计', value: memberRechargeTotal.toString() },
-    { section: '会员余额汇总', key: 'JinleeUser.income 合计', value: memberIncomeTotal.toString() },
-    { section: '会员余额汇总', key: 'JinleeUser.totalBalance 合计', value: memberBalanceTotal.toString() },
+    { section: '会员余额汇总', key: 'DlmUser.recharge 合计', value: memberRechargeTotal.toString() },
+    { section: '会员余额汇总', key: 'DlmUser.income 合计', value: memberIncomeTotal.toString() },
+    { section: '会员余额汇总', key: 'DlmUser.totalBalance 合计', value: memberBalanceTotal.toString() },
     { section: '会员余额汇总', key: '当月 Commission 合计', value: commissionTotalNetAll.toString() },
 
     { section: '抽奖收益', key: '抽奖次数', value: drawCount },

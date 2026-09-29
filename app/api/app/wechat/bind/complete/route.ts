@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
   isDiscordBindingError,
-  mergeWechatProgramJinleeUserIntoJinleeUser,
+  mergeWechatProgramDlmUserIntoDlmUser,
 } from '@/lib/discord-binding';
-import { summarizeJinleeUser } from '@/lib/jinlee-user';
+import { summarizeDlmUser } from '@/lib/dlm-user';
 import { verifyWechatBindToken } from '@/lib/wechat-bind-token';
 import { verifyWechatBindSceneCode } from '@/lib/wechat-bind-scene';
 import { prisma } from '@/lib/prisma';
@@ -14,7 +14,7 @@ const statusForBindingError = (code: string) => {
     case 'canonical_user_not_found':
     case 'wechat_user_not_found':
       return 404;
-    case 'jinlee_user_already_bound_to_other_wechat':
+    case 'dlm_user_already_bound_to_other_wechat':
       return 409;
     default:
       return 400;
@@ -22,7 +22,7 @@ const statusForBindingError = (code: string) => {
 };
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -37,37 +37,37 @@ export async function POST(request: Request) {
   const tokenPayload = verifyWechatBindToken(bindToken);
   const scenePayload = tokenPayload ? null : verifyWechatBindSceneCode(bindCode);
 
-  let canonicalJinleeId: string | null = tokenPayload?.jinleeId ?? null;
-  if (!canonicalJinleeId && scenePayload) {
-    const canonicalUser = await prisma.jinleeUser.findUnique({
+  let canonicalDlmId: string | null = tokenPayload?.dlmId ?? null;
+  if (!canonicalDlmId && scenePayload) {
+    const canonicalUser = await prisma.dlmUser.findUnique({
       where: { discordUserId: scenePayload.discordUserId },
-      select: { jinleeId: true },
+      select: { dlmId: true },
     });
-    canonicalJinleeId = canonicalUser?.jinleeId ?? null;
+    canonicalDlmId = canonicalUser?.dlmId ?? null;
   }
 
-  if (!canonicalJinleeId) {
+  if (!canonicalDlmId) {
     return NextResponse.json({ ok: false, error: bindCode ? 'invalid_bind_code' : 'invalid_bind_token' }, { status: 400 });
   }
 
-  if (currentUser.jinleeId === canonicalJinleeId) {
+  if (currentUser.dlmId === canonicalDlmId) {
     return NextResponse.json({
       ok: true,
       alreadyBound: true,
-      user: summarizeJinleeUser(currentUser.jinleeUser),
+      user: summarizeDlmUser(currentUser.dlmUser),
     });
   }
 
   try {
-    const mergedUser = await mergeWechatProgramJinleeUserIntoJinleeUser({
-      canonicalJinleeId,
-      incomingWechatJinleeId: currentUser.jinleeId,
+    const mergedUser = await mergeWechatProgramDlmUserIntoDlmUser({
+      canonicalDlmId,
+      incomingWechatDlmId: currentUser.dlmId,
     });
 
     return NextResponse.json({
       ok: true,
       alreadyBound: false,
-      user: summarizeJinleeUser(mergedUser),
+      user: summarizeDlmUser(mergedUser),
     });
   } catch (error) {
     if (isDiscordBindingError(error)) {

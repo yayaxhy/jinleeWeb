@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { reconcileWechatNativePayment } from '@/lib/wechat-native-reconciliation';
 import { belongsToRechargeUser } from '@/lib/recharge-result';
 
 type RouteParams = { orderId: string };
 
 export async function GET(request: Request, context: { params: Promise<RouteParams> }) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -23,7 +23,7 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
       paidAt: true,
       createdAt: true,
       discordUserId: true,
-      jinleeId: true,
+      dlmId: true,
     },
   });
 
@@ -54,7 +54,7 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
       createdAt: true,
       expiresAt: true,
       discordUserId: true,
-      jinleeId: true,
+      dlmId: true,
     },
   });
 
@@ -77,7 +77,7 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
             createdAt: true,
             expiresAt: true,
             discordUserId: true,
-            jinleeId: true,
+            dlmId: true,
           },
         });
       } catch (error) {
@@ -115,7 +115,7 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
       paidAt: true,
       createdAt: true,
       discordUserId: true,
-      jinleeId: true,
+      dlmId: true,
     },
   });
 

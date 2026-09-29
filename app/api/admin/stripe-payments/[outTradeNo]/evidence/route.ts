@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<Rout
   const payment = await prisma.stripePayment.findUnique({
     where: { outTradeNo },
   });
-  if (!payment?.jinleeId) {
+  if (!payment?.dlmId) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 
@@ -31,31 +31,31 @@ export async function GET(_request: NextRequest, context: { params: Promise<Rout
   const [accountBindings, loginEvents, rechargeRecords, transactions, orders, orderAudits, giftAudits, lotteryDraws, pageViews] =
     await Promise.all([
       prisma.accountBinding.findMany({
-        where: { jinleeId: payment.jinleeId },
+        where: { dlmId: payment.dlmId },
         select: { provider: true, providerUserId: true, lastLoginAt: true, createdAt: true, updatedAt: true },
       }),
       prisma.authLoginEvent.findMany({
-        where: { jinleeId: payment.jinleeId, createdAt: { gte: loginStart } },
+        where: { dlmId: payment.dlmId, createdAt: { gte: loginStart } },
         orderBy: { createdAt: 'asc' },
         take: MAX_ACTIVITY_ROWS,
       }),
       prisma.recharge.findMany({
-        where: { jinleeId: payment.jinleeId, createdAt: { gte: activityStart } },
+        where: { dlmId: payment.dlmId, createdAt: { gte: activityStart } },
         orderBy: { createdAt: 'asc' },
         take: MAX_ACTIVITY_ROWS,
       }),
       prisma.individualTransaction.findMany({
-        where: { jinleeId: payment.jinleeId, timeCreatedAt: { gte: activityStart } },
+        where: { dlmId: payment.dlmId, timeCreatedAt: { gte: activityStart } },
         orderBy: { timeCreatedAt: 'asc' },
         take: MAX_ACTIVITY_ROWS,
       }),
       prisma.order.findMany({
-        where: { hostJinleeId: payment.jinleeId, createdAt: { gte: activityStart } },
+        where: { hostDlmId: payment.dlmId, createdAt: { gte: activityStart } },
         orderBy: { createdAt: 'asc' },
         take: MAX_ACTIVITY_ROWS,
       }),
       prisma.orderAudit.findMany({
-        where: { hostJinleeId: payment.jinleeId, createdAt: { gte: activityStart } },
+        where: { hostDlmId: payment.dlmId, createdAt: { gte: activityStart } },
         orderBy: { createdAt: 'asc' },
         take: MAX_ACTIVITY_ROWS,
       }),
@@ -67,7 +67,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<Rout
           })
         : Promise.resolve([]),
       prisma.lotteryDraw.findMany({
-        where: { jinleeId: payment.jinleeId, createdAt: { gte: activityStart } },
+        where: { dlmId: payment.dlmId, createdAt: { gte: activityStart } },
         orderBy: { createdAt: 'asc' },
         take: MAX_ACTIVITY_ROWS,
       }),
@@ -87,7 +87,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<Rout
     accountBindings,
     loginEvents: loginEvents.map((event) => ({
       id: event.id,
-      jinleeId: event.jinleeId,
+      dlmId: event.dlmId,
       discordUserId: event.discordUserId,
       provider: event.provider,
       userAgent: event.userAgent,

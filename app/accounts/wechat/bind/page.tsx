@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
 import BindWechatClient from './BindWechatClient';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 
 export const dynamic = 'force-dynamic';
 
 export default async function WechatBindPage() {
-  const currentUser = await getCurrentJinleeUser();
+  const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/');
   }

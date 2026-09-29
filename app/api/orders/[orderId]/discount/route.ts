@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { applyDiscountForOrder, type DiscountKind } from '@/app/api/personal/discountService';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 
 const mapErrorStatus = (status: string) => {
   switch (status) {
@@ -29,7 +29,7 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ orderId: string }> },
 ) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
@@ -49,7 +49,7 @@ export async function POST(
 
   const result = await applyDiscountForOrder({
     orderId,
-    jinleeId: currentUser.jinleeId,
+    dlmId: currentUser.dlmId,
     discordUserId: currentUser.discordUserId,
     kind,
     lotteryId: typeof body.lotteryId === 'string' ? body.lotteryId : undefined,

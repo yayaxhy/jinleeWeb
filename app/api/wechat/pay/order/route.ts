@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
   buildWechatNativeOutTradeNo,
   buildWechatPayOrderDescription,
@@ -24,7 +24,7 @@ const parseAmount = (raw: unknown) => {
 const normalizeAmount = (value: number) => new Decimal(value).toDecimalPlaces(2);
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -47,24 +47,24 @@ export async function POST(request: Request) {
   const amountDecimal = normalizeAmount(rawAmount);
   const amountText = amountDecimal.toFixed(2);
   const amountFen = Math.round(Number(amountText) * 100);
-  const outTradeNo = buildWechatNativeOutTradeNo(currentUser.jinleeId);
+  const outTradeNo = buildWechatNativeOutTradeNo(currentUser.dlmId);
   const expiresAt = new Date(Date.now() + WECHAT_NATIVE_ORDER_TTL_MS);
 
   await prisma.wechatNativePayment.create({
     data: {
       outTradeNo,
       discordUserId: currentUser.discordUserId,
-      jinleeId: currentUser.jinleeId,
+      dlmId: currentUser.dlmId,
       rechargeAmount: amountDecimal,
       expiresAt,
     },
   });
 
   const orderDisplayName =
-    currentUser.jinleeUser.discordDisplayName ??
-    currentUser.jinleeUser.member?.serverDisplayName ??
-    currentUser.jinleeUser.wechatDisplayName ??
-    currentUser.jinleeId;
+    currentUser.dlmUser.discordDisplayName ??
+    currentUser.dlmUser.member?.serverDisplayName ??
+    currentUser.dlmUser.wechatDisplayName ??
+    currentUser.dlmId;
 
   try {
     const { codeUrl } = await createNativeRechargeOrder({

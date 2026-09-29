@@ -5,7 +5,7 @@ import { buildWechatNativeOutTradeNo } from '@/lib/wechat-pay';
 import { buildOutTradeNo } from '@/lib/zpay';
 
 test('payment order identifiers use separate provider namespaces', () => {
-  const userId = 'JINLEE1234';
+  const userId = 'DLM1234';
   const zpayOrderId = buildOutTradeNo(userId);
   const wechatOrderId = buildWechatNativeOutTradeNo(userId);
   const stripeOrderId = buildStripeOutTradeNo(userId);

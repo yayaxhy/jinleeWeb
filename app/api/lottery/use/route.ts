@@ -7,7 +7,7 @@ import {
   PointShopDeliveryType,
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import {
   COUPON_VOUCHER_META,
@@ -112,7 +112,7 @@ const callGiftWebhook = async (params: {
 };
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     const coupon = await prisma.coupon.findFirst({
       where: {
         id: couponId,
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         status: CouponStatus.ACTIVE,
         issuedAt: newEntityOnlyTime(),
         expiresAt: { gt: now },
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
       const pointShopGrant = await prisma.pointShopGrant.findFirst({
         where: {
           id: couponId,
-          jinleeId: currentUser.jinleeId,
+          dlmId: currentUser.dlmId,
           deliveryType: PointShopDeliveryType.COUPON,
           deliveryStatus: PointShopDeliveryStatus.DELIVERED,
           couponStatus: CouponStatus.ACTIVE,
@@ -185,7 +185,7 @@ export async function POST(request: Request) {
     const draw = await prisma.lotteryDraw.findFirst({
       where: {
         id: lotteryId,
-        jinleeId: currentUser.jinleeId,
+        dlmId: currentUser.dlmId,
         createdAt: newEntityOnlyTime(),
       },
       include: {
@@ -291,7 +291,7 @@ export async function POST(request: Request) {
       const updateResult = await prisma.coupon.updateMany({
         where: {
           id: couponId,
-          jinleeId: currentUser.jinleeId,
+          dlmId: currentUser.dlmId,
           status: CouponStatus.ACTIVE,
           issuedAt: newEntityOnlyTime(),
           expiresAt: { gt: now },
@@ -302,7 +302,7 @@ export async function POST(request: Request) {
           consumedAt: now,
           consumeAmount: 0,
           consumeTargetId: currentUser.discordUserId,
-          consumeTargetJinleeId: currentUser.jinleeId,
+          consumeTargetDlmId: currentUser.dlmId,
         },
       });
       if (updateResult.count !== 1) {
@@ -312,7 +312,7 @@ export async function POST(request: Request) {
       const updateResult = await prisma.pointShopGrant.updateMany({
         where: {
           id: couponId,
-          jinleeId: currentUser.jinleeId,
+          dlmId: currentUser.dlmId,
           deliveryType: PointShopDeliveryType.COUPON,
           deliveryStatus: PointShopDeliveryStatus.DELIVERED,
           couponStatus: CouponStatus.ACTIVE,
@@ -324,7 +324,7 @@ export async function POST(request: Request) {
           consumedAt: now,
           consumeAmount: 0,
           consumeTargetId: currentUser.discordUserId,
-          consumeTargetJinleeId: currentUser.jinleeId,
+          consumeTargetDlmId: currentUser.dlmId,
         },
       });
       if (updateResult.count !== 1) {
@@ -334,7 +334,7 @@ export async function POST(request: Request) {
       const updateResult = await prisma.lotteryDraw.updateMany({
         where: {
           id: lotteryId,
-          jinleeId: currentUser.jinleeId,
+          dlmId: currentUser.dlmId,
           status: LotteryStatus.UNUSED,
           createdAt: newEntityOnlyTime(),
           consumeAt: null,
@@ -345,7 +345,7 @@ export async function POST(request: Request) {
           consumeAt: now,
           requestId: 'SELFUSE',
           consumeTargetId: currentUser.discordUserId ?? null,
-          consumeTargetJinleeId: currentUser.jinleeId,
+          consumeTargetDlmId: currentUser.dlmId,
         },
       });
       if (updateResult.count !== 1) {

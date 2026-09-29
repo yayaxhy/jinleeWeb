@@ -384,7 +384,7 @@ async function downloadWithCurl(url) {
         '--connect-timeout',
         '20',
         '--user-agent',
-        'jinlee-club local vendor',
+        'dlm-club local vendor',
         url,
       ],
       {

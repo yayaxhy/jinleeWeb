@@ -10,7 +10,7 @@ type AccountSummary = {
   discordId: string;
   exists: boolean;
   memberExists: boolean;
-  jinleeId: string | null;
+  dlmId: string | null;
   serverDisplayName: string | null;
   memberStatus: string | null;
   wallet: {
@@ -87,7 +87,7 @@ const SummaryCard = ({ title, summary }: { title: string; summary: AccountSummar
         <p className="text-xs uppercase tracking-[0.3em] text-white/45">{title}</p>
         <p className="text-base text-white/90">{summary.serverDisplayName ?? summary.discordId}</p>
         <p className="text-xs text-white/55">
-          {summary.memberStatus ?? '未知状态'} · {summary.jinleeId ?? '无 DLMClub 身份'}
+          {summary.memberStatus ?? '未知状态'} · {summary.dlmId ?? '无 DLMClub 身份'}
         </p>
       </div>
       <div className="grid gap-2 text-sm text-white/70 sm:grid-cols-2">

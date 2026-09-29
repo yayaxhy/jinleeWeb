@@ -18,7 +18,7 @@ test('missing, empty and whitespace guild nicknames preserve the saved member na
 
 test('older account records remain valid nickname fallbacks', () => {
   assert.equal(resolveDiscordLoginDisplayName({
-    memberDisplayName: ' ', jinleeDisplayName: '平台昵称', peiwanDisplayName: '陪玩昵称', username: 'discord-user',
+    memberDisplayName: ' ', dlmDisplayName: '平台昵称', peiwanDisplayName: '陪玩昵称', username: 'discord-user',
   }), '平台昵称');
   assert.equal(resolveDiscordLoginDisplayName({ peiwanDisplayName: '陪玩昵称', username: 'discord-user' }), '陪玩昵称');
 });

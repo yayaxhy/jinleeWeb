@@ -95,7 +95,7 @@ export default async function RunningOrdersPage(props: PageProps) {
   }
   if (hostId) {
     filters.push({
-      OR: [{ hostId }, { hostJinleeId: hostId }],
+      OR: [{ hostId }, { hostDlmId: hostId }],
     });
   }
   if (workerId) filters.push({ workerId });
@@ -124,7 +124,7 @@ export default async function RunningOrdersPage(props: PageProps) {
         id: true,
         displayNo: true,
         hostId: true,
-        hostJinleeId: true,
+        hostDlmId: true,
         workerId: true,
         peiwanId: true,
         unitPrice: true,
@@ -134,7 +134,7 @@ export default async function RunningOrdersPage(props: PageProps) {
         acceptedAt: true,
         stopwatchStartAt: true,
         cutoffAt: true,
-        hostJinleeUser: { select: { jinleeId: true, discordDisplayName: true, wechatDisplayName: true } },
+        hostDlmUser: { select: { dlmId: true, discordDisplayName: true, wechatDisplayName: true } },
         host: { select: { discordUserId: true, serverDisplayName: true } },
         worker: { select: { discordUserId: true, serverDisplayName: true } },
       },
@@ -180,7 +180,7 @@ export default async function RunningOrdersPage(props: PageProps) {
             name="hostId"
             defaultValue={hostId}
             className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
-            placeholder="jinleeId 或 discord id"
+            placeholder="dlmId 或 discord id"
           />
         </div>
         <div className="space-y-1">
@@ -245,11 +245,11 @@ export default async function RunningOrdersPage(props: PageProps) {
             {orders.map((order) => {
               const hostName =
                 order.host?.serverDisplayName ??
-                order.hostJinleeUser?.discordDisplayName ??
-                order.hostJinleeUser?.wechatDisplayName ??
+                order.hostDlmUser?.discordDisplayName ??
+                order.hostDlmUser?.wechatDisplayName ??
                 order.host?.discordUserId ??
                 order.hostId ??
-                order.hostJinleeId ??
+                order.hostDlmId ??
                 '未知用户';
               const workerName = order.worker?.serverDisplayName ?? order.worker?.discordUserId ?? order.workerId;
               return (
@@ -264,8 +264,8 @@ export default async function RunningOrdersPage(props: PageProps) {
                   <td className="px-4 py-4">
                     <div className="space-y-1">
                       <div className="text-white/90">{hostName}</div>
-                      <div className="text-xs text-white/50 font-mono">{order.hostJinleeId ?? order.hostId ?? '—'}</div>
-                      {order.hostId && order.hostJinleeId ? (
+                      <div className="text-xs text-white/50 font-mono">{order.hostDlmId ?? order.hostId ?? '—'}</div>
+                      {order.hostId && order.hostDlmId ? (
                         <div className="text-xs text-white/40 font-mono">Discord: {order.hostId}</div>
                       ) : null}
                     </div>

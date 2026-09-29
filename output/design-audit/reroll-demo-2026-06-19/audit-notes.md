@@ -3,7 +3,7 @@
 - 审查时间：2026-06-19 17:38:01 SAST
 - 审查方式：实际操作本地 demo 页面，覆盖桌面态、完整动画分支、跳过动画分支
 - 审查地址：`http://localhost:3017/profile/lottery-fusion/demo`
-- 产出位置：`/Users/user/Documents/GitHub/jinleeWeb/output/design-audit/reroll-demo-2026-06-19`
+- 产出位置：`/Users/user/Documents/GitHub/dlmWeb/output/design-audit/reroll-demo-2026-06-19`
 
 ## 流程步骤
 

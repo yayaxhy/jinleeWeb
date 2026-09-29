@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 type WechatBindTokenPayload = {
-  jinleeId: string;
+  dlmId: string;
   issuedAt: number;
   expiresAt: number;
   version: 1;
@@ -30,9 +30,9 @@ const encodeToken = (payload: WechatBindTokenPayload) => {
   return `${encoded}.${signature}`;
 };
 
-export const createWechatBindToken = (jinleeId: string) => {
+export const createWechatBindToken = (dlmId: string) => {
   const payload: WechatBindTokenPayload = {
-    jinleeId,
+    dlmId,
     issuedAt: Date.now(),
     expiresAt: Date.now() + WECHAT_BIND_TOKEN_TTL_MS,
     version: 1,
@@ -65,7 +65,7 @@ export const verifyWechatBindToken = (token?: string | null): WechatBindTokenPay
 
   try {
     const payload = JSON.parse(base64UrlDecode(encoded).toString()) as WechatBindTokenPayload;
-    if (payload.version !== 1 || payload.expiresAt < Date.now() || !payload.jinleeId) {
+    if (payload.version !== 1 || payload.expiresAt < Date.now() || !payload.dlmId) {
       return null;
     }
 

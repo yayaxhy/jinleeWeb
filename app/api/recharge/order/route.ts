@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { SITE_ALTERNATE_NAME, SITE_URL } from '@/lib/site';
 import {
   buildOutTradeNo,
@@ -37,7 +37,7 @@ const parseAmount = (raw: unknown) => {
 const normalizeAmount = (value: number) => new Decimal(value).toDecimalPlaces(2);
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
@@ -71,23 +71,23 @@ export async function POST(request: Request) {
   returnUrlObject.hash = '';
   const returnUrl = returnUrlObject.toString();
 
-  const outTradeNo = buildOutTradeNo(currentUser.jinleeId);
+  const outTradeNo = buildOutTradeNo(currentUser.dlmId);
 
   await prisma.zPayRechargeOrder.create({
     data: {
       outTradeNo,
       discordUserId: currentUser.discordUserId,
-      jinleeId: currentUser.jinleeId,
+      dlmId: currentUser.dlmId,
       amount: amountDecimal,
       channel: requestedChannel,
     },
   });
 
   const orderDisplayName =
-    currentUser.jinleeUser.discordDisplayName ??
-    currentUser.jinleeUser.member?.serverDisplayName ??
-    currentUser.jinleeUser.wechatDisplayName ??
-    currentUser.jinleeId;
+    currentUser.dlmUser.discordDisplayName ??
+    currentUser.dlmUser.member?.serverDisplayName ??
+    currentUser.dlmUser.wechatDisplayName ??
+    currentUser.dlmId;
 
   console.log('[zpay.order.create]', {
     outTradeNo,
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
   const orderTitle = sanitizeZPayText(
     `账户充值-${orderDisplayName}`,
-    `账户充值-${currentUser.jinleeId}`,
+    `账户充值-${currentUser.dlmId}`,
   );
   const safeSiteName = sanitizeZPayText(SITE_NAME, SITE_ALTERNATE_NAME);
 

@@ -1,24 +1,24 @@
 import { AccountProvider, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { generateJinleeId } from '@/lib/jinlee-id';
+import { generateDlmId } from '@/lib/dlm-id';
 import { getHighestVipLevelByTotalSpent, getVipLevelLabel } from '@/lib/vip-levels';
 
-const jinleeUserWithMember = {
+const dlmUserWithMember = {
   member: true,
-} satisfies Prisma.JinleeUserInclude;
+} satisfies Prisma.DlmUserInclude;
 
-export type JinleeUserWithMember = Prisma.JinleeUserGetPayload<{
-  include: typeof jinleeUserWithMember;
+export type DlmUserWithMember = Prisma.DlmUserGetPayload<{
+  include: typeof dlmUserWithMember;
 }>;
 
-type EnsureDiscordJinleeUserInput = {
+type EnsureDiscordDlmUserInput = {
   discordUserId: string;
   displayName?: string | null;
   avatarUrl?: string | null;
   profile?: Prisma.InputJsonValue;
 };
 
-type EnsureWechatProgramJinleeUserInput = {
+type EnsureWechatProgramDlmUserInput = {
   openId: string;
   unionId?: string | null;
   displayName?: string | null;
@@ -26,7 +26,7 @@ type EnsureWechatProgramJinleeUserInput = {
   profile?: Prisma.InputJsonValue;
 };
 
-type JinleeProfilePatch = {
+type DlmProfilePatch = {
   discordDisplayName?: string | null;
   discordAvatarUrl?: string | null;
   wechatDisplayName?: string | null;
@@ -36,8 +36,8 @@ type JinleeProfilePatch = {
 const buildDiscordProfilePatch = (
   displayName?: string | null,
   avatarUrl?: string | null,
-): JinleeProfilePatch => {
-  const data: JinleeProfilePatch = {};
+): DlmProfilePatch => {
+  const data: DlmProfilePatch = {};
 
   if (displayName !== undefined) {
     data.discordDisplayName = displayName;
@@ -52,8 +52,8 @@ const buildDiscordProfilePatch = (
 const buildWechatProfilePatch = (
   displayName?: string | null,
   avatarUrl?: string | null,
-): JinleeProfilePatch => {
-  const data: JinleeProfilePatch = {};
+): DlmProfilePatch => {
+  const data: DlmProfilePatch = {};
 
   if (displayName !== undefined) {
     data.wechatDisplayName = displayName;
@@ -83,7 +83,7 @@ const buildBindingPatch = (
   return data;
 };
 
-export const summarizeJinleeUser = (user: JinleeUserWithMember) => {
+export const summarizeDlmUser = (user: DlmUserWithMember) => {
   const displayName = user.discordDisplayName ?? user.member?.serverDisplayName ?? user.wechatDisplayName ?? null;
   const avatarUrl = user.discordAvatarUrl ?? user.wechatAvatarUrl ?? null;
   const totalBalance = user.member?.totalBalance ?? user.totalBalance;
@@ -117,12 +117,12 @@ export const summarizeJinleeUser = (user: JinleeUserWithMember) => {
   };
 };
 
-export const ensureJinleeUserForDiscordMember = async ({
+export const ensureDlmUserForDiscordMember = async ({
   discordUserId,
   displayName,
   avatarUrl,
   profile,
-}: EnsureDiscordJinleeUserInput): Promise<JinleeUserWithMember> => {
+}: EnsureDiscordDlmUserInput): Promise<DlmUserWithMember> => {
   return prisma.$transaction(async (tx) => {
     const existingBinding = await tx.accountBinding.findUnique({
       where: {
@@ -132,8 +132,8 @@ export const ensureJinleeUserForDiscordMember = async ({
         },
       },
       include: {
-        jinleeUser: {
-          include: jinleeUserWithMember,
+        dlmUser: {
+          include: dlmUserWithMember,
         },
       },
     });
@@ -144,42 +144,42 @@ export const ensureJinleeUserForDiscordMember = async ({
         data: buildBindingPatch(profile),
       });
 
-      return tx.jinleeUser.update({
-        where: { jinleeId: existingBinding.jinleeId },
+      return tx.dlmUser.update({
+        where: { dlmId: existingBinding.dlmId },
         data: {
           ...buildDiscordProfilePatch(displayName, avatarUrl),
-          discordUserId: existingBinding.jinleeUser.discordUserId ?? discordUserId,
+          discordUserId: existingBinding.dlmUser.discordUserId ?? discordUserId,
         },
-        include: jinleeUserWithMember,
+        include: dlmUserWithMember,
       });
     }
 
-    const reusableUser = await tx.jinleeUser.findUnique({
+    const reusableUser = await tx.dlmUser.findUnique({
       where: { discordUserId },
-      include: jinleeUserWithMember,
+      include: dlmUserWithMember,
     });
 
-    const jinleeUser = reusableUser
-      ? await tx.jinleeUser.update({
-          where: { jinleeId: reusableUser.jinleeId },
+    const dlmUser = reusableUser
+      ? await tx.dlmUser.update({
+          where: { dlmId: reusableUser.dlmId },
           data: {
             ...buildDiscordProfilePatch(displayName, avatarUrl),
             discordUserId,
           },
-          include: jinleeUserWithMember,
+          include: dlmUserWithMember,
         })
-      : await tx.jinleeUser.create({
+      : await tx.dlmUser.create({
           data: {
-            jinleeId: generateJinleeId(),
+            dlmId: generateDlmId(),
             discordUserId,
             ...buildDiscordProfilePatch(displayName, avatarUrl),
           },
-          include: jinleeUserWithMember,
+          include: dlmUserWithMember,
         });
 
     await tx.accountBinding.create({
       data: {
-        jinleeId: jinleeUser.jinleeId,
+        dlmId: dlmUser.dlmId,
         provider: AccountProvider.DISCORD,
         providerUserId: discordUserId,
         lastLoginAt: new Date(),
@@ -187,17 +187,17 @@ export const ensureJinleeUserForDiscordMember = async ({
       },
     });
 
-    return jinleeUser;
+    return dlmUser;
   });
 };
 
-export const ensureJinleeUserForWechatProgram = async ({
+export const ensureDlmUserForWechatProgram = async ({
   openId,
   unionId,
   displayName,
   avatarUrl,
   profile,
-}: EnsureWechatProgramJinleeUserInput): Promise<{ jinleeUser: JinleeUserWithMember; bindingId: string }> => {
+}: EnsureWechatProgramDlmUserInput): Promise<{ dlmUser: DlmUserWithMember; bindingId: string }> => {
   return prisma.$transaction(async (tx) => {
     const existingBinding = await tx.accountBinding.findUnique({
       where: {
@@ -207,8 +207,8 @@ export const ensureJinleeUserForWechatProgram = async ({
         },
       },
       include: {
-        jinleeUser: {
-          include: jinleeUserWithMember,
+        dlmUser: {
+          include: dlmUserWithMember,
         },
       },
     });
@@ -219,13 +219,13 @@ export const ensureJinleeUserForWechatProgram = async ({
         data: buildBindingPatch(profile, unionId),
       });
 
-      const jinleeUser = await tx.jinleeUser.update({
-        where: { jinleeId: existingBinding.jinleeId },
+      const dlmUser = await tx.dlmUser.update({
+        where: { dlmId: existingBinding.dlmId },
         data: buildWechatProfilePatch(displayName, avatarUrl),
-        include: jinleeUserWithMember,
+        include: dlmUserWithMember,
       });
 
-      return { jinleeUser, bindingId: existingBinding.id };
+      return { dlmUser, bindingId: existingBinding.id };
     }
 
     const reusableBinding =
@@ -236,30 +236,30 @@ export const ensureJinleeUserForWechatProgram = async ({
               unionId,
             },
             include: {
-              jinleeUser: {
-                include: jinleeUserWithMember,
+              dlmUser: {
+                include: dlmUserWithMember,
               },
             },
           })
         : null;
 
-    const jinleeUser = reusableBinding
-      ? await tx.jinleeUser.update({
-          where: { jinleeId: reusableBinding.jinleeId },
+    const dlmUser = reusableBinding
+      ? await tx.dlmUser.update({
+          where: { dlmId: reusableBinding.dlmId },
           data: buildWechatProfilePatch(displayName, avatarUrl),
-          include: jinleeUserWithMember,
+          include: dlmUserWithMember,
         })
-      : await tx.jinleeUser.create({
+      : await tx.dlmUser.create({
           data: {
-            jinleeId: generateJinleeId(),
+            dlmId: generateDlmId(),
             ...buildWechatProfilePatch(displayName, avatarUrl),
           },
-          include: jinleeUserWithMember,
+          include: dlmUserWithMember,
         });
 
     const binding = await tx.accountBinding.create({
       data: {
-        jinleeId: jinleeUser.jinleeId,
+        dlmId: dlmUser.dlmId,
         provider: AccountProvider.WECHAT_MINIPROGRAM,
         providerUserId: openId,
         unionId: unionId ?? null,
@@ -268,6 +268,6 @@ export const ensureJinleeUserForWechatProgram = async ({
       },
     });
 
-    return { jinleeUser, bindingId: binding.id };
+    return { dlmUser, bindingId: binding.id };
   });
 };

@@ -7,7 +7,7 @@ import {
   getLoginStateCookie,
   normalizeRedirectTarget,
 } from '@/lib/session';
-import { ensureJinleeUserForDiscordMember } from '@/lib/jinlee-user';
+import { ensureDlmUserForDiscordMember } from '@/lib/dlm-user';
 import { exchangeCodeForTokens, fetchDiscordUser, fetchGuildMember } from '@/lib/discord';
 import { resolveDiscordLoginDisplayName } from '@/lib/discord-login-display-name';
 import { prisma } from '@/lib/prisma';
@@ -83,12 +83,12 @@ export async function GET(request: Request) {
         guildMember = null;
       }
     }
-    const [savedMember, savedJinleeUser, savedPeiwan] = await Promise.all([
+    const [savedMember, savedDlmUser, savedPeiwan] = await Promise.all([
       prisma.member.findUnique({
         where: { discordUserId: discordUser.id },
         select: { serverDisplayName: true },
       }),
-      prisma.jinleeUser.findUnique({
+      prisma.dlmUser.findUnique({
         where: { discordUserId: discordUser.id },
         select: { discordDisplayName: true },
       }),
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
     const serverDisplayName = resolveDiscordLoginDisplayName({
       guildNickname: guildMember?.nick,
       memberDisplayName: savedMember?.serverDisplayName,
-      jinleeDisplayName: savedJinleeUser?.discordDisplayName,
+      dlmDisplayName: savedDlmUser?.discordDisplayName,
       peiwanDisplayName: savedPeiwan?.serverDisplayName,
       globalName: discordUser.global_name,
       username: discordUser.username,
@@ -127,7 +127,7 @@ export async function GET(request: Request) {
         .catch(() => {});
     }
 
-    const jinleeUser = await ensureJinleeUserForDiscordMember({
+    const dlmUser = await ensureDlmUserForDiscordMember({
       discordUserId: discordUser.id,
       displayName: serverDisplayName,
       avatarUrl,
@@ -139,7 +139,7 @@ export async function GET(request: Request) {
     });
     await recordAuthLoginEvent({
       request,
-      jinleeId: jinleeUser.jinleeId,
+      dlmId: dlmUser.dlmId,
       discordUserId: discordUser.id,
       provider: AccountProvider.DISCORD,
     }).catch((error) => console.error('[discord.callback] login audit failed', error));
@@ -150,12 +150,12 @@ export async function GET(request: Request) {
     const response = NextResponse.redirect(absoluteRedirect, { status: 302 });
 
     attachSessionToResponse(response, {
-      jinleeId: jinleeUser.jinleeId,
+      dlmId: dlmUser.dlmId,
       discordId: discordUser.id,
       username: discordUser.global_name ?? discordUser.username,
       discriminator: discordUser.discriminator && discordUser.discriminator !== '0' ? discordUser.discriminator : null,
       avatar: discordUser.avatar ?? null,
-      sessionVersion: jinleeUser.sessionVersion,
+      sessionVersion: dlmUser.sessionVersion,
     });
 
     clearLoginRedirectCookie(response);

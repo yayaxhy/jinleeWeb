@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { applyJinleeWalletDeltaTx, getJinleeWalletSnapshotTx } from '@/lib/jinlee-wallet';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
 
 const DEC = (value: Prisma.Decimal | number | string) =>
   value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value);
@@ -22,7 +22,7 @@ type RechargeOrderBase = {
   status: string;
   amount: Prisma.Decimal;
   discordUserId: string | null;
-  jinleeId: string | null;
+  dlmId: string | null;
 };
 
 type RechargeOrderSettlementResult =
@@ -44,7 +44,7 @@ const loadRechargeOrder = async (
         status: true,
         rechargeAmount: true,
         discordUserId: true,
-        jinleeId: true,
+        dlmId: true,
       },
     });
     return order
@@ -63,7 +63,7 @@ const loadRechargeOrder = async (
         status: true,
         rechargeAmount: true,
         discordUserId: true,
-        jinleeId: true,
+        dlmId: true,
       },
     });
     return order
@@ -81,7 +81,7 @@ const loadRechargeOrder = async (
       status: true,
       amount: true,
       discordUserId: true,
-      jinleeId: true,
+      dlmId: true,
     },
   });
 };
@@ -104,8 +104,8 @@ export const settleRechargeOrderPayment = async (
     };
   }
 
-  if (!order.jinleeId) {
-    return { kind: 'invalid_order', reason: 'missing_jinlee_id' };
+  if (!order.dlmId) {
+    return { kind: 'invalid_order', reason: 'missing_dlm_id' };
   }
 
   if (order.status === 'PAID') {
@@ -117,7 +117,7 @@ export const settleRechargeOrderPayment = async (
   }
 
   const paidAt = new Date();
-  const orderJinleeId = order.jinleeId;
+  const orderDlmId = order.dlmId;
   const sourceReference = input.payerReference ?? input.gatewayTradeNo ?? input.outTradeNo;
   const transactionType = input.transactionType ?? '网站充值';
   let applied = false;
@@ -177,13 +177,13 @@ export const settleRechargeOrderPayment = async (
       });
     }
 
-    const walletBefore = await getJinleeWalletSnapshotTx(tx, {
-      jinleeId: orderJinleeId,
+    const walletBefore = await getDlmWalletSnapshotTx(tx, {
+      dlmId: orderDlmId,
       discordUserId: order.discordUserId,
     });
 
-    const walletAfter = await applyJinleeWalletDeltaTx(tx, {
-      jinleeId: orderJinleeId,
+    const walletAfter = await applyDlmWalletDeltaTx(tx, {
+      dlmId: orderDlmId,
       discordUserId: order.discordUserId,
       rechargeDelta: normalizedAmount,
       totalBalanceDelta: normalizedAmount,
@@ -193,7 +193,7 @@ export const settleRechargeOrderPayment = async (
       data: {
         amount: normalizedAmount,
         toWhom: order.discordUserId,
-        jinleeId: orderJinleeId,
+        dlmId: orderDlmId,
         fromWhom: sourceReference,
       },
     });
@@ -201,7 +201,7 @@ export const settleRechargeOrderPayment = async (
     await tx.individualTransaction.create({
       data: {
         discordId: order.discordUserId,
-        jinleeId: orderJinleeId,
+        dlmId: orderDlmId,
         thirdPartydiscordId: sourceReference,
         balanceBefore: new Prisma.Decimal(walletBefore.totalBalance),
         amountChange: normalizedAmount,

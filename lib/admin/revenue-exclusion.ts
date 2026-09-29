@@ -18,13 +18,13 @@ export const parseRevenueIdentityList = (value: string) =>
 
 export type RevenueExclusionPreview = {
   input: string;
-  jinleeId: string | null;
+  dlmId: string | null;
   discordUserId: string | null;
   displayName: string;
 };
 
 export type ResolvedRevenueExclusions = {
-  excludeJinleeIds: string[];
+  excludeDlmIds: string[];
   excludeDiscordIds: string[];
   preview: RevenueExclusionPreview[];
 };
@@ -35,21 +35,21 @@ export async function resolveRevenueExclusions(
   const normalized = Array.from(new Set(ids.map(normalizeRevenueIdentity).filter(Boolean)));
   if (!normalized.length) {
     return {
-      excludeJinleeIds: [],
+      excludeDlmIds: [],
       excludeDiscordIds: [],
       preview: [],
     };
   }
 
-  const matches = await prisma.jinleeUser.findMany({
+  const matches = await prisma.dlmUser.findMany({
     where: {
       OR: [
-        { jinleeId: { in: normalized } },
+        { dlmId: { in: normalized } },
         { discordUserId: { in: normalized } },
       ],
     },
     select: {
-      jinleeId: true,
+      dlmId: true,
       discordUserId: true,
       discordDisplayName: true,
       wechatDisplayName: true,
@@ -60,7 +60,7 @@ export async function resolveRevenueExclusions(
   const matchByInput = new Map<
     string,
     {
-      jinleeId: string;
+      dlmId: string;
       discordUserId: string | null;
       displayName: string;
     }
@@ -73,15 +73,15 @@ export async function resolveRevenueExclusions(
       row.wechatDisplayName?.trim() ||
       '未知用户';
 
-    matchByInput.set(row.jinleeId, {
-      jinleeId: row.jinleeId,
+    matchByInput.set(row.dlmId, {
+      dlmId: row.dlmId,
       discordUserId: row.discordUserId ?? null,
       displayName,
     });
 
     if (row.discordUserId) {
       matchByInput.set(row.discordUserId, {
-        jinleeId: row.jinleeId,
+        dlmId: row.dlmId,
         discordUserId: row.discordUserId,
         displayName,
       });
@@ -93,7 +93,7 @@ export async function resolveRevenueExclusions(
     if (matched) {
       return {
         input,
-        jinleeId: matched.jinleeId,
+        dlmId: matched.dlmId,
         discordUserId: matched.discordUserId,
         displayName: matched.displayName,
       };
@@ -102,7 +102,7 @@ export async function resolveRevenueExclusions(
     if (/^\d+$/.test(input)) {
       return {
         input,
-        jinleeId: null,
+        dlmId: null,
         discordUserId: input,
         displayName: '未知用户',
       };
@@ -110,35 +110,35 @@ export async function resolveRevenueExclusions(
 
     return {
       input,
-      jinleeId: input,
+      dlmId: input,
       discordUserId: null,
       displayName: '未知用户',
     };
   });
 
   return {
-    excludeJinleeIds: Array.from(new Set(preview.map((row) => row.jinleeId).filter((value): value is string => Boolean(value)))),
+    excludeDlmIds: Array.from(new Set(preview.map((row) => row.dlmId).filter((value): value is string => Boolean(value)))),
     excludeDiscordIds: Array.from(new Set(preview.map((row) => row.discordUserId).filter((value): value is string => Boolean(value)))),
     preview,
   };
 }
 
 /**
- * Coupon rows can be associated with a Jinlee ID, a Discord ID, or both.
+ * Coupon rows can be associated with a Dlm ID, a Discord ID, or both.
  * Explicitly allow a nullable identity column here: SQL's `NOT (A OR B)`
  * treats `B = NULL` as unknown and would otherwise filter out unrelated rows.
  */
 export const buildRevenueCouponIdentityExclusion = (
-  excludeJinleeIds: string[],
+  excludeDlmIds: string[],
   excludeDiscordIds: string[],
 ): Prisma.CouponWhereInput => {
   const clauses: Prisma.CouponWhereInput[] = [];
 
-  if (excludeJinleeIds.length) {
+  if (excludeDlmIds.length) {
     clauses.push({
       OR: [
-        { jinleeId: null },
-        { jinleeId: { notIn: excludeJinleeIds } },
+        { dlmId: null },
+        { dlmId: { notIn: excludeDlmIds } },
       ],
     });
   }

@@ -2,8 +2,8 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
 
-if (process.env.JINLEE_ENV !== 'staging') {
-  throw new Error('sync-staging-db can only run with JINLEE_ENV=staging');
+if (process.env.DLM_ENV !== 'staging') {
+  throw new Error('sync-staging-db can only run with DLM_ENV=staging');
 }
 
 const databaseUrl = new URL(process.env.DATABASE_URL || '');

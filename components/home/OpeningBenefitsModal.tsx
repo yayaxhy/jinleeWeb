@@ -16,7 +16,7 @@ export function OpeningBenefitsModal() {
   const { session } = useSessionContext();
   const [open, setOpen] = useState(false);
   const lastCheckedRef = useRef<{ key: string; shouldShow: boolean } | null>(null);
-  const viewerKey = session?.jinleeId ?? session?.discordId ?? 'guest';
+  const viewerKey = session?.dlmId ?? session?.discordId ?? 'guest';
 
   useEffect(() => {
     const dayKey = getBerlinDateKey();

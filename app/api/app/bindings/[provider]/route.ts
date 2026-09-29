@@ -1,7 +1,7 @@
 import { AccountProvider } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import { unbindJinleeUserChannel, isDiscordBindingError } from '@/lib/discord-binding';
-import { getCurrentJinleeUser } from '@/lib/current-jinlee-user';
+import { unbindDlmUserChannel, isDiscordBindingError } from '@/lib/discord-binding';
+import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { destroySession } from '@/lib/session';
 
 const providerMap: Record<string, AccountProvider> = {
@@ -11,7 +11,7 @@ const providerMap: Record<string, AccountProvider> = {
 
 const statusForBindingError = (code: string) => {
   switch (code) {
-    case 'jinlee_user_not_found':
+    case 'dlm_user_not_found':
     case 'channel_not_bound':
       return 404;
     case 'last_login_method_forbidden':
@@ -35,14 +35,14 @@ export async function DELETE(request: Request, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'unsupported_provider' }, { status: 404 });
   }
 
-  const currentUser = await getCurrentJinleeUser(request);
+  const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
   try {
-    const result = await unbindJinleeUserChannel({
-      jinleeId: currentUser.jinleeId,
+    const result = await unbindDlmUserChannel({
+      dlmId: currentUser.dlmId,
       provider: providerType,
     });
 
