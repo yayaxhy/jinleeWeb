@@ -99,7 +99,13 @@ export const rechargeManualWechatBoss = async (params: {
   const previous = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });
   if (previous) {
     if (previous.status === DlmAdminOperationStatus.COMPLETED && previous.result) {
-      return { result: previous.result as { dlmId?: string; amount?: string }, replayed: true };
+      return {
+        result: {
+          ...(previous.result as { dlmId?: string; amount?: string }),
+          rechargeRequestId: previous.requestId,
+        },
+        replayed: true,
+      };
     }
     throw new Error(`该请求已${previous.status === DlmAdminOperationStatus.PENDING ? '提交处理中' : '失败'}，请刷新页面后重新提交。`);
   }
@@ -150,6 +156,9 @@ export const rechargeManualWechatBoss = async (params: {
         balanceAfter: after.totalBalance.toFixed(2),
         rechargeId: recharge.RechargeID,
         transactionId: ledger.transactionId,
+        // Keep the original operation ID so a later submission with the same
+        // receipt can retry its channel notification without charging twice.
+        rechargeRequestId: requestId,
       };
       await tx.dlmAdminOperation.create({
         data: {
@@ -175,7 +184,13 @@ export const rechargeManualWechatBoss = async (params: {
         existingReceipt.result &&
         existingReceipt.dlmId === dlmId
       ) {
-        return { result: existingReceipt.result as { dlmId?: string; amount?: string }, replayed: true };
+        return {
+          result: {
+            ...(existingReceipt.result as { dlmId?: string; amount?: string }),
+            rechargeRequestId: existingReceipt.requestId,
+          },
+          replayed: true,
+        };
       }
       throw new Error('该收款单号/操作请求已使用，未重复入账。');
     }

@@ -22,7 +22,11 @@ export async function POST(request: NextRequest) {
     });
     let notificationWarning: string | null = null;
     try {
-      await postInternalBot('/internal/admin/wechat-boss-recharge-notify', { rechargeRequestId: requestId });
+      await postInternalBot('/internal/admin/wechat-boss-recharge-notify', {
+        // A duplicate receipt is intentionally replayed rather than credited
+        // again.  Its notification must still point to the original recharge.
+        rechargeRequestId: result.result.rechargeRequestId ?? requestId,
+      });
     } catch (notificationError) {
       console.error('[wechat-boss-recharge] channel notification failed', notificationError);
       notificationWarning = '充值已入账，但频道通知发送失败；请确认 Bot 已更新并完成数据库迁移后，用相同微信收款号重新提交以补发通知。';

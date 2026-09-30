@@ -55,9 +55,14 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
     setError(null);
     setMessage(null);
     try {
-      const outcome = await action() as { notificationWarning?: unknown } | undefined;
+      const outcome = await action() as { notificationWarning?: unknown; replayed?: unknown; result?: { balanceAfter?: unknown } } | undefined;
       const notificationWarning = typeof outcome?.notificationWarning === 'string' ? outcome.notificationWarning : null;
-      setMessage(notificationWarning ? `${success} ${notificationWarning}` : success);
+      const replayed = outcome?.replayed === true;
+      const balanceAfter = typeof outcome?.result?.balanceAfter === 'string' ? outcome.result.balanceAfter : null;
+      const successMessage = replayed
+        ? `检测到相同微信收款号：此前已入账，本次未重复增加余额${balanceAfter ? `。当前余额：${balanceAfter} 点点券` : '。'}`
+        : `${success}${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}`;
+      setMessage(notificationWarning ? `${successMessage} ${notificationWarning}` : successMessage);
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '操作失败，请稍后重试。');
