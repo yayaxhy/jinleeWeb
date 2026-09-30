@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
@@ -37,24 +36,10 @@ export default function DlmPortalLoginPage() {
         <div className="rounded-[32px] border border-black/5 bg-white p-7 shadow-[0_10px_30px_rgba(17,24,39,0.04)] sm:p-8">
           <div className="space-y-5">
             <p className="text-xs uppercase tracking-[0.6em] text-gray-400">DLM Club</p>
-            <div className="flex items-center gap-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-[#d4b24c]/40 bg-gradient-to-br from-[#fff3cf] to-[#ead08a] text-3xl font-semibold text-[#8a6000]">
-                D
-              </div>
-              <div className="space-y-1">
-                <h1 className="text-3xl font-semibold tracking-wide">老板个人中心</h1>
-                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">DLM ID 只读查询</p>
-              </div>
-            </div>
+            <h1 className="text-3xl font-semibold tracking-wide">老板个人中心</h1>
             <p className="text-sm leading-6 text-gray-500">
-              输入客服提供的 DLM ID，即可查看余额、积分和全部流水。本入口仅供查询，不能直接消费余额。
+              输入客服提供的 DLM ID，即可查看余额、积分和全部流水。
             </p>
-            <Link
-              href="/"
-              className="inline-flex rounded-full border-2 border-black/15 px-5 py-2 text-xs font-semibold tracking-[0.22em] text-gray-600 transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
-            >
-              返回主页
-            </Link>
           </div>
 
           <form onSubmit={submit} className="mt-7 space-y-4 border-t border-dashed border-black/10 pt-7">
