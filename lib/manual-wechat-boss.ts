@@ -29,7 +29,9 @@ export const createManualWechatBoss = async (params: {
   const operatorDiscordId = cleanText(params.operatorDiscordId, 32);
   const wechatContact = cleanText(params.wechatContact, 100);
   const displayName = cleanText(params.displayName, 100) || null;
-  if (!requestId || !operatorDiscordId || !wechatContact) throw new Error('请填写微信标识。');
+  if (!requestId || !operatorDiscordId || !wechatContact || !displayName) {
+    throw new Error('请填写老板微信号和老板备注名。');
+  }
 
   const previous = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });
   if (previous) {

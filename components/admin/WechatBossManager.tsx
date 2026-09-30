@@ -8,7 +8,6 @@ type Boss = {
   wechatContact: string;
   displayName: string | null;
   totalBalance: string;
-  recharge: string;
   loyaltyPoints: string;
   createdAt: string;
 };
@@ -132,8 +131,8 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
         <div><h2 className="text-xl font-semibold">新建微信老板账户</h2><p className="mt-1 text-sm text-white/60">创建后系统分配唯一 DLM ID；不设置密码，DLM ID 仅用于只读个人中心。</p></div>
         <form onSubmit={createBoss} className="grid gap-3 md:grid-cols-3">
-          <input name="wechatContact" required placeholder="微信号或客服识别号" className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <input name="displayName" placeholder="老板备注名（可选）" className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <input name="wechatContact" required placeholder="老板微信号" className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <input name="displayName" required placeholder="老板备注名" className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy} className="rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">创建并分配 DLM ID</button>
         </form>
       </section>
@@ -183,7 +182,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
 
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
         <h2 className="text-xl font-semibold">微信老板账户</h2>
-        <div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="border-b border-white/10 text-xs text-white/50"><tr><th className="px-3 py-3">老板</th><th className="px-3 py-3">DLM ID</th><th className="px-3 py-3">余额</th><th className="px-3 py-3">充值</th><th className="px-3 py-3">积分</th></tr></thead><tbody>{bosses.map((boss) => <tr key={boss.dlmId} className="border-b border-white/5"><td className="px-3 py-3">{boss.displayName || boss.wechatContact}</td><td className="px-3 py-3 font-mono text-xs text-[#c4b5fd]">{boss.dlmId}</td><td className="px-3 py-3">¥{boss.totalBalance}</td><td className="px-3 py-3">¥{boss.recharge}</td><td className="px-3 py-3">{boss.loyaltyPoints}</td></tr>)}</tbody></table></div>
+        <div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="border-b border-white/10 text-xs text-white/50"><tr><th className="px-3 py-3">老板</th><th className="px-3 py-3">DLM ID</th><th className="px-3 py-3">余额</th><th className="px-3 py-3">积分</th></tr></thead><tbody>{bosses.map((boss) => <tr key={boss.dlmId} className="border-b border-white/5"><td className="px-3 py-3">{boss.displayName || boss.wechatContact}</td><td className="px-3 py-3 font-mono text-xs text-[#c4b5fd]">{boss.dlmId}</td><td className="px-3 py-3">¥{boss.totalBalance}</td><td className="px-3 py-3">{boss.loyaltyPoints}</td></tr>)}</tbody></table></div>
       </section>
 
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5">

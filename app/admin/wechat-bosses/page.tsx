@@ -41,11 +41,11 @@ export default async function WechatBossesAdminPage() {
     <main className="min-h-screen bg-[#020204] px-5 py-10 text-white sm:px-8">
       <section className="mx-auto max-w-6xl space-y-7">
         <header className="flex flex-wrap items-start justify-between gap-4">
-          <div><p className="text-xs tracking-[0.35em] text-white/50">ADMIN</p><h1 className="mt-2 text-3xl font-semibold">微信老板充值与代操作</h1><p className="mt-2 text-sm text-white/60">为没有 Discord 的老板分配 DLM ID、人工微信入账，并执行可审计的代打赏/代点单。</p></div>
+          <div><p className="text-xs tracking-[0.35em] text-white/50">ADMIN</p><h1 className="mt-2 text-3xl font-semibold">微信老板充值与代操作</h1><p className="mt-2 text-sm text-white/60">为没有 Discord 的老板登记微信号与备注名、分配 DLM ID、人工微信入账，并执行可审计的代打赏/代点单。</p></div>
           <Link href="/admin" className="rounded-full border border-white/20 px-4 py-2 text-sm text-white/80 hover:bg-white/10">返回后台</Link>
         </header>
         <WechatBossManager
-          bosses={bosses.map((boss) => ({ dlmId: boss.dlmId, wechatContact: boss.wechatContact, displayName: boss.displayName, totalBalance: boss.dlmUser.totalBalance.toFixed(2), recharge: boss.dlmUser.recharge.toFixed(2), loyaltyPoints: boss.dlmUser.loyaltyPoints.toFixed(2), createdAt: boss.createdAt.toISOString() }))}
+          bosses={bosses.map((boss) => ({ dlmId: boss.dlmId, wechatContact: boss.wechatContact, displayName: boss.displayName, totalBalance: boss.dlmUser.totalBalance.toFixed(2), loyaltyPoints: boss.dlmUser.loyaltyPoints.toFixed(2), createdAt: boss.createdAt.toISOString() }))}
           gifts={gifts.map((gift) => ({ name: gift.GiftName, price: gift.price?.toFixed(2) ?? '0.00' }))}
           peiwans={peiwans.map((peiwan) => ({ id: peiwan.PEIWANID, label: `陪玩 ${peiwan.PEIWANID} · ${peiwan.discordUserId}`, prices: Object.fromEntries(quotationFields.map(([code, field]) => [code, peiwan[field]?.toFixed(2) ?? ''])) }))}
           operations={operations.map((operation) => ({ id: operation.id, dlmId: operation.dlmId, type: operation.type, status: operation.status, operatorDiscordId: operation.operatorDiscordId, createdAt: operation.createdAt.toISOString(), details: operation.details ? JSON.stringify(operation.details) : '—' }))}
