@@ -1,7 +1,7 @@
-const NEW_GUILD_URL = 'https://discord.gg/DMT7qjP66T';
+const NEW_GUILD_URL = 'https://discord.gg/dlmclub';
 
 export function SiteAnnouncement() {
-  const message = '点了么娱乐公会链接：discord.gg/DMT7qjP66T · 点击加入公会';
+  const message = '点了么娱乐公会链接：discord.gg/dlmclub · 点击加入公会';
 
   return (
     <aside className="site-announcement" aria-label="新公会公告">
