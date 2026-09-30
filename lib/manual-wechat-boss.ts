@@ -168,6 +168,15 @@ export const rechargeManualWechatBoss = async (params: {
     return { result, replayed: false };
   } catch (error: any) {
     if (error?.code === 'P2002') {
+      const existingReceipt = await prisma.dlmAdminOperation.findUnique({ where: { receiptReference } });
+      if (
+        existingReceipt?.type === DlmAdminOperationType.MANUAL_WECHAT_RECHARGE &&
+        existingReceipt.status === DlmAdminOperationStatus.COMPLETED &&
+        existingReceipt.result &&
+        existingReceipt.dlmId === dlmId
+      ) {
+        return { result: existingReceipt.result as { dlmId?: string; amount?: string }, replayed: true };
+      }
       throw new Error('该收款单号/操作请求已使用，未重复入账。');
     }
     throw error;

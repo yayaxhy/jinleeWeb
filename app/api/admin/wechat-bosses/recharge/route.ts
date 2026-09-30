@@ -24,9 +24,8 @@ export async function POST(request: NextRequest) {
     try {
       await postInternalBot('/internal/admin/wechat-boss-recharge-notify', { rechargeRequestId: requestId });
     } catch (notificationError) {
-      notificationWarning = notificationError instanceof Error
-        ? `充值已入账，但频道通知发送失败：${notificationError.message}`
-        : '充值已入账，但频道通知发送失败。';
+      console.error('[wechat-boss-recharge] channel notification failed', notificationError);
+      notificationWarning = '充值已入账，但频道通知发送失败；请确认 Bot 已更新并完成数据库迁移后，用相同微信收款号重新提交以补发通知。';
     }
     return NextResponse.json({ ok: true, ...result, notificationWarning });
   } catch (error) {
