@@ -6,6 +6,15 @@ import { formatTransactionType } from '@/lib/transaction-display';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 const TRANSACTIONS_PER_PAGE = 10;
+const STAFF_OPERATED_TRANSACTION_TYPES = new Set([
+  '人工充值',
+  '微信人工充值',
+  '充值返现',
+  '公会成本',
+  'VIP福利',
+  '老板赔偿',
+  '其他',
+]);
 
 const formatDate = (value?: Date | string | null) => {
   if (!value) return '—';
@@ -29,6 +38,14 @@ const getAmountChangeMeta = (value: number | null, digits = 2) => {
     label: `${value > 0 ? '+' : '-'}${formatAmountDown(Math.abs(value), digits)}`,
     className: value > 0 ? 'text-emerald-500' : 'text-rose-500',
   };
+};
+
+const getTransactionNote = (
+  transaction: { typeOfTransaction: string; thirdPartydiscordId: string },
+  counterpartyDisplayNames: Map<string, string>,
+) => {
+  if (STAFF_OPERATED_TRANSACTION_TYPES.has(transaction.typeOfTransaction)) return '客服';
+  return counterpartyDisplayNames.get(transaction.thirdPartydiscordId.trim()) ?? transaction.thirdPartydiscordId ?? '—';
 };
 
 export async function DlmReadonlyProfile({ dlmId }: { dlmId: string }) {
@@ -172,7 +189,7 @@ export async function DlmReadonlyProfile({ dlmId }: { dlmId: string }) {
                         <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
                         <td className="py-4 pr-4 font-mono">{formatAmountDown(transaction.balanceAfter, digits)}</td>
                         <td className="py-4 pr-4 text-gray-500">
-                          {counterpartyDisplayNames.get(transaction.thirdPartydiscordId.trim()) ?? transaction.thirdPartydiscordId ?? '—'}
+                          {getTransactionNote(transaction, counterpartyDisplayNames)}
                         </td>
                       </tr>
                     );
