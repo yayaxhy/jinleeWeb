@@ -15,6 +15,8 @@ test('only configured Discord IDs have backoffice access', () => {
     '1552030874076315777',
     '308164614846414851',
     '734159747367829636',
+    // Manually approved administrator; keep the assertion aligned with admin.ts.
+    '1030152342919716904',
   ]);
 
   for (const discordId of ['example-discord-id', '123456789012345678']) {

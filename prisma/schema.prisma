@@ -220,6 +220,19 @@ enum AccountProvider {
   WECHAT_MINIPROGRAM
 }
 
+enum DlmAdminOperationType {
+  MANUAL_WECHAT_BOSS_CREATE
+  MANUAL_WECHAT_RECHARGE
+  DELEGATED_GIFT
+  DELEGATED_ORDER
+}
+
+enum DlmAdminOperationStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 /**
  * ---------------- Models ----------------
  */
@@ -287,6 +300,46 @@ model DlmUser {
   miniConversationsB      MiniConversation[]      @relation("MiniConversationUserB")
   miniMessages            MiniMessage[]           @relation("MiniMessageSender")
   openingBenefitClaims    OpeningBenefitClaim[]
+  manualWechatBoss        ManualWechatBoss?
+  adminOperations         DlmAdminOperation[]
+}
+
+/// A boss account created and maintained by staff for offline WeChat payments.
+/// It intentionally has no login secret: the DLM-ID portal is read-only.
+model ManualWechatBoss {
+  dlmId              String   @id
+  wechatContact      String   @unique
+  displayName        String?
+  createdByDiscordId String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  dlmUser DlmUser @relation(fields: [dlmId], references: [dlmId], onDelete: Cascade)
+
+  @@index([createdByDiscordId, createdAt])
+}
+
+/// Immutable intent/result trail for staff actions affecting a DLM-only boss.
+/// requestId makes calls from the admin UI idempotent.
+model DlmAdminOperation {
+  id                String                  @id @default(cuid())
+  requestId         String                  @unique
+  receiptReference  String?                 @unique
+  dlmId             String
+  operatorDiscordId String
+  type              DlmAdminOperationType
+  status            DlmAdminOperationStatus @default(PENDING)
+  details           Json?
+  result            Json?
+  failureReason     String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  dlmUser DlmUser @relation(fields: [dlmId], references: [dlmId], onDelete: Cascade)
+
+  @@index([dlmId, createdAt])
+  @@index([operatorDiscordId, createdAt])
+  @@index([type, status, createdAt])
 }
 
 model AccountBinding {
