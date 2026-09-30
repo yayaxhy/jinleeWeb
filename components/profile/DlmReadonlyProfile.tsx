@@ -42,7 +42,7 @@ const getAmountChangeMeta = (value: number | null, digits = 2) => {
 
 const getTransactionNote = (
   transaction: { typeOfTransaction: string; thirdPartydiscordId: string },
-  counterpartyDisplayNames: Map<string, string>,
+  counterpartyDisplayNames: Map<string, string | undefined>,
 ) => {
   if (STAFF_OPERATED_TRANSACTION_TYPES.has(transaction.typeOfTransaction)) return '客服';
   return counterpartyDisplayNames.get(transaction.thirdPartydiscordId.trim()) ?? transaction.thirdPartydiscordId ?? '—';
