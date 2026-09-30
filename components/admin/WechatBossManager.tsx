@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const GIFT_REASONS = ['公会成本', 'VIP福利', '老板赔偿', '充值返现', '其他'] as const;
+
 type Boss = {
   dlmId: string;
   wechatContact: string;
@@ -33,9 +35,11 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
   const router = useRouter();
   const [selectedDlmId, setSelectedDlmId] = useState(bosses[0]?.dlmId ?? '');
   const [message, setMessage] = useState<string | null>(null);
+  const [messagePlacement, setMessagePlacement] = useState<'global' | 'recharge'>('global');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [giftName, setGiftName] = useState(gifts[0]?.name ?? '');
+  const [giftReason, setGiftReason] = useState<(typeof GIFT_REASONS)[number]>('公会成本');
   const [peiwanId, setPeiwanId] = useState(String(peiwans[0]?.id ?? ''));
   const [quotationCode, setQuotationCode] = useState('Q1');
 
@@ -50,10 +54,11 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
     setQuotationCode(usableQuotes[0]?.[0] ?? '');
   }, [quotationCode, usableQuoteKey]);
 
-  const run = async (action: () => Promise<unknown>, success: string) => {
+  const run = async (action: () => Promise<unknown>, success: string, placement: 'global' | 'recharge' = 'global') => {
     setBusy(true);
     setError(null);
     setMessage(null);
+    setMessagePlacement(placement);
     try {
       const outcome = await action() as { notificationWarning?: unknown; replayed?: unknown; result?: { balanceAfter?: unknown; currentBalance?: unknown; rechargeId?: unknown } } | undefined;
       const notificationWarning = typeof outcome?.notificationWarning === 'string' ? outcome.notificationWarning : null;
@@ -98,10 +103,11 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         note: form.get('note'),
       }),
       '微信人工充值已入账，并已写入账户流水和管理员审计。',
+      'recharge',
     );
   };
 
-  const cashback = (event: FormEvent<HTMLFormElement>) => {
+  const giftBalance = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     void run(
@@ -109,10 +115,9 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         requestId: newRequestId(),
         dlmId: selectedDlmId,
         amount: form.get('amount'),
-        sourceRechargeId: form.get('sourceRechargeId'),
-        note: form.get('note'),
+        reason: giftReason,
       }),
-      '充值返现已发放：余额、个人流水、Expense 支出和管理员审计均已写入。',
+      '余额赠送已发放：余额、个人流水、Expense 支出和管理员审计均已写入。',
     );
   };
 
@@ -148,7 +153,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
 
   return (
     <div className="space-y-6">
-      {message ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
+      {message && messagePlacement === 'global' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
       {error ? <p className="rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-100">{error}</p> : null}
 
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
@@ -160,33 +165,36 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         </form>
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
-        <div><h2 className="text-xl font-semibold">选择老板</h2><p className="mt-1 text-sm text-white/60">以下仅列出客服创建的微信老板账户。</p></div>
-        <select value={selectedDlmId} onChange={(event) => setSelectedDlmId(event.target.value)} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
-          <option value="">请选择老板账户</option>
-          {bosses.map((boss) => <option key={boss.dlmId} value={boss.dlmId}>{boss.displayName || boss.wechatContact} · {boss.dlmId} · 余额 ¥{boss.totalBalance}</option>)}
-        </select>
-        {selectedDlmId ? <p className="text-xs text-white/50">请在核对老板身份和微信收款后再操作。所有操作均记录当前管理员 Discord ID。</p> : null}
-      </section>
+      <section className="rounded-3xl border border-white/10 bg-white/5 p-5 sm:p-6">
+        <div className="space-y-4 border-b border-white/10 pb-6">
+          <div><h2 className="text-xl font-semibold">选择老板</h2><p className="mt-1 text-sm text-white/60">以下仅列出客服创建的微信老板账户。</p></div>
+          <select value={selectedDlmId} onChange={(event) => setSelectedDlmId(event.target.value)} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
+            <option value="">请选择老板账户</option>
+            {bosses.map((boss) => <option key={boss.dlmId} value={boss.dlmId}>{boss.displayName || boss.wechatContact} · {boss.dlmId} · 余额 ¥{boss.totalBalance}</option>)}
+          </select>
+          {selectedDlmId ? <p className="text-xs text-white/50">请在核对老板身份和微信收款后再操作。所有操作均记录当前管理员 Discord ID。</p> : null}
+        </div>
 
-      {selectedDlmId ? <div className="grid gap-6 lg:grid-cols-2">
-        <form onSubmit={recharge} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+        {selectedDlmId ? <div className="grid gap-x-8 gap-y-8 pt-6 lg:grid-cols-2">
+        <form onSubmit={recharge} className="space-y-3 lg:border-r lg:border-white/10 lg:pr-8">
           <div><h2 className="text-xl font-semibold">微信人工充值</h2><p className="mt-1 text-sm text-white/60">金额和微信收款账号为必填项；同一收款账号可以有多笔充值。系统会生成唯一充值记录编号，供核账和返现使用。</p></div>
           <input name="amount" required inputMode="decimal" placeholder="金额，例如 100.00" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <input name="receiptAccount" required placeholder="微信收款账号，例如 iria支付宝" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <textarea name="note" placeholder="备注（可选）" className="min-h-20 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认入账</button>
+          {message && messagePlacement === 'recharge' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
         </form>
 
-        <form onSubmit={cashback} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <div><h2 className="text-xl font-semibold">充值返现</h2><p className="mt-1 text-sm text-white/60">参考 /gift：增加余额并记录 Expense。填写充值时生成的记录编号；每笔原充值只能返现一次。</p></div>
-          <input name="amount" required inputMode="decimal" placeholder="返现金额，例如 10.00" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <input name="sourceRechargeId" required placeholder="原充值记录编号，例如 C5223" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <textarea name="note" placeholder="返现备注（可选）" className="min-h-20 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认发放返现</button>
+        <form onSubmit={giftBalance} className="space-y-3">
+          <div><h2 className="text-xl font-semibold">余额赠送</h2><p className="mt-1 text-sm text-white/60">与 /gift 一致：增加余额，并按所选原因记录 Expense 和个人流水。</p></div>
+          <input name="amount" required inputMode="decimal" placeholder="赠送金额，例如 10.00" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <select value={giftReason} onChange={(event) => setGiftReason(event.target.value as (typeof GIFT_REASONS)[number])} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
+            {GIFT_REASONS.map((reason) => <option key={reason} value={reason}>{reason}</option>)}
+          </select>
+          <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认赠送余额</button>
         </form>
 
-        <form onSubmit={delegatedGift} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+        <form onSubmit={delegatedGift} className="space-y-3 border-t border-white/10 pt-8 lg:border-r lg:pr-8">
           <div><h2 className="text-xl font-semibold">代打赏</h2><p className="mt-1 text-sm text-white/60">直接走 Bot 的真实礼物、余额与积分账本。</p></div>
           <input name="peiwanId" required type="number" min="1" step="1" inputMode="numeric" placeholder="陪玩数字 ID" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <select value={giftName} onChange={(event) => setGiftName(event.target.value)} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
@@ -196,7 +204,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
           <button disabled={busy || !gifts.length} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认代打赏</button>
         </form>
 
-        <form onSubmit={delegatedOrder} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3 lg:col-span-2">
+        <form onSubmit={delegatedOrder} className="space-y-3 border-t border-white/10 pt-8 lg:col-span-2">
           <div><h2 className="text-xl font-semibold">代点单</h2><p className="mt-1 text-sm text-white/60">创建真实待接订单，并向选定陪玩发送接单邀请；订单实际结算仍按老板 DLM 钱包执行。</p></div>
           <div className="grid gap-3 md:grid-cols-2">
             <select value={peiwanId} onChange={(event) => setPeiwanId(event.target.value)} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
@@ -210,6 +218,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
           <button disabled={busy || !peiwans.length || !usableQuotes.length} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">创建代点订单</button>
         </form>
       </div> : null}
+      </section>
 
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
         <h2 className="text-xl font-semibold">微信老板账户</h2>

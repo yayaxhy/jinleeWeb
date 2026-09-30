@@ -19,6 +19,23 @@ const asPositiveMoney = (value: unknown) => {
 
 const cleanText = (value: unknown, maxLength: number) => String(value ?? '').trim().slice(0, maxLength);
 
+export const MANUAL_WECHAT_GIFT_REASONS = [
+  '公会成本',
+  'VIP福利',
+  '老板赔偿',
+  '充值返现',
+  '其他',
+] as const;
+
+type ManualWechatGiftReason = typeof MANUAL_WECHAT_GIFT_REASONS[number];
+
+const asManualWechatGiftReason = (value: unknown): ManualWechatGiftReason | null => {
+  const reason = cleanText(value, 40);
+  return MANUAL_WECHAT_GIFT_REASONS.includes(reason as ManualWechatGiftReason)
+    ? reason as ManualWechatGiftReason
+    : null;
+};
+
 const withCurrentBalance = async <T extends { dlmId?: string }>(result: T, fallbackDlmId: string) => {
   const dlmId = result.dlmId ?? fallbackDlmId;
   const user = await prisma.dlmUser.findUnique({
@@ -208,22 +225,20 @@ export const rechargeManualWechatBoss = async (params: {
   }
 };
 
-export const cashbackManualWechatBossRecharge = async (params: {
+export const giftManualWechatBoss = async (params: {
   requestId: string;
   operatorDiscordId: string;
   dlmId: string;
   amount: unknown;
-  sourceRechargeId?: string | null;
-  note?: string | null;
+  reason: unknown;
 }) => {
   const requestId = cleanText(params.requestId, 120);
   const operatorDiscordId = cleanText(params.operatorDiscordId, 32);
   const dlmId = cleanText(params.dlmId, 100);
-  const sourceRechargeId = cleanText(params.sourceRechargeId, 120);
-  const note = cleanText(params.note, 500) || null;
+  const reason = asManualWechatGiftReason(params.reason);
   const amount = asPositiveMoney(params.amount);
-  if (!requestId || !operatorDiscordId || !dlmId || !amount || !sourceRechargeId) {
-    throw new Error('请填写有效返现金额和原充值记录编号。');
+  if (!requestId || !operatorDiscordId || !dlmId || !amount || !reason) {
+    throw new Error('请填写有效赠送金额和原因。');
   }
 
   const previous = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });
@@ -236,24 +251,6 @@ export const cashbackManualWechatBossRecharge = async (params: {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const sourceRecharge = await tx.dlmAdminOperation.findFirst({
-        where: {
-          dlmId,
-          type: DlmAdminOperationType.MANUAL_WECHAT_RECHARGE,
-          status: DlmAdminOperationStatus.COMPLETED,
-          result: { path: ['rechargeId'], equals: sourceRechargeId },
-        },
-        select: { id: true, dlmId: true, type: true, status: true },
-      });
-      if (
-        !sourceRecharge ||
-        sourceRecharge.dlmId !== dlmId ||
-        sourceRecharge.type !== DlmAdminOperationType.MANUAL_WECHAT_RECHARGE ||
-        sourceRecharge.status !== DlmAdminOperationStatus.COMPLETED
-      ) {
-        throw new Error('未找到该老板已完成的原充值记录编号。');
-      }
-
       const boss = await tx.manualWechatBoss.findUnique({
         where: { dlmId },
         include: { dlmUser: { select: { discordUserId: true } } },
@@ -280,7 +277,7 @@ export const cashbackManualWechatBossRecharge = async (params: {
         data: {
           amount,
           operatorId: operatorDiscordId,
-          reason: '充值返现',
+          reason,
         },
         select: { id: true },
       });
@@ -292,7 +289,7 @@ export const cashbackManualWechatBossRecharge = async (params: {
           balanceBefore: before.totalBalance,
           amountChange: amount,
           balanceAfter: after.totalBalance,
-          typeOfTransaction: '充值返现',
+          typeOfTransaction: reason,
         },
         select: { transactionId: true },
       });
@@ -306,12 +303,11 @@ export const cashbackManualWechatBossRecharge = async (params: {
       await tx.dlmAdminOperation.create({
         data: {
           requestId,
-          sourceOperationId: sourceRecharge.id,
           dlmId,
           operatorDiscordId,
           type: DlmAdminOperationType.RECHARGE_CASHBACK,
           status: DlmAdminOperationStatus.COMPLETED,
-          details: { sourceRechargeId, note } as Prisma.InputJsonValue,
+          details: { reason } as Prisma.InputJsonValue,
           result: resultPayload as Prisma.InputJsonValue,
         },
       });
@@ -320,27 +316,15 @@ export const cashbackManualWechatBossRecharge = async (params: {
     return { result, replayed: false };
   } catch (error: any) {
     if (error?.code === 'P2002') {
-      const sourceRecharge = await prisma.dlmAdminOperation.findFirst({
-        where: {
-          dlmId,
-          type: DlmAdminOperationType.MANUAL_WECHAT_RECHARGE,
-          status: DlmAdminOperationStatus.COMPLETED,
-          result: { path: ['rechargeId'], equals: sourceRechargeId },
-        },
-        select: { id: true, dlmId: true },
-      });
-      const existingCashback = sourceRecharge
-        ? await prisma.dlmAdminOperation.findUnique({ where: { sourceOperationId: sourceRecharge.id } })
-        : null;
+      const existingGift = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });
       if (
-        existingCashback?.type === DlmAdminOperationType.RECHARGE_CASHBACK &&
-        existingCashback.status === DlmAdminOperationStatus.COMPLETED &&
-        existingCashback.result &&
-        existingCashback.dlmId === dlmId
+        existingGift?.type === DlmAdminOperationType.RECHARGE_CASHBACK &&
+        existingGift.status === DlmAdminOperationStatus.COMPLETED &&
+        existingGift.result &&
+        existingGift.dlmId === dlmId
       ) {
-        return { result: existingCashback.result as { dlmId?: string; amount?: string }, replayed: true };
+        return { result: existingGift.result as { dlmId?: string; amount?: string }, replayed: true };
       }
-      throw new Error('该原充值记录已经发放过充值返现，未重复加余额。');
     }
     throw error;
   }
