@@ -42,6 +42,10 @@ import {
 } from '@/lib/admin/lottery-fusion-revenue';
 
 const DEFAULT_CAPITAL_AMOUNT = 120000;
+// The original ¥120,000 injection is historical only. Starting with the
+// September 2026 report, both the asset-side invested capital and the
+// equity-side shareholder contribution are presented as zero.
+const CAPITAL_ZERO_FROM = { year: 2026, month: 9 };
 const REPORT_STORAGE_DIR =
   process.env.ADMIN_REVENUE_REPORT_DIR || path.join(process.cwd(), 'storage', 'admin-revenue-files');
 const ADJUSTMENTS_FILE_PATH =
@@ -970,6 +974,19 @@ const getLastDayOfMonth = (year: number, month: number) =>
 
 const getMonthLabel = (year: number, month: number) => `${month}月`;
 
+const isCapitalZeroReport = (year: number, month: number) =>
+  year > CAPITAL_ZERO_FROM.year ||
+  (year === CAPITAL_ZERO_FROM.year && month >= CAPITAL_ZERO_FROM.month);
+
+const getCapitalAmountForReport = (
+  year: number,
+  month: number,
+  adjustmentAmount?: number,
+) => {
+  if (isCapitalZeroReport(year, month)) return 0;
+  return adjustmentAmount ?? DEFAULT_CAPITAL_AMOUNT;
+};
+
 const buildIncomeStatementRows = (
   data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>,
   adjustments: MonthFinancialAdjustments,
@@ -1135,7 +1152,10 @@ function buildFinancialStatementWorkbook(params: {
     };
   }
 
-  const capitalAmount = adjustments.capitalAmount ?? DEFAULT_CAPITAL_AMOUNT;
+  const capitalAmount = getCapitalAmountForReport(year, month, adjustments.capitalAmount);
+  const capitalDescription = isCapitalZeroReport(year, month)
+    ? '自 2026 年 9 月起不计入'
+    : '初始注资保留';
   const priorProfitTotal = adjustments.priorProfitRows.reduce(
     (sum, row) => sum.add(dec(row.amount)),
     new Prisma.Decimal(0),
@@ -1172,7 +1192,7 @@ function buildFinancialStatementWorkbook(params: {
       amount: toNumber(netProfit),
       description: '分红',
     },
-    { item: '投入资本', category: '', amount: capitalAmount, description: '' },
+    { item: '投入资本', category: '', amount: capitalAmount, description: capitalDescription },
     ...adjustments.assetRows,
   ];
   for (const row of assetRows) {
@@ -1231,7 +1251,7 @@ function buildFinancialStatementWorkbook(params: {
   styleTotalRow(equitySectionRow);
   const equityStartRow = equitySectionRow.number + 1;
   const equityRows: BalanceAdjustmentRow[] = [
-    { item: '实际资本', category: '股东投入', amount: capitalAmount, description: '初始注资保留' },
+    { item: '实际资本', category: '股东投入', amount: capitalAmount, description: capitalDescription },
     ...adjustments.equityRows,
   ];
   for (const row of equityRows) {
@@ -1533,7 +1553,10 @@ export async function getMonthlyFinancialReportPreview(monthKey: string) {
   const incomeTotal = incomeRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0));
   const expenseTotal = expenseRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0));
   const netProfit = incomeTotal.sub(expenseTotal);
-  const capitalAmount = adjustments.capitalAmount ?? DEFAULT_CAPITAL_AMOUNT;
+  const capitalAmount = getCapitalAmountForReport(target.year, target.month, adjustments.capitalAmount);
+  const capitalDescription = isCapitalZeroReport(target.year, target.month)
+    ? '自 2026 年 9 月起不计入'
+    : '初始注资保留';
   const priorProfitTotal = adjustments.priorProfitRows.reduce(
     (sum, row) => sum.add(dec(row.amount)),
     new Prisma.Decimal(0),
@@ -1542,7 +1565,7 @@ export async function getMonthlyFinancialReportPreview(monthKey: string) {
     { item: '总用户余额', amount: data.totals.memberBalanceTotal.toString() },
     ...adjustments.priorProfitRows.map((row) => ({ item: row.label, note: row.note, amount: String(row.amount) })),
     { item: `${getMonthLabel(target.year, target.month)}盈利`, note: '分红', amount: netProfit.toString() },
-    { item: '投入资本', amount: String(capitalAmount) },
+    { item: '投入资本', note: capitalDescription, amount: String(capitalAmount) },
     ...adjustments.assetRows.map((row) => ({
       item: row.item,
       category: row.category,
@@ -1575,7 +1598,7 @@ export async function getMonthlyFinancialReportPreview(monthKey: string) {
     adjustments.liabilityRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0)),
   );
   const equityRows: FinancialReportPreviewRow[] = [
-    { item: '实际资本', category: '股东投入', note: '初始注资保留', amount: String(capitalAmount) },
+    { item: '实际资本', category: '股东投入', note: capitalDescription, amount: String(capitalAmount) },
     ...adjustments.equityRows.map((row) => ({
       item: row.item,
       category: row.category,
