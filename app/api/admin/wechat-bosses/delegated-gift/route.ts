@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const data = await postInternalBot<Record<string, unknown>>('/internal/admin/delegated-gift', {
       requestId: String(body?.requestId ?? ''),
       dlmId: String(body?.dlmId ?? ''),
-      receiverId: String(body?.receiverId ?? ''),
+      peiwanId: Number(body?.peiwanId),
       giftName: String(body?.giftName ?? ''),
       quantity: Number(body?.quantity),
       operatorDiscordId: session.discordId,

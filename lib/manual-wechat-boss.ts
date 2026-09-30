@@ -93,7 +93,7 @@ export const rechargeManualWechatBoss = async (params: {
   const note = cleanText(params.note, 500) || null;
   const amount = asPositiveMoney(params.amount);
   if (!requestId || !operatorDiscordId || !dlmId || !amount || !receiptReference) {
-    throw new Error('请填写有效金额和微信收款单号/备注号。');
+    throw new Error('请填写有效金额和微信收款号。');
   }
 
   const previous = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });

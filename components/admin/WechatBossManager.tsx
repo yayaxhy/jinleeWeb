@@ -55,8 +55,9 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
     setError(null);
     setMessage(null);
     try {
-      await action();
-      setMessage(success);
+      const outcome = await action() as { notificationWarning?: unknown } | undefined;
+      const notificationWarning = typeof outcome?.notificationWarning === 'string' ? outcome.notificationWarning : null;
+      setMessage(notificationWarning ? `${success} ${notificationWarning}` : success);
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '操作失败，请稍后重试。');
@@ -100,7 +101,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
       () => postJson('/api/admin/wechat-bosses/delegated-gift', {
         requestId: newRequestId(),
         dlmId: selectedDlmId,
-        receiverId: form.get('receiverId'),
+        peiwanId: form.get('peiwanId'),
         giftName,
         quantity: form.get('quantity'),
       }),
@@ -148,16 +149,16 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
 
       {selectedDlmId ? <div className="grid gap-6 lg:grid-cols-2">
         <form onSubmit={recharge} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <div><h2 className="text-xl font-semibold">微信人工充值</h2><p className="mt-1 text-sm text-white/60">必须填写唯一收款单号或客服收款备注，防止重复入账。</p></div>
+          <div><h2 className="text-xl font-semibold">微信人工充值</h2><p className="mt-1 text-sm text-white/60">金额和唯一微信收款号为必填项，用于防止重复入账；备注可选。</p></div>
           <input name="amount" required inputMode="decimal" placeholder="金额，例如 100.00" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <input name="receiptReference" required placeholder="微信收款单号 / 唯一备注号" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <input name="receiptReference" required placeholder="微信收款号" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <textarea name="note" placeholder="备注（可选）" className="min-h-20 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认入账</button>
         </form>
 
         <form onSubmit={delegatedGift} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div><h2 className="text-xl font-semibold">代打赏</h2><p className="mt-1 text-sm text-white/60">直接走 Bot 的真实礼物、余额与积分账本。</p></div>
-          <input name="receiverId" required placeholder="陪玩 Discord ID" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <input name="peiwanId" required type="number" min="1" step="1" inputMode="numeric" placeholder="陪玩数字 ID" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <select value={giftName} onChange={(event) => setGiftName(event.target.value)} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
             {gifts.map((gift) => <option key={gift.name} value={gift.name}>{gift.name} · ¥{gift.price}</option>)}
           </select>
