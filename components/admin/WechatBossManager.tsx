@@ -204,7 +204,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
           <button disabled={busy || !gifts.length} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认代打赏</button>
         </form>
 
-        <form onSubmit={delegatedOrder} className="space-y-3 border-t border-white/10 pt-8 lg:col-span-2">
+        <form onSubmit={delegatedOrder} className="space-y-3 border-t border-white/10 pt-8 lg:col-start-1 lg:border-r lg:border-white/10 lg:pr-8">
           <div><h2 className="text-xl font-semibold">代点单</h2><p className="mt-1 text-sm text-white/60">创建真实待接订单，并向选定陪玩发送接单邀请；订单实际结算仍按老板 DLM 钱包执行。</p></div>
           <div className="grid gap-3 md:grid-cols-2">
             <select value={peiwanId} onChange={(event) => setPeiwanId(event.target.value)} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
