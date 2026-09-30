@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       operatorDiscordId: session.discordId,
       dlmId: String(body?.dlmId ?? ''),
       amount: body?.amount,
-      sourceReceiptReference: typeof body?.sourceReceiptReference === 'string' ? body.sourceReceiptReference : null,
+      sourceRechargeId: typeof body?.sourceRechargeId === 'string' ? body.sourceRechargeId : null,
       note: typeof body?.note === 'string' ? body.note : null,
     });
     return NextResponse.json({ ok: true, ...result });

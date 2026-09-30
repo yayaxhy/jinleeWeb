@@ -14,7 +14,7 @@ type Boss = {
 
 type Gift = { name: string; price: string };
 type Peiwan = { id: number; label: string; prices: Partial<Record<string, string>> };
-type Operation = { id: string; dlmId: string; type: string; status: string; operatorDiscordId: string; createdAt: string; details: string };
+type Operation = { id: string; dlmId: string; type: string; status: string; operatorDiscordId: string; createdAt: string; details: string; result: string };
 
 const newRequestId = () => globalThis.crypto.randomUUID();
 
@@ -55,13 +55,15 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
     setError(null);
     setMessage(null);
     try {
-      const outcome = await action() as { notificationWarning?: unknown; replayed?: unknown; result?: { balanceAfter?: unknown } } | undefined;
+      const outcome = await action() as { notificationWarning?: unknown; replayed?: unknown; result?: { balanceAfter?: unknown; currentBalance?: unknown; rechargeId?: unknown } } | undefined;
       const notificationWarning = typeof outcome?.notificationWarning === 'string' ? outcome.notificationWarning : null;
       const replayed = outcome?.replayed === true;
       const balanceAfter = typeof outcome?.result?.balanceAfter === 'string' ? outcome.result.balanceAfter : null;
+      const currentBalance = typeof outcome?.result?.currentBalance === 'string' ? outcome.result.currentBalance : balanceAfter;
+      const rechargeId = typeof outcome?.result?.rechargeId === 'string' ? outcome.result.rechargeId : null;
       const successMessage = replayed
-        ? `检测到相同微信收款号：此前已入账，本次未重复增加余额${balanceAfter ? `。当前余额：${balanceAfter} 点点券` : '。'}`
-        : `${success}${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}`;
+        ? `该次提交此前已完成，本次未重复增加余额${currentBalance ? `。当前余额：${currentBalance} 点点券` : '。'}`
+        : `${success}${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}${rechargeId ? ` 充值记录编号：${rechargeId}。` : ''}`;
       setMessage(notificationWarning ? `${successMessage} ${notificationWarning}` : successMessage);
       router.refresh();
     } catch (cause) {
@@ -92,7 +94,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         requestId: newRequestId(),
         dlmId: selectedDlmId,
         amount: form.get('amount'),
-        receiptReference: form.get('receiptReference'),
+        receiptAccount: form.get('receiptAccount'),
         note: form.get('note'),
       }),
       '微信人工充值已入账，并已写入账户流水和管理员审计。',
@@ -107,7 +109,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         requestId: newRequestId(),
         dlmId: selectedDlmId,
         amount: form.get('amount'),
-        sourceReceiptReference: form.get('sourceReceiptReference'),
+        sourceRechargeId: form.get('sourceRechargeId'),
         note: form.get('note'),
       }),
       '充值返现已发放：余额、个人流水、Expense 支出和管理员审计均已写入。',
@@ -169,17 +171,17 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
 
       {selectedDlmId ? <div className="grid gap-6 lg:grid-cols-2">
         <form onSubmit={recharge} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <div><h2 className="text-xl font-semibold">微信人工充值</h2><p className="mt-1 text-sm text-white/60">金额和唯一微信收款号为必填项，用于防止重复入账；备注可选。</p></div>
+          <div><h2 className="text-xl font-semibold">微信人工充值</h2><p className="mt-1 text-sm text-white/60">金额和微信收款账号为必填项；同一收款账号可以有多笔充值。系统会生成唯一充值记录编号，供核账和返现使用。</p></div>
           <input name="amount" required inputMode="decimal" placeholder="金额，例如 100.00" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <input name="receiptReference" required placeholder="微信收款号" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <input name="receiptAccount" required placeholder="微信收款账号，例如 iria支付宝" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <textarea name="note" placeholder="备注（可选）" className="min-h-20 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认入账</button>
         </form>
 
         <form onSubmit={cashback} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <div><h2 className="text-xl font-semibold">充值返现</h2><p className="mt-1 text-sm text-white/60">参考 /gift：增加余额并记录 Expense。需关联一笔已完成的原微信充值，且每笔原充值只能返现一次。</p></div>
+          <div><h2 className="text-xl font-semibold">充值返现</h2><p className="mt-1 text-sm text-white/60">参考 /gift：增加余额并记录 Expense。填写充值时生成的记录编号；每笔原充值只能返现一次。</p></div>
           <input name="amount" required inputMode="decimal" placeholder="返现金额，例如 10.00" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <input name="sourceReceiptReference" required placeholder="原微信收款号" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <input name="sourceRechargeId" required placeholder="原充值记录编号，例如 C5223" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <textarea name="note" placeholder="返现备注（可选）" className="min-h-20 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认发放返现</button>
         </form>
@@ -216,7 +218,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
 
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
         <h2 className="text-xl font-semibold">最近管理员操作审计</h2>
-        <div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="border-b border-white/10 text-xs text-white/50"><tr><th className="px-3 py-3">时间</th><th className="px-3 py-3">DLM ID</th><th className="px-3 py-3">操作</th><th className="px-3 py-3">管理员</th><th className="px-3 py-3">状态 / 明细</th></tr></thead><tbody>{operations.map((operation) => <tr key={operation.id} className="border-b border-white/5"><td className="whitespace-nowrap px-3 py-3 text-white/55">{new Date(operation.createdAt).toLocaleString('zh-CN', { hour12: false })}</td><td className="px-3 py-3 font-mono text-xs text-[#c4b5fd]">{operation.dlmId}</td><td className="px-3 py-3">{operation.type}</td><td className="px-3 py-3 font-mono text-xs">{operation.operatorDiscordId}</td><td className="px-3 py-3"><span className="text-white/80">{operation.status}</span><p className="mt-1 max-w-md break-all font-mono text-xs text-white/45">{operation.details}</p></td></tr>)}{!operations.length ? <tr><td colSpan={5} className="px-3 py-8 text-center text-white/45">暂无管理员操作记录</td></tr> : null}</tbody></table></div>
+        <div className="mt-4 overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="border-b border-white/10 text-xs text-white/50"><tr><th className="px-3 py-3">时间</th><th className="px-3 py-3">DLM ID</th><th className="px-3 py-3">操作</th><th className="px-3 py-3">管理员</th><th className="px-3 py-3">状态 / 明细 / 结果</th></tr></thead><tbody>{operations.map((operation) => <tr key={operation.id} className="border-b border-white/5"><td className="whitespace-nowrap px-3 py-3 text-white/55">{new Date(operation.createdAt).toLocaleString('zh-CN', { hour12: false })}</td><td className="px-3 py-3 font-mono text-xs text-[#c4b5fd]">{operation.dlmId}</td><td className="px-3 py-3">{operation.type}</td><td className="px-3 py-3 font-mono text-xs">{operation.operatorDiscordId}</td><td className="px-3 py-3"><span className="text-white/80">{operation.status}</span><p className="mt-1 max-w-md break-all font-mono text-xs text-white/45">{operation.details}</p><p className="mt-1 max-w-md break-all font-mono text-xs text-[#c4b5fd]/70">{operation.result}</p></td></tr>)}{!operations.length ? <tr><td colSpan={5} className="px-3 py-8 text-center text-white/45">暂无管理员操作记录</td></tr> : null}</tbody></table></div>
       </section>
     </div>
   );

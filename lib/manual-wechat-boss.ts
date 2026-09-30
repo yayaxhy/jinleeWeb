@@ -19,6 +19,18 @@ const asPositiveMoney = (value: unknown) => {
 
 const cleanText = (value: unknown, maxLength: number) => String(value ?? '').trim().slice(0, maxLength);
 
+const withCurrentBalance = async <T extends { dlmId?: string }>(result: T, fallbackDlmId: string) => {
+  const dlmId = result.dlmId ?? fallbackDlmId;
+  const user = await prisma.dlmUser.findUnique({
+    where: { dlmId },
+    select: { totalBalance: true },
+  });
+  return {
+    ...result,
+    currentBalance: user?.totalBalance.toFixed(2) ?? null,
+  };
+};
+
 export const createManualWechatBoss = async (params: {
   requestId: string;
   operatorDiscordId: string;
@@ -83,27 +95,27 @@ export const rechargeManualWechatBoss = async (params: {
   operatorDiscordId: string;
   dlmId: string;
   amount: unknown;
-  receiptReference?: string | null;
+  receiptAccount?: string | null;
   note?: string | null;
 }) => {
   const requestId = cleanText(params.requestId, 120);
   const operatorDiscordId = cleanText(params.operatorDiscordId, 32);
   const dlmId = cleanText(params.dlmId, 100);
-  const receiptReference = cleanText(params.receiptReference, 120);
+  const receiptAccount = cleanText(params.receiptAccount, 120);
   const note = cleanText(params.note, 500) || null;
   const amount = asPositiveMoney(params.amount);
-  if (!requestId || !operatorDiscordId || !dlmId || !amount || !receiptReference) {
-    throw new Error('请填写有效金额和微信收款号。');
+  if (!requestId || !operatorDiscordId || !dlmId || !amount || !receiptAccount) {
+    throw new Error('请填写有效金额和微信收款账号。');
   }
 
   const previous = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });
   if (previous) {
     if (previous.status === DlmAdminOperationStatus.COMPLETED && previous.result) {
       return {
-        result: {
+        result: await withCurrentBalance({
           ...(previous.result as { dlmId?: string; amount?: string }),
           rechargeRequestId: previous.requestId,
-        },
+        }, dlmId),
         replayed: true,
       };
     }
@@ -163,12 +175,14 @@ export const rechargeManualWechatBoss = async (params: {
       await tx.dlmAdminOperation.create({
         data: {
           requestId,
-          receiptReference,
+          // The persisted column retains its legacy name, but its business
+          // meaning is a receiving account and it may repeat across payments.
+          receiptReference: receiptAccount,
           dlmId,
           operatorDiscordId,
           type: DlmAdminOperationType.MANUAL_WECHAT_RECHARGE,
           status: DlmAdminOperationStatus.COMPLETED,
-          details: { amount: amount.toFixed(2), receiptReference, note } as Prisma.InputJsonValue,
+          details: { amount: amount.toFixed(2), receiptAccount, note } as Prisma.InputJsonValue,
           result: resultPayload as Prisma.InputJsonValue,
         },
       });
@@ -176,23 +190,19 @@ export const rechargeManualWechatBoss = async (params: {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     return { result, replayed: false };
   } catch (error: any) {
+    // The request ID is the idempotency key for a single staff action. This
+    // also covers a double-click that reaches the database concurrently.
     if (error?.code === 'P2002') {
-      const existingReceipt = await prisma.dlmAdminOperation.findUnique({ where: { receiptReference } });
-      if (
-        existingReceipt?.type === DlmAdminOperationType.MANUAL_WECHAT_RECHARGE &&
-        existingReceipt.status === DlmAdminOperationStatus.COMPLETED &&
-        existingReceipt.result &&
-        existingReceipt.dlmId === dlmId
-      ) {
+      const racedRequest = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });
+      if (racedRequest?.status === DlmAdminOperationStatus.COMPLETED && racedRequest.result) {
         return {
-          result: {
-            ...(existingReceipt.result as { dlmId?: string; amount?: string }),
-            rechargeRequestId: existingReceipt.requestId,
-          },
+          result: await withCurrentBalance({
+            ...(racedRequest.result as { dlmId?: string; amount?: string }),
+            rechargeRequestId: racedRequest.requestId,
+          }, dlmId),
           replayed: true,
         };
       }
-      throw new Error('该收款单号/操作请求已使用，未重复入账。');
     }
     throw error;
   }
@@ -203,17 +213,17 @@ export const cashbackManualWechatBossRecharge = async (params: {
   operatorDiscordId: string;
   dlmId: string;
   amount: unknown;
-  sourceReceiptReference?: string | null;
+  sourceRechargeId?: string | null;
   note?: string | null;
 }) => {
   const requestId = cleanText(params.requestId, 120);
   const operatorDiscordId = cleanText(params.operatorDiscordId, 32);
   const dlmId = cleanText(params.dlmId, 100);
-  const sourceReceiptReference = cleanText(params.sourceReceiptReference, 120);
+  const sourceRechargeId = cleanText(params.sourceRechargeId, 120);
   const note = cleanText(params.note, 500) || null;
   const amount = asPositiveMoney(params.amount);
-  if (!requestId || !operatorDiscordId || !dlmId || !amount || !sourceReceiptReference) {
-    throw new Error('请填写有效返现金额和原微信收款号。');
+  if (!requestId || !operatorDiscordId || !dlmId || !amount || !sourceRechargeId) {
+    throw new Error('请填写有效返现金额和原充值记录编号。');
   }
 
   const previous = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });
@@ -226,8 +236,13 @@ export const cashbackManualWechatBossRecharge = async (params: {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const sourceRecharge = await tx.dlmAdminOperation.findUnique({
-        where: { receiptReference: sourceReceiptReference },
+      const sourceRecharge = await tx.dlmAdminOperation.findFirst({
+        where: {
+          dlmId,
+          type: DlmAdminOperationType.MANUAL_WECHAT_RECHARGE,
+          status: DlmAdminOperationStatus.COMPLETED,
+          result: { path: ['rechargeId'], equals: sourceRechargeId },
+        },
         select: { id: true, dlmId: true, type: true, status: true },
       });
       if (
@@ -236,7 +251,7 @@ export const cashbackManualWechatBossRecharge = async (params: {
         sourceRecharge.type !== DlmAdminOperationType.MANUAL_WECHAT_RECHARGE ||
         sourceRecharge.status !== DlmAdminOperationStatus.COMPLETED
       ) {
-        throw new Error('未找到该老板已完成的原微信充值记录。');
+        throw new Error('未找到该老板已完成的原充值记录编号。');
       }
 
       const boss = await tx.manualWechatBoss.findUnique({
@@ -296,7 +311,7 @@ export const cashbackManualWechatBossRecharge = async (params: {
           operatorDiscordId,
           type: DlmAdminOperationType.RECHARGE_CASHBACK,
           status: DlmAdminOperationStatus.COMPLETED,
-          details: { sourceReceiptReference, note } as Prisma.InputJsonValue,
+          details: { sourceRechargeId, note } as Prisma.InputJsonValue,
           result: resultPayload as Prisma.InputJsonValue,
         },
       });
@@ -305,8 +320,13 @@ export const cashbackManualWechatBossRecharge = async (params: {
     return { result, replayed: false };
   } catch (error: any) {
     if (error?.code === 'P2002') {
-      const sourceRecharge = await prisma.dlmAdminOperation.findUnique({
-        where: { receiptReference: sourceReceiptReference },
+      const sourceRecharge = await prisma.dlmAdminOperation.findFirst({
+        where: {
+          dlmId,
+          type: DlmAdminOperationType.MANUAL_WECHAT_RECHARGE,
+          status: DlmAdminOperationStatus.COMPLETED,
+          result: { path: ['rechargeId'], equals: sourceRechargeId },
+        },
         select: { id: true, dlmId: true },
       });
       const existingCashback = sourceRecharge
@@ -320,7 +340,7 @@ export const cashbackManualWechatBossRecharge = async (params: {
       ) {
         return { result: existingCashback.result as { dlmId?: string; amount?: string }, replayed: true };
       }
-      throw new Error('该原微信收款号已经发放过充值返现，未重复加余额。');
+      throw new Error('该原充值记录已经发放过充值返现，未重复加余额。');
     }
     throw error;
   }

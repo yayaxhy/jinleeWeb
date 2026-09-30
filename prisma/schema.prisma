@@ -326,7 +326,9 @@ model ManualWechatBoss {
 model DlmAdminOperation {
   id                String                  @id @default(cuid())
   requestId         String                  @unique
-  receiptReference  String?                 @unique
+  // Manual WeChat recharge receiving account (for example, "iria支付宝").
+  // Accounts can receive many payments, so this is deliberately not unique.
+  receiptReference  String?
   sourceOperationId String?                 @unique
   dlmId             String
   operatorDiscordId String
@@ -341,6 +343,7 @@ model DlmAdminOperation {
   dlmUser DlmUser @relation(fields: [dlmId], references: [dlmId], onDelete: Cascade)
 
   @@index([dlmId, createdAt])
+  @@index([receiptReference, createdAt])
   @@index([operatorDiscordId, createdAt])
   @@index([type, status, createdAt])
 }

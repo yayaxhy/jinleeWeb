@@ -28,7 +28,7 @@ export default async function WechatBossesAdminPage() {
     prisma.dlmAdminOperation.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
-      select: { id: true, dlmId: true, type: true, status: true, operatorDiscordId: true, details: true, createdAt: true },
+      select: { id: true, dlmId: true, type: true, status: true, operatorDiscordId: true, details: true, result: true, createdAt: true },
     }),
   ]);
 
@@ -48,7 +48,7 @@ export default async function WechatBossesAdminPage() {
           bosses={bosses.map((boss) => ({ dlmId: boss.dlmId, wechatContact: boss.wechatContact, displayName: boss.displayName, totalBalance: boss.dlmUser.totalBalance.toFixed(2), loyaltyPoints: boss.dlmUser.loyaltyPoints.toFixed(2), createdAt: boss.createdAt.toISOString() }))}
           gifts={gifts.map((gift) => ({ name: gift.GiftName, price: gift.price?.toFixed(2) ?? '0.00' }))}
           peiwans={peiwans.map((peiwan) => ({ id: peiwan.PEIWANID, label: `陪玩 ${peiwan.PEIWANID} · ${peiwan.discordUserId}`, prices: Object.fromEntries(quotationFields.map(([code, field]) => [code, peiwan[field]?.toFixed(2) ?? ''])) }))}
-          operations={operations.map((operation) => ({ id: operation.id, dlmId: operation.dlmId, type: operation.type, status: operation.status, operatorDiscordId: operation.operatorDiscordId, createdAt: operation.createdAt.toISOString(), details: operation.details ? JSON.stringify(operation.details) : '—' }))}
+          operations={operations.map((operation) => ({ id: operation.id, dlmId: operation.dlmId, type: operation.type, status: operation.status, operatorDiscordId: operation.operatorDiscordId, createdAt: operation.createdAt.toISOString(), details: operation.details ? JSON.stringify(operation.details) : '—', result: operation.result ? JSON.stringify(operation.result) : '—' }))}
         />
       </section>
     </main>

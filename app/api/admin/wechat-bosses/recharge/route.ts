@@ -17,19 +17,17 @@ export async function POST(request: NextRequest) {
       operatorDiscordId: session.discordId,
       dlmId: String(body?.dlmId ?? ''),
       amount: body?.amount,
-      receiptReference: typeof body?.receiptReference === 'string' ? body.receiptReference : null,
+      receiptAccount: typeof body?.receiptAccount === 'string' ? body.receiptAccount : null,
       note: typeof body?.note === 'string' ? body.note : null,
     });
     let notificationWarning: string | null = null;
     try {
       await postInternalBot('/internal/admin/wechat-boss-recharge-notify', {
-        // A duplicate receipt is intentionally replayed rather than credited
-        // again.  Its notification must still point to the original recharge.
         rechargeRequestId: result.result.rechargeRequestId ?? requestId,
       });
     } catch (notificationError) {
       console.error('[wechat-boss-recharge] channel notification failed', notificationError);
-      notificationWarning = '充值已入账，但频道通知发送失败；请确认 Bot 已更新并完成数据库迁移后，用相同微信收款号重新提交以补发通知。';
+      notificationWarning = '充值已入账，但频道通知发送失败；请确认 Bot 已更新并完成数据库迁移后，重新提交本次操作以补发通知。';
     }
     return NextResponse.json({ ok: true, ...result, notificationWarning });
   } catch (error) {
