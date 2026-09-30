@@ -1039,6 +1039,42 @@ const buildManualExpenseRows = (data: Awaited<ReturnType<typeof loadMonthlyReven
     note: `操作人：${getManualExpenseOperatorLabel(row)}（${row.operatorId}）${row.imageFileName ? ' · 已附图片' : ''}`,
   }));
 
+const buildCouponExpenseRows = (data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>) => {
+  const couponRows = [
+    {
+      description: '手动送券已使用',
+      amount: data.totals.manualGrantCouponAmount,
+      count: data.totals.manualGrantCouponCount,
+    },
+    {
+      description: 'VIP 福利券已使用',
+      amount: data.totals.vipBenefitCouponAmount,
+      count: data.totals.vipBenefitCouponCount,
+    },
+    {
+      description: '彩蛋券已使用',
+      amount: data.totals.chatDropCouponAmount,
+      count: data.totals.chatDropCouponCount,
+    },
+    {
+      description: '开业活动券已使用',
+      amount: data.totals.openingCampaignCouponAmount,
+      count: data.totals.openingCampaignCouponCount,
+    },
+  ];
+
+  return couponRows
+    .filter((row) => row.count > 0 || !row.amount.isZero())
+    .map((row) => ({
+      source: '优惠券成本',
+      date: '',
+      description: row.description,
+      amount: row.amount,
+      count: row.count,
+      note: `Coupon 表已核销 ${row.count} 笔`,
+    }));
+};
+
 const buildIncomeStatementExpenseRows = (
   data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>,
   adjustments: MonthFinancialAdjustments,
@@ -1054,6 +1090,9 @@ const buildIncomeStatementExpenseRows = (
         ? `合并 ${row.count} 笔 Expense`
         : `合并 ${row.count} 笔`,
   })),
+  // Keep the financial statement aligned with the "查看收益" total-expense
+  // formula: used manual/VIP/chat/opening coupons are operating costs.
+  ...buildCouponExpenseRows(data),
   ...buildManualExpenseRows(data),
   ...adjustments.expenseRows,
 ];
