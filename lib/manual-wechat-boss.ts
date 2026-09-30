@@ -175,7 +175,7 @@ export const rechargeManualWechatBoss = async (params: {
           balanceBefore: before.totalBalance,
           amountChange: amount,
           balanceAfter: after.totalBalance,
-          typeOfTransaction: '微信人工充值',
+          typeOfTransaction: '人工充值',
         },
         select: { transactionId: true },
       });

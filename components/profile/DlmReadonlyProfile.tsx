@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { isDiscordSnowflake } from '@/lib/discord-id';
 import { formatAmountDown, parseNumeric } from '@/lib/numberFormat';
 import { formatTransactionType } from '@/lib/transaction-display';
 
@@ -59,6 +60,27 @@ export async function DlmReadonlyProfile({ dlmId }: { dlmId: string }) {
   ]);
   if (!user) return null;
 
+  // Use the same counterparty-name lookup as the regular Discord profile so
+  // delegated gifts show the recipient instead of an internal ledger ID.
+  const counterpartyDiscordIds = Array.from(
+    new Set(
+      transactions
+        .map((transaction) => transaction.thirdPartydiscordId.trim())
+        .filter(isDiscordSnowflake),
+    ),
+  );
+  const counterparties = counterpartyDiscordIds.length
+    ? await prisma.member.findMany({
+        where: { discordUserId: { in: counterpartyDiscordIds } },
+        select: { discordUserId: true, serverDisplayName: true },
+      })
+    : [];
+  const counterpartyDisplayNames = new Map(
+    counterparties
+      .map((counterparty) => [counterparty.discordUserId, counterparty.serverDisplayName?.trim()] as const)
+      .filter(([, displayName]) => Boolean(displayName)),
+  );
+
   const displayName = user.manualWechatBoss?.displayName || user.wechatDisplayName || user.discordDisplayName || '老板';
   const avatarLetter = displayName.trim().slice(0, 1).toUpperCase() || '老';
   const cardClass = 'bg-white rounded-[32px] border border-black/5 p-8 space-y-6 shadow-[0_10px_30px_rgba(17,24,39,0.04)]';
@@ -99,7 +121,7 @@ export async function DlmReadonlyProfile({ dlmId }: { dlmId: string }) {
           </div>
 
           <p className="rounded-2xl border border-amber-200/70 bg-[#fff8e7] px-4 py-3 text-sm text-[#8a6000]">
-            当前为只读账户。充值、余额赠送、代打赏和代点单请联系管理员协助处理。
+            登陆 Discord 账号解锁所有功能。
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -130,7 +152,7 @@ export async function DlmReadonlyProfile({ dlmId }: { dlmId: string }) {
                     <th className="py-3 pr-4">变动前余额</th>
                     <th className="py-3 pr-4">金额变动</th>
                     <th className="py-3 pr-4">变动后余额</th>
-                    <th className="py-3 pr-4">流水号</th>
+                    <th className="py-3 pr-4">备注</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -149,7 +171,9 @@ export async function DlmReadonlyProfile({ dlmId }: { dlmId: string }) {
                         <td className="py-4 pr-4 font-mono">{formatAmountDown(transaction.balanceBefore, digits)}</td>
                         <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
                         <td className="py-4 pr-4 font-mono">{formatAmountDown(transaction.balanceAfter, digits)}</td>
-                        <td className="py-4 pr-4 font-mono text-xs text-gray-500">{transaction.transactionId}</td>
+                        <td className="py-4 pr-4 text-gray-500">
+                          {counterpartyDisplayNames.get(transaction.thirdPartydiscordId.trim()) ?? transaction.thirdPartydiscordId ?? '—'}
+                        </td>
                       </tr>
                     );
                   })}
