@@ -17,6 +17,7 @@ type Boss = {
 type Gift = { name: string; price: string };
 type Peiwan = { id: number; label: string; prices: Partial<Record<string, string>> };
 type Operation = { id: string; dlmId: string; type: string; status: string; operatorDiscordId: string; createdAt: string; details: string; result: string };
+type MessagePlacement = 'createBoss' | 'recharge' | 'giftBalance' | 'delegatedGift' | 'delegatedOrder';
 
 const newRequestId = () => globalThis.crypto.randomUUID();
 
@@ -35,7 +36,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
   const router = useRouter();
   const [selectedDlmId, setSelectedDlmId] = useState(bosses[0]?.dlmId ?? '');
   const [message, setMessage] = useState<string | null>(null);
-  const [messagePlacement, setMessagePlacement] = useState<'global' | 'recharge'>('global');
+  const [messagePlacement, setMessagePlacement] = useState<MessagePlacement>('createBoss');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [giftName, setGiftName] = useState(gifts[0]?.name ?? '');
@@ -54,21 +55,29 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
     setQuotationCode(usableQuotes[0]?.[0] ?? '');
   }, [quotationCode, usableQuoteKey]);
 
-  const run = async (action: () => Promise<unknown>, success: string, placement: 'global' | 'recharge' = 'global') => {
+  const run = async (
+    action: () => Promise<unknown>,
+    success: string,
+    placement: MessagePlacement,
+    balanceGiftReason?: string,
+  ) => {
     setBusy(true);
     setError(null);
     setMessage(null);
     setMessagePlacement(placement);
     try {
-      const outcome = await action() as { notificationWarning?: unknown; replayed?: unknown; result?: { balanceAfter?: unknown; currentBalance?: unknown; rechargeId?: unknown } } | undefined;
+      const outcome = await action() as { notificationWarning?: unknown; replayed?: unknown; result?: { amount?: unknown; balanceAfter?: unknown; currentBalance?: unknown; rechargeId?: unknown } } | undefined;
       const notificationWarning = typeof outcome?.notificationWarning === 'string' ? outcome.notificationWarning : null;
       const replayed = outcome?.replayed === true;
+      const amount = typeof outcome?.result?.amount === 'string' ? outcome.result.amount : null;
       const balanceAfter = typeof outcome?.result?.balanceAfter === 'string' ? outcome.result.balanceAfter : null;
       const currentBalance = typeof outcome?.result?.currentBalance === 'string' ? outcome.result.currentBalance : balanceAfter;
       const rechargeId = typeof outcome?.result?.rechargeId === 'string' ? outcome.result.rechargeId : null;
       const successMessage = replayed
         ? `该次提交此前已完成，本次未重复增加余额${currentBalance ? `。当前余额：${currentBalance} 点点券` : '。'}`
-        : `${success}${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}${rechargeId ? ` 充值记录编号：${rechargeId}。` : ''}`;
+        : placement === 'giftBalance'
+          ? `余额赠送已发放：${amount ?? '—'}（${balanceGiftReason ?? '余额赠送'}）。${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}`
+          : `${success}${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}${rechargeId ? ` 充值记录编号：${rechargeId}。` : ''}`;
       setMessage(notificationWarning ? `${successMessage} ${notificationWarning}` : successMessage);
       router.refresh();
     } catch (cause) {
@@ -88,6 +97,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         displayName: form.get('displayName'),
       }),
       '老板账户已创建；请把生成的 DLM ID 交给老板登录只读个人中心。',
+      'createBoss',
     );
   };
 
@@ -118,6 +128,8 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         reason: giftReason,
       }),
       '余额赠送已发放：余额、个人流水、Expense 支出和管理员审计均已写入。',
+      'giftBalance',
+      giftReason,
     );
   };
 
@@ -133,6 +145,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         quantity: form.get('quantity'),
       }),
       '代打赏已完成，余额、积分、礼物账本和操作审计均已更新。',
+      'delegatedGift',
     );
   };
 
@@ -148,12 +161,12 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         orderContent: form.get('orderContent'),
       }),
       '代点单已创建，并已向陪玩发送真实接单邀请。',
+      'delegatedOrder',
     );
   };
 
   return (
     <div className="space-y-6">
-      {message && messagePlacement === 'global' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
       {error ? <p className="rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-100">{error}</p> : null}
 
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
@@ -162,6 +175,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
           <input name="wechatContact" required placeholder="老板微信号" className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <input name="displayName" required placeholder="老板备注名" className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy} className="rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">创建并分配 DLM ID</button>
+          {message && messagePlacement === 'createBoss' ? <p className="md:col-span-3 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
         </form>
       </section>
 
@@ -192,6 +206,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
             {GIFT_REASONS.map((reason) => <option key={reason} value={reason}>{reason}</option>)}
           </select>
           <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认赠送余额</button>
+          {message && messagePlacement === 'giftBalance' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
         </form>
 
         <form onSubmit={delegatedGift} className="space-y-3 border-t border-white/10 pt-8 lg:border-r lg:pr-8">
@@ -202,9 +217,10 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
           </select>
           <input name="quantity" required type="number" min="1" step="1" defaultValue="1" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy || !gifts.length} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认代打赏</button>
+          {message && messagePlacement === 'delegatedGift' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
         </form>
 
-        <form onSubmit={delegatedOrder} className="space-y-3 border-t border-white/10 pt-8 lg:col-start-1 lg:border-r lg:border-white/10 lg:pr-8">
+        <form onSubmit={delegatedOrder} className="space-y-3 border-t border-white/10 pt-8 lg:col-start-2">
           <div><h2 className="text-xl font-semibold">代点单</h2><p className="mt-1 text-sm text-white/60">创建真实待接订单，并向选定陪玩发送接单邀请；订单实际结算仍按老板 DLM 钱包执行。</p></div>
           <div className="grid gap-3 md:grid-cols-2">
             <select value={peiwanId} onChange={(event) => setPeiwanId(event.target.value)} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
@@ -216,6 +232,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
           </div>
           <textarea name="orderContent" placeholder="订单内容 / 游戏需求（可选）" className="min-h-24 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy || !peiwans.length || !usableQuotes.length} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">创建代点订单</button>
+          {message && messagePlacement === 'delegatedOrder' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
         </form>
       </div> : null}
       </section>
