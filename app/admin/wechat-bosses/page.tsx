@@ -47,7 +47,7 @@ export default async function WechatBossesAdminPage() {
         <WechatBossManager
           bosses={bosses.map((boss) => ({ dlmId: boss.dlmId, wechatContact: boss.wechatContact, displayName: boss.displayName, totalBalance: boss.dlmUser.totalBalance.toFixed(2), loyaltyPoints: boss.dlmUser.loyaltyPoints.toFixed(2), createdAt: boss.createdAt.toISOString() }))}
           gifts={gifts.map((gift) => ({ name: gift.GiftName, price: gift.price?.toFixed(2) ?? '0.00' }))}
-          peiwans={peiwans.map((peiwan) => ({ id: peiwan.PEIWANID, label: `陪玩 ${peiwan.PEIWANID} · ${peiwan.discordUserId}`, prices: Object.fromEntries(quotationFields.map(([code, field]) => [code, peiwan[field]?.toFixed(2) ?? ''])) }))}
+          peiwans={peiwans.map((peiwan) => ({ id: peiwan.PEIWANID, discordId: peiwan.discordUserId, label: `陪玩 ${peiwan.PEIWANID} · ${peiwan.discordUserId}`, prices: Object.fromEntries(quotationFields.map(([code, field]) => [code, peiwan[field]?.toFixed(2) ?? ''])) }))}
           operations={operations.map((operation) => ({ id: operation.id, dlmId: operation.dlmId, type: operation.type, status: operation.status, operatorDiscordId: operation.operatorDiscordId, createdAt: operation.createdAt.toISOString(), details: operation.details ? JSON.stringify(operation.details) : '—', result: operation.result ? JSON.stringify(operation.result) : '—' }))}
         />
       </section>

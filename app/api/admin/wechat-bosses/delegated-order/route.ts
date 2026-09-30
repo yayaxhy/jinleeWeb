@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const data = await postInternalBot<Record<string, unknown>>('/internal/admin/delegated-order', {
       requestId: String(body?.requestId ?? ''),
       dlmId: String(body?.dlmId ?? ''),
-      peiwanId: Number(body?.peiwanId),
+      peiwanId: String(body?.peiwanId ?? ''),
       quotationCode: String(body?.quotationCode ?? ''),
       orderContent: typeof body?.orderContent === 'string' ? body.orderContent : '',
       operatorDiscordId: session.discordId,

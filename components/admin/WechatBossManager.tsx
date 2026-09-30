@@ -15,7 +15,7 @@ type Boss = {
 };
 
 type Gift = { name: string; price: string };
-type Peiwan = { id: number; label: string; prices: Partial<Record<string, string>> };
+type Peiwan = { id: number; discordId: string; label: string; prices: Partial<Record<string, string>> };
 type Operation = { id: string; dlmId: string; type: string; status: string; operatorDiscordId: string; createdAt: string; details: string; result: string };
 type MessagePlacement = 'createBoss' | 'recharge' | 'giftBalance' | 'delegatedGift' | 'delegatedOrder';
 
@@ -34,17 +34,25 @@ async function postJson(path: string, body: Record<string, unknown>) {
 
 export function WechatBossManager({ bosses, gifts, peiwans, operations }: { bosses: Boss[]; gifts: Gift[]; peiwans: Peiwan[]; operations: Operation[] }) {
   const router = useRouter();
+  const giftOptions = [
+    ...gifts.filter((gift) => gift.name === '冰淇淋'),
+    ...gifts.filter((gift) => gift.name !== '冰淇淋'),
+  ];
   const [selectedDlmId, setSelectedDlmId] = useState(bosses[0]?.dlmId ?? '');
   const [message, setMessage] = useState<string | null>(null);
   const [messagePlacement, setMessagePlacement] = useState<MessagePlacement>('createBoss');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [giftName, setGiftName] = useState(gifts[0]?.name ?? '');
+  const [giftName, setGiftName] = useState(giftOptions[0]?.name ?? '');
   const [giftReason, setGiftReason] = useState<(typeof GIFT_REASONS)[number]>('充值返现');
-  const [peiwanId, setPeiwanId] = useState(String(peiwans[0]?.id ?? ''));
+  const [peiwanReference, setPeiwanReference] = useState('');
   const [quotationCode, setQuotationCode] = useState('Q1');
 
-  const selectedPeiwan = useMemo(() => peiwans.find((item) => String(item.id) === peiwanId) ?? null, [peiwans, peiwanId]);
+  const selectedPeiwan = useMemo(() => {
+    const reference = peiwanReference.trim();
+    if (!reference) return null;
+    return peiwans.find((item) => String(item.id) === reference || item.discordId === reference) ?? null;
+  }, [peiwans, peiwanReference]);
   const usableQuotes = selectedPeiwan
     ? Object.entries(selectedPeiwan.prices).filter(([, value]) => Number(value) > 0)
     : [];
@@ -156,7 +164,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
       () => postJson('/api/admin/wechat-bosses/delegated-order', {
         requestId: newRequestId(),
         dlmId: selectedDlmId,
-        peiwanId,
+        peiwanId: peiwanReference,
         quotationCode,
         orderContent: form.get('orderContent'),
       }),
@@ -211,9 +219,9 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
 
         <form onSubmit={delegatedGift} className="space-y-3 border-t border-white/10 pt-8 lg:border-r lg:pr-8">
           <div><h2 className="text-xl font-semibold">代打赏</h2><p className="mt-1 text-sm text-white/60">直接走 Bot 的真实礼物、余额与积分账本。</p></div>
-          <input name="peiwanId" required type="number" min="1" step="1" inputMode="numeric" placeholder="陪玩数字 ID" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <input name="peiwanId" required inputMode="numeric" placeholder="陪玩 Discord ID 或数字 ID" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <select value={giftName} onChange={(event) => setGiftName(event.target.value)} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
-            {gifts.map((gift) => <option key={gift.name} value={gift.name}>{gift.name} · ¥{gift.price}</option>)}
+            {giftOptions.map((gift) => <option key={gift.name} value={gift.name}>{gift.name} · ¥{gift.price}</option>)}
           </select>
           <input name="quantity" required type="number" min="1" step="1" defaultValue="1" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy || !gifts.length} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认代打赏</button>
@@ -223,15 +231,21 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         <form onSubmit={delegatedOrder} className="space-y-3 border-t border-white/10 pt-8 lg:col-start-2">
           <div><h2 className="text-xl font-semibold">代点单</h2><p className="mt-1 text-sm text-white/60">创建真实待接订单，并向选定陪玩发送接单邀请；订单实际结算仍按老板 DLM 钱包执行。</p></div>
           <div className="grid gap-3 md:grid-cols-2">
-            <select value={peiwanId} onChange={(event) => setPeiwanId(event.target.value)} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
-              {peiwans.map((peiwan) => <option key={peiwan.id} value={peiwan.id}>{peiwan.label}</option>)}
-            </select>
+            <input
+              value={peiwanReference}
+              onChange={(event) => setPeiwanReference(event.target.value)}
+              required
+              inputMode="numeric"
+              placeholder="陪玩 Discord ID 或数字 ID"
+              className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]"
+            />
             <select value={quotationCode} onChange={(event) => setQuotationCode(event.target.value)} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
               {usableQuotes.map(([code, price]) => <option key={code} value={code}>{code} · ¥{price}/小时</option>)}
             </select>
           </div>
+          {peiwanReference.trim() && !selectedPeiwan ? <p className="text-xs text-amber-200">未找到该陪玩，请检查 Discord ID 或数字 ID。</p> : null}
           <textarea name="orderContent" placeholder="订单内容 / 游戏需求（可选）" className="min-h-24 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <button disabled={busy || !peiwans.length || !usableQuotes.length} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">创建代点订单</button>
+          <button disabled={busy || !selectedPeiwan || !usableQuotes.length} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">创建代点订单</button>
           {message && messagePlacement === 'delegatedOrder' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
         </form>
       </div> : null}
