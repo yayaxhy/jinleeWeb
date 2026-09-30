@@ -94,6 +94,21 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
     );
   };
 
+  const cashback = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    void run(
+      () => postJson('/api/admin/wechat-bosses/cashback', {
+        requestId: newRequestId(),
+        dlmId: selectedDlmId,
+        amount: form.get('amount'),
+        sourceReceiptReference: form.get('sourceReceiptReference'),
+        note: form.get('note'),
+      }),
+      '充值返现已发放：余额、个人流水、Expense 支出和管理员审计均已写入。',
+    );
+  };
+
   const delegatedGift = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -154,6 +169,14 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
           <input name="receiptReference" required placeholder="微信收款号" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <textarea name="note" placeholder="备注（可选）" className="min-h-20 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认入账</button>
+        </form>
+
+        <form onSubmit={cashback} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div><h2 className="text-xl font-semibold">充值返现</h2><p className="mt-1 text-sm text-white/60">参考 /gift：增加余额并记录 Expense。需关联一笔已完成的原微信充值，且每笔原充值只能返现一次。</p></div>
+          <input name="amount" required inputMode="decimal" placeholder="返现金额，例如 10.00" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <input name="sourceReceiptReference" required placeholder="原微信收款号" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <textarea name="note" placeholder="返现备注（可选）" className="min-h-20 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认发放返现</button>
         </form>
 
         <form onSubmit={delegatedGift} className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">

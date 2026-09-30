@@ -223,6 +223,7 @@ enum AccountProvider {
 enum DlmAdminOperationType {
   MANUAL_WECHAT_BOSS_CREATE
   MANUAL_WECHAT_RECHARGE
+  RECHARGE_CASHBACK
   WECHAT_RECHARGE_NOTIFICATION
   DELEGATED_GIFT
   DELEGATED_ORDER
@@ -326,6 +327,7 @@ model DlmAdminOperation {
   id                String                  @id @default(cuid())
   requestId         String                  @unique
   receiptReference  String?                 @unique
+  sourceOperationId String?                 @unique
   dlmId             String
   operatorDiscordId String
   type              DlmAdminOperationType
