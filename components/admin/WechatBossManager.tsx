@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const GIFT_REASONS = ['公会成本', 'VIP福利', '老板赔偿', '充值返现', '其他'] as const;
+const GIFT_REASONS = ['充值返现', '公会成本', 'VIP福利', '老板赔偿', '其他'] as const;
 
 type Boss = {
   dlmId: string;
@@ -40,7 +40,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [giftName, setGiftName] = useState(gifts[0]?.name ?? '');
-  const [giftReason, setGiftReason] = useState<(typeof GIFT_REASONS)[number]>('公会成本');
+  const [giftReason, setGiftReason] = useState<(typeof GIFT_REASONS)[number]>('充值返现');
   const [peiwanId, setPeiwanId] = useState(String(peiwans[0]?.id ?? ''));
   const [quotationCode, setQuotationCode] = useState('Q1');
 

@@ -73,7 +73,7 @@ export const attachDlmPortalSession = (
     httpOnly: true,
     sameSite: 'lax',
     secure: true,
-    path: '/dlm',
+    path: '/',
     expires: new Date(payload.expiresAt),
   });
 };
@@ -85,7 +85,7 @@ export const destroyDlmPortalSession = (response: NextResponse) => {
     httpOnly: true,
     sameSite: 'lax',
     secure: true,
-    path: '/dlm',
+    path: '/',
     expires: new Date(0),
   });
 };

@@ -21,7 +21,7 @@ export default function DlmPortalLoginPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : '进入失败，请稍后重试。');
-      router.replace('/dlm/profile');
+      router.replace('/profile');
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '进入失败，请稍后重试。');

@@ -8,7 +8,9 @@ import { SentPeiwanReviewHistory } from '@/components/profile/SentPeiwanReviewHi
 import { VipAnnouncementPreferenceToggle } from '@/components/profile/VipAnnouncementPreferenceToggle';
 import { VipRoleSyncPreferenceToggle } from '@/components/profile/VipRoleSyncPreferenceToggle';
 import { VoicePreviewManager } from '@/components/profile/VoicePreviewManager';
+import { DlmReadonlyProfile } from '@/components/profile/DlmReadonlyProfile';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
+import { getDlmPortalSession } from '@/lib/dlm-portal-session';
 import { isDiscordSnowflake } from '@/lib/discord-id';
 import { formatAmountDown, formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
@@ -210,6 +212,8 @@ export default async function Profile(props: ProfilePageProps) {
 
   const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
+    const dlmPortalSession = await getDlmPortalSession();
+    if (dlmPortalSession) return <DlmReadonlyProfile dlmId={dlmPortalSession.dlmId} />;
     redirect('/');
   }
 

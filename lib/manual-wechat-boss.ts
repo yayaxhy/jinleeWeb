@@ -20,10 +20,10 @@ const asPositiveMoney = (value: unknown) => {
 const cleanText = (value: unknown, maxLength: number) => String(value ?? '').trim().slice(0, maxLength);
 
 export const MANUAL_WECHAT_GIFT_REASONS = [
+  '充值返现',
   '公会成本',
   'VIP福利',
   '老板赔偿',
-  '充值返现',
   '其他',
 ] as const;
 

@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   });
   if (!user) return NextResponse.json({ error: '未找到该 DLM ID。' }, { status: 404 });
 
-  const response = NextResponse.json({ ok: true, redirectTo: '/dlm/profile' });
+  const response = NextResponse.json({ ok: true, redirectTo: '/profile' });
   attachDlmPortalSession(response, user);
   return response;
 }
