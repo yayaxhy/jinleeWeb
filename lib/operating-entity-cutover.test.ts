@@ -67,3 +67,12 @@ test('customer-facing operational readers keep the legacy-data boundary', () => 
     }
   }
 });
+
+test('monthly report uses purchase ledger and excludes old vouchers', () => {
+  const source = readFileSync(path.join(process.cwd(), 'lib/admin/monthly-financial-reports.ts'), 'utf8');
+  assert.match(source, /typeOfTransaction: '刮刮乐购卡'/);
+  assert.match(source, /issuedAt: newEntityOnlyTime\(\)/);
+  assert.match(source, /pointShopGrant\.findMany/);
+  assert.match(source, /priorPeriodExpenseAdjustmentTotal/);
+  assert.match(source, /withMonthlyReportLocks\(\[monthKey\]/);
+});

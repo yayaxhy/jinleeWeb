@@ -4,7 +4,9 @@ import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { canViewRevenue } from '@/lib/admin';
-import { generateStoredMonthlyFinancialReports, getMonthlyReportStorageDir, parseMonthlyReportMonthKey } from '@/lib/admin/monthly-financial-reports';
+import { generateStoredMonthlyFinancialReports, getMonthlyReportStorageDir, parseMonthlyReportMonthKey, withMonthlyReportLocks } from '@/lib/admin/monthly-financial-reports';
+import { PRIOR_PERIOD_ADJUSTMENT_PREFIX, priorPeriodAdjustmentNote, resolveManualExpenseBookingMonth } from '@/lib/admin/monthly-expense-adjustment';
+import { isNewEntityReportMonth } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
@@ -81,25 +83,40 @@ export async function POST(request: NextRequest) {
   if (!parseMonthlyReportMonthKey(monthKey)) {
     return NextResponse.json({ error: '月份格式必须是 YYYY-MM' }, { status: 400 });
   }
+  if (!isNewEntityReportMonth(monthKey)) {
+    return NextResponse.json({ error: '旧主体月份不能新增支出' }, { status: 400 });
+  }
   if (!amount) return NextResponse.json({ error: '请输入大于 0 的金额' }, { status: 400 });
   if (!note) return NextResponse.json({ error: '请输入支出备注' }, { status: 400 });
+  if (note.startsWith(PRIOR_PERIOD_ADJUSTMENT_PREFIX)) {
+    return NextResponse.json({ error: '备注不能使用系统保留的“前期调整”前缀' }, { status: 400 });
+  }
 
   let imageFileName: string | null = null;
+  let expenseCommitted = false;
   try {
-    if (image) imageFileName = await saveImage(image);
-    const expense = await prisma.monthlyManualExpense.create({
-      data: {
-        monthKey,
-        amount,
-        note,
-        imageFileName,
-        operatorId: session.discordId,
-      },
+    const bookedMonthKey = await resolveManualExpenseBookingMonth(monthKey);
+    const expense = await withMonthlyReportLocks([monthKey, bookedMonthKey], async () => {
+      if (await resolveManualExpenseBookingMonth(monthKey) !== bookedMonthKey) {
+        throw new Error('月份确认状态已变化，请刷新后重试。');
+      }
+      if (image) imageFileName = await saveImage(image);
+      const created = await prisma.monthlyManualExpense.create({
+        data: {
+          monthKey: bookedMonthKey,
+          amount,
+          note: bookedMonthKey === monthKey ? note : priorPeriodAdjustmentNote(monthKey, note),
+          imageFileName,
+          operatorId: session.discordId,
+        },
+      });
+      expenseCommitted = true;
+      return created;
     });
-    const reportSynced = await refreshStoredReports(monthKey);
-    return NextResponse.json({ ok: true, expense: { id: expense.id }, reportSynced });
+    const reportSynced = await refreshStoredReports(bookedMonthKey);
+    return NextResponse.json({ ok: true, expense: { id: expense.id }, bookedMonthKey, reportSynced });
   } catch (error) {
-    await removeImage(imageFileName);
+    if (!expenseCommitted) await removeImage(imageFileName);
     const message = error instanceof Error ? error.message : '保存人工支出失败';
     return NextResponse.json({ error: message }, { status: 500 });
   }

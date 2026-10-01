@@ -13,12 +13,6 @@ const PAYMENT_CHANNELS = [
     accent: 'from-[#bbf7d0] to-[#86efac]',
   },
   {
-    id: 'alipay',
-    label: '支付宝',
-    description: '使用支付宝扫一扫完成支付，系统确认成功后自动到账。',
-    accent: 'from-[#bfdbfe] to-[#93c5fd]',
-  },
-  {
     id: 'stripe',
     label: '信用卡/银行卡',
     description: '可使用 Visa、Mastercard、American Express、银联卡等银行卡，也可使用 Apple Pay，系统确认成功后自动到账。',
@@ -27,7 +21,7 @@ const PAYMENT_CHANNELS = [
 ] as const;
 type PaymentChannel = (typeof PAYMENT_CHANNELS)[number];
 type PaymentChannelId = PaymentChannel['id'];
-const DEFAULT_VISIBLE_CHANNEL_IDS: readonly PaymentChannelId[] = ['wechat_native', 'alipay'];
+const DEFAULT_VISIBLE_CHANNEL_IDS: readonly PaymentChannelId[] = ['wechat_native'];
 
 const AMOUNT_OPTIONS = [100, 200, 300, 400, 500, 1000] as const;
 const DEFAULT_STRIPE_AMOUNT_OPTIONS = [500, 1000, 2000, 5000] as const;
@@ -42,7 +36,6 @@ type StripeCurrencyCode = (typeof STRIPE_CURRENCY_OPTIONS)[number]['code'];
 const DEFAULT_STRIPE_CURRENCY_OPTIONS: readonly StripeCurrencyCode[] = ['gbp', 'eur', 'usd', 'cad'];
 
 type RechargeClientProps = {
-  username?: string | null;
   hasPriorRecharge?: boolean;
   initialChannel?: PaymentChannelId;
   visibleChannelIds?: readonly PaymentChannelId[];
@@ -82,7 +75,6 @@ const getDefaultAmountForChannel = (channel: PaymentChannelId, stripeAmountOptio
   channel === 'stripe' ? stripeAmountOptions[0] ?? 1 : AMOUNT_OPTIONS[0];
 
 export default function RechargeClient({
-  username,
   hasPriorRecharge = false,
   initialChannel,
   visibleChannelIds = DEFAULT_VISIBLE_CHANNEL_IDS,
@@ -106,8 +98,8 @@ export default function RechargeClient({
     [hasPriorRecharge, stripeAmountOptions],
   );
   const defaultChannel = visibleChannels.some((item) => item.id === initialChannel)
-    ? initialChannel ?? 'alipay'
-    : visibleChannels[0]?.id ?? 'alipay';
+    ? initialChannel ?? 'wechat_native'
+    : visibleChannels[0]?.id ?? 'wechat_native';
   const [channel, setChannel] = useState<PaymentChannelId>(defaultChannel);
   const [amount, setAmount] = useState<string>(String(getDefaultAmountForChannel(defaultChannel, effectiveStripeAmountOptions)));
   const [stripeCurrency, setStripeCurrency] = useState<StripeCurrencyCode>(stripeCurrencyOptions[0] ?? 'gbp');
@@ -130,12 +122,12 @@ export default function RechargeClient({
   const instructionText =
     paymentInstructionText ??
     (visibleChannelIds.includes('stripe')
-      ? '使用支付宝、微信或信用卡/银行卡完成支付，无需上传凭证。'
-      : '使用支付宝或微信完成支付，无需上传凭证。');
+      ? '使用微信或信用卡/银行卡完成支付，无需上传凭证。'
+      : '使用微信完成支付，无需上传凭证。');
 
   useEffect(() => {
     if (visibleChannels.some((item) => item.id === channel)) return;
-    const nextChannel = visibleChannels[0]?.id ?? 'alipay';
+    const nextChannel = visibleChannels[0]?.id ?? 'wechat_native';
     setChannel(nextChannel);
     setAmount(String(getDefaultAmountForChannel(nextChannel, effectiveStripeAmountOptions)));
   }, [channel, effectiveStripeAmountOptions, visibleChannels]);
@@ -183,18 +175,11 @@ export default function RechargeClient({
     setError(null);
     setHint(null);
     try {
-      const endpoint =
-        channel === 'stripe'
-          ? '/api/stripe/recharge/order'
-          : channel === 'wechat_native'
-            ? '/api/wechat/pay/order'
-            : '/api/recharge/order';
+      const endpoint = channel === 'stripe' ? '/api/stripe/recharge/order' : '/api/wechat/pay/order';
       const requestBody =
         channel === 'stripe'
           ? { amount: Number(amount), currency: stripeCurrency }
-          : channel === 'wechat_native'
-            ? { amount: Number(amount) }
-            : { amount: Number(amount), channel };
+          : { amount: Number(amount) };
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -288,12 +273,8 @@ export default function RechargeClient({
               ) : !hasPriorRecharge ? (
                 <p className="text-xs text-gray-500">首次信用卡/银行卡充值仅开放 ¥500，完成首次到账后可选择更高档位。</p>
               ) : null
-            ) : channel === 'wechat_native' ? (
-              <p className="text-xs text-gray-500">微信官方支付无需填写转账备注。</p>
             ) : (
-              <p className="text-xs text-gray-500">
-                转账备注建议填写当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
-              </p>
+              <p className="text-xs text-gray-500">微信官方支付无需填写转账备注。</p>
             )}
           </div>
 

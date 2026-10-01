@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ orders: [] });
   }
 
-  const [couponUsage, pointShopUsage, lotteryUsage] = await Promise.all([
+  const [couponUsage, pointShopUsage, lotteryUsage, revertedOrders] = await Promise.all([
     prisma.coupon.findMany({
       where: { orderId: { in: orderIds }, status: 'USED' },
       select: { orderId: true },
@@ -57,16 +57,21 @@ export async function GET(request: Request) {
       },
       select: { consumeOrderId: true },
     }),
+    prisma.revert.findMany({
+      where: { originalTransactionId: { in: orderIds.map((id) => `ORDER:${id}`) } },
+      select: { originalTransactionId: true },
+    }),
   ]);
 
-  const usedIds = new Set<string>();
-  couponUsage.forEach((item) => item.orderId && usedIds.add(item.orderId));
-  pointShopUsage.forEach((item) => item.consumeOrderId && usedIds.add(item.consumeOrderId));
-  lotteryUsage.forEach((item) => item.consumeOrderId && usedIds.add(item.consumeOrderId));
+  const ineligibleIds = new Set<string>();
+  couponUsage.forEach((item) => item.orderId && ineligibleIds.add(item.orderId));
+  pointShopUsage.forEach((item) => item.consumeOrderId && ineligibleIds.add(item.consumeOrderId));
+  lotteryUsage.forEach((item) => item.consumeOrderId && ineligibleIds.add(item.consumeOrderId));
+  revertedOrders.forEach((item) => ineligibleIds.add(item.originalTransactionId.slice('ORDER:'.length)));
 
   const eligible = orders
     .filter((order) => {
-      if (usedIds.has(order.id)) return false;
+      if (ineligibleIds.has(order.id)) return false;
       const minutes = Number(order.totalMinutes ?? 0);
       if (!Number.isFinite(minutes) || minutes <= 5) return false;
       const unitPrice = Number(order.unitPrice ?? 0);

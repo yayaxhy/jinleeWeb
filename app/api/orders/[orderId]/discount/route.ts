@@ -12,6 +12,8 @@ const mapErrorStatus = (status: string) => {
       return { code: 403, message: '仅订单老板可使用优惠' };
     case 'order_not_ended':
       return { code: 400, message: '需先结单后再使用优惠' };
+    case 'order_reverted':
+      return { code: 409, message: '订单已撤销，不能使用优惠' };
     case 'already_used':
       return { code: 409, message: '该订单已使用过优惠' };
     case 'no_coupon':

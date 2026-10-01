@@ -13,12 +13,6 @@ export default async function StripeRechargePage() {
     redirect('/recharge');
   }
 
-  const username =
-    currentUser.dlmUser.discordDisplayName ??
-    currentUser.dlmUser.member?.serverDisplayName ??
-    currentUser.dlmUser.wechatDisplayName ??
-    '微信用户';
-
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-12">
       <section className="max-w-5xl mx-auto space-y-8">
@@ -41,7 +35,6 @@ export default async function StripeRechargePage() {
         </div>
 
         <RechargeClient
-          username={username}
           hasPriorRecharge
           initialChannel="stripe"
           visibleChannelIds={['stripe']}

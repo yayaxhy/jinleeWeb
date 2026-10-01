@@ -18,6 +18,7 @@ export type ApplyDiscountResult =
   | { status: 'legacy_order' }
   | { status: 'not_order_host' }
   | { status: 'order_not_ended' }
+  | { status: 'order_reverted' }
   | { status: 'already_used' }
   | { status: 'no_coupon' }
   | { status: 'no_lottery' }
@@ -267,6 +268,11 @@ export async function applyDiscountForOrder(params: {
     if ((order.hostDlmId ?? null) !== dlmId) return { status: 'not_order_host' };
     if (order.status !== OrderStatus.ENDED) return { status: 'order_not_ended' };
     await lockOrderForDiscountTx(tx, order.id);
+    const revert = await tx.revert.findUnique({
+      where: { originalTransactionId: `ORDER:${order.id}` },
+      select: { id: true },
+    });
+    if (revert) return { status: 'order_reverted' };
     const workerTarget = order.workerId
       ? await tx.dlmUser.findUnique({
           where: { discordUserId: order.workerId },

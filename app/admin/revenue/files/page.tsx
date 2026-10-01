@@ -5,6 +5,7 @@ import { listStoredMonthlyReportFiles } from '@/lib/admin/monthly-financial-repo
 import { getCentralEuropeanMonthParts } from '@/lib/centralEuropeanDateRange';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
+import { isNewEntityReportMonth } from '@/lib/operating-entity-cutover';
 
 export const metadata = {
   title: '收益文件',
@@ -107,7 +108,7 @@ export default async function AdminRevenueFilesPage({ searchParams }: PageProps)
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold">{selectedYear} 年月份</h3>
-            <p className="mt-1 text-sm text-white/60">点击月份进入报表；每次导出的 Excel 都会按当前数据生成。</p>
+            <p className="mt-1 text-sm text-white/60">点击月份进入报表；未确认月份实时生成，确认月结后页面数字与 Excel 固定。</p>
           </div>
           <form action="/api/admin/revenue/files/generate" method="post" className="flex flex-wrap items-center gap-2">
             <input
@@ -133,10 +134,11 @@ export default async function AdminRevenueFilesPage({ searchParams }: PageProps)
             const isFuture = selectedYear > now.year || (selectedYear === now.year && month > now.month);
             const fileCount = storedFileCountByMonth.get(monthKey) ?? 0;
             const manualCount = manualCountByMonth.get(monthKey) ?? 0;
-            if (isFuture) {
+            if (isFuture || !isNewEntityReportMonth(monthKey)) {
               return (
                 <div key={monthKey} className="rounded-2xl border border-white/5 px-4 py-4 text-center text-sm text-white/25">
                   {monthLabel(month)}
+                  {!isFuture ? <span className="mt-1 block text-xs">旧主体归档</span> : null}
                 </div>
               );
             }

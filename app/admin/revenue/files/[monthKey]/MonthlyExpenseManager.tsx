@@ -7,6 +7,7 @@ export type ManualExpenseRecord = {
   id: string;
   monthKey: string;
   amount: string;
+  confirmedAmount?: string | null;
   note: string;
   hasImage: boolean;
   operatorId: string;
@@ -18,6 +19,7 @@ export type ManualExpenseRecord = {
 type Props = {
   monthKey: string;
   records: ManualExpenseRecord[];
+  confirmed: boolean;
 };
 
 const formatMoney = (value: string) =>
@@ -35,7 +37,7 @@ const formatDate = (value: string) =>
     hour12: false,
   }).format(new Date(value));
 
-export default function MonthlyExpenseManager({ monthKey, records }: Props) {
+export default function MonthlyExpenseManager({ monthKey, records, confirmed }: Props) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -103,10 +105,15 @@ export default function MonthlyExpenseManager({ monthKey, records }: Props) {
         method: editingId ? 'PATCH' : 'POST',
         body: formData,
       });
-      const result = (await response.json()) as { error?: string; reportSynced?: boolean };
+      const result = (await response.json()) as { error?: string; reportSynced?: boolean; bookedMonthKey?: string };
       if (!response.ok) throw new Error(result.error || '保存失败');
       resetForm();
-      setMessage(result.reportSynced === false ? '已保存，但自动重新生成报表失败；请稍后使用“重新生成文件”。' : '已保存，并已同步更新本月报表。');
+      const bookingMessage = result.bookedMonthKey && result.bookedMonthKey !== monthKey
+        ? `已保存为 ${result.bookedMonthKey} 的前期调整；${monthKey} 已确认数字保持不变。`
+        : '已保存，并已同步更新本月报表。';
+      setMessage(result.reportSynced === false
+        ? `${bookingMessage} 自动生成文件失败，请稍后检查。`
+        : bookingMessage);
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '保存失败，请稍后重试。');
@@ -122,6 +129,9 @@ export default function MonthlyExpenseManager({ monthKey, records }: Props) {
       <div>
         <h3 className="text-lg font-semibold text-white">人工支出明细</h3>
         <p className="mt-1 text-sm text-white/60">可填写金额、备注和凭证图片。保存或修改时，系统会自动记录当前操作人和时间。</p>
+        {confirmed ? (
+          <p className="mt-2 text-sm text-amber-100">本月已确认。下方明细显示最新编辑内容；新增或修改的金额差额计入当前月“前期调整”，上方已确认报表不变。</p>
+        ) : null}
       </div>
 
       <form onSubmit={submit} className="grid gap-4 rounded-2xl border border-white/10 bg-black/15 p-4 md:grid-cols-2">
@@ -191,7 +201,12 @@ export default function MonthlyExpenseManager({ monthKey, records }: Props) {
             <tbody>
               {records.map((record) => (
                 <tr key={record.id} className="border-b border-white/10 last:border-0">
-                  <td className="py-3 pr-4 font-mono text-white">{formatMoney(record.amount)}</td>
+                  <td className="py-3 pr-4 font-mono text-white">
+                    {formatMoney(record.amount)}
+                    {record.confirmedAmount && record.confirmedAmount !== record.amount ? (
+                      <div className="mt-1 text-xs text-amber-100/70">确认版：{formatMoney(record.confirmedAmount)}</div>
+                    ) : null}
+                  </td>
                   <td className="max-w-sm py-3 pr-4 text-white/80">{record.note}</td>
                   <td className="py-3 pr-4">
                     {record.hasImage ? (
@@ -213,9 +228,13 @@ export default function MonthlyExpenseManager({ monthKey, records }: Props) {
                   </td>
                   <td className="py-3 pr-4 font-mono text-xs text-white/70">{formatDate(record.updatedAt)}</td>
                   <td className="py-3 pr-4">
-                    <button type="button" onClick={() => startEdit(record)} className="rounded-full border border-white/25 px-4 py-1.5 text-xs text-white hover:bg-white/10">
-                      修改
-                    </button>
+                    {record.note.startsWith('前期调整（') ? (
+                      <span className="text-xs text-white/40">请修改原记录</span>
+                    ) : (
+                      <button type="button" onClick={() => startEdit(record)} className="rounded-full border border-white/25 px-4 py-1.5 text-xs text-white hover:bg-white/10">
+                        修改
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

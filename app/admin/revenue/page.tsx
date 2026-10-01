@@ -7,7 +7,7 @@ import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { RevenueTimeRangeActions } from '@/components/admin/RevenueTimeRangeActions';
 import { formatDateTimeInputCentralEuropean, parseCentralEuropeanDateRange } from '@/lib/centralEuropeanDateRange';
-import { newEntityReportStart } from '@/lib/operating-entity-cutover';
+import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime, newEntityReportStart } from '@/lib/operating-entity-cutover';
 import {
   buildRevenueCouponIdentityExclusion,
   parseRevenueIdentityList,
@@ -28,6 +28,7 @@ import {
   LOTTERY_FUSION_SOURCE_KIND_LABEL,
   type LotteryFusionCountBucket,
 } from '@/lib/admin/lottery-fusion-revenue';
+import { getVoucherReversalAdjustments } from '@/lib/admin/voucher-reversal';
 
 export const metadata = {
   title: '查看收益',
@@ -139,6 +140,9 @@ export default async function AdminRevenuePage(props: PageProps) {
   const start = newEntityReportStart(range.start);
   const { end, endValue } = range;
   const startValue = formatDateTimeInputCentralEuropean(start);
+  const voucherReversals = await getVoucherReversalAdjustments({
+    start, end, excludeDlmIds: excludeMemberResolved.excludeDlmIds,
+  });
 
   const blockStackAgg = await prisma.blockStackGame.aggregate({
     _sum: {
@@ -253,6 +257,14 @@ export default async function AdminRevenuePage(props: PageProps) {
     },
     where: dlmWhere,
   });
+  const balanceUsers = await prisma.dlmUser.findMany({
+    where: dlmWhere,
+    select: { totalBalance: true, member: { select: { totalBalance: true } } },
+  });
+  const effectiveUserBalance = balanceUsers.reduce(
+    (sum, user) => sum.add(user.member?.totalBalance ?? user.totalBalance),
+    new Prisma.Decimal(0),
+  );
 
   const commissionAggAll = await prisma.commission.aggregate({
     _sum: { feeAmount: true },
@@ -293,8 +305,9 @@ export default async function AdminRevenuePage(props: PageProps) {
       JOIN "revert" r
         ON r."originalTransactionId" = ga."individualTransactionId"
       WHERE r."status" = 'SUCCESS'
-        AND ga."createdAt" >= ${start}
-        AND ga."createdAt" < ${end}
+        AND ga."createdAt" > ${NEW_ENTITY_OPERATIONS_STARTED_AT}
+        AND r."createdAt" >= ${start}
+        AND r."createdAt" < ${end}
     `,
   );
   const revertedGiftAggRows = await prisma.$queryRaw<
@@ -313,21 +326,25 @@ export default async function AdminRevenuePage(props: PageProps) {
       JOIN "revert" r
         ON r."originalTransactionId" = ga."individualTransactionId"
       WHERE r."status" = 'SUCCESS'
-        AND ga."createdAt" >= ${start}
-        AND ga."createdAt" < ${end}
+        AND ga."createdAt" > ${NEW_ENTITY_OPERATIONS_STARTED_AT}
+        AND r."createdAt" >= ${start}
+        AND r."createdAt" < ${end}
     `,
   );
-  const revertedOrderRows = await prisma.$queryRaw<{ reverted_order_gross: Prisma.Decimal | null }[]>(
+  const revertedOrderRows = await prisma.$queryRaw<{ reverted_order_gross: Prisma.Decimal | null; reverted_order_fee: Prisma.Decimal | null }[]>(
     Prisma.sql`
-      SELECT COALESCE(SUM(oa."gross"), 0) AS reverted_order_gross
+      SELECT
+        COALESCE(SUM(oa."gross"), 0) AS reverted_order_gross,
+        COALESCE(SUM(oa."gross" - oa."netAmount"), 0) AS reverted_order_fee
       FROM "order_audit" oa
       JOIN "Order" o
         ON o."id" = oa."orderId"
       JOIN "revert" r
         ON r."originalTransactionId" = CONCAT('ORDER:', oa."orderId")
       WHERE r."status" = 'SUCCESS'
-        AND o."endedAt" >= ${start}
-        AND o."endedAt" < ${end}
+        AND o."endedAt" > ${NEW_ENTITY_OPERATIONS_STARTED_AT}
+        AND r."createdAt" >= ${start}
+        AND r."createdAt" < ${end}
     `,
   );
   const revertedGiftSubsidy = dec(revertedGiftRows[0]?.reverted_subsidy);
@@ -336,6 +353,7 @@ export default async function AdminRevenuePage(props: PageProps) {
   const revertedGiftPaid = dec(revertedGiftAgg.reverted_payable);
   const revertedGiftFee = dec(revertedGiftAgg.reverted_fee);
   const revertedOrderGross = dec(revertedOrderRows[0]?.reverted_order_gross);
+  const revertedOrderFee = dec(revertedOrderRows[0]?.reverted_order_fee);
   const giftGrossNet = giftGross.sub(revertedGiftGross);
   const giftPaidNet = giftPaid.sub(revertedGiftPaid);
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
@@ -348,9 +366,9 @@ export default async function AdminRevenuePage(props: PageProps) {
   const totalFaceFlow = giftGrossNet.add(orderGross);
   const rawFeeFromOrderAndGiftModel = giftFee.add(orderFee);
   const commissionOtherSources = commissionTotalAll.sub(rawFeeFromOrderAndGiftModel);
-  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee);
-  const commissionTotalNet = commissionTotalAll.sub(revertedGiftFee);
-  const commissionTotalNetAll = commissionTotalAll.sub(revertedGiftFee);
+  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee).sub(revertedOrderFee);
+  const commissionTotalNet = commissionTotalAll.sub(revertedGiftFee).sub(revertedOrderFee);
+  const commissionTotalNetAll = commissionTotalAll.sub(revertedGiftFee).sub(revertedOrderFee);
   const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
     typeOfTransaction: '优惠返利',
     timeCreatedAt: { gte: start, lt: end },
@@ -375,6 +393,7 @@ export default async function AdminRevenuePage(props: PageProps) {
     _sum: { consumeAmount: true },
     where: {
       consumeAt: { gte: start, lt: end },
+      createdAt: newEntityOnlyTime(),
       ...(buildIdentityExclusion(
         'dlmId',
         'userId',
@@ -385,7 +404,7 @@ export default async function AdminRevenuePage(props: PageProps) {
   });
 
   const grossIncome = new Prisma.Decimal(drawCount).mul(29);
-  const consumeTotal = dec(consumeAgg._sum.consumeAmount);
+  const consumeTotal = dec(consumeAgg._sum.consumeAmount).add(voucherReversals.lotteryAdjustment);
   const netProfit = grossIncome.sub(consumeTotal);
 
   const scratchAggRows = await prisma.$queryRaw<{ revealed_count: bigint | number; prize_sum: Prisma.Decimal | null }[]>(
@@ -401,7 +420,22 @@ export default async function AdminRevenuePage(props: PageProps) {
   );
   const scratchAgg = scratchAggRows[0] ?? { revealed_count: 0, prize_sum: new Prisma.Decimal(0) };
   const scratchRevealedCount = Number(scratchAgg.revealed_count ?? 0);
-  const scratchGross = new Prisma.Decimal(scratchRevealedCount).mul(19);
+  const scratchPurchaseRows = await prisma.individualTransaction.findMany({
+    where: {
+      typeOfTransaction: '刮刮乐购卡',
+      timeCreatedAt: { gte: start, lt: end },
+      ...(buildIdentityExclusion(
+        'dlmId', 'discordId',
+        excludeMemberResolved.excludeDlmIds,
+        excludeMemberResolved.excludeDiscordIds,
+      ) as Prisma.IndividualTransactionWhereInput),
+    },
+    select: { balanceBefore: true, balanceAfter: true },
+  });
+  const scratchGross = scratchPurchaseRows.reduce(
+    (sum, row) => sum.add(dec(row.balanceBefore).sub(dec(row.balanceAfter))),
+    new Prisma.Decimal(0),
+  );
   const scratchReward = dec(scratchAgg.prize_sum);
   const scratchNet = scratchGross.sub(scratchReward);
 
@@ -410,14 +444,8 @@ export default async function AdminRevenuePage(props: PageProps) {
   };
   const couponWhere: Prisma.CouponWhereInput = {
     status: CouponStatus.USED,
-    source: {
-      in: [
-        CouponSource.MANUAL_GRANT,
-        CouponSource.VIP_BENEFIT,
-        CouponSource.CHAT_DROP,
-        CouponSource.OPENING_CAMPAIGN,
-      ],
-    },
+    source: { in: Object.values(CouponSource) },
+    issuedAt: newEntityOnlyTime(),
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...buildRevenueCouponIdentityExclusion(
@@ -488,6 +516,8 @@ export default async function AdminRevenuePage(props: PageProps) {
   const openingCampaignCouponRow = couponConsumedBySource.find(
     (row) => row.source === CouponSource.OPENING_CAMPAIGN,
   );
+  const giftWallCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.GIFT_WALL);
+  const unknownCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.UNKNOWN);
   const manualGrantCouponAmount = dec(manualGrantCouponRow?._sum.consumeAmount);
   const manualGrantCouponCount = manualGrantCouponRow?._count.id ?? 0;
   const vipBenefitCouponAmount = dec(vipBenefitCouponRow?._sum.consumeAmount);
@@ -496,17 +526,24 @@ export default async function AdminRevenuePage(props: PageProps) {
   const chatDropCouponCount = chatDropCouponRow?._count.id ?? 0;
   const openingCampaignCouponAmount = dec(openingCampaignCouponRow?._sum.consumeAmount);
   const openingCampaignCouponCount = openingCampaignCouponRow?._count.id ?? 0;
+  const giftWallCouponAmount = dec(giftWallCouponRow?._sum.consumeAmount);
+  const giftWallCouponCount = giftWallCouponRow?._count.id ?? 0;
+  const unknownCouponAmount = dec(unknownCouponRow?._sum.consumeAmount);
+  const unknownCouponCount = unknownCouponRow?._count.id ?? 0;
   const couponExpenseAmount = manualGrantCouponAmount
     .add(vipBenefitCouponAmount)
     .add(chatDropCouponAmount)
-    .add(openingCampaignCouponAmount);
+    .add(openingCampaignCouponAmount)
+    .add(giftWallCouponAmount)
+    .add(unknownCouponAmount)
+    .add(voucherReversals.couponAdjustment);
   const couponExpenseCount =
     manualGrantCouponCount +
     vipBenefitCouponCount +
     chatDropCouponCount +
-    openingCampaignCouponCount;
-  const totalExpenseAmount = expenseBreakdown.totalAmount.add(couponExpenseAmount);
-  const totalExpenseCount = expenseBreakdown.totalCount + couponExpenseCount;
+    openingCampaignCouponCount +
+    giftWallCouponCount +
+    unknownCouponCount;
 
   const pointShopOrderWhere: Prisma.PointShopOrderWhereInput = {
     createdAt: { gte: start, lt: end },
@@ -526,8 +563,12 @@ export default async function AdminRevenuePage(props: PageProps) {
       }),
       prisma.pointShopGrant.aggregate({
         _sum: { consumeAmount: true },
+        _count: { id: true },
         where: {
           deliveryType: 'COUPON',
+          deliveryStatus: 'DELIVERED',
+          couponStatus: CouponStatus.USED,
+          issuedAt: newEntityOnlyTime(),
           consumedAt: { gte: start, lt: end },
           ...(buildIdentityExclusion(
             'dlmId',
@@ -539,8 +580,10 @@ export default async function AdminRevenuePage(props: PageProps) {
       }),
       prisma.pointShopGrant.aggregate({
         _sum: { consumeAmount: true },
+        _count: { id: true },
         where: {
           deliveryType: 'BALANCE',
+          deliveryStatus: 'DELIVERED',
           issuedAt: { gte: start, lt: end },
           ...(buildIdentityExclusion(
             'dlmId',
@@ -551,6 +594,16 @@ export default async function AdminRevenuePage(props: PageProps) {
         },
       }),
     ]);
+  const pointShopCouponExpense = dec(pointShopCouponConsumedAgg._sum.consumeAmount);
+  const pointShopCouponExpenseNet = pointShopCouponExpense.add(voucherReversals.pointShopAdjustment);
+  const pointShopBalanceExpense = dec(pointShopBalanceAgg._sum.consumeAmount);
+  const totalExpenseAmount = expenseBreakdown.totalAmount
+    .add(couponExpenseAmount)
+    .add(pointShopCouponExpenseNet)
+    .add(pointShopBalanceExpense);
+  const totalExpenseCount = expenseBreakdown.totalCount + couponExpenseCount
+    + pointShopCouponConsumedAgg._count.id + pointShopBalanceAgg._count.id
+    + voucherReversals.rows.filter((row) => row.kind !== 'lottery').length;
 
   const fusionRevenue = await getLotteryFusionRevenueSummary({
     start,
@@ -691,7 +744,8 @@ export default async function AdminRevenuePage(props: PageProps) {
           <div className="space-y-1 text-sm text-white/70">
             <p>DlmUser.recharge 合计：¥{formatNumber(dlmAgg._sum.recharge)}</p>
             <p>DlmUser.income 合计：¥{formatNumber(dlmAgg._sum.income)}</p>
-            <p>DlmUser.totalBalance 合计：¥{formatNumber(dlmAgg._sum.totalBalance)}</p>
+            <p>用户当前有效余额（优先 Member）：¥{formatNumber(effectiveUserBalance)}</p>
+            <p className="text-white/45">DlmUser 镜像余额：¥{formatNumber(dlmAgg._sum.totalBalance)}</p>
             <p>当月 Commission 合计：¥{formatNumber(commissionTotalNetAll)}</p>
           </div>
         </div>
@@ -710,7 +764,7 @@ export default async function AdminRevenuePage(props: PageProps) {
           <h3 className="text-lg font-semibold">刮刮乐收益</h3>
           <div className="space-y-1 text-sm text-white/70">
             <p>已刮开数量：{scratchRevealedCount}</p>
-            <p>毛收入（已刮开数量 × 19）：¥{formatNumber(scratchGross)}</p>
+            <p>购卡收入（钱包实际扣款）：¥{formatNumber(scratchGross)}</p>
             <p>中奖支出：¥{formatNumber(scratchReward)}</p>
             <p className="text-white">净收益：¥{formatNumber(scratchNet)}</p>
           </div>
@@ -757,6 +811,11 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>Coupon表格金额（VIP福利）：{vipBenefitCouponCount}笔，¥{formatNumber(vipBenefitCouponAmount, 4)}</p>
             <p>Coupon表格金额（彩蛋）：{chatDropCouponCount}笔，¥{formatNumber(chatDropCouponAmount, 4)}</p>
             <p>Coupon表格金额（开业活动）：{openingCampaignCouponCount}笔，¥{formatNumber(openingCampaignCouponAmount, 4)}</p>
+            <p>Coupon表格金额（礼物墙）：{giftWallCouponCount}笔，¥{formatNumber(giftWallCouponAmount, 4)}</p>
+            <p>Coupon表格金额（未分类）：{unknownCouponCount}笔，¥{formatNumber(unknownCouponAmount, 4)}</p>
+            <p>积分商城券已使用：{pointShopCouponConsumedAgg._count.id}笔，¥{formatNumber(pointShopCouponExpense, 4)}</p>
+            <p>券撤销调整（原使用月保留／撤销月冲回）：¥{formatNumber(voucherReversals.couponAdjustment.add(voucherReversals.pointShopAdjustment), 4)}</p>
+            <p>积分商城余额到账：{pointShopBalanceAgg._count.id}笔，¥{formatNumber(pointShopBalanceExpense, 4)}</p>
             <p className="font-semibold text-white">总支出：{totalExpenseCount}笔，¥{formatNumber(totalExpenseAmount, 4)}</p>
             <p>总扣款金额(收入）：¥{formatNumber(pureProfitAgg._sum.amount, 4)}</p>
           </div>
