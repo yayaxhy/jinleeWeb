@@ -72,9 +72,6 @@ export default async function WechatAlipayRechargePage() {
           ))}
         </div>
 
-        <p className="text-center text-sm text-gray-500">
-          请选择与付款方式对应的收款码。客服确认截图后会协助为你的账户处理充值。
-        </p>
       </section>
     </main>
   );

@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
         pathname: '/lottery-fusion/**',
       },
       {
+        pathname: '/recharge/**',
+      },
+      {
         pathname: '/peiwanRecommend/**',
       },
     ],
