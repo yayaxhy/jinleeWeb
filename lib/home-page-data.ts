@@ -324,6 +324,67 @@ const topRankingAmounts = (amountMap: Map<string, number>) =>
     .sort((a, b) => b[1] - a[1])
     .slice(0, HOME_RANK_LIMIT);
 
+type ManualWechatBossSpend = {
+  dlmId: string;
+  displayName: string;
+  periodSpent: number;
+  totalSpent: string;
+};
+
+async function loadManualWechatBossSpend(start: Date, end: Date): Promise<ManualWechatBossSpend[]> {
+  const rows = await prisma.individualTransaction.findMany({
+    where: {
+      discordId: null,
+      dlmId: { not: null },
+      timeCreatedAt: { ...newEntityOnlyTime(start), lt: end },
+      typeOfTransaction: { in: Array.from(new Set([...SPEND_POSITIVE_TYPES, ...REVERT_TYPES])) },
+    },
+    select: { dlmId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true },
+  });
+
+  const spentByDlmId = new Map<string, number>();
+  rows.forEach((row) => {
+    if (!row.dlmId) return;
+    const before = parseNumeric(row.balanceBefore) ?? 0;
+    const after = parseNumeric(row.balanceAfter) ?? 0;
+    const delta = before - after;
+    const txType = String(row.typeOfTransaction ?? '');
+    if (SPEND_POSITIVE_TYPES.has(txType)) {
+      if (delta <= 0) return;
+    } else if (REVERT_TYPES.has(txType)) {
+      if (delta >= 0) return;
+    } else {
+      return;
+    }
+    spentByDlmId.set(row.dlmId, (spentByDlmId.get(row.dlmId) ?? 0) + delta);
+  });
+
+  const dlmIds = [...spentByDlmId.keys()];
+  if (!dlmIds.length) return [];
+  const bosses = await prisma.manualWechatBoss.findMany({
+    where: { dlmId: { in: dlmIds } },
+    select: {
+      dlmId: true,
+      displayName: true,
+      wechatContact: true,
+      dlmUser: { select: { discordUserId: true, totalSpent: true } },
+    },
+  });
+
+  return bosses.flatMap((boss) => {
+    // A linked account is already represented by its Discord ledger.
+    if (boss.dlmUser.discordUserId) return [];
+    const periodSpent = spentByDlmId.get(boss.dlmId) ?? 0;
+    if (periodSpent <= 0) return [];
+    return [{
+      dlmId: boss.dlmId,
+      displayName: boss.displayName?.trim() || boss.wechatContact,
+      periodSpent,
+      totalSpent: boss.dlmUser.totalSpent.toString(),
+    }];
+  });
+}
+
 async function readRecommendationImages(issues: string[]) {
   const dir = path.join(process.cwd(), 'public', 'peiwanRecommend');
 
@@ -469,16 +530,29 @@ async function buildCompanionRanking(period: PeriodKey, issues: string[]) {
 
 async function buildBossRanking(period: PeriodKey, issues: string[]) {
   const { start, end } = getLeaderboardRange(period);
-  const spendMap = await loadActualSpend(start, end);
-  const top = topRankingAmounts(spendMap);
+  const [spendMap, manualWechatBossSpends] = await Promise.all([
+    loadActualSpend(start, end),
+    loadManualWechatBossSpend(start, end),
+  ]);
+  const top = [
+    ...topRankingAmounts(spendMap).map(([discordUserId, periodSpent]) => ({
+      kind: 'discord' as const,
+      discordUserId,
+      periodSpent,
+    })),
+    ...manualWechatBossSpends.map((boss) => ({ kind: 'manualWechat' as const, ...boss })),
+  ]
+    .sort((left, right) => right.periodSpent - left.periodSpent)
+    .slice(0, HOME_RANK_LIMIT);
 
   if (top.length === 0) {
-    issues.push(`老板${period}：Discord 榜单周期内暂无消费流水。`);
+    issues.push(`老板${period}：榜单周期内暂无消费流水。`);
     return [];
   }
 
+  const discordUserIds = top.flatMap((entry) => entry.kind === 'discord' ? [entry.discordUserId] : []);
   const members = await prisma.member.findMany({
-    where: { discordUserId: { in: top.map(([discordUserId]) => discordUserId) } },
+    where: { discordUserId: { in: discordUserIds } },
     select: {
       discordUserId: true,
       serverDisplayName: true,
@@ -495,7 +569,18 @@ async function buildBossRanking(period: PeriodKey, issues: string[]) {
   });
   const memberMap = new Map(members.map((member) => [member.discordUserId, member]));
 
-  return top.map(([discordUserId], index): RankingItem => {
+  return top.map((entry, index): RankingItem => {
+    if (entry.kind === 'manualWechat') {
+      return {
+        name: entry.displayName,
+        tag: '微信老板',
+        tone: bossTones[index % bossTones.length],
+        avatarUrl: null,
+        vipLevel: getHighestVipLevelByTotalSpent(entry.totalSpent),
+      };
+    }
+
+    const { discordUserId } = entry;
     const member = memberMap.get(discordUserId);
     const profile = member?.bossProfile;
     const currentProfile = profile && profile.firstSeenAt && profile.firstSeenAt.getTime() > NEW_ENTITY_OPERATIONS_STARTED_AT.getTime()
@@ -741,7 +826,7 @@ export async function loadHomePageData(): Promise<HomePageData> {
     '老板榜：官网当前复用 Discord 榜单的固定匿名 ID；正式后台可追加“是否匿名上榜”偏好字段。',
     '陪玩推荐：推荐理由、主推文案、展示顺序目前不是后台字段，当前从推荐图、游戏标签和状态自动生成。',
     '头像：榜单会优先读取 DlmUser 的 Discord/微信头像；没有头像时回退为首字母占位。',
-    '榜单：官网日榜/周榜/月榜已按 Discord 榜单口径读取实际流水，并使用 Europe/Rome 时区。',
+    '榜单：官网日榜/周榜/月榜按实际消费流水统计，包含没有 Discord 的微信老板，并使用 Europe/Rome 时区。',
   ];
 
   try {

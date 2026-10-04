@@ -44,14 +44,9 @@ import {
 } from '@/lib/admin/lottery-fusion-revenue';
 import { getVoucherReversalAdjustments } from '@/lib/admin/voucher-reversal';
 
-const DEFAULT_CAPITAL_AMOUNT = 120000;
 // The new operating entity started with no money in its bank account.
 const NEW_ENTITY_OPENING_BANK_BALANCE = new Prisma.Decimal(0);
 const PRIOR_PERIOD_ADJUSTMENT_PREFIX = '前期调整（';
-// The original ¥120,000 injection is historical only. Starting with the
-// September 2026 report, both the asset-side invested capital and the
-// equity-side shareholder contribution are presented as zero.
-const CAPITAL_ZERO_FROM = { year: 2026, month: 9 };
 const REPORT_STORAGE_DIR =
   process.env.ADMIN_REVENUE_REPORT_DIR || path.join(process.cwd(), 'storage', 'admin-revenue-files');
 const ADJUSTMENTS_FILE_PATH =
@@ -82,8 +77,9 @@ export const calculateRecordedBankCash = (
   rechargeInflow: Prisma.Decimal,
   withdrawalOutflow: Prisma.Decimal,
   manualExpenseOutflow: Prisma.Decimal,
+  dividendPaymentOutflow = new Prisma.Decimal(0),
 ) => {
-  const movement = rechargeInflow.sub(withdrawalOutflow).sub(manualExpenseOutflow);
+  const movement = rechargeInflow.sub(withdrawalOutflow).sub(manualExpenseOutflow).sub(dividendPaymentOutflow);
   return { movement, closing: opening.add(movement) };
 };
 
@@ -138,6 +134,91 @@ type MonthFinancialAdjustments = {
   assetRows: BalanceAdjustmentRow[];
   liabilityRows: BalanceAdjustmentRow[];
   equityRows: BalanceAdjustmentRow[];
+};
+
+type BalanceSheetModelRow = {
+  item: string;
+  category: string;
+  note: string;
+  amount: Prisma.Decimal;
+};
+
+// Profit and loss changes equity; it is neither a cash asset nor an
+// automatically declared dividend. Keep unreconciled balances visible.
+export const buildMonthlyBalanceSheetModel = (params: {
+  estimatedBankCash: Prisma.Decimal;
+  userBalance: Prisma.Decimal;
+  netProfit: Prisma.Decimal;
+  openingCapital: Prisma.Decimal;
+  dividendDeclared: Prisma.Decimal;
+  dividendPayable: Prisma.Decimal;
+  adjustments: Pick<MonthFinancialAdjustments, 'priorProfitRows' | 'assetRows' | 'liabilityRows' | 'equityRows'>;
+}) => {
+  const { estimatedBankCash, userBalance, netProfit, openingCapital, dividendDeclared, dividendPayable, adjustments } = params;
+  const mapAdjustments = (rows: BalanceAdjustmentRow[]): BalanceSheetModelRow[] => rows.map((row) => ({
+    item: row.item,
+    category: row.category,
+    note: row.description,
+    amount: dec(row.amount),
+  }));
+  const assetRows: BalanceSheetModelRow[] = [
+    {
+      item: '期末银行余额（账面推算）',
+      category: '现金（待核对）',
+      note: '根据已记录现金收支推算，尚未与银行流水核对',
+      amount: estimatedBankCash,
+    },
+    ...mapAdjustments(adjustments.assetRows),
+  ];
+  const liabilityRows: BalanceSheetModelRow[] = [
+    {
+      item: '用户余额',
+      category: '流动负债',
+      note: '已按 admin 排除规则计算；仍需核对新主体承担范围',
+      amount: userBalance,
+    },
+    { item: '应付分红', category: '流动负债', note: '已决定但尚未实际付款', amount: dividendPayable },
+    ...mapAdjustments(adjustments.liabilityRows),
+  ];
+  const equityRows: BalanceSheetModelRow[] = [
+    { item: '期初经营资本', category: '资本结转', note: '含前期盈亏及已决定分红；允许为负', amount: openingCapital },
+    ...adjustments.priorProfitRows.map((row) => ({
+      item: row.label,
+      category: '前期盈亏',
+      note: row.note,
+      amount: dec(row.amount),
+    })),
+    {
+      item: '当月盈亏',
+      category: netProfit.gt(0) ? '本期盈利' : netProfit.lt(0) ? '本期亏损' : '本期持平',
+      note: '本月收入合计－支出合计；非股东分红',
+      amount: netProfit,
+    },
+    {
+      item: dividendDeclared.lt(0) ? '分红决定冲回' : '已决定分红',
+      category: '资本分配',
+      note: '正数决定减少资本、增加应付；冲回则相反，不计入利润表支出',
+      amount: dividendDeclared.neg(),
+    },
+    ...mapAdjustments(adjustments.equityRows),
+  ];
+  const sumRows = (rows: BalanceSheetModelRow[]) => rows.reduce(
+    (sum, row) => sum.add(row.amount), new Prisma.Decimal(0),
+  );
+  const assetTotal = sumRows(assetRows);
+  const liabilityTotal = sumRows(liabilityRows);
+  const equityTotal = sumRows(equityRows);
+  const liabilityAndEquityTotal = liabilityTotal.add(equityTotal);
+  return {
+    assetRows,
+    liabilityRows,
+    equityRows,
+    assetTotal,
+    liabilityTotal,
+    equityTotal,
+    liabilityAndEquityTotal,
+    reconciliationDifference: assetTotal.sub(liabilityAndEquityTotal),
+  };
 };
 
 type FinancialAdjustmentConfig = {
@@ -1096,21 +1177,6 @@ const setCountCell = (cell: ExcelJS.Cell, value: number) => {
 const getLastDayOfMonth = (year: number, month: number) =>
   new Date(Date.UTC(year, month, 0)).getUTCDate();
 
-const getMonthLabel = (year: number, month: number) => `${month}月`;
-
-const isCapitalZeroReport = (year: number, month: number) =>
-  year > CAPITAL_ZERO_FROM.year ||
-  (year === CAPITAL_ZERO_FROM.year && month >= CAPITAL_ZERO_FROM.month);
-
-const getCapitalAmountForReport = (
-  year: number,
-  month: number,
-  adjustmentAmount?: number,
-) => {
-  if (isCapitalZeroReport(year, month)) return 0;
-  return adjustmentAmount ?? DEFAULT_CAPITAL_AMOUNT;
-};
-
 const buildIncomeStatementRows = (
   data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>,
   adjustments: MonthFinancialAdjustments,
@@ -1265,9 +1331,11 @@ function buildFinancialStatementWorkbook(params: {
   data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>;
   adjustments: MonthFinancialAdjustments;
   cashOpeningBalance: Prisma.Decimal;
+  openingCapital: Prisma.Decimal;
+  dividendLedger: Awaited<ReturnType<typeof getDividendLedgerState>>;
   walletReconciliation?: MonthlyFinancialReportPreview['walletReconciliation'];
 }) {
-  const { year, month, data, adjustments, cashOpeningBalance, walletReconciliation } = params;
+  const { year, month, data, adjustments, cashOpeningBalance, openingCapital, dividendLedger, walletReconciliation } = params;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
@@ -1281,7 +1349,7 @@ function buildFinancialStatementWorkbook(params: {
   const netProfit = incomeTotal.sub(expenseTotal);
   const recordedBankCash = calculateRecordedBankCash(
     cashOpeningBalance, data.totals.rechargeCashInflow,
-    data.totals.withdrawTotal, data.totals.manualCashExpenseTotal,
+    data.totals.withdrawTotal, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
   );
 
   const profitSheet = workbook.addWorksheet('利润表', {
@@ -1349,7 +1417,7 @@ function buildFinancialStatementWorkbook(params: {
   };
   expenseTotalSheetRow.getCell(5).numFmt = COUNT_FORMAT;
   styleTotalRow(expenseTotalSheetRow, EXPENSE_TOTAL_FILL);
-  const netProfitRow = profitSheet.addRow(['净利润', null, null, null, null, '收入合计 - 支出合计']);
+  const netProfitRow = profitSheet.addRow(['当月盈亏', null, null, null, null, '收入合计 - 支出合计']);
   setMoneyFormulaCell(netProfitRow.getCell(4), `D${incomeTotalRow}-D${expenseTotalRow}`, netProfit);
   styleTotalRow(netProfitRow);
   if (expenseRows.length) {
@@ -1359,14 +1427,15 @@ function buildFinancialStatementWorkbook(params: {
     };
   }
 
-  const capitalAmount = getCapitalAmountForReport(year, month, adjustments.capitalAmount);
-  const capitalDescription = isCapitalZeroReport(year, month)
-    ? '自 2026 年 9 月起不计入'
-    : '初始注资保留';
-  const priorProfitTotal = adjustments.priorProfitRows.reduce(
-    (sum, row) => sum.add(dec(row.amount)),
-    new Prisma.Decimal(0),
-  );
+  const balanceModel = buildMonthlyBalanceSheetModel({
+    estimatedBankCash: recordedBankCash.closing,
+    userBalance: data.totals.memberBalanceTotal,
+    netProfit,
+    openingCapital,
+    dividendDeclared: dividendLedger.declaredThisMonth,
+    dividendPayable: dividendLedger.payableAtMonthEnd,
+    adjustments,
+  });
   const balanceSheet = workbook.addWorksheet('资产负债表', {
     views: [{ state: 'frozen', ySplit: 4, showGridLines: false }],
   });
@@ -1385,107 +1454,72 @@ function buildFinancialStatementWorkbook(params: {
   const assetSectionRow = balanceSheet.addRow(['资产', null, null, null]);
   styleTotalRow(assetSectionRow);
   const assetStartRow = assetSectionRow.number + 1;
-  const assetRows: BalanceAdjustmentRow[] = [
-    { item: '总用户余额', category: '', amount: toNumber(data.totals.memberBalanceTotal), description: '' },
-    ...adjustments.priorProfitRows.map((row) => ({
-      item: row.label,
-      category: '',
-      amount: row.amount,
-      description: row.note,
-    })),
-    {
-      item: `${getMonthLabel(year, month)}盈利`,
-      category: '',
-      amount: toNumber(netProfit),
-      description: '分红',
-    },
-    { item: '投入资本', category: '', amount: capitalAmount, description: capitalDescription },
-    ...adjustments.assetRows,
-  ];
-  for (const row of assetRows) {
+  for (const row of balanceModel.assetRows) {
     const sheetRow = balanceSheet.addRow([
       row.item,
       blankToNull(row.category),
       null,
-      blankToNull(row.description),
+      blankToNull(row.note),
     ]);
     setMoneyCell(sheetRow.getCell(3), row.amount);
   }
-  const assetEndRow = assetStartRow + assetRows.length - 1;
-  const assetTotalRow = balanceSheet.addRow(['资产合计（模型推算）', null, null, '不是银行账户余额；银行期初已确认 ¥0，仍待收支及科目对账']);
-  setMoneyFormulaCell(assetTotalRow.getCell(3), `SUM(C${assetStartRow}:C${assetEndRow})`, data.totals.memberBalanceTotal.add(priorProfitTotal).add(netProfit).add(capitalAmount).add(adjustments.assetRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0))));
+  const assetEndRow = assetStartRow + balanceModel.assetRows.length - 1;
+  const assetTotalRow = balanceSheet.addRow(['资产合计（待核对）', null, null, '银行余额来自已记录现金收支推算，不能视为实有资产证明']);
+  setMoneyFormulaCell(assetTotalRow.getCell(3), `SUM(C${assetStartRow}:C${assetEndRow})`, balanceModel.assetTotal);
   styleTotalRow(assetTotalRow);
 
   balanceSheet.addRow([]);
   const liabilitySectionRow = balanceSheet.addRow(['负债', null, null, null]);
   styleTotalRow(liabilitySectionRow, EXPENSE_TOTAL_FILL);
   const liabilityStartRow = liabilitySectionRow.number + 1;
-  const payableDividends = priorProfitTotal.add(netProfit);
-  const liabilityRows: BalanceAdjustmentRow[] = [
-    {
-      item: '用户余额',
-      category: '流动负债',
-      amount: toNumber(data.totals.memberBalanceTotal),
-      description: '已按 admin 排除规则计算',
-    },
-    {
-      item: '应付分红',
-      category: '流动负债',
-      amount: toNumber(payableDividends),
-      description: '月底前尚未支付',
-    },
-    ...adjustments.liabilityRows,
-  ];
-  for (const row of liabilityRows) {
+  for (const row of balanceModel.liabilityRows) {
     const sheetRow = balanceSheet.addRow([
       row.item,
       blankToNull(row.category),
       null,
-      blankToNull(row.description),
+      blankToNull(row.note),
     ]);
     setMoneyCell(sheetRow.getCell(3), row.amount);
   }
-  const liabilityEndRow = liabilityStartRow + liabilityRows.length - 1;
-  const liabilityTotal = data.totals.memberBalanceTotal.add(payableDividends).add(
-    adjustments.liabilityRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0)),
-  );
+  const liabilityEndRow = liabilityStartRow + balanceModel.liabilityRows.length - 1;
   const liabilityTotalRow = balanceSheet.addRow(['负债合计', null, null, null]);
-  setMoneyFormulaCell(liabilityTotalRow.getCell(3), `SUM(C${liabilityStartRow}:C${liabilityEndRow})`, liabilityTotal);
+  setMoneyFormulaCell(liabilityTotalRow.getCell(3), `SUM(C${liabilityStartRow}:C${liabilityEndRow})`, balanceModel.liabilityTotal);
   styleTotalRow(liabilityTotalRow, EXPENSE_TOTAL_FILL);
 
   balanceSheet.addRow([]);
   const equitySectionRow = balanceSheet.addRow(['所有者权益', null, null, null]);
   styleTotalRow(equitySectionRow);
   const equityStartRow = equitySectionRow.number + 1;
-  const equityRows: BalanceAdjustmentRow[] = [
-    { item: '实际资本', category: '股东投入', amount: capitalAmount, description: capitalDescription },
-    ...adjustments.equityRows,
-  ];
-  for (const row of equityRows) {
+  for (const row of balanceModel.equityRows) {
     const sheetRow = balanceSheet.addRow([
       row.item,
       blankToNull(row.category),
       null,
-      blankToNull(row.description),
+      blankToNull(row.note),
     ]);
     setMoneyCell(sheetRow.getCell(3), row.amount);
   }
-  const equityEndRow = equityStartRow + equityRows.length - 1;
-  const equityTotal = new Prisma.Decimal(capitalAmount).add(
-    adjustments.equityRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0)),
-  );
+  const equityEndRow = equityStartRow + balanceModel.equityRows.length - 1;
   const equityTotalRow = balanceSheet.addRow(['所有者权益合计', null, null, null]);
-  setMoneyFormulaCell(equityTotalRow.getCell(3), `SUM(C${equityStartRow}:C${equityEndRow})`, equityTotal);
+  setMoneyFormulaCell(equityTotalRow.getCell(3), `SUM(C${equityStartRow}:C${equityEndRow})`, balanceModel.equityTotal);
   styleTotalRow(equityTotalRow);
 
   balanceSheet.addRow([]);
-  const totalLiabilityEquityRow = balanceSheet.addRow(['负债和所有者权益总计', null, null, '应等于资产总计']);
+  const totalLiabilityEquityRow = balanceSheet.addRow(['负债和所有者权益总计', null, null, '与资产的差额须逐项核对，不自动配平']);
   setMoneyFormulaCell(
     totalLiabilityEquityRow.getCell(3),
     `C${liabilityTotalRow.number}+C${equityTotalRow.number}`,
-    liabilityTotal.add(equityTotal),
+    balanceModel.liabilityAndEquityTotal,
   );
   styleTotalRow(totalLiabilityEquityRow);
+
+  const reconciliationRow = balanceSheet.addRow(['资产减负债和所有者权益（待核对）', null, null, '差额为零也不能替代银行流水和科目核对']);
+  setMoneyFormulaCell(
+    reconciliationRow.getCell(3),
+    `C${assetTotalRow.number}-C${totalLiabilityEquityRow.number}`,
+    balanceModel.reconciliationDifference,
+  );
+  styleTotalRow(reconciliationRow, EXPENSE_TOTAL_FILL);
 
   addKeyValueSheet(workbook, '现金收支核对', [
     ...(walletReconciliation ? [
@@ -1501,13 +1535,16 @@ function buildFinancialStatementWorkbook(params: {
     { section: '实际现金流入', key: '正数 Recharge', value: data.totals.rechargeCashInflow.toString() },
     { section: '实际现金流出', key: '提现（按已打款口径）', value: data.totals.withdrawTotal.toString() },
     { section: '实际现金流出', key: '人工记录支出（不含前期调整）', value: data.totals.manualCashExpenseTotal.toString() },
+    { section: '实际现金流出', key: '已支付股东分红', value: dividendLedger.paidThisMonth.toString() },
+    { section: '利润分配', key: '当月决定分红', value: dividendLedger.declaredThisMonth.toString() },
+    { section: '利润分配', key: '期末应付分红', value: dividendLedger.payableAtMonthEnd.toString() },
     { section: '现金余额推算', key: '本期已记录现金净流入', value: recordedBankCash.movement.toString() },
     { section: '现金余额推算', key: '期末账面银行余额（待核对）', value: recordedBankCash.closing.toString() },
     { section: '非当月现金流', key: '前期支出调整', value: data.totals.priorPeriodExpenseAdjustmentTotal.toString() },
     { section: '待核对', key: '负数 Recharge（扣款或退款需区分）', value: data.totals.negativeRechargeAmount.toString() },
     { section: '说明', key: '预存余额消费', value: '不产生新的银行现金流入' },
     { section: '说明', key: 'Stripe 手续费', value: '由人工支出记录，勿自动重复计入' },
-    { section: '说明', key: '资产合计', value: '现为经营模型推算，不代表实有银行现金；期末账面银行余额仍须与银行流水、负数 Recharge 分类核对' },
+    { section: '说明', key: '资产合计', value: '银行余额为已记录现金收支推算，须与银行流水核对；盈亏仅列入所有者权益，不作为资产或自动分红' },
   ]);
 
   return workbook;
@@ -1775,6 +1812,12 @@ const getRecordedBankOpeningBalance = async (monthKey: string) => {
   for (let year = 2026, month = 9; formatCentralEuropeanMonthKey(year, month) < monthKey;) {
     const previousMonthKey = formatCentralEuropeanMonthKey(year, month);
     const confirmed = await readConfirmedMonthlyReport(previousMonthKey);
+    const range = buildCentralEuropeanMonthRange(year, month);
+    const payments = await prisma.monthlyDividendPayment.findMany({
+      where: { paidAt: { gte: newEntityReportStart(range.start), lt: range.end } },
+      select: { amount: true },
+    });
+    balance = balance.sub(decimalSum(payments, 'amount'));
     if (confirmed) {
       const cashFlow = confirmed.preview.cashFlow;
       balance = balance
@@ -1782,7 +1825,6 @@ const getRecordedBankOpeningBalance = async (monthKey: string) => {
         .sub(dec(cashFlow.withdrawalOutflow))
         .sub(dec(cashFlow.manualExpenseOutflow));
     } else {
-      const range = buildCentralEuropeanMonthRange(year, month);
       const [recharges, withdrawals, manualExpenses] = await Promise.all([
         prisma.recharge.findMany({
           where: { createdAt: { gte: newEntityReportStart(range.start), lt: range.end }, amount: { gt: 0 } },
@@ -1808,12 +1850,68 @@ const getRecordedBankOpeningBalance = async (monthKey: string) => {
   return balance;
 };
 
+export const getDividendLedgerState = async (monthKey: string) => {
+  const target = parseMonthlyReportMonthKey(monthKey);
+  if (!target || !isNewEntityReportMonth(monthKey)) throw new Error('无效的新主体月份');
+  const [decisions, payments] = await Promise.all([
+    prisma.monthlyDividendDecision.findMany({
+      where: { monthKey: { lte: monthKey } },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.monthlyDividendPayment.findMany({
+      where: { paidAt: { gte: NEW_ENTITY_OPERATIONS_STARTED_AT, lt: target.end } },
+      orderBy: { paidAt: 'asc' },
+    }),
+  ]);
+  const monthDecisions = decisions.filter((row) => row.monthKey === monthKey);
+  const monthPayments = payments.filter((row) => row.paidAt >= target.start);
+  return {
+    decisions: monthDecisions,
+    payments: monthPayments,
+    declaredThisMonth: decimalSum(monthDecisions, 'amount'),
+    paidThisMonth: decimalSum(monthPayments, 'amount'),
+    payableAtMonthEnd: decimalSum(decisions, 'amount').sub(decimalSum(payments, 'amount')),
+  };
+};
+
+const getOpeningOperatingCapital = async (monthKey: string) => {
+  let capital = new Prisma.Decimal(0);
+  const decisions = await prisma.monthlyDividendDecision.findMany({
+    where: { monthKey: { lt: monthKey } }, select: { monthKey: true, amount: true },
+  });
+  const declaredByMonth = new Map<string, Prisma.Decimal>();
+  for (const row of decisions) {
+    declaredByMonth.set(row.monthKey, (declaredByMonth.get(row.monthKey) ?? dec(0)).add(row.amount));
+  }
+  for (let year = 2026, month = 9; formatCentralEuropeanMonthKey(year, month) < monthKey;) {
+    const priorMonthKey = formatCentralEuropeanMonthKey(year, month);
+    const confirmed = await readConfirmedMonthlyReport(priorMonthKey);
+    let netProfit: Prisma.Decimal;
+    if (confirmed) {
+      netProfit = dec(confirmed.preview.netProfit);
+    } else {
+      const range = buildCentralEuropeanMonthRange(year, month);
+      const [data, adjustments] = await Promise.all([
+        loadMonthlyRevenueData({ start: range.start, end: range.end, monthKey: priorMonthKey }),
+        readFinancialAdjustments(priorMonthKey),
+      ]);
+      const income = buildIncomeStatementRows(data, adjustments).reduce((sum, row) => sum.add(dec(row.amount)), dec(0));
+      const expense = buildIncomeStatementExpenseRows(data, adjustments).reduce((sum, row) => sum.add(dec(row.amount)), dec(0));
+      netProfit = income.sub(expense);
+    }
+    capital = capital.add(netProfit).sub(declaredByMonth.get(priorMonthKey) ?? dec(0));
+    month += 1;
+    if (month > 12) { year += 1; month = 1; }
+  }
+  return capital;
+};
+
 const loadMonthlyFinancialReportContext = async (monthKey?: string) => {
   const target = getTargetMonth(monthKey);
   if (!isNewEntityReportMonth(target.monthKey)) {
     throw new Error('旧主体期间的月报仅保留在旧主体归档中，不能在新主体后台查看或生成。');
   }
-  const [adjustments, data, cashOpeningBalance] = await Promise.all([
+  const [adjustments, data, cashOpeningBalance, openingCapital, dividendLedger] = await Promise.all([
     readFinancialAdjustments(target.monthKey),
     loadMonthlyRevenueData({
       start: target.start,
@@ -1821,6 +1919,8 @@ const loadMonthlyFinancialReportContext = async (monthKey?: string) => {
       monthKey: target.monthKey,
     }),
     getRecordedBankOpeningBalance(target.monthKey),
+    getOpeningOperatingCapital(target.monthKey),
+    getDividendLedgerState(target.monthKey),
   ]);
   const walletBalances = target.end <= new Date() ? await getWalletBalancesAtMonthEnd(target.end) : null;
   if (walletBalances) {
@@ -1831,7 +1931,7 @@ const loadMonthlyFinancialReportContext = async (monthKey?: string) => {
     }));
     data.totals.memberBalanceTotal = decimalSum(data.rows.memberRows, 'totalBalance');
   }
-  return { target, adjustments, data, walletBalances, cashOpeningBalance };
+  return { target, adjustments, data, walletBalances, cashOpeningBalance, openingCapital, dividendLedger };
 };
 
 type FinancialReportPreviewRow = {
@@ -1843,7 +1943,7 @@ type FinancialReportPreviewRow = {
   count?: number;
 };
 
-const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpeningBalance }: Awaited<ReturnType<typeof loadMonthlyFinancialReportContext>>) => {
+const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpeningBalance, openingCapital, dividendLedger }: Awaited<ReturnType<typeof loadMonthlyFinancialReportContext>>) => {
   const incomeRows = buildIncomeStatementRows(data, adjustments);
   const expenseRows = buildIncomeStatementExpenseRows(data, adjustments);
   const incomeTotal = incomeRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0));
@@ -1851,64 +1951,23 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
   const netProfit = incomeTotal.sub(expenseTotal);
   const recordedBankCash = calculateRecordedBankCash(
     cashOpeningBalance, data.totals.rechargeCashInflow,
-    data.totals.withdrawTotal, data.totals.manualCashExpenseTotal,
+    data.totals.withdrawTotal, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
   );
-  const capitalAmount = getCapitalAmountForReport(target.year, target.month, adjustments.capitalAmount);
-  const capitalDescription = isCapitalZeroReport(target.year, target.month)
-    ? '自 2026 年 9 月起不计入'
-    : '初始注资保留';
-  const priorProfitTotal = adjustments.priorProfitRows.reduce(
-    (sum, row) => sum.add(dec(row.amount)),
-    new Prisma.Decimal(0),
-  );
-  const assetRows: FinancialReportPreviewRow[] = [
-    { item: '总用户余额', amount: data.totals.memberBalanceTotal.toString() },
-    ...adjustments.priorProfitRows.map((row) => ({ item: row.label, note: row.note, amount: String(row.amount) })),
-    { item: `${getMonthLabel(target.year, target.month)}盈利`, note: '分红', amount: netProfit.toString() },
-    { item: '投入资本', note: capitalDescription, amount: String(capitalAmount) },
-    ...adjustments.assetRows.map((row) => ({
-      item: row.item,
-      category: row.category,
-      note: row.description,
-      amount: String(row.amount),
-    })),
-  ];
-  const assetTotal = data.totals.memberBalanceTotal
-    .add(priorProfitTotal)
-    .add(netProfit)
-    .add(capitalAmount)
-    .add(adjustments.assetRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0)));
-  const payableDividends = priorProfitTotal.add(netProfit);
-  const liabilityRows: FinancialReportPreviewRow[] = [
-    {
-      item: '用户余额',
-      category: '流动负债',
-      note: '已按 admin 排除规则计算',
-      amount: data.totals.memberBalanceTotal.toString(),
-    },
-    { item: '应付分红', category: '流动负债', note: '月底前尚未支付', amount: payableDividends.toString() },
-    ...adjustments.liabilityRows.map((row) => ({
-      item: row.item,
-      category: row.category,
-      note: row.description,
-      amount: String(row.amount),
-    })),
-  ];
-  const liabilityTotal = data.totals.memberBalanceTotal.add(payableDividends).add(
-    adjustments.liabilityRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0)),
-  );
-  const equityRows: FinancialReportPreviewRow[] = [
-    { item: '实际资本', category: '股东投入', note: capitalDescription, amount: String(capitalAmount) },
-    ...adjustments.equityRows.map((row) => ({
-      item: row.item,
-      category: row.category,
-      note: row.description,
-      amount: String(row.amount),
-    })),
-  ];
-  const equityTotal = new Prisma.Decimal(capitalAmount).add(
-    adjustments.equityRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0)),
-  );
+  const balanceModel = buildMonthlyBalanceSheetModel({
+    estimatedBankCash: recordedBankCash.closing,
+    userBalance: data.totals.memberBalanceTotal,
+    netProfit,
+    openingCapital,
+    dividendDeclared: dividendLedger.declaredThisMonth,
+    dividendPayable: dividendLedger.payableAtMonthEnd,
+    adjustments,
+  });
+  const toPreviewRows = (rows: BalanceSheetModelRow[]): FinancialReportPreviewRow[] => rows.map((row) => ({
+    item: row.item,
+    category: row.category,
+    note: row.note,
+    amount: row.amount.toString(),
+  }));
 
   return {
     monthKey: target.monthKey,
@@ -1930,18 +1989,23 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
       rechargeInflow: data.totals.rechargeCashInflow.toString(),
       withdrawalOutflow: data.totals.withdrawTotal.toString(),
       manualExpenseOutflow: data.totals.manualCashExpenseTotal.toString(),
+      dividendPaymentOutflow: dividendLedger.paidThisMonth.toString(),
       netRecordedCashMovement: recordedBankCash.movement.toString(),
       estimatedClosingBankBalance: recordedBankCash.closing.toString(),
       priorPeriodExpenseAdjustment: data.totals.priorPeriodExpenseAdjustmentTotal.toString(),
       negativeRechargePendingReview: data.totals.negativeRechargeAmount.toString(),
     },
-    assetRows,
-    assetTotal: assetTotal.toString(),
-    liabilityRows,
-    liabilityTotal: liabilityTotal.toString(),
-    equityRows,
-    equityTotal: equityTotal.toString(),
-    liabilityAndEquityTotal: liabilityTotal.add(equityTotal).toString(),
+    assetRows: toPreviewRows(balanceModel.assetRows),
+    assetTotal: balanceModel.assetTotal.toString(),
+    liabilityRows: toPreviewRows(balanceModel.liabilityRows),
+    liabilityTotal: balanceModel.liabilityTotal.toString(),
+    equityRows: toPreviewRows(balanceModel.equityRows),
+    equityTotal: balanceModel.equityTotal.toString(),
+    openingCapital: openingCapital.toString(),
+    dividendDeclared: dividendLedger.declaredThisMonth.toString(),
+    dividendPayable: dividendLedger.payableAtMonthEnd.toString(),
+    liabilityAndEquityTotal: balanceModel.liabilityAndEquityTotal.toString(),
+    reconciliationDifference: balanceModel.reconciliationDifference.toString(),
     manualExpenses: data.rows.manualExpenseRows.map((row) => ({
       id: row.id,
       monthKey: row.monthKey,
@@ -2063,13 +2127,15 @@ export async function getMonthlyFinancialReportExcel(monthKey: string) {
       buffer: await fs.readFile(path.join(REPORT_STORAGE_DIR, monthKey, `${target.year}年${target.month}月财务报表.xlsx`)),
     };
   }
-  const { target, adjustments, data, cashOpeningBalance } = await loadMonthlyFinancialReportContext(monthKey);
+  const { target, adjustments, data, cashOpeningBalance, openingCapital, dividendLedger } = await loadMonthlyFinancialReportContext(monthKey);
   const workbook = buildFinancialStatementWorkbook({
     year: target.year,
     month: target.month,
     data,
     adjustments,
     cashOpeningBalance,
+    openingCapital,
+    dividendLedger,
   });
   return {
     fileName: `${target.year}年${target.month}月财务报表.xlsx`,
@@ -2152,12 +2218,21 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
   const target = parseMonthlyReportMonthKey(monthKey);
   if (!target || !isNewEntityReportMonth(monthKey)) throw new Error('月份无效或属于旧主体。');
   if (target.end > new Date()) throw new Error('本月尚未结束，不能确认月结。');
+  const previousMonthKey = formatCentralEuropeanMonthKey(
+    target.month === 1 ? target.year - 1 : target.year,
+    target.month === 1 ? 12 : target.month - 1,
+  );
 
-  return withMonthlyReportLocks([monthKey], async () => {
+  return withMonthlyReportLocks(
+    isNewEntityReportMonth(previousMonthKey) ? [previousMonthKey, monthKey] : [monthKey],
+    async () => {
   const targetDir = path.join(REPORT_STORAGE_DIR, monthKey);
   const temporaryPaths: string[] = [];
   try {
     if (await readConfirmedMonthlyReport(monthKey)) throw new Error('该月份已经确认，不能覆盖原报表。');
+    if (isNewEntityReportMonth(previousMonthKey) && !await readConfirmedMonthlyReport(previousMonthKey)) {
+      throw new Error('请先确认上一个月份，再确认本月；经营资本必须按已确认数字逐月结转。');
+    }
     const context = await loadMonthlyFinancialReportContext(monthKey);
     // Rewind through the entire period, not only transactions after month-end.
     // A closing balance without a continuous opening-to-closing ledger must
@@ -2220,6 +2295,8 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
       data: context.data,
       adjustments: context.adjustments,
       cashOpeningBalance: context.cashOpeningBalance,
+      openingCapital: context.openingCapital,
+      dividendLedger: context.dividendLedger,
       walletReconciliation: preview.walletReconciliation,
     });
     const adminDataWorkbook = buildAdminRevenueDataWorkbook(context.data, walletLedgerRows);
@@ -2313,7 +2390,7 @@ export async function generateStoredMonthlyFinancialReports(params: {
       adminData: { filePath: adminDataFilePath, skipped: true, ...(await getFileStats(adminDataFilePath)) },
     };
   }
-  const { target, adjustments, data, cashOpeningBalance } = await loadMonthlyFinancialReportContext(params.monthKey);
+  const { target, adjustments, data, cashOpeningBalance, openingCapital, dividendLedger } = await loadMonthlyFinancialReportContext(params.monthKey);
   const targetDir = path.join(REPORT_STORAGE_DIR, target.monthKey);
   await fs.mkdir(targetDir, { recursive: true });
 
@@ -2329,6 +2406,8 @@ export async function generateStoredMonthlyFinancialReports(params: {
     data,
     adjustments,
     cashOpeningBalance,
+    openingCapital,
+    dividendLedger,
   });
   const adminDataWorkbook = buildAdminRevenueDataWorkbook(data);
 

@@ -74,5 +74,5 @@ test('monthly report uses purchase ledger and excludes old vouchers', () => {
   assert.match(source, /issuedAt: newEntityOnlyTime\(\)/);
   assert.match(source, /pointShopGrant\.findMany/);
   assert.match(source, /priorPeriodExpenseAdjustmentTotal/);
-  assert.match(source, /withMonthlyReportLocks\(\[monthKey\]/);
+  assert.match(source, /isNewEntityReportMonth\(previousMonthKey\) \? \[previousMonthKey, monthKey\] : \[monthKey\]/);
 });

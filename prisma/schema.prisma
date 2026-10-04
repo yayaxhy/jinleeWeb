@@ -123,6 +123,29 @@ enum WechatNativePaymentStatus {
   CLOSED
 }
 
+/// Reconciliation of an existing manual platform recharge against the real
+/// account which received the money. This ledger deliberately never changes a
+/// boss's platform wallet.
+enum SettlementReconciliationStatus {
+  PENDING_FINANCE
+  FINANCE_CONFIRMED
+  OWNER_CONFIRMED
+  OWNER_DISPUTED
+  INVALIDATED
+}
+
+enum SettlementTransferStatus {
+  PENDING_RECEIVER_CONFIRMATION
+  RECEIVER_CONFIRMED
+  RECEIVER_DISPUTED
+  CANCELED
+}
+
+enum SettlementPayoutStatus {
+  PAID
+  VOIDED
+}
+
 enum QuotationCode {
   Q1
   Q2
@@ -811,7 +834,8 @@ model Withdraw {
   method     String
   notifiedAt DateTime?
 
-  dlmUser DlmUser? @relation(fields: [dlmId], references: [dlmId], onDelete: SetNull)
+  dlmUser          DlmUser?                    @relation(fields: [dlmId], references: [dlmId], onDelete: SetNull)
+  settlementPayout SettlementWithdrawalPayout?
 
   @@index([discordId])
   @@index([dlmId, createdAt])
@@ -972,6 +996,32 @@ model MonthlyManualExpense {
 
   @@index([monthKey, updatedAt])
   @@index([operatorId])
+}
+
+// Append-only profit distribution decisions. A negative amount reverses a
+// previous decision in the booking month without rewriting a closed report.
+model MonthlyDividendDecision {
+  id             String   @id @default(cuid())
+  monthKey       String
+  sourceMonthKey String?
+  amount         Decimal  @db.Decimal(19, 4)
+  note           String
+  operatorId     String
+  createdAt      DateTime @default(now())
+
+  @@index([monthKey, createdAt])
+}
+
+// Append-only actual bank payouts, separate from operating expenses.
+model MonthlyDividendPayment {
+  id         String   @id @default(cuid())
+  amount     Decimal  @db.Decimal(19, 4)
+  paidAt     DateTime
+  note       String
+  operatorId String
+  createdAt  DateTime @default(now())
+
+  @@index([paidAt])
 }
 
 model PureProfit {
@@ -1179,9 +1229,167 @@ model Recharge {
   fromWhom   String   @default("1421651539247894549")
   createdAt  DateTime @default(now())
 
-  dlmUser DlmUser? @relation(fields: [dlmId], references: [dlmId], onDelete: SetNull)
+  dlmUser                  DlmUser?                          @relation(fields: [dlmId], references: [dlmId], onDelete: SetNull)
+  settlementReconciliation SettlementRechargeReconciliation?
 
   @@index([dlmId, createdAt])
+}
+
+/// A real-world receiving account. Each account is permanently assigned to one
+/// Discord user; accounts can be retired but their historical owner is kept on
+/// every related ledger record.
+model SettlementAccount {
+  id             String    @id @default(cuid())
+  name           String    @unique
+  ownerDiscordId String
+  kind           String
+  currency       String
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  retiredAt      DateTime?
+
+  reconciliations       SettlementRechargeReconciliation[]
+  transfersFrom         SettlementAccountTransfer[]        @relation("SettlementTransferFrom")
+  transfersTo           SettlementAccountTransfer[]        @relation("SettlementTransferTo")
+  foreignRecoveriesFrom SettlementForexRecovery[]          @relation("SettlementForexRecoveryFrom")
+  foreignRecoveriesTo   SettlementForexRecovery[]          @relation("SettlementForexRecoveryTo")
+
+  @@index([ownerDiscordId, active])
+}
+
+/// One manual Recharge row can be classified once. The underlying Recharge is
+/// immutable: reconciliation changes are recorded as status events instead.
+model SettlementRechargeReconciliation {
+  id                       String                         @id @default(cuid())
+  rechargeId               String                         @unique
+  accountId                String?
+  ownerDiscordId           String?
+  status                   SettlementReconciliationStatus @default(PENDING_FINANCE)
+  rmbAmount                Decimal?                       @db.Decimal(19, 4)
+  originalReceivedAmount   Decimal?                       @db.Decimal(19, 4)
+  originalReceivedCurrency String?
+  reversalRechargeId       String?
+  exceptionReason          String?
+  invalidReason            String?
+  financeConfirmedBy       String?
+  financeConfirmedAt       DateTime?
+  ownerConfirmedBy         String?
+  ownerConfirmedAt         DateTime?
+  ownerDisputedBy          String?
+  ownerDisputedAt          DateTime?
+  invalidatedBy            String?
+  invalidatedAt            DateTime?
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+
+  recharge Recharge                        @relation(fields: [rechargeId], references: [RechargeID], onDelete: Cascade)
+  account  SettlementAccount?              @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  evidence SettlementReceiptEvidence[]
+  events   SettlementReconciliationEvent[]
+
+  @@index([status, createdAt])
+  @@index([accountId, status, createdAt])
+  @@index([ownerDiscordId, status, createdAt])
+  @@index([reversalRechargeId])
+}
+
+model SettlementReceiptEvidence {
+  id               String   @id @default(cuid())
+  reconciliationId String
+  storageFileName  String
+  originalFileName String
+  mimeType         String
+  byteSize         Int
+  uploadedBy       String
+  createdAt        DateTime @default(now())
+
+  reconciliation SettlementRechargeReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+
+  @@index([reconciliationId, createdAt])
+}
+
+/// Append-only status history for a reconciliation. It makes disputes and
+/// finance invalidations reviewable without ever erasing the original row.
+model SettlementReconciliationEvent {
+  id               String                          @id @default(cuid())
+  reconciliationId String
+  fromStatus       SettlementReconciliationStatus?
+  toStatus         SettlementReconciliationStatus
+  actorDiscordId   String
+  note             String?
+  createdAt        DateTime                        @default(now())
+
+  reconciliation SettlementRechargeReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+
+  @@index([reconciliationId, createdAt])
+}
+
+/// RMB-only account-to-account movements. They are internal reconciliation
+/// records and never touch a boss wallet.
+model SettlementAccountTransfer {
+  id                  String                   @id @default(cuid())
+  fromAccountId       String
+  toAccountId         String
+  amount              Decimal                  @db.Decimal(19, 4)
+  status              SettlementTransferStatus @default(PENDING_RECEIVER_CONFIRMATION)
+  initiatedBy         String
+  receiverConfirmedBy String?
+  receiverConfirmedAt DateTime?
+  receiverDisputedBy  String?
+  receiverDisputedAt  DateTime?
+  disputeReason       String?
+  canceledBy          String?
+  canceledAt          DateTime?
+  createdAt           DateTime                 @default(now())
+
+  fromAccount SettlementAccount @relation("SettlementTransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount   SettlementAccount @relation("SettlementTransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+
+  @@index([fromAccountId, status, createdAt])
+  @@index([toAccountId, status, createdAt])
+}
+
+/// Finance records a foreign-currency collection being returned as RMB to a
+/// named RMB account. The original and returned amounts are intentionally
+/// distinct so exchange losses and fees remain visible.
+model SettlementForexRecovery {
+  id              String   @id @default(cuid())
+  fromAccountId   String
+  toAccountId     String
+  foreignAmount   Decimal  @db.Decimal(19, 4)
+  foreignCurrency String
+  rmbAmount       Decimal  @db.Decimal(19, 4)
+  recoveredAt     DateTime
+  note            String?
+  recordedBy      String
+  createdAt       DateTime @default(now())
+
+  fromAccount SettlementAccount @relation("SettlementForexRecoveryFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount   SettlementAccount @relation("SettlementForexRecoveryTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+
+  @@index([fromAccountId, recoveredAt])
+  @@index([toAccountId, recoveredAt])
+}
+
+/// A Withdrawal is a user's request. This separate row is only created when
+/// the responsible person has actually paid it, so account-holder totals do
+/// not treat queued requests as completed payouts.
+model SettlementWithdrawalPayout {
+  id             String                 @id @default(cuid())
+  withdrawalId   String                 @unique
+  ownerDiscordId String
+  amount         Decimal                @db.Decimal(19, 4)
+  status         SettlementPayoutStatus @default(PAID)
+  paidBy         String
+  paidAt         DateTime               @default(now())
+  voidedBy       String?
+  voidedAt       DateTime?
+  voidReason     String?
+  createdAt      DateTime               @default(now())
+
+  withdrawal Withdraw @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+
+  @@index([ownerDiscordId, status, paidAt])
 }
 
 model ZPayRechargeOrder {

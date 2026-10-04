@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { Prisma } from '@prisma/client';
 import { canViewRevenue } from '@/lib/admin';
-import { getMonthlyFinancialReportPreview, parseMonthlyReportMonthKey } from '@/lib/admin/monthly-financial-reports';
+import { getDividendLedgerState, getMonthlyFinancialReportPreview, parseMonthlyReportMonthKey } from '@/lib/admin/monthly-financial-reports';
+import { formatCentralEuropeanMonthKey, getCentralEuropeanMonthParts } from '@/lib/centralEuropeanDateRange';
 import { getServerSession } from '@/lib/session';
 import { isNewEntityReportMonth } from '@/lib/operating-entity-cutover';
 import MonthlyExpenseManager from './MonthlyExpenseManager';
 import ConfirmMonthlyReportButton from './ConfirmMonthlyReportButton';
+import MonthlyDividendManager from './MonthlyDividendManager';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,8 +65,14 @@ export default async function MonthlyRevenueFilePage({ params }: PageProps) {
 
   const { monthKey } = await params;
   if (!parseMonthlyReportMonthKey(monthKey) || !isNewEntityReportMonth(monthKey)) notFound();
-  const preview = await getMonthlyFinancialReportPreview(monthKey);
+  const [preview, dividendLedger] = await Promise.all([
+    getMonthlyFinancialReportPreview(monthKey), getDividendLedgerState(monthKey),
+  ]);
+  const currentParts = getCentralEuropeanMonthParts(new Date());
+  const isCurrentMonth = monthKey === formatCentralEuropeanMonthKey(currentParts.year, currentParts.month);
   const monthTitle = `${preview.year} 年 ${preview.month} 月`;
+  const legacyBalanceSheet = !('reconciliationDifference' in preview);
+  const balanceDifference = new Prisma.Decimal(preview.assetTotal).sub(preview.liabilityAndEquityTotal).toString();
 
   return (
     <div className="space-y-8 text-white">
@@ -110,6 +119,7 @@ export default async function MonthlyRevenueFilePage({ params }: PageProps) {
           <p>充值现金流入：<span className="font-mono">{formatMoney(preview.cashFlow.rechargeInflow)}</span></p>
           <p>提现现金流出：<span className="font-mono">{formatMoney(preview.cashFlow.withdrawalOutflow)}</span></p>
           <p>人工记录现金支出：<span className="font-mono">{formatMoney(preview.cashFlow.manualExpenseOutflow)}</span></p>
+          <p>已支付股东分红：<span className="font-mono">{formatMoney(preview.cashFlow.dividendPaymentOutflow ?? '0')}</span></p>
           <p>本期已记录现金净流入：<span className="font-mono">{formatMoney(preview.cashFlow.netRecordedCashMovement)}</span></p>
           <p>期末账面银行余额（待核对）：<span className="font-mono">{formatMoney(preview.cashFlow.estimatedClosingBankBalance)}</span></p>
           <p>前期支出调整（非本月现金）：<span className="font-mono">{formatMoney(preview.cashFlow.priorPeriodExpenseAdjustment)}</span></p>
@@ -139,17 +149,29 @@ export default async function MonthlyRevenueFilePage({ params }: PageProps) {
         <h3 className="text-lg font-semibold">利润表</h3>
         <div><p className="mb-3 text-sm text-white/60">收入</p><StatementTable rows={preview.incomeRows} totalLabel="收入合计" total={preview.incomeTotal} /></div>
         <div><p className="mb-3 text-sm text-white/60">支出</p><StatementTable rows={preview.expenseRows} totalLabel="支出合计" total={preview.expenseTotal} /></div>
-        <div className="flex justify-end rounded-2xl bg-white/10 px-4 py-3 text-sm"><span className="text-white/70">净利润</span><span className="ml-6 font-mono font-semibold">{formatMoney(preview.netProfit)}</span></div>
+        <div className="flex justify-end rounded-2xl bg-white/10 px-4 py-3 text-sm"><span className="text-white/70">当月盈亏</span><span className="ml-6 font-mono font-semibold">{formatMoney(preview.netProfit)}</span></div>
       </section>
 
       <section className="space-y-5 rounded-3xl border border-white/10 bg-white/5 p-5">
-        <h3 className="text-lg font-semibold">资产负债表（经营口径测算）</h3>
-        <p className="text-sm text-amber-200/80">资产合计由用户余额、利润等推算，并非银行现金余额。银行期初已确认是 ¥0，但仍需核对实际银行收支、负数充值及权益分类，才可作为实有资产负债表使用。</p>
-        <div><p className="mb-3 text-sm text-white/60">资产</p><StatementTable rows={preview.assetRows} totalLabel="资产合计（模型推算）" total={preview.assetTotal} /></div>
+        <h3 className="text-lg font-semibold">资产负债表（待核对）</h3>
+        <p className="text-sm text-amber-200/80">{legacyBalanceSheet
+          ? '这是已确认的旧版报表，仍采用旧的资产及分红推算口径；代码更新不会改写已确认文件。'
+          : '当月盈亏列入所有者权益，不自动视为分红。资产中的银行余额仅按已记录现金收支推算，须与实际银行流水及用户余额承担范围核对；差额不会自动配平。'}</p>
+        <div><p className="mb-3 text-sm text-white/60">资产</p><StatementTable rows={preview.assetRows} totalLabel={legacyBalanceSheet ? '资产合计（旧模型推算）' : '资产合计（待核对）'} total={preview.assetTotal} /></div>
         <div><p className="mb-3 text-sm text-white/60">负债</p><StatementTable rows={preview.liabilityRows} totalLabel="负债合计" total={preview.liabilityTotal} /></div>
         <div><p className="mb-3 text-sm text-white/60">所有者权益</p><StatementTable rows={preview.equityRows} totalLabel="所有者权益合计" total={preview.equityTotal} /></div>
         <div className="flex justify-end rounded-2xl bg-white/10 px-4 py-3 text-sm"><span className="text-white/70">负债和所有者权益总计</span><span className="ml-6 font-mono font-semibold">{formatMoney(preview.liabilityAndEquityTotal)}</span></div>
+        {!legacyBalanceSheet ? <div className="flex justify-end rounded-2xl border border-amber-300/30 bg-amber-300/5 px-4 py-3 text-sm"><span className="text-amber-100">资产减负债和所有者权益（待核对）</span><span className="ml-6 font-mono font-semibold text-amber-100">{formatMoney(balanceDifference)}</span></div> : null}
       </section>
+
+      <MonthlyDividendManager
+        monthKey={monthKey}
+        confirmed={Boolean(preview.confirmedAt)}
+        isCurrentMonth={isCurrentMonth}
+        decisions={dividendLedger.decisions.map((row) => ({ id: row.id, amount: row.amount.toString(), note: row.note, operatorId: row.operatorId, at: row.createdAt.toISOString(), sourceMonthKey: row.sourceMonthKey }))}
+        payments={dividendLedger.payments.map((row) => ({ id: row.id, amount: row.amount.toString(), note: row.note, operatorId: row.operatorId, at: row.paidAt.toISOString() }))}
+        payable={dividendLedger.payableAtMonthEnd.toString()}
+      />
 
       <MonthlyExpenseManager monthKey={preview.monthKey} records={preview.manualExpenses} confirmed={Boolean(preview.confirmedAt)} />
     </div>
