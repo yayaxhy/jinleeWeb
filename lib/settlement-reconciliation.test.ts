@@ -4,9 +4,11 @@ import { SettlementReconciliationStatus } from '@prisma/client';
 import {
   isReconciliationCounted,
   isRmbCurrency,
+  isSettlementFinance,
   parsePositiveDecimal,
   resolveWithdrawalSettlementOwner,
   SETTLEMENT_ALIPAY_OWNER_ID,
+  SETTLEMENT_MAIN_FINANCE_ID,
   SETTLEMENT_WECHAT_OWNER_ID,
 } from './settlement-reconciliation';
 
@@ -29,4 +31,10 @@ test('withdrawal responsibility follows the requested payout method', () => {
   assert.equal(resolveWithdrawalSettlementOwner('Paypal:alice@example.com'), null);
   assert.equal(isRmbCurrency('cny'), true);
   assert.equal(isRmbCurrency('EUR'), false);
+});
+
+test('only the designated main finance user can perform finance settlement actions', () => {
+  assert.equal(isSettlementFinance(SETTLEMENT_MAIN_FINANCE_ID), true);
+  assert.equal(isSettlementFinance(SETTLEMENT_WECHAT_OWNER_ID), false);
+  assert.equal(isSettlementFinance(SETTLEMENT_ALIPAY_OWNER_ID), false);
 });

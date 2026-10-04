@@ -1,10 +1,11 @@
 import path from 'node:path';
 import sharp from 'sharp';
 import { Prisma, SettlementReconciliationStatus } from '@prisma/client';
-import { isAdminDiscordId } from '@/lib/admin';
 import { parseStoredWithdrawAccount } from '@/lib/withdrawAccounts';
 
 export const SETTLEMENT_CNY = 'CNY';
+/** The only user who can allocate recharges, create accounts, and record forex returns. */
+export const SETTLEMENT_MAIN_FINANCE_ID = '525770714574225408';
 export const SETTLEMENT_WECHAT_OWNER_ID = '308164614846414851';
 export const SETTLEMENT_ALIPAY_OWNER_ID = '1008032640445710447';
 export const MAX_SETTLEMENT_RECEIPT_BYTES = 10 * 1024 * 1024;
@@ -13,7 +14,8 @@ export const getSettlementReceiptStorageDir = () =>
   process.env.SETTLEMENT_RECEIPT_STORAGE_DIR?.trim() ||
   path.join(process.cwd(), 'storage', 'settlement-receipts');
 
-export const isSettlementFinance = (discordId?: string | null) => isAdminDiscordId(discordId);
+export const isSettlementFinance = (discordId?: string | null) =>
+  discordId === SETTLEMENT_MAIN_FINANCE_ID;
 
 export const isRmbCurrency = (currency?: string | null) =>
   (currency ?? '').trim().toUpperCase() === SETTLEMENT_CNY;
