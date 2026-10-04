@@ -403,8 +403,8 @@ export default async function CashReconciliationPage(props: PageProps) {
   ) as Array<[ReconciliationTab, string, number]>;
 
   return (
-    <section className="min-h-screen bg-[#020204] px-4 py-6 text-white sm:px-6 sm:py-10">
-      <div className="mx-auto flex max-w-[1500px] flex-col gap-6">
+    <section className="cash-reconciliation-page min-h-screen bg-[#020204] px-4 py-6 text-white sm:px-6 sm:py-10">
+      <div className="flex w-full max-w-none flex-col gap-6">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs tracking-[0.45em] text-white/50">
@@ -699,8 +699,8 @@ export default async function CashReconciliationPage(props: PageProps) {
                 </p>
               </div>
             </div>
-            <div className="mt-5 overflow-x-auto rounded-2xl border border-white/10">
-              <table className="min-w-[1180px] text-left text-sm">
+          <div className="cash-table-scroll mt-5 rounded-2xl border border-white/10">
+            <table className="cash-recharge-table text-left text-sm">
                 <thead className="border-b border-white/10 bg-black/20 text-xs text-white/50">
                   <tr>
                     <th className="px-3 py-3">充值 / 来源</th>

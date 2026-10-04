@@ -21,3 +21,48 @@
 .admin-shell .stripe-pricing-table-scroll {
   overflow-x: auto !important;
 }
+
+/* The reconciliation screen has dense per-row controls, so it needs the full desktop canvas. */
+.admin-shell:has(.cash-reconciliation-page) {
+  max-width: min(2000px, calc(100vw - 3rem)) !important;
+}
+
+.cash-reconciliation-page .cash-table-scroll {
+  overflow-x: auto !important;
+}
+
+.cash-reconciliation-page .cash-recharge-table {
+  width: max-content;
+  min-width: 1640px;
+  table-layout: auto !important;
+}
+
+.cash-reconciliation-page .cash-recharge-table th:nth-child(1),
+.cash-reconciliation-page .cash-recharge-table td:nth-child(1) {
+  min-width: 180px;
+}
+
+.cash-reconciliation-page .cash-recharge-table th:nth-child(2),
+.cash-reconciliation-page .cash-recharge-table td:nth-child(2) {
+  min-width: 210px;
+}
+
+.cash-reconciliation-page .cash-recharge-table th:nth-child(3),
+.cash-reconciliation-page .cash-recharge-table td:nth-child(3) {
+  min-width: 190px;
+}
+
+.cash-reconciliation-page .cash-recharge-table th:nth-child(4),
+.cash-reconciliation-page .cash-recharge-table td:nth-child(4) {
+  min-width: 200px;
+}
+
+.cash-reconciliation-page .cash-recharge-table th:nth-child(5),
+.cash-reconciliation-page .cash-recharge-table td:nth-child(5) {
+  min-width: 120px;
+}
+
+.cash-reconciliation-page .cash-recharge-table th:nth-child(6),
+.cash-reconciliation-page .cash-recharge-table td:nth-child(6) {
+  min-width: 360px;
+}
