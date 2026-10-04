@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import './admin.css';
 import { redirect } from 'next/navigation';
 import { isBackofficeDiscordId } from '@/lib/admin';
+import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
 export const metadata = {
@@ -17,7 +18,11 @@ export const revalidate = 0;
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession();
-  if (!session?.discordId || !isBackofficeDiscordId(session.discordId)) {
+  const isExistingBackofficeUser = isBackofficeDiscordId(session?.discordId);
+  const isSettlementAccountOwner = !isExistingBackofficeUser && session?.discordId
+    ? await prisma.settlementAccount.count({ where: { ownerDiscordId: session.discordId, active: true } }).then((count) => count > 0)
+    : false;
+  if (!session?.discordId || (!isExistingBackofficeUser && !isSettlementAccountOwner)) {
     redirect('/');
   }
 

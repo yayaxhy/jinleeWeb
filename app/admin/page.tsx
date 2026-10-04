@@ -340,6 +340,21 @@ export default async function AdminHomePage() {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
+              <p className="text-sm text-white/70">人工充值与账户对账</p>
+              <p className="text-xs text-white/50">上传收款截图、分配账号、负责人确认、外汇归还与提现发放</p>
+            </div>
+            <Link
+              href="/admin/cash-reconciliation"
+              className="inline-flex items-center justify-center rounded-full bg-[#5c43a3] px-4 py-2 text-sm text-white hover:bg-[#4a3388]"
+            >
+              前往对账
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
               <p className="text-sm text-white/70">可退回打赏</p>
               <p className="text-xs text-white/50">查看 Gift Audit 记录（已隐藏内部字段）</p>
             </div>
