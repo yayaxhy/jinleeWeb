@@ -25,15 +25,25 @@ const ROME_TIMEZONE = "Europe/Rome";
 const ACTION_URL = "/api/admin/cash-reconciliation";
 const MANUAL_RECHARGE_OPERATOR_IDS = getAdminDiscordIds();
 const RECHARGES_PER_PAGE = 40;
+const ACCOUNT_DISPLAY_PRIORITY = new Map([
+  ["小霍微信", 0],
+  ["iria支付宝", 1],
+]);
 
 const tabs = [
   "overview",
   "recharges",
+  "processed",
   "confirmations",
   "transfers",
   "payouts",
   "forex",
 ] as const;
+const PROCESSED_RECONCILIATION_STATUSES = new Set<SettlementReconciliationStatus>([
+  SettlementReconciliationStatus.FINANCE_CONFIRMED,
+  SettlementReconciliationStatus.OWNER_CONFIRMED,
+  SettlementReconciliationStatus.INVALIDATED,
+]);
 type ReconciliationTab = (typeof tabs)[number];
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -102,7 +112,9 @@ function OwnerIdentity({
 
 function sectionLink(tab: ReconciliationTab, page = 1) {
   const query = new URLSearchParams({ tab });
-  if (tab === "recharges" && page > 1) query.set("page", String(page));
+  if ((tab === "recharges" || tab === "processed") && page > 1) {
+    query.set("page", String(page));
+  }
   return `/admin/cash-reconciliation?${query.toString()}`;
 }
 
@@ -130,44 +142,58 @@ export default async function CashReconciliationPage(props: PageProps) {
   const error =
     typeof searchParams.error === "string" ? searchParams.error : "";
 
-  const [accounts, rawRecharges, transfers, recoveries, payouts, withdrawals] =
-    await Promise.all([
-      prisma.settlementAccount.findMany({
-        orderBy: [{ active: "desc" }, { name: "asc" }],
-      }),
-      prisma.recharge.findMany({
-        where: {
-          amount: { gt: 0 },
-          fromWhom: { in: [...MANUAL_RECHARGE_OPERATOR_IDS] },
-          createdAt: newEntityOnlyTime(),
-        },
-        orderBy: { createdAt: "desc" },
-        include: {
-          settlementReconciliation: {
-            include: {
-              account: true,
-              evidence: { orderBy: { createdAt: "desc" } },
-            },
+  const [
+    loadedAccounts,
+    rawRecharges,
+    transfers,
+    recoveries,
+    payouts,
+    withdrawals,
+  ] = await Promise.all([
+    prisma.settlementAccount.findMany({
+      orderBy: [{ active: "desc" }, { name: "asc" }],
+    }),
+    prisma.recharge.findMany({
+      where: {
+        amount: { not: 0 },
+        fromWhom: { in: [...MANUAL_RECHARGE_OPERATOR_IDS] },
+        createdAt: newEntityOnlyTime(),
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        settlementReconciliation: {
+          include: {
+            account: true,
+            evidence: { orderBy: { createdAt: "desc" } },
           },
         },
-      }),
-      prisma.settlementAccountTransfer.findMany({
-        orderBy: { createdAt: "desc" },
-        include: { fromAccount: true, toAccount: true },
-      }),
-      prisma.settlementForexRecovery.findMany({
-        orderBy: { recoveredAt: "desc" },
-        include: { fromAccount: true, toAccount: true },
-      }),
-      prisma.settlementWithdrawalPayout.findMany({
-        orderBy: { paidAt: "desc" },
-      }),
-      prisma.withdraw.findMany({
-        where: { createdAt: newEntityOnlyTime() },
-        orderBy: { createdAt: "desc" },
-        include: { settlementPayout: true },
-      }),
-    ]);
+      },
+    }),
+    prisma.settlementAccountTransfer.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { fromAccount: true, toAccount: true },
+    }),
+    prisma.settlementForexRecovery.findMany({
+      orderBy: { recoveredAt: "desc" },
+      include: { fromAccount: true, toAccount: true },
+    }),
+    prisma.settlementWithdrawalPayout.findMany({
+      orderBy: { paidAt: "desc" },
+    }),
+    prisma.withdraw.findMany({
+      where: { createdAt: newEntityOnlyTime() },
+      orderBy: { createdAt: "desc" },
+      include: { settlementPayout: true },
+    }),
+  ]);
+
+  const accounts = [...loadedAccounts].sort((left, right) => {
+    const leftPriority = ACCOUNT_DISPLAY_PRIORITY.get(left.name) ?? 100;
+    const rightPriority = ACCOUNT_DISPLAY_PRIORITY.get(right.name) ?? 100;
+    if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+    if (left.active !== right.active) return left.active ? -1 : 1;
+    return left.name.localeCompare(right.name, "zh-CN");
+  });
 
   const ownedAccounts = accounts.filter(
     (account) => account.ownerDiscordId === session.discordId,
@@ -182,16 +208,18 @@ export default async function CashReconciliationPage(props: PageProps) {
     recharge,
     row: recharge.settlementReconciliation,
   }));
+  const positiveCashRows = rechargesWithRows.filter(({ recharge }) =>
+    recharge.amount.gt(0),
+  );
+  const negativeCashRows = rechargesWithRows.filter(({ recharge }) =>
+    recharge.amount.lt(0),
+  );
   const unassignedTotal = rechargesWithRows
     .filter(({ row }) => !row)
     .reduce(
       (total, { recharge }) => total.add(recharge.amount),
       new Prisma.Decimal(0),
     );
-  const pendingFinanceCount = rechargesWithRows.filter(
-    ({ row }) =>
-      !row || row.status === SettlementReconciliationStatus.PENDING_FINANCE,
-  ).length;
   const pendingOwnerRows = rechargesWithRows.filter(
     ({ row }) =>
       row?.status === SettlementReconciliationStatus.FINANCE_CONFIRMED,
@@ -199,6 +227,27 @@ export default async function CashReconciliationPage(props: PageProps) {
   const disputedRows = rechargesWithRows.filter(
     ({ row }) => row?.status === SettlementReconciliationStatus.OWNER_DISPUTED,
   );
+  const processingRechargeRows = rechargesWithRows.filter(
+    ({ row }) => !row || !PROCESSED_RECONCILIATION_STATUSES.has(row.status),
+  );
+  const processedRechargeRows = rechargesWithRows
+    .filter(({ row }) => row && PROCESSED_RECONCILIATION_STATUSES.has(row.status))
+    .sort(({ row: left }, { row: right }) => {
+      const leftProcessedAt =
+        left?.ownerConfirmedAt ??
+        left?.invalidatedAt ??
+        left?.financeConfirmedAt ??
+        left?.updatedAt ??
+        new Date(0);
+      const rightProcessedAt =
+        right?.ownerConfirmedAt ??
+        right?.invalidatedAt ??
+        right?.financeConfirmedAt ??
+        right?.updatedAt ??
+        new Date(0);
+      return rightProcessedAt.getTime() - leftProcessedAt.getTime();
+    });
+  const pendingFinanceCount = processingRechargeRows.length;
 
   const perAccount = new Map(
     accounts.map((account) => [
@@ -364,20 +413,24 @@ export default async function CashReconciliationPage(props: PageProps) {
   const activeOwnerSummary = ownerSummaryEntries.find(
     (row) => row.ownerId === session.discordId,
   );
+  const isProcessedRechargeTab = activeTab === "processed";
+  const displayedRechargeRows = isProcessedRechargeTab
+    ? processedRechargeRows
+    : processingRechargeRows;
   const rechargePageCount = Math.max(
     1,
-    Math.ceil(rechargesWithRows.length / RECHARGES_PER_PAGE),
+    Math.ceil(displayedRechargeRows.length / RECHARGES_PER_PAGE),
   );
   const rechargePage =
     Number.isFinite(requestedPage) && requestedPage > 0
       ? Math.min(Math.floor(requestedPage), rechargePageCount)
       : 1;
-  const rechargeSlice = rechargesWithRows.slice(
+  const rechargeSlice = displayedRechargeRows.slice(
     (rechargePage - 1) * RECHARGES_PER_PAGE,
     rechargePage * RECHARGES_PER_PAGE,
   );
   const redirectTo =
-    activeTab === "recharges"
+    activeTab === "recharges" || activeTab === "processed"
       ? sectionLink(activeTab, rechargePage)
       : sectionLink(activeTab);
   const tabItems = (
@@ -385,6 +438,7 @@ export default async function CashReconciliationPage(props: PageProps) {
       ? [
           ["overview", "总览", 0],
           ["recharges", "充值处理", pendingFinanceCount],
+          ["processed", "已处理充值", processedRechargeRows.length],
           [
             "confirmations",
             "负责人确认",
@@ -473,13 +527,13 @@ export default async function CashReconciliationPage(props: PageProps) {
               {isFinance ? (
                 <>
                   <div className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5">
-                    <p className="text-sm text-amber-100/80">待财务处理实收</p>
+                    <p className="text-sm text-amber-100/80">待财务处理净额</p>
                     <p className="mt-2 text-3xl font-semibold text-amber-50">
                       {formatMoney(unassignedTotal)}
                     </p>
                     <p className="mt-2 text-xs leading-5 text-amber-100/70">
                       {pendingFinanceCount}{" "}
-                      笔尚未分配账号；分配前不属于任何负责人。
+                      笔正数或扣减账项尚未分配账号；金额按正负号汇总，分配前不属于任何负责人。
                     </p>
                   </div>
                   <div className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5">
@@ -682,224 +736,290 @@ export default async function CashReconciliationPage(props: PageProps) {
           </>
         ) : null}
 
-        {activeTab === "recharges" && isFinance ? (
+        {(activeTab === "recharges" || activeTab === "processed") && isFinance ? (
           <section className={cardClass}>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="text-xl font-semibold">人工充值处理</h2>
+                <h2 className="text-xl font-semibold">
+                  {isProcessedRechargeTab ? "已处理充值" : "人工充值处理"}
+                </h2>
                 <p className="mt-1 max-w-4xl text-sm leading-6 text-white/60">
-                  上传截图并分配账号后，金额即计入实收和负责人应有总额。外币账号必须填写实际原币金额；冲错后反向充回的记录可标记无效。
+                  {isProcessedRechargeTab
+                    ? "已确认实收、负责人已确认和已确认无效的记录都保留在此处；最新处理的记录排在最前。"
+                    : "每笔 `!cash` 都独立分配收款账号与确认。正数充值需上传截图；负数为独立扣减账项，填写调整原因后按负数计入对应账号和负责人总额，例如同一账号的 +150 与 -50 会自然汇总为 ¥100。"}
                 </p>
               </div>
               <div className="text-right text-sm text-white/60">
-                <p>历史候选共 {rechargesWithRows.length} 笔</p>
-                <p className="mt-1 text-amber-100">
-                  待处理 {pendingFinanceCount} 笔 · 异常 {disputedRows.length}{" "}
-                  笔
-                </p>
+                {isProcessedRechargeTab ? (
+                  <>
+                    <p>已处理 {processedRechargeRows.length} 笔</p>
+                    <p className="mt-1 text-emerald-100">按最后处理时间倒序</p>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      历史记录共 {rechargesWithRows.length} 笔（正数{" "}
+                      {positiveCashRows.length} · 扣减 {negativeCashRows.length}）
+                    </p>
+                    <p className="mt-1 text-amber-100">
+                      待处理 {pendingFinanceCount} 笔 · 异常 {disputedRows.length}{" "}
+                      笔
+                    </p>
+                  </>
+                )}
               </div>
             </div>
-          <div className="cash-table-scroll mt-5 rounded-2xl border border-white/10">
-            <table className="cash-recharge-table text-left text-sm">
+            <div className="cash-table-scroll mt-5 rounded-2xl border border-white/10">
+              <table className="cash-recharge-table text-left text-sm">
                 <thead className="border-b border-white/10 bg-black/20 text-xs text-white/50">
                   <tr>
-                    <th className="px-3 py-3">充值 / 来源</th>
+                    <th className="px-3 py-3">记录 / 来源</th>
                     <th className="px-3 py-3">老板</th>
                     <th className="px-3 py-3">金额 / 时间</th>
                     <th className="px-3 py-3">对账状态</th>
                     <th className="px-3 py-3">凭证</th>
-                    <th className="px-3 py-3">本笔处理</th>
+                    <th className="px-3 py-3">
+                      {isProcessedRechargeTab ? "最后处理 / 操作" : "本笔处理"}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rechargeSlice.map(({ recharge, row }) => (
-                    <tr
-                      key={recharge.RechargeID}
-                      className="align-top border-b border-white/5 last:border-b-0"
-                    >
-                      <td className="px-3 py-4 font-mono text-xs text-[#c4b5fd]">
-                        {recharge.RechargeID}
-                        <br />
-                        <span className="text-white/45">
-                          来源 {recharge.fromWhom}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4 font-mono text-xs">
-                        {recharge.toWhom ?? recharge.dlmId ?? "—"}
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        {formatMoney(recharge.amount)}
-                        <br />
-                        <span className="text-xs text-white/50">
-                          {formatDate(recharge.createdAt)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4">
-                        {row ? (
+                  {rechargeSlice.map(({ recharge, row }) => {
+                    const isNegativeCash = recharge.amount.lt(0);
+
+                    return (
+                      <tr
+                        key={recharge.RechargeID}
+                        className="align-top border-b border-white/5 last:border-b-0"
+                      >
+                        <td className="px-3 py-4 font-mono text-xs text-[#c4b5fd]">
+                          <div className="flex items-center gap-2">
+                            <span>{recharge.RechargeID}</span>
+                            <span
+                              className={`rounded-full border px-1.5 py-0.5 text-[10px] ${isNegativeCash ? "border-rose-300/30 bg-rose-300/10 text-rose-100" : "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"}`}
+                            >
+                              {isNegativeCash ? "扣减" : "充值"}
+                            </span>
+                          </div>
+                          <span className="text-white/45">
+                            来源 {recharge.fromWhom}
+                          </span>
+                        </td>
+                        <td className="px-3 py-4 font-mono text-xs">
+                          {recharge.toWhom ?? recharge.dlmId ?? "—"}
+                        </td>
+                        <td
+                          className={`px-3 py-4 whitespace-nowrap ${isNegativeCash ? "text-rose-200" : ""}`}
+                        >
+                          {formatMoney(recharge.amount)}
+                          <br />
+                          <span className="text-xs text-white/50">
+                            {formatDate(recharge.createdAt)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-4">
+                          {row ? (
+                            <>
+                              <StatusBadge status={row.status} />
+                              {row.account ? (
+                                <p className="mt-2 text-xs text-white/60">
+                                  {row.account.name} ·{" "}
+                                  {ownerName(row.ownerDiscordId ?? "")}
+                                </p>
+                              ) : null}
+                              {row.exceptionReason ? (
+                                <p className="mt-2 max-w-52 text-xs text-rose-200">
+                                  异常：{row.exceptionReason}
+                                </p>
+                              ) : null}
+                              {row.invalidReason ? (
+                                <p className="mt-2 max-w-52 text-xs text-white/55">
+                                  无效：{row.invalidReason}
+                                </p>
+                              ) : null}
+                              {isProcessedRechargeTab ? (
+                                <p className="mt-2 text-xs text-white/45">
+                                  最后处理：
+                                  {formatDate(
+                                    row.ownerConfirmedAt ??
+                                      row.invalidatedAt ??
+                                      row.financeConfirmedAt ??
+                                      row.updatedAt,
+                                  )}
+                                </p>
+                              ) : null}
+                            </>
+                          ) : (
+                            <StatusBadge
+                              status={
+                                SettlementReconciliationStatus.PENDING_FINANCE
+                              }
+                            />
+                          )}
+                        </td>
+                        <td className="px-3 py-4">
+                          {isNegativeCash ? (
+                            <span className="text-xs text-white/40">
+                              独立扣减，无需凭证
+                            </span>
+                          ) : row?.evidence.length ? (
+                            <div className="space-y-1">
+                              {row.evidence.map((evidence) => (
+                                <a
+                                  key={evidence.id}
+                                  href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
+                                  target="_blank"
+                                  className="block text-xs text-[#c4b5fd] underline"
+                                >
+                                  查看截图
+                                </a>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-white/40">
+                              未上传
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-4">
                           <>
-                            <StatusBadge status={row.status} />
-                            {row.account ? (
-                              <p className="mt-2 text-xs text-white/60">
-                                {row.account.name} ·{" "}
-                                {ownerName(row.ownerDiscordId ?? "")}
-                              </p>
+                            {row?.status !==
+                            SettlementReconciliationStatus.OWNER_CONFIRMED ? (
+                              <form
+                                action={ACTION_URL}
+                                method="post"
+                                encType="multipart/form-data"
+                                className="grid min-w-[300px] gap-2"
+                              >
+                                <input
+                                  type="hidden"
+                                  name="action"
+                                  value="finance-confirm"
+                                />
+                                <input
+                                  type="hidden"
+                                  name="redirectTo"
+                                  value={redirectTo}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="rechargeId"
+                                  value={recharge.RechargeID}
+                                />
+                                <select
+                                  required
+                                  name="accountId"
+                                  defaultValue={row?.accountId ?? ""}
+                                  className={fieldClass}
+                                >
+                                  <option value="" disabled>
+                                    选择实际收款账号
+                                  </option>
+                                  {accounts
+                                    .filter((account) => account.active)
+                                    .map((account) => (
+                                      <option
+                                        key={account.id}
+                                        value={account.id}
+                                      >
+                                        {account.name} · {account.currency} ·{" "}
+                                        {ownerName(account.ownerDiscordId)}
+                                      </option>
+                                    ))}
+                                </select>
+                                <input
+                                  readOnly
+                                  value={recharge.amount.toString()}
+                                  aria-label="本笔 cash 金额（人民币）"
+                                  className={`${fieldClass} cursor-not-allowed text-white/60`}
+                                />
+                                {isNegativeCash ? (
+                                  <input
+                                    required
+                                    name="adjustmentNote"
+                                    placeholder="扣减/调整原因，例如 cash 录多 50 后更正"
+                                    className={fieldClass}
+                                  />
+                                ) : null}
+                                <input
+                                  name="originalReceivedAmount"
+                                  inputMode="decimal"
+                                  defaultValue={
+                                    isNegativeCash
+                                      ? (row?.originalReceivedAmount
+                                          ?.abs()
+                                          .toString() ?? "")
+                                      : (row?.originalReceivedAmount?.toString() ??
+                                        "")
+                                  }
+                                  placeholder={
+                                    isNegativeCash
+                                      ? "外币账号必填：本笔原币调整绝对值"
+                                      : "外币账号必填：实际原币金额"
+                                  }
+                                  className={fieldClass}
+                                />
+                                {!isNegativeCash ? (
+                                  <input
+                                    name="receipt"
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    className="text-xs text-white/70"
+                                  />
+                                ) : null}
+                                <button className="rounded-xl bg-[#7356c6] px-3 py-2 text-xs hover:bg-[#6045aa]">
+                                  {isNegativeCash
+                                    ? "确认扣减账项"
+                                    : row?.status ===
+                                        SettlementReconciliationStatus.INVALIDATED
+                                      ? "恢复为实收并等待确认"
+                                      : "上传凭证并确认实收"}
+                                </button>
+                              </form>
                             ) : null}
-                            {row.exceptionReason ? (
-                              <p className="mt-2 max-w-52 text-xs text-rose-200">
-                                异常：{row.exceptionReason}
-                              </p>
-                            ) : null}
-                            {row.invalidReason ? (
-                              <p className="mt-2 max-w-52 text-xs text-white/55">
-                                无效：{row.invalidReason}
-                              </p>
+                            {row?.status !==
+                            SettlementReconciliationStatus.INVALIDATED ? (
+                              <details className="mt-3 min-w-[300px]">
+                                <summary className="cursor-pointer text-xs text-white/55">
+                                  标记本笔无效
+                                </summary>
+                                <form
+                                  action={ACTION_URL}
+                                  method="post"
+                                  className="mt-2 grid gap-2"
+                                >
+                                  <input
+                                    type="hidden"
+                                    name="action"
+                                    value="finance-invalidate"
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="redirectTo"
+                                    value={redirectTo}
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="rechargeId"
+                                    value={recharge.RechargeID}
+                                  />
+                                  <input
+                                    required
+                                    name="reason"
+                                    placeholder="无效原因，例如错误的 cash 记录"
+                                    className={fieldClass}
+                                  />
+                                  <button className="rounded-xl border border-rose-300/30 px-3 py-2 text-xs text-rose-100 hover:bg-rose-300/10">
+                                    确认无效
+                                  </button>
+                                </form>
+                              </details>
                             ) : null}
                           </>
-                        ) : (
-                          <StatusBadge
-                            status={
-                              SettlementReconciliationStatus.PENDING_FINANCE
-                            }
-                          />
-                        )}
-                      </td>
-                      <td className="px-3 py-4">
-                        {row?.evidence.length ? (
-                          <div className="space-y-1">
-                            {row.evidence.map((evidence) => (
-                              <a
-                                key={evidence.id}
-                                href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
-                                target="_blank"
-                                className="block text-xs text-[#c4b5fd] underline"
-                              >
-                                查看截图
-                              </a>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-white/40">未上传</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-4">
-                        {row?.status !==
-                          SettlementReconciliationStatus.INVALIDATED &&
-                        row?.status !==
-                          SettlementReconciliationStatus.OWNER_CONFIRMED ? (
-                          <form
-                            action={ACTION_URL}
-                            method="post"
-                            encType="multipart/form-data"
-                            className="grid min-w-[300px] gap-2"
-                          >
-                            <input
-                              type="hidden"
-                              name="action"
-                              value="finance-confirm"
-                            />
-                            <input
-                              type="hidden"
-                              name="redirectTo"
-                              value={redirectTo}
-                            />
-                            <input
-                              type="hidden"
-                              name="rechargeId"
-                              value={recharge.RechargeID}
-                            />
-                            <select
-                              required
-                              name="accountId"
-                              defaultValue={row?.accountId ?? ""}
-                              className={fieldClass}
-                            >
-                              <option value="" disabled>
-                                选择实际收款账号
-                              </option>
-                              {accounts
-                                .filter((account) => account.active)
-                                .map((account) => (
-                                  <option key={account.id} value={account.id}>
-                                    {account.name} · {account.currency} ·{" "}
-                                    {ownerName(account.ownerDiscordId)}
-                                  </option>
-                                ))}
-                            </select>
-                            <input
-                              required
-                              readOnly
-                              name="rmbAmount"
-                              inputMode="decimal"
-                              value={recharge.amount.toString()}
-                              aria-label="老板平台充值金额（人民币）"
-                              className={`${fieldClass} cursor-not-allowed text-white/60`}
-                            />
-                            <input
-                              name="originalReceivedAmount"
-                              inputMode="decimal"
-                              defaultValue={
-                                row?.originalReceivedAmount?.toString() ?? ""
-                              }
-                              placeholder="外币账号必填：实际原币金额"
-                              className={fieldClass}
-                            />
-                            <input
-                              name="receipt"
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp"
-                              className="text-xs text-white/70"
-                            />
-                            <button className="rounded-xl bg-[#7356c6] px-3 py-2 text-xs hover:bg-[#6045aa]">
-                              上传凭证并确认实收
-                            </button>
-                          </form>
-                        ) : null}
-                        {row?.status !==
-                        SettlementReconciliationStatus.INVALIDATED ? (
-                          <details className="mt-3 min-w-[300px]">
-                            <summary className="cursor-pointer text-xs text-white/55">
-                              标记无效 / 关联反向充值
-                            </summary>
-                            <form
-                              action={ACTION_URL}
-                              method="post"
-                              className="mt-2 grid gap-2"
-                            >
-                              <input
-                                type="hidden"
-                                name="action"
-                                value="finance-invalidate"
-                              />
-                              <input
-                                type="hidden"
-                                name="redirectTo"
-                                value={redirectTo}
-                              />
-                              <input
-                                type="hidden"
-                                name="rechargeId"
-                                value={recharge.RechargeID}
-                              />
-                              <input
-                                required
-                                name="reason"
-                                placeholder="无效原因，例如充错后已冲正"
-                                className={fieldClass}
-                              />
-                              <input
-                                name="reversalRechargeId"
-                                placeholder="反向充值编号（可选）"
-                                className={fieldClass}
-                              />
-                              <button className="rounded-xl border border-rose-300/30 px-3 py-2 text-xs text-rose-100 hover:bg-rose-300/10">
-                                确认无效
-                              </button>
-                            </form>
-                          </details>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -911,7 +1031,7 @@ export default async function CashReconciliationPage(props: PageProps) {
               <div className="flex gap-2">
                 <Link
                   aria-disabled={rechargePage <= 1}
-                  href={sectionLink("recharges", Math.max(1, rechargePage - 1))}
+                  href={sectionLink(activeTab, Math.max(1, rechargePage - 1))}
                   className={`rounded-lg border px-3 py-2 ${rechargePage <= 1 ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
                 >
                   上一页
@@ -919,7 +1039,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                 <Link
                   aria-disabled={rechargePage >= rechargePageCount}
                   href={sectionLink(
-                    "recharges",
+                    activeTab,
                     Math.min(rechargePageCount, rechargePage + 1),
                   )}
                   className={`rounded-lg border px-3 py-2 ${rechargePage >= rechargePageCount ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}

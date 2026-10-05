@@ -36,12 +36,14 @@
         "@heroicons/react": "^2.2.0",
         "@maxmind/geoip2-node": "^6.3.4",
         "@prisma/client": "^6.19.2",
+        "@types/web-push": "^3.6.4",
         "cuid": "^3.0.0",
         "exceljs": "^4.4.0",
         "next": "^16.1.6",
         "qrcode": "^1.5.4",
         "react": "^19.2.4",
-        "react-dom": "^19.2.4"
+        "react-dom": "^19.2.4",
+        "web-push": "^3.6.7"
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4",

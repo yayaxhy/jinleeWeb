@@ -61,7 +61,9 @@ export const canViewAdminHome = (discordId?: string | null) =>
   isAdminDiscordId(discordId) || isPeiwanInfoAdminDiscordId(discordId);
 
 export const canViewKefuWorkspace = (discordId?: string | null) =>
-  isKefuDiscordId(discordId) || isPeiwanInfoAdminDiscordId(discordId);
+  isAdminDiscordId(discordId) ||
+  isKefuDiscordId(discordId) ||
+  isPeiwanInfoAdminDiscordId(discordId);
 
 export const canViewTransactions = (discordId?: string | null) =>
   isAdminDiscordId(discordId) || isKefuDiscordId(discordId) || isHowardDiscordId(discordId) || isIriaDiscordId(discordId);

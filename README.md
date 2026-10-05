@@ -40,3 +40,9 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 - 在 `.env` 中设置 `ADMIN_DISCORD_IDS="123,456"` 指定可访问后台的 Discord ID（逗号分隔）。
 - 授权账号可访问 `/admin`，并通过输入 `/admin/peiwan/new`（新增）或 `/admin/peiwan/<DiscordID>`（编辑）来维护陪玩信息。
 - 如需恢复已下架的陪玩，可由管理员调用 `POST /api/admin/peiwan/<DiscordID或陪玩ID>/restore`（移除删除记录并把身份改回陪玩）。
+
+## 公会工作台
+
+- `/console` 是老板、陪玩使用的网页工作台：找陪玩、派单 / 接单、订单处理、客服会话、余额与流水均使用正式 DLM 数据。
+- `/admin/support` 是管理 / 客服的回复收件箱。
+- 生产环境的迁移、Push、Discord 和邮件配置见 [guild-console-deployment.md](docs/guild-console-deployment.md)。

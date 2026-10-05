@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   canViewAdminHome,
+  canViewKefuWorkspace,
   canViewStripePricing,
   canViewTraffic,
   getAdminDiscordIds,
@@ -27,6 +28,8 @@ test('only configured Discord IDs have backoffice access', () => {
   }
 
   assert.equal(canViewStripePricing(null), false);
+  assert.equal(canViewKefuWorkspace('525770714574225408'), true);
+  assert.equal(canViewKefuWorkspace('123456789012345678'), false);
 });
 
 test('only the designated Discord account can view Stripe pricing and traffic', () => {

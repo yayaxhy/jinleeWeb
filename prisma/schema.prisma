@@ -63,6 +63,7 @@ enum DispatchCandidateStatus {
 enum MiniConversationType {
   DIRECT
   SYSTEM
+  SUPPORT
 }
 
 enum MiniMessageSenderType {
@@ -258,6 +259,29 @@ enum DlmAdminOperationStatus {
   FAILED
 }
 
+/// Events that must appear in the member-facing notification center. These are
+/// deliberately business events rather than transport-specific records so one
+/// event can be delivered to Discord, web push, and email independently.
+enum GuildNotificationEvent {
+  ORDER_CREATED
+  ORDER_ACCEPTED
+  ORDER_CANCELED
+  BALANCE_ADJUSTED
+}
+
+enum GuildNotificationChannel {
+  DISCORD
+  WEB_PUSH
+  EMAIL
+}
+
+enum GuildNotificationDeliveryStatus {
+  PENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
 /**
  * ---------------- Models ----------------
  */
@@ -286,6 +310,8 @@ model DlmUser {
   miniCriticalNotifications Boolean                @default(false)
   miniMessageNotifications  Boolean                @default(false)
   miniDispatchNotifications Boolean                @default(false)
+  notificationEmail         String?
+  notificationEmailEnabled  Boolean                @default(false)
   withdrawAccount1          String?
   withdrawAccount2          String?
   withdrawAccount3          String?
@@ -327,6 +353,8 @@ model DlmUser {
   openingBenefitClaims    OpeningBenefitClaim[]
   manualWechatBoss        ManualWechatBoss?
   adminOperations         DlmAdminOperation[]
+  guildNotifications      GuildNotification[]
+  webPushSubscriptions    WebPushSubscription[]
 }
 
 /// A boss account created and maintained by staff for offline WeChat payments.
@@ -427,6 +455,63 @@ model WechatProgramSession {
   providerAccount AccountBinding? @relation(fields: [providerAccountId], references: [id], onDelete: SetNull)
 
   @@index([dlmId, expiresAt])
+}
+
+/// A browser-owned subscription endpoint. The private VAPID key never enters
+/// this table; it remains server-only in the deployment environment.
+model WebPushSubscription {
+  id             String    @id @default(cuid())
+  dlmId          String
+  endpoint       String    @unique @db.Text
+  p256dh         String    @db.Text
+  auth           String    @db.Text
+  expirationTime DateTime?
+  userAgent      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  dlmUser DlmUser @relation(fields: [dlmId], references: [dlmId], onDelete: Cascade)
+
+  @@index([dlmId, updatedAt])
+}
+
+/// The durable, in-app record for an operational event. `dedupeKey` lets a
+/// retrying Bot or web worker safely submit the same event more than once.
+model GuildNotification {
+  id        String                 @id @default(cuid())
+  dlmId     String
+  event     GuildNotificationEvent
+  title     String                 @db.VarChar(160)
+  body      String                 @db.VarChar(1000)
+  href      String?                @db.VarChar(512)
+  details   Json?
+  dedupeKey String?                @unique
+  readAt    DateTime?
+  createdAt DateTime               @default(now())
+
+  dlmUser    DlmUser                     @relation(fields: [dlmId], references: [dlmId], onDelete: Cascade)
+  deliveries GuildNotificationDelivery[]
+
+  @@index([dlmId, createdAt])
+  @@index([dlmId, readAt, createdAt])
+  @@index([event, createdAt])
+}
+
+model GuildNotificationDelivery {
+  id             String                          @id @default(cuid())
+  notificationId String
+  channel        GuildNotificationChannel
+  status         GuildNotificationDeliveryStatus @default(PENDING)
+  attempts       Int                             @default(0)
+  error          String?                         @db.VarChar(1000)
+  sentAt         DateTime?
+  createdAt      DateTime                        @default(now())
+  updatedAt      DateTime                        @updatedAt
+
+  notification GuildNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, channel])
+  @@index([status, updatedAt])
 }
 
 model DiscordMigrationAudit {

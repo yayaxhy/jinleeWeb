@@ -108,6 +108,7 @@ function serializeOrder(order: Prisma.OrderGetPayload<{
   const actions: string[] = [];
 
   if (isWorker && order.status === OrderStatus.PENDING) actions.push('accept', 'decline');
+  if (isHost && order.status === OrderStatus.PENDING) actions.push('cancel');
   if ((isHost || isWorker) && order.status === OrderStatus.RUNNING) actions.push('end');
 
   return {
@@ -157,7 +158,7 @@ export async function performMiniOrderAction(
   action: unknown,
 ) {
   const normalizedAction = String(action || '').trim().toLowerCase();
-  if (!['accept', 'decline', 'end'].includes(normalizedAction)) {
+  if (!['accept', 'decline', 'cancel', 'end'].includes(normalizedAction)) {
     return { ok: false, status: 400, error: 'invalid_order_action' } as const;
   }
 
@@ -179,7 +180,9 @@ export async function performMiniOrderAction(
 
   const isHost = order.hostDlmId === currentUser.dlmId || Boolean(currentUser.discordUserId && order.hostId === currentUser.discordUserId);
   const isWorker = Boolean(currentUser.discordUserId && order.workerId === currentUser.discordUserId);
-  if ((normalizedAction === 'accept' || normalizedAction === 'decline') ? !isWorker : !isHost && !isWorker) {
+  const requiresWorker = normalizedAction === 'accept' || normalizedAction === 'decline';
+  const requiresHost = normalizedAction === 'cancel';
+  if ((requiresWorker && !isWorker) || (requiresHost && !isHost) || (!requiresWorker && !requiresHost && !isHost && !isWorker)) {
     return { ok: false, status: 403, error: 'not_order_participant' } as const;
   }
 
@@ -196,6 +199,8 @@ export async function performMiniOrderAction(
     ? `订单 #${order.displayNo} 已被陪玩接受，订单开始计时。`
     : normalizedAction === 'decline'
       ? `订单 #${order.displayNo} 已被陪玩拒绝，可以返回派单继续选择。`
+      : normalizedAction === 'cancel'
+        ? `订单 #${order.displayNo} 已取消。`
       : `订单 #${order.displayNo} 已结束，结算结果已写入账户流水。`;
   await Promise.allSettled([
     notifyMiniProgramUser(order.hostDlmId, 'critical', `订单 #${order.displayNo}`, notificationText, 'pages/my-orders/index'),

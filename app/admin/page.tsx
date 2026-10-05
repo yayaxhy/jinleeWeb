@@ -415,6 +415,21 @@ export default async function AdminHomePage() {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
+              <p className="text-sm text-white/70">公会客服</p>
+              <p className="text-xs text-white/50">查看并回复老板从工作台发起的客服会话</p>
+            </div>
+            <Link
+              href="/admin/support"
+              className="inline-flex items-center justify-center rounded-full bg-[#5c43a3] px-4 py-2 text-sm text-white hover:bg-[#4a3388]"
+            >
+              前往回复
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
               <p className="text-sm text-white/70">小程序聊天审核</p>
               <p className="text-xs text-white/50">查看完整原文、自动拦截与管理员预警</p>
             </div>

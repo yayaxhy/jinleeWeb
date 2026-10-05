@@ -3,6 +3,7 @@ import {
   DispatchCandidateStatus,
   DispatchRequestStatus,
   DispatchSource,
+  GuildNotificationEvent,
   MemberStatus,
   MiniAvailabilityStatus,
   MiniConversationType,
@@ -25,6 +26,7 @@ import { checkMiniProgramMessageSecurity } from '@/lib/wechat';
 import { getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
 import { notifyDispatchSubscribers, notifyMiniProgramUser } from '@/lib/mini-program-subscribe';
 import { findPeiwanCardPath } from '@/lib/peiwan/card-path';
+import { publishGuildNotification } from '@/lib/notification-center';
 
 const DISPATCH_TTL_MINUTES = 20;
 const DISPATCH_TAKE_LIMIT = 50;
@@ -576,6 +578,22 @@ export async function selectDispatchCandidate(
     `订单 #${result.order.displayNo} 等待确认`,
     'pages/my-orders/index',
   ).catch((error) => console.error('[mini-order] worker subscription failed', error));
+  if (result.workerDlmId) {
+    try {
+      await publishGuildNotification({
+        dlmId: result.workerDlmId,
+        event: GuildNotificationEvent.ORDER_CREATED,
+        title: `订单 #${result.order.displayNo} 等待接单`,
+        body: '老板已选中你，请尽快确认接单。',
+        href: '/console?tab=orders',
+        dedupeKey: `order-created:${result.order.id}:${result.workerDlmId}`,
+      });
+    } catch (error) {
+      // The order is already committed. Preserve the completed business action
+      // while recording a provider failure in logs for operations follow-up.
+      console.error('[mini-order] guild notification failed', error);
+    }
+  }
 
   return {
     ok: true,
@@ -634,7 +652,7 @@ function canAccessConversation(conversation: { userAId?: string | null; userBId?
 }
 
 function getPeer(conversation: ConversationWithRelations | ConversationSummary, currentUser: CurrentDlmUser) {
-  if (conversation.type === MiniConversationType.SYSTEM) return null;
+  if (conversation.type === MiniConversationType.SYSTEM || conversation.type === MiniConversationType.SUPPORT) return null;
   if (conversation.userAId === currentUser.dlmId) return conversation.userB;
   return conversation.userA;
 }
@@ -659,14 +677,15 @@ function serializeMiniMessage(message: ConversationWithRelations['messages'][num
 function serializeConversationSummary(conversation: ConversationSummary, currentUser: CurrentDlmUser, unread = 0) {
   const peer = getPeer(conversation, currentUser);
   const latestMessage = conversation.messages[0] ?? null;
+  const isSupport = conversation.type === MiniConversationType.SUPPORT;
 
   return {
     id: conversation.id,
     peerId: peer?.dlmId ?? 'system',
-    peerName: peer ? displayNameForUser(peer) : '机器人通知',
-    peerRole: peer?.member?.status === MemberStatus.PEIWAN ? '陪玩' : conversation.type === MiniConversationType.SYSTEM ? '系统' : '用户',
+    peerName: peer ? displayNameForUser(peer) : isSupport ? '公会客服' : '机器人通知',
+    peerRole: peer?.member?.status === MemberStatus.PEIWAN ? '陪玩' : isSupport ? '客服' : conversation.type === MiniConversationType.SYSTEM ? '系统' : '用户',
     peerAvatarUrl: peer?.wechatAvatarUrl ?? peer?.discordAvatarUrl ?? null,
-    linkedOrder: conversation.linkedOrder ? `订单 #${conversation.linkedOrder.displayNo}` : conversation.type === MiniConversationType.SYSTEM ? '系统通知' : '未下单聊天',
+    linkedOrder: conversation.linkedOrder ? `订单 #${conversation.linkedOrder.displayNo}` : isSupport ? '客服会话' : conversation.type === MiniConversationType.SYSTEM ? '系统通知' : '未下单聊天',
     adminWatched: conversation.adminWatched,
     unread,
     updatedAt: conversation.updatedAt.getTime(),
@@ -818,6 +837,40 @@ export async function startConversation(currentUser: CurrentDlmUser, payload: Re
   return { ok: true, conversation: serializeConversation(conversation, currentUser) };
 }
 
+/** Creates one durable, staff-visible support thread per DLM account. */
+export async function startSupportConversation(currentUser: CurrentDlmUser) {
+  const peerKey = `support:${currentUser.dlmId}`;
+  const conversation = await prisma.miniConversation.upsert({
+    where: { type_peerKey: { type: MiniConversationType.SUPPORT, peerKey } },
+    update: { adminWatched: true },
+    create: {
+      type: MiniConversationType.SUPPORT,
+      peerKey,
+      userAId: currentUser.dlmId,
+      adminWatched: true,
+      userALastReadAt: new Date(),
+      messages: {
+        create: {
+          senderType: MiniMessageSenderType.SYSTEM,
+          body: '已接入公会客服。请描述你的订单、充值、余额或提现问题，管理人员会在此回复。',
+          status: MiniMessageStatus.NOTICE,
+        },
+      },
+    },
+    include: {
+      userA: { include: { member: true } },
+      userB: { include: { member: true } },
+      linkedOrder: { select: { displayNo: true, status: true } },
+      messages: { orderBy: { createdAt: 'asc' }, take: MESSAGE_TAKE_LIMIT },
+    },
+  });
+  await prisma.miniConversation.update({
+    where: { id: conversation.id },
+    data: { userALastReadAt: new Date() },
+  });
+  return { ok: true, conversation: serializeConversation(conversation, currentUser) } as const;
+}
+
 function shouldBlockMessage(text: string) {
   const value = text.toLowerCase();
   return SENSITIVE_MESSAGE_KEYWORDS.some((keyword) => value.includes(keyword));
@@ -864,13 +917,15 @@ export async function sendMiniMessage(currentUser: CurrentDlmUser, payload: Reco
 
   const conversation = await prisma.miniConversation.findUnique({
     where: { id: conversationId },
-    select: { id: true, userAId: true, userBId: true, adminWatched: true },
+    select: { id: true, type: true, userAId: true, userBId: true, adminWatched: true },
   });
   if (!conversation || !canAccessConversation(conversation, currentUser)) {
     return { ok: false, status: 404, error: '会话不存在。' };
   }
 
-  const moderation = await moderateMessage(currentUser, text);
+  const moderation = conversation.type === MiniConversationType.SUPPORT
+    ? { blocked: false, review: true, riskLabels: ['support_request'], reason: '客服会话新消息' }
+    : await moderateMessage(currentUser, text);
   const blocked = moderation.blocked;
   const body = blocked ? '消息违规已拦截' : text;
   const shouldAlert = blocked || moderation.review || conversation.adminWatched;
