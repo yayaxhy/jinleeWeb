@@ -79,6 +79,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Rou
   if (!session?.discordId || !canViewRevenue(session.discordId)) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }
+  const operatorId = session.discordId;
 
   const { id } = await context.params;
   const current = await prisma.monthlyManualExpense.findUnique({ where: { id } });
@@ -117,7 +118,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Rou
           revisionId,
           phase: 'prepared',
           originalId: id,
-          operatorId: session.discordId,
+          operatorId,
           recordedAt: new Date().toISOString(),
           before: {
             amount: current.amount.toString(), note: current.note, imageFileName: current.imageFileName,
@@ -125,7 +126,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Rou
           },
           after: {
             amount: amount.toString(), note, imageFileName: newImageFileName ?? current.imageFileName,
-            operatorId: session.discordId,
+            operatorId,
           },
           bookedMonthKey,
         });
@@ -137,7 +138,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Rou
           data: {
             amount,
             note,
-            operatorId: session.discordId,
+            operatorId,
             ...(newImageFileName ? { imageFileName: newImageFileName } : {}),
           },
         });
@@ -148,7 +149,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Rou
               monthKey: bookedMonthKey,
               amount: delta,
               note: priorPeriodAdjustmentNote(current.monthKey, note, id),
-              operatorId: session.discordId,
+              operatorId,
             },
           });
         }
@@ -161,7 +162,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Rou
             revisionId,
             phase: 'committed',
             originalId: id,
-            operatorId: session.discordId,
+            operatorId,
             recordedAt: new Date().toISOString(),
             delta: delta.toString(),
             bookedMonthKey,

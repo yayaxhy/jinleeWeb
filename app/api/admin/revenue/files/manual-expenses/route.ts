@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
   if (!session?.discordId || !canViewRevenue(session.discordId)) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }
+  const operatorId = session.discordId;
 
   const formData = await request.formData();
   const monthKey = getText(formData, 'monthKey');
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
           amount,
           note: bookedMonthKey === monthKey ? note : priorPeriodAdjustmentNote(monthKey, note),
           imageFileName,
-          operatorId: session.discordId,
+          operatorId,
         },
       });
       expenseCommitted = true;

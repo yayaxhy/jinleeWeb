@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
   if (!session?.discordId || !canViewRevenue(session.discordId)) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
   }
+  const operatorId = session.discordId;
   const body = await request.json().catch(() => null);
   const kind = body?.kind;
   const amount = parseAmount(body?.amount);
@@ -106,14 +107,14 @@ export async function POST(request: NextRequest) {
           throw new Error('冲回金额不能超过尚未支付的分红');
         }
         await prisma.monthlyDividendDecision.create({
-          data: { monthKey: bookedMonthKey, sourceMonthKey, amount, note, operatorId: session.discordId },
+          data: { monthKey: bookedMonthKey, sourceMonthKey, amount, note, operatorId },
         });
       } else {
         if (amount.gt(currentLedger.payableAtMonthEnd)) {
           throw new Error('付款金额不能超过尚未支付的分红');
         }
         await prisma.monthlyDividendPayment.create({
-          data: { amount, paidAt: paidAt!, note, operatorId: session.discordId },
+          data: { amount, paidAt: paidAt!, note, operatorId },
         });
       }
     });
