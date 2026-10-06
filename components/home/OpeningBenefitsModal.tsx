@@ -1,22 +1,26 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { useSessionContext } from '@/components/SessionProvider';
-import { getBerlinDateKey } from '@/lib/opening-benefit-rules';
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useSessionContext } from "@/components/SessionProvider";
+import { getBerlinDateKey } from "@/lib/opening-benefit-rules";
 
-const couponImage = '/brand/dlm-v1/prizes/13-special-9-zhe-voucher.png';
-const characterArt = '/brand/dlm-v1/operations/18-thankBoss.gif';
-const DAILY_POPUP_STORAGE_PREFIX = 'dlm-opening-benefits-popup-shown';
+const couponImage = "/brand/dlm-v1/prizes/13-special-9-zhe-voucher.png";
+const characterArt = "/brand/dlm-v1/operations/18-thankBoss.gif";
+const DAILY_POPUP_STORAGE_PREFIX = "dlm-opening-benefits-popup-shown";
 
 export function OpeningBenefitsModal() {
   const pathname = usePathname();
   const { session } = useSessionContext();
   const [open, setOpen] = useState(false);
-  const lastCheckedRef = useRef<{ key: string; shouldShow: boolean } | null>(null);
-  const viewerKey = session?.dlmId ?? session?.discordId ?? 'guest';
+  const [mounted, setMounted] = useState(false);
+  const lastCheckedRef = useRef<{ key: string; shouldShow: boolean } | null>(
+    null,
+  );
+  const viewerKey = session?.dlmId ?? session?.discordId ?? "guest";
 
   useEffect(() => {
     const dayKey = getBerlinDateKey();
@@ -25,7 +29,7 @@ export function OpeningBenefitsModal() {
     const effectKey = `${checkKey}:${pathname}`;
     let shouldShow = false;
 
-    if (pathname === '/opening-benefits') {
+    if (pathname === "/opening-benefits") {
       try {
         window.localStorage.setItem(storageKey, dayKey);
       } catch {
@@ -54,17 +58,30 @@ export function OpeningBenefitsModal() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === "Escape") setOpen(false);
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  if (!open || pathname === '/opening-benefits') return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  if (!mounted || !open || pathname === "/opening-benefits") return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 grid place-items-center p-4"
+      className="fixed inset-0 z-[9999] grid h-[100dvh] w-screen place-items-center overflow-y-auto p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="opening-benefits-title"
@@ -135,6 +152,7 @@ export function OpeningBenefitsModal() {
           先逛逛，晚点再看
         </button>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
