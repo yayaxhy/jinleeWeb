@@ -89,10 +89,10 @@ export function OpeningBenefitsModal() {
       <button
         type="button"
         aria-label="关闭开业福利提示"
-        className="absolute inset-0 bg-[#301722]/60 backdrop-blur-sm"
+        className="absolute inset-0 z-0 bg-[#301722]/60 backdrop-blur-sm"
         onClick={() => setOpen(false)}
       />
-      <section className="relative w-full max-w-md overflow-hidden rounded-[2.25rem] border-4 border-white bg-[#fff7f3] px-6 pb-7 pt-8 text-center text-[#5a3447] shadow-[0_30px_80px_rgba(45,15,28,0.46)] sm:px-9">
+      <section className="relative z-10 w-full max-w-md overflow-hidden rounded-[2.25rem] border-4 border-white bg-[#fff7f3] px-6 pb-7 pt-8 text-center text-[#5a3447] shadow-[0_30px_80px_rgba(45,15,28,0.46)] sm:px-9">
         <div className="absolute inset-0 -z-10 opacity-55 [background-image:radial-gradient(#f5a1ba_1px,transparent_1px)] [background-size:14px_14px]" />
         <div className="absolute -left-12 -top-12 -z-10 h-40 w-40 rounded-full bg-[#ffd6e1]" />
         <div className="absolute -bottom-20 -right-12 -z-10 h-48 w-48 rounded-full bg-[#ffe19e]" />
