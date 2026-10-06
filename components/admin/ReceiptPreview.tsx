@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 type ReceiptPreviewProps = {
   evidenceId: string;
@@ -48,34 +49,37 @@ export function ReceiptPreview({
         )}
       </button>
 
-      {open ? (
-        <div
-          role="presentation"
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm"
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="转账截图预览"
-            onClick={(event) => event.stopPropagation()}
-            className="relative max-h-[90vh] max-w-[90vw] rounded-2xl border border-white/20 bg-[#0a0a0f] p-3 shadow-2xl"
-          >
-            <button
-              type="button"
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              role="presentation"
               onClick={() => setOpen(false)}
-              className="absolute top-5 right-5 z-10 rounded-full border border-white/25 bg-black/70 px-3 py-1.5 text-xs text-white hover:bg-black"
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm"
             >
-              关闭
-            </button>
-            <img
-              src={source}
-              alt={originalFileName}
-              className="max-h-[84vh] max-w-[84vw] rounded-xl object-contain"
-            />
-          </div>
-        </div>
-      ) : null}
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="转账截图预览"
+                onClick={(event) => event.stopPropagation()}
+                className="relative z-[201] max-h-[90vh] max-w-[90vw] rounded-2xl border border-white/20 bg-[#0a0a0f] p-3 shadow-2xl"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="absolute top-5 right-5 z-10 rounded-full border border-white/25 bg-black/70 px-3 py-1.5 text-xs text-white hover:bg-black"
+                >
+                  关闭
+                </button>
+                <img
+                  src={source}
+                  alt={originalFileName}
+                  className="block max-h-[84vh] max-w-[84vw] rounded-xl object-contain"
+                />
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }
