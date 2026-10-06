@@ -9,6 +9,7 @@ import {
 import { redirect } from "next/navigation";
 import { getAdminDiscordIds } from "@/lib/admin";
 import { ReceiptPasteUploader } from "@/components/admin/ReceiptPasteUploader";
+import { ReceiptPreview } from "@/components/admin/ReceiptPreview";
 import { LocalDayDivider } from "@/components/admin/LocalDayDivider";
 import { formatAmountDown2 } from "@/lib/numberFormat";
 import { newEntityOnlyTime } from "@/lib/operating-entity-cutover";
@@ -1304,14 +1305,14 @@ export default async function CashReconciliationPage(props: PageProps) {
                               {row?.evidence.length ? (
                                 <div className="space-y-1">
                                   {row.evidence.map((evidence) => (
-                                    <a
+                                    <ReceiptPreview
                                       key={evidence.id}
-                                      href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
-                                      target="_blank"
-                                      className="block text-xs text-[#c4b5fd] underline"
-                                    >
-                                      查看截图
-                                    </a>
+                                      evidenceId={evidence.id}
+                                      originalFileName={
+                                        evidence.originalFileName
+                                      }
+                                      variant="link"
+                                    />
                                   ))}
                                 </div>
                               ) : (
@@ -1592,20 +1593,13 @@ export default async function CashReconciliationPage(props: PageProps) {
                                 {row.evidence.length ? (
                                   <div className="flex min-w-28 flex-wrap gap-2">
                                     {row.evidence.map((evidence) => (
-                                      <a
+                                      <ReceiptPreview
                                         key={evidence.id}
-                                        href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        title="点击放大查看转账截图"
-                                        className="block overflow-hidden rounded-lg border border-white/15 bg-black/30 transition hover:border-[#c4b5fd]/70"
-                                      >
-                                        <img
-                                          src={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
-                                          alt="转账截图"
-                                          className="h-14 w-14 object-cover"
-                                        />
-                                      </a>
+                                        evidenceId={evidence.id}
+                                        originalFileName={
+                                          evidence.originalFileName
+                                        }
+                                      />
                                     ))}
                                   </div>
                                 ) : (
@@ -1780,20 +1774,13 @@ export default async function CashReconciliationPage(props: PageProps) {
                               {row.evidence.length ? (
                                 <div className="flex min-w-28 flex-wrap gap-2">
                                   {row.evidence.map((evidence) => (
-                                    <a
+                                    <ReceiptPreview
                                       key={evidence.id}
-                                      href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      title="点击放大查看转账截图"
-                                      className="block overflow-hidden rounded-lg border border-white/15 bg-black/30 transition hover:border-[#c4b5fd]/70"
-                                    >
-                                      <img
-                                        src={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
-                                        alt="转账截图"
-                                        className="h-14 w-14 object-cover"
-                                      />
-                                    </a>
+                                      evidenceId={evidence.id}
+                                      originalFileName={
+                                        evidence.originalFileName
+                                      }
+                                    />
                                   ))}
                                 </div>
                               ) : (
@@ -2115,20 +2102,13 @@ export default async function CashReconciliationPage(props: PageProps) {
                               {row.evidence.length ? (
                                 <div className="flex min-w-28 flex-wrap gap-2">
                                   {row.evidence.map((evidence) => (
-                                    <a
+                                    <ReceiptPreview
                                       key={evidence.id}
-                                      href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      title="点击放大查看转账截图"
-                                      className="block overflow-hidden rounded-lg border border-white/15 bg-black/30 transition hover:border-[#c4b5fd]/70"
-                                    >
-                                      <img
-                                        src={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
-                                        alt="转账截图"
-                                        className="h-14 w-14 object-cover"
-                                      />
-                                    </a>
+                                      evidenceId={evidence.id}
+                                      originalFileName={
+                                        evidence.originalFileName
+                                      }
+                                    />
                                   ))}
                                 </div>
                               ) : (
