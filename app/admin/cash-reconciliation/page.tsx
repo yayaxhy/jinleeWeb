@@ -38,9 +38,13 @@ const tabs = [
   "recharges",
   "processed",
   "confirmations",
+  "exceptions",
+  "confirmed-receipts",
   "transfers",
   "payouts",
+  "paid-payouts",
   "forex",
+  "audit",
 ] as const;
 const PROCESSED_RECONCILIATION_STATUSES =
   new Set<SettlementReconciliationStatus>([
@@ -51,6 +55,16 @@ const PROCESSED_RECONCILIATION_STATUSES =
 type ReconciliationTab = (typeof tabs)[number];
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+type AuditRow = {
+  id: string;
+  occurredAt: Date;
+  category: string;
+  action: string;
+  subject: string;
+  amount: Prisma.Decimal | null;
+  actorDiscordId: string;
+  note: string | null;
 };
 
 const formatDate = (value?: Date | null) =>
@@ -156,7 +170,15 @@ function sectionLink(
   ownerDiscordId?: string,
 ) {
   const query = new URLSearchParams({ tab });
-  if ((tab === "recharges" || tab === "processed") && page > 1) {
+  if (
+    (tab === "recharges" ||
+      tab === "processed" ||
+      tab === "exceptions" ||
+      tab === "confirmed-receipts" ||
+      tab === "paid-payouts" ||
+      tab === "audit") &&
+    page > 1
+  ) {
     query.set("page", String(page));
   }
   if (ownerDiscordId) query.set("owner", ownerDiscordId);
@@ -187,11 +209,14 @@ export default async function CashReconciliationPage(props: PageProps) {
 
   const [
     loadedAccounts,
-    rawRecharges,
+    loadedManualRecharges,
     transfers,
     recoveries,
     payouts,
     withdrawals,
+    auditEvents,
+    zPayRechargeReferences,
+    stripeRechargeReferences,
   ] = await Promise.all([
     prisma.settlementAccount.findMany({
       orderBy: [{ active: "desc" }, { name: "asc" }],
@@ -244,7 +269,43 @@ export default async function CashReconciliationPage(props: PageProps) {
         },
       },
     }),
+    prisma.settlementReconciliationEvent.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      include: {
+        reconciliation: {
+          include: { account: true },
+        },
+      },
+    }),
+    prisma.zPayRechargeOrder.findMany({
+      select: { outTradeNo: true, gatewayTradeNo: true },
+    }),
+    prisma.stripePayment.findMany({
+      select: {
+        outTradeNo: true,
+        paymentIntentId: true,
+        checkoutSessionId: true,
+      },
+    }),
   ]);
+
+  const automatedRechargeReferences = new Set(
+    [
+      ...zPayRechargeReferences.flatMap((payment) => [
+        payment.outTradeNo,
+        payment.gatewayTradeNo,
+      ]),
+      ...stripeRechargeReferences.flatMap((payment) => [
+        payment.outTradeNo,
+        payment.paymentIntentId,
+        payment.checkoutSessionId,
+      ]),
+    ].filter((reference): reference is string => Boolean(reference)),
+  );
+  const rawRecharges = loadedManualRecharges.filter(
+    (recharge) => !automatedRechargeReferences.has(recharge.fromWhom),
+  );
 
   const accounts = [...loadedAccounts].sort((left, right) => {
     const leftPriority = ACCOUNT_DISPLAY_PRIORITY.get(left.name) ?? 100;
@@ -261,7 +322,15 @@ export default async function CashReconciliationPage(props: PageProps) {
           recharge.fromWhom,
         ]),
         ...withdrawals.map((withdrawal) => withdrawal.discordId),
-        ...transfers.map((transfer) => transfer.initiatedBy),
+        ...transfers.flatMap((transfer) => [
+          transfer.initiatedBy,
+          transfer.receiverConfirmedBy,
+          transfer.receiverDisputedBy,
+          transfer.canceledBy,
+        ]),
+        ...recoveries.map((recovery) => recovery.recordedBy),
+        ...payouts.flatMap((payout) => [payout.paidBy, payout.voidedBy]),
+        ...auditEvents.map((event) => event.actorDiscordId),
       ].filter((discordUserId): discordUserId is string =>
         Boolean(discordUserId),
       ),
@@ -307,7 +376,15 @@ export default async function CashReconciliationPage(props: PageProps) {
   const currentOwnerId = viewedOwnerId ?? session.discordId;
   const allowedTabs: ReconciliationTab[] = isAllFinanceView
     ? [...tabs]
-    : ["overview", "confirmations", "transfers", "payouts"];
+    : [
+        "overview",
+        "confirmations",
+        "exceptions",
+        "confirmed-receipts",
+        "transfers",
+        "payouts",
+        "paid-payouts",
+      ];
   const activeTab = allowedTabs.includes(requestedTab)
     ? requestedTab
     : "overview";
@@ -495,6 +572,26 @@ export default async function CashReconciliationPage(props: PageProps) {
   const confirmationRows = pendingOwnerRows.filter(
     ({ row }) => isAllFinanceView || row?.ownerDiscordId === currentOwnerId,
   );
+  const exceptionRows = disputedRows
+    .filter(
+      ({ row }) => isAllFinanceView || row?.ownerDiscordId === currentOwnerId,
+    )
+    .sort(
+      ({ row: left }, { row: right }) =>
+        (right?.ownerDisputedAt?.getTime() ?? right?.updatedAt.getTime() ?? 0) -
+        (left?.ownerDisputedAt?.getTime() ?? left?.updatedAt.getTime() ?? 0),
+    );
+  const confirmedReceiptRows = rechargesWithRows
+    .filter(
+      ({ row }) =>
+        row?.status === SettlementReconciliationStatus.OWNER_CONFIRMED &&
+        (isAllFinanceView || row.ownerDiscordId === currentOwnerId),
+    )
+    .sort(
+      ({ row: left }, { row: right }) =>
+        (right?.ownerConfirmedAt?.getTime() ?? 0) -
+        (left?.ownerConfirmedAt?.getTime() ?? 0),
+    );
   const ownerTransferInbox = transfers.filter(
     (transfer) =>
       transfer.toAccount.ownerDiscordId === currentOwnerId &&
@@ -525,6 +622,125 @@ export default async function CashReconciliationPage(props: PageProps) {
   const payoutRows = isAllFinanceView
     ? withdrawalItems.filter(({ withdrawal }) => !withdrawal.settlementPayout)
     : pendingPayouts;
+  const paidPayoutRows = withdrawalItems
+    .filter(
+      ({ withdrawal, ownerId }) =>
+        withdrawal.settlementPayout?.status === SettlementPayoutStatus.PAID &&
+        (isAllFinanceView || ownerId === currentOwnerId),
+    )
+    .sort(
+      ({ withdrawal: left }, { withdrawal: right }) =>
+        (right.settlementPayout?.paidAt?.getTime() ?? 0) -
+        (left.settlementPayout?.paidAt?.getTime() ?? 0),
+    );
+  const withdrawalById = new Map(
+    withdrawals.map((withdrawal) => [withdrawal.id, withdrawal]),
+  );
+  const auditRows: AuditRow[] = [
+    ...auditEvents.map((event) => ({
+      id: `reconciliation-${event.id}`,
+      occurredAt: event.createdAt,
+      category: "充值对账",
+      action: statusLabel[event.toStatus],
+      subject: `充值 ${event.reconciliation.rechargeId}${event.reconciliation.account ? ` · ${event.reconciliation.account.name}` : ""}`,
+      amount: event.reconciliation.rmbAmount,
+      actorDiscordId: event.actorDiscordId,
+      note: event.note,
+    })),
+    ...transfers.flatMap((transfer) => {
+      const subject = `${transfer.fromAccount.name} → ${transfer.toAccount.name}`;
+      const entries: AuditRow[] = [
+        {
+          id: `transfer-created-${transfer.id}`,
+          occurredAt: transfer.createdAt,
+          category: "内部转账",
+          action: "发起转账",
+          subject,
+          amount: transfer.amount,
+          actorDiscordId: transfer.initiatedBy,
+          note: null,
+        },
+      ];
+      if (transfer.receiverConfirmedAt && transfer.receiverConfirmedBy) {
+        entries.push({
+          id: `transfer-confirmed-${transfer.id}`,
+          occurredAt: transfer.receiverConfirmedAt,
+          category: "内部转账",
+          action: "收款人确认",
+          subject,
+          amount: transfer.amount,
+          actorDiscordId: transfer.receiverConfirmedBy,
+          note: null,
+        });
+      }
+      if (transfer.receiverDisputedAt && transfer.receiverDisputedBy) {
+        entries.push({
+          id: `transfer-disputed-${transfer.id}`,
+          occurredAt: transfer.receiverDisputedAt,
+          category: "内部转账",
+          action: "收款异常",
+          subject,
+          amount: transfer.amount,
+          actorDiscordId: transfer.receiverDisputedBy,
+          note: transfer.disputeReason,
+        });
+      }
+      if (transfer.canceledAt && transfer.canceledBy) {
+        entries.push({
+          id: `transfer-canceled-${transfer.id}`,
+          occurredAt: transfer.canceledAt,
+          category: "内部转账",
+          action: "已撤销",
+          subject,
+          amount: transfer.amount,
+          actorDiscordId: transfer.canceledBy,
+          note: null,
+        });
+      }
+      return entries;
+    }),
+    ...recoveries.map((recovery) => ({
+      id: `forex-${recovery.id}`,
+      occurredAt: recovery.recoveredAt,
+      category: "外汇归还",
+      action: "登记归还",
+      subject: `${recovery.fromAccount.name} → ${recovery.toAccount.name}`,
+      amount: recovery.rmbAmount,
+      actorDiscordId: recovery.recordedBy,
+      note: `${formatAmountDown2(recovery.foreignAmount)} ${recovery.foreignCurrency}${recovery.note ? ` · ${recovery.note}` : ""}`,
+    })),
+    ...payouts.flatMap((payout) => {
+      const withdrawal = withdrawalById.get(payout.withdrawalId);
+      const subject = `${withdrawal?.method.split(":")[0] ?? "提现"} · 提现 ${payout.withdrawalId}`;
+      const entries: AuditRow[] = [
+        {
+          id: `payout-paid-${payout.id}`,
+          occurredAt: payout.paidAt,
+          category: "提现发放",
+          action: "标记已发放",
+          subject,
+          amount: payout.amount,
+          actorDiscordId: payout.paidBy,
+          note: null,
+        },
+      ];
+      if (payout.voidedAt && payout.voidedBy) {
+        entries.push({
+          id: `payout-voided-${payout.id}`,
+          occurredAt: payout.voidedAt,
+          category: "提现发放",
+          action: "撤销发放",
+          subject,
+          amount: payout.amount,
+          actorDiscordId: payout.voidedBy,
+          note: payout.voidReason,
+        });
+      }
+      return entries;
+    }),
+  ].sort(
+    (left, right) => right.occurredAt.getTime() - left.occurredAt.getTime(),
+  );
   const activeOwnerSummary = ownerSummaryEntries.find(
     (row) => row.ownerId === currentOwnerId,
   );
@@ -544,9 +760,57 @@ export default async function CashReconciliationPage(props: PageProps) {
     (rechargePage - 1) * RECHARGES_PER_PAGE,
     rechargePage * RECHARGES_PER_PAGE,
   );
+  const isHistoryListTab =
+    activeTab === "confirmed-receipts" ||
+    activeTab === "paid-payouts" ||
+    activeTab === "exceptions" ||
+    activeTab === "audit";
+  const historyRowCount =
+    activeTab === "confirmed-receipts"
+      ? confirmedReceiptRows.length
+      : activeTab === "paid-payouts"
+        ? paidPayoutRows.length
+        : activeTab === "exceptions"
+          ? exceptionRows.length
+          : activeTab === "audit"
+            ? auditRows.length
+            : 0;
+  const historyPageCount = Math.max(
+    1,
+    Math.ceil(historyRowCount / RECHARGES_PER_PAGE),
+  );
+  const historyPage =
+    Number.isFinite(requestedPage) && requestedPage > 0
+      ? Math.min(Math.floor(requestedPage), historyPageCount)
+      : 1;
+  const confirmedReceiptSlice = confirmedReceiptRows.slice(
+    (historyPage - 1) * RECHARGES_PER_PAGE,
+    historyPage * RECHARGES_PER_PAGE,
+  );
+  const paidPayoutSlice = paidPayoutRows.slice(
+    (historyPage - 1) * RECHARGES_PER_PAGE,
+    historyPage * RECHARGES_PER_PAGE,
+  );
+  const exceptionSlice = exceptionRows.slice(
+    (historyPage - 1) * RECHARGES_PER_PAGE,
+    historyPage * RECHARGES_PER_PAGE,
+  );
+  const auditSlice = auditRows.slice(
+    (historyPage - 1) * RECHARGES_PER_PAGE,
+    historyPage * RECHARGES_PER_PAGE,
+  );
   const redirectTo =
-    activeTab === "recharges" || activeTab === "processed"
-      ? sectionLink(activeTab, rechargePage, viewedOwnerId)
+    activeTab === "recharges" ||
+    activeTab === "processed" ||
+    activeTab === "exceptions" ||
+    activeTab === "confirmed-receipts" ||
+    activeTab === "paid-payouts" ||
+    activeTab === "audit"
+      ? sectionLink(
+          activeTab,
+          isHistoryListTab ? historyPage : rechargePage,
+          viewedOwnerId,
+        )
       : sectionLink(activeTab, 1, viewedOwnerId);
   const tabItems = (
     isAllFinanceView
@@ -554,14 +818,14 @@ export default async function CashReconciliationPage(props: PageProps) {
           ["overview", "总览", 0],
           ["recharges", "充值处理", pendingFinanceCount],
           ["processed", "已处理充值", processedRechargeRows.length],
-          [
-            "confirmations",
-            "负责人确认",
-            pendingOwnerRows.length + disputedRows.length,
-          ],
+          ["confirmations", "负责人确认", pendingOwnerRows.length],
+          ["exceptions", "异常处理", exceptionRows.length],
+          ["confirmed-receipts", "已确认收款", confirmedReceiptRows.length],
           ["transfers", "内部转账", 0],
           ["payouts", "提现发放", payoutRows.length],
+          ["paid-payouts", "已发提现", paidPayoutRows.length],
           ["forex", "外汇归还", 0],
+          ["audit", "操作审计", auditRows.length],
         ]
       : [
           [
@@ -576,12 +840,15 @@ export default async function CashReconciliationPage(props: PageProps) {
             isOwnerReadOnlyView ? "待确认收款" : "待我确认",
             confirmationRows.length,
           ],
+          ["exceptions", "未收到 / 金额不符", exceptionRows.length],
+          ["confirmed-receipts", "已确认收款", confirmedReceiptRows.length],
           ["transfers", "内部转账", ownerTransferInbox.length],
           [
             "payouts",
             isOwnerReadOnlyView ? "待发提现" : "待我发放",
             pendingPayouts.length,
           ],
+          ["paid-payouts", "已发提现", paidPayoutRows.length],
         ]
   ) as Array<[ReconciliationTab, string, number]>;
 
@@ -708,7 +975,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                       {disputedRows.length} 笔
                     </p>
                     <p className="mt-2 text-xs leading-5 text-rose-100/70">
-                      异常暂时仍计入；请在充值处理里核对后更正或标无效。
+                      异常暂时仍计入；请在“异常处理”核对后重新确认或标无效。
                     </p>
                   </div>
                   <div className="rounded-3xl border border-[#c4b5fd]/25 bg-[#7356c6]/10 p-5">
@@ -1016,6 +1283,11 @@ export default async function CashReconciliationPage(props: PageProps) {
                                       无效：{row.invalidReason}
                                     </p>
                                   ) : null}
+                                  {row.financeNote ? (
+                                    <p className="mt-2 max-w-52 whitespace-pre-wrap text-xs text-amber-100/80">
+                                      财务备注：{row.financeNote}
+                                    </p>
+                                  ) : null}
                                   <p className="mt-2 text-xs text-white/45">
                                     最后处理：
                                     {formatDate(
@@ -1110,6 +1382,18 @@ export default async function CashReconciliationPage(props: PageProps) {
                                     className={fieldClass}
                                   />
                                 ) : null}
+                                <label className="block">
+                                  <span className="mb-1.5 block text-xs text-white/55">
+                                    给负责人备注（可选，负责人确认收款时可见）
+                                  </span>
+                                  <input
+                                    name="financeNote"
+                                    defaultValue={row?.financeNote ?? ""}
+                                    placeholder="例如：请核对 10 月 6 日的微信到账"
+                                    maxLength={500}
+                                    className={fieldClass}
+                                  />
+                                </label>
                                 <input
                                   name="originalReceivedAmount"
                                   inputMode="decimal"
@@ -1232,7 +1516,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                   </h2>
                   <p className="mt-1 text-sm text-amber-100/75">
                     {isAllFinanceView
-                      ? "主财务可查看所有负责人待确认项和异常，并可代办二次确认或提出异常。"
+                      ? "主财务可查看所有负责人待确认项，并可代办二次确认或提出异常；已反馈的异常请在“异常处理”查看。"
                       : isOwnerReadOnlyView && canActAsCurrentOwner
                         ? "主财务可代办确认或反馈异常；操作记录会保留为主财务。"
                         : "确认前请先核对你实际收款账号的到账记录。"}
@@ -1253,6 +1537,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                         </th>
                         <th className="px-4 py-3 font-medium">金额</th>
                         <th className="px-4 py-3 font-medium">转账截图</th>
+                        <th className="px-4 py-3 font-medium">财务备注</th>
                         <th className="px-4 py-3 font-medium">时间</th>
                         <th className="px-4 py-3 font-medium">状态</th>
                         <th className="px-4 py-3 font-medium">处理</th>
@@ -1275,7 +1560,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                               previousDate={confirmationRows[
                                 index - 1
                               ]?.recharge.createdAt.toISOString()}
-                              colSpan={7}
+                              colSpan={8}
                             />
                             <tr className="border-b border-white/5 align-top last:border-0">
                               <td className="px-4 py-3 whitespace-nowrap">
@@ -1328,6 +1613,9 @@ export default async function CashReconciliationPage(props: PageProps) {
                                     未上传
                                   </span>
                                 )}
+                              </td>
+                              <td className="max-w-56 px-4 py-3 text-xs whitespace-pre-wrap text-amber-100/80">
+                                {row.financeNote ?? "—"}
                               </td>
                               <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
                                 {formatDate(recharge.createdAt)}
@@ -1415,42 +1703,492 @@ export default async function CashReconciliationPage(props: PageProps) {
                 </p>
               )}
             </section>
-            {isAllFinanceView && disputedRows.length ? (
-              <section className="rounded-3xl border border-rose-300/25 bg-rose-300/10 p-5">
+          </>
+        ) : null}
+
+        {activeTab === "exceptions" ? (
+          <section className="rounded-3xl border border-rose-300/25 bg-rose-300/10 p-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
                 <h2 className="text-xl font-semibold text-rose-50">
-                  负责人异常预警
+                  未收到 / 金额不符
                 </h2>
                 <p className="mt-1 text-sm text-rose-100/75">
-                  异常金额暂时仍在实收和负责人应有总额内；请回到“充值处理”核对凭证后处理。
+                  负责人反馈异常后，款项暂时仍计入实收和负责人应有总额。主财务核对后可重新列为待确认，或确认无效。
                 </p>
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  {disputedRows.map(({ recharge, row }) =>
-                    row ? (
-                      <div
-                        key={row.id}
-                        className="rounded-2xl border border-rose-200/20 bg-black/20 p-4"
-                      >
-                        <p className="font-medium">
-                          {row.account?.name ?? "账号已停用"} ·{" "}
-                          {formatMoney(row.rmbAmount)}
-                        </p>
-                        <p className="mt-1 text-xs text-rose-100/75">
-                          <OwnerIdentity
-                            ownerId={row.ownerDiscordId ?? ""}
-                            compact
-                          />{" "}
-                          · 充值 {recharge.RechargeID}
-                        </p>
-                        <p className="mt-3 text-sm text-rose-100">
-                          异常：{row.exceptionReason ?? "未填写原因"}
-                        </p>
-                      </div>
-                    ) : null,
-                  )}
+              </div>
+              <span className="text-sm text-rose-100">
+                异常 {exceptionRows.length} 笔
+              </span>
+            </div>
+            {exceptionSlice.length ? (
+              <>
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-rose-200/20 bg-black/20">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="border-b border-rose-200/15 bg-rose-100/[0.03] text-xs text-rose-100/65">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">收款账号</th>
+                        <th className="px-4 py-3 font-medium">
+                          老板 / 充值记录
+                        </th>
+                        <th className="px-4 py-3 font-medium">金额</th>
+                        <th className="px-4 py-3 font-medium">转账截图</th>
+                        <th className="px-4 py-3 font-medium">财务备注</th>
+                        <th className="px-4 py-3 font-medium">异常反馈</th>
+                        <th className="px-4 py-3 font-medium">处理</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {exceptionSlice.map(({ recharge, row }) => {
+                        if (!row) return null;
+                        const boss = recharge.toWhom
+                          ? relatedMemberByDiscordId.get(recharge.toWhom)
+                          : null;
+                        const wechatBoss = !boss
+                          ? recharge.dlmUser?.manualWechatBoss
+                          : null;
+
+                        return (
+                          <tr
+                            key={row.id}
+                            className="border-b border-white/5 align-top last:border-0"
+                          >
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <p className="font-medium">
+                                {row.account?.name ?? "账号已停用"}
+                              </p>
+                              <p className="mt-1 text-xs text-rose-100/70">
+                                <OwnerIdentity
+                                  ownerId={row.ownerDiscordId ?? ""}
+                                  compact
+                                />
+                              </p>
+                            </td>
+                            <td className="px-4 py-3 text-xs">
+                              <BossIdentity
+                                discord={boss}
+                                wechat={wechatBoss}
+                              />
+                              <p className="mt-1 text-white/45">
+                                充值 {recharge.RechargeID}
+                              </p>
+                            </td>
+                            <td className="px-4 py-3 font-medium whitespace-nowrap">
+                              {formatMoney(row.rmbAmount)}
+                            </td>
+                            <td className="px-4 py-3">
+                              {row.evidence.length ? (
+                                <div className="flex min-w-28 flex-wrap gap-2">
+                                  {row.evidence.map((evidence) => (
+                                    <a
+                                      key={evidence.id}
+                                      href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title="点击放大查看转账截图"
+                                      className="block overflow-hidden rounded-lg border border-white/15 bg-black/30 transition hover:border-[#c4b5fd]/70"
+                                    >
+                                      <img
+                                        src={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
+                                        alt="转账截图"
+                                        className="h-14 w-14 object-cover"
+                                      />
+                                    </a>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-white/40">
+                                  未上传
+                                </span>
+                              )}
+                            </td>
+                            <td className="max-w-56 px-4 py-3 text-xs whitespace-pre-wrap text-amber-100/80">
+                              {row.financeNote ?? "—"}
+                            </td>
+                            <td className="max-w-64 px-4 py-3 text-xs text-rose-100/85">
+                              <p className="whitespace-pre-wrap">
+                                {row.exceptionReason ?? "未填写原因"}
+                              </p>
+                              <p className="mt-2 text-rose-100/60">
+                                {displayNameForDiscordId(row.ownerDisputedBy)} ·{" "}
+                                {formatDate(row.ownerDisputedAt)}
+                              </p>
+                            </td>
+                            <td className="px-4 py-3">
+                              {isFinance ? (
+                                <div className="flex min-w-52 flex-col gap-2">
+                                  <details>
+                                    <summary className="cursor-pointer rounded-lg bg-amber-300/15 px-3 py-2 text-center text-xs text-amber-50 hover:bg-amber-300/25">
+                                      复核后仍计入实收
+                                    </summary>
+                                    <form
+                                      action={ACTION_URL}
+                                      method="post"
+                                      className="mt-2 grid gap-2"
+                                    >
+                                      <input
+                                        type="hidden"
+                                        name="action"
+                                        value="finance-retry-confirm"
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="redirectTo"
+                                        value={redirectTo}
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="reconciliationId"
+                                        value={row.id}
+                                      />
+                                      <input
+                                        required
+                                        name="note"
+                                        placeholder="复核说明（会再次等待负责人确认）"
+                                        className={fieldClass}
+                                      />
+                                      <button className="rounded-lg bg-amber-300/20 px-3 py-2 text-xs text-amber-50">
+                                        提交复核
+                                      </button>
+                                    </form>
+                                  </details>
+                                  <details>
+                                    <summary className="cursor-pointer rounded-lg border border-rose-300/35 px-3 py-2 text-center text-xs text-rose-100 hover:bg-rose-300/10">
+                                      财务确认无效
+                                    </summary>
+                                    <form
+                                      action={ACTION_URL}
+                                      method="post"
+                                      className="mt-2 grid gap-2"
+                                    >
+                                      <input
+                                        type="hidden"
+                                        name="action"
+                                        value="finance-invalidate"
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="redirectTo"
+                                        value={redirectTo}
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="rechargeId"
+                                        value={recharge.RechargeID}
+                                      />
+                                      <input
+                                        required
+                                        name="reason"
+                                        placeholder="确认无效的原因"
+                                        className={fieldClass}
+                                      />
+                                      <button className="rounded-lg bg-rose-400/20 px-3 py-2 text-xs text-rose-50">
+                                        确认无效
+                                      </button>
+                                    </form>
+                                  </details>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-rose-100/70">
+                                  已反馈主财务，等待核对。
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              </section>
-            ) : null}
-          </>
+                <div className="mt-4 flex items-center justify-between gap-3 text-sm text-rose-100/75">
+                  <span>
+                    第 {historyPage} / {historyPageCount} 页，每页{" "}
+                    {RECHARGES_PER_PAGE} 笔
+                  </span>
+                  <div className="flex gap-2">
+                    <Link
+                      aria-disabled={historyPage <= 1}
+                      href={sectionLink(
+                        activeTab,
+                        Math.max(1, historyPage - 1),
+                        viewedOwnerId,
+                      )}
+                      className={`rounded-lg border px-3 py-2 ${historyPage <= 1 ? "pointer-events-none border-rose-200/10 text-rose-100/30" : "border-rose-200/30 hover:bg-rose-300/10"}`}
+                    >
+                      上一页
+                    </Link>
+                    <Link
+                      aria-disabled={historyPage >= historyPageCount}
+                      href={sectionLink(
+                        activeTab,
+                        Math.min(historyPageCount, historyPage + 1),
+                        viewedOwnerId,
+                      )}
+                      className={`rounded-lg border px-3 py-2 ${historyPage >= historyPageCount ? "pointer-events-none border-rose-200/10 text-rose-100/30" : "border-rose-200/30 hover:bg-rose-300/10"}`}
+                    >
+                      下一页
+                    </Link>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="mt-4 text-sm text-rose-100/70">
+                当前没有“未收到 / 金额不符”的反馈。
+              </p>
+            )}
+          </section>
+        ) : null}
+
+        {activeTab === "audit" && isAllFinanceView ? (
+          <section className={cardClass}>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold">操作审计</h2>
+                <p className="mt-1 text-sm text-white/60">
+                  按时间倒序展示已落库的充值对账、内部转账、外汇归还及提现发放操作；充值对账最多保留最近
+                  500 条状态记录。
+                </p>
+              </div>
+              <span className="text-sm text-white/60">
+                共 {auditRows.length} 条
+              </span>
+            </div>
+            {auditSlice.length ? (
+              <>
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="border-b border-white/10 bg-white/[0.03] text-xs text-white/55">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">时间</th>
+                        <th className="px-4 py-3 font-medium">类别</th>
+                        <th className="px-4 py-3 font-medium">操作</th>
+                        <th className="px-4 py-3 font-medium">对象</th>
+                        <th className="px-4 py-3 font-medium">金额</th>
+                        <th className="px-4 py-3 font-medium">操作人</th>
+                        <th className="px-4 py-3 font-medium">说明</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditSlice.map((entry) => (
+                        <tr
+                          key={entry.id}
+                          className="border-b border-white/5 align-top last:border-0"
+                        >
+                          <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
+                            {formatDate(entry.occurredAt)}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-[#ddd6fe]">
+                            {entry.category}
+                          </td>
+                          <td className="px-4 py-3 font-medium">
+                            {entry.action}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-white/75">
+                            {entry.subject}
+                          </td>
+                          <td className="px-4 py-3 font-medium whitespace-nowrap">
+                            {entry.amount ? formatMoney(entry.amount) : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-white/70 whitespace-nowrap">
+                            {displayNameForDiscordId(entry.actorDiscordId)}
+                          </td>
+                          <td className="max-w-96 px-4 py-3 text-xs whitespace-pre-wrap text-white/55">
+                            {entry.note ?? "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-3 text-sm text-white/60">
+                  <span>
+                    第 {historyPage} / {historyPageCount} 页，每页{" "}
+                    {RECHARGES_PER_PAGE} 条
+                  </span>
+                  <div className="flex gap-2">
+                    <Link
+                      aria-disabled={historyPage <= 1}
+                      href={sectionLink(
+                        activeTab,
+                        Math.max(1, historyPage - 1),
+                      )}
+                      className={`rounded-lg border px-3 py-2 ${historyPage <= 1 ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
+                    >
+                      上一页
+                    </Link>
+                    <Link
+                      aria-disabled={historyPage >= historyPageCount}
+                      href={sectionLink(
+                        activeTab,
+                        Math.min(historyPageCount, historyPage + 1),
+                      )}
+                      className={`rounded-lg border px-3 py-2 ${historyPage >= historyPageCount ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
+                    >
+                      下一页
+                    </Link>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="mt-4 text-sm text-white/50">
+                暂时没有可展示的操作记录。
+              </p>
+            )}
+          </section>
+        ) : null}
+
+        {activeTab === "confirmed-receipts" ? (
+          <section className="rounded-3xl border border-emerald-300/25 bg-emerald-300/10 p-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-emerald-50">
+                  {isAllFinanceView
+                    ? "全部负责人已确认收款"
+                    : isOwnerReadOnlyView
+                      ? `${ownerName(currentOwnerId)}已确认的收款`
+                      : "我已确认的收款"}
+                </h2>
+                <p className="mt-1 text-sm text-emerald-100/75">
+                  仅保留负责人确认已收到的款项，按确认时间倒序；截图和财务备注可继续查看。
+                </p>
+              </div>
+              <span className="text-sm text-emerald-100">
+                已确认 {confirmedReceiptRows.length} 笔
+              </span>
+            </div>
+            {confirmedReceiptSlice.length ? (
+              <>
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-emerald-200/20 bg-black/20">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="border-b border-emerald-200/15 bg-emerald-100/[0.03] text-xs text-emerald-100/65">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">收款账号</th>
+                        <th className="px-4 py-3 font-medium">
+                          老板 / 充值记录
+                        </th>
+                        <th className="px-4 py-3 font-medium">金额</th>
+                        <th className="px-4 py-3 font-medium">转账截图</th>
+                        <th className="px-4 py-3 font-medium">财务备注</th>
+                        <th className="px-4 py-3 font-medium">确认时间</th>
+                        <th className="px-4 py-3 font-medium">确认人</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {confirmedReceiptSlice.map(({ recharge, row }) => {
+                        if (!row) return null;
+                        const boss = recharge.toWhom
+                          ? relatedMemberByDiscordId.get(recharge.toWhom)
+                          : null;
+                        const wechatBoss = !boss
+                          ? recharge.dlmUser?.manualWechatBoss
+                          : null;
+
+                        return (
+                          <tr
+                            key={row.id}
+                            className="border-b border-white/5 align-top last:border-0"
+                          >
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <p className="font-medium">
+                                {row.account?.name ?? "账号已停用"}
+                              </p>
+                              <p className="mt-1 text-xs text-emerald-100/70">
+                                <OwnerIdentity
+                                  ownerId={row.ownerDiscordId ?? ""}
+                                  compact
+                                />
+                              </p>
+                            </td>
+                            <td className="px-4 py-3 text-xs">
+                              <BossIdentity
+                                discord={boss}
+                                wechat={wechatBoss}
+                              />
+                              <p className="mt-1 text-white/45">
+                                充值 {recharge.RechargeID}
+                              </p>
+                            </td>
+                            <td className="px-4 py-3 font-medium whitespace-nowrap">
+                              {formatMoney(row.rmbAmount)}
+                            </td>
+                            <td className="px-4 py-3">
+                              {row.evidence.length ? (
+                                <div className="flex min-w-28 flex-wrap gap-2">
+                                  {row.evidence.map((evidence) => (
+                                    <a
+                                      key={evidence.id}
+                                      href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title="点击放大查看转账截图"
+                                      className="block overflow-hidden rounded-lg border border-white/15 bg-black/30 transition hover:border-[#c4b5fd]/70"
+                                    >
+                                      <img
+                                        src={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
+                                        alt="转账截图"
+                                        className="h-14 w-14 object-cover"
+                                      />
+                                    </a>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-white/40">
+                                  未上传
+                                </span>
+                              )}
+                            </td>
+                            <td className="max-w-56 px-4 py-3 text-xs whitespace-pre-wrap text-emerald-100/80">
+                              {row.financeNote ?? "—"}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
+                              {formatDate(row.ownerConfirmedAt)}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-white/70 whitespace-nowrap">
+                              {displayNameForDiscordId(row.ownerConfirmedBy)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-3 text-sm text-emerald-100/75">
+                  <span>
+                    第 {historyPage} / {historyPageCount} 页，每页{" "}
+                    {RECHARGES_PER_PAGE} 笔
+                  </span>
+                  <div className="flex gap-2">
+                    <Link
+                      aria-disabled={historyPage <= 1}
+                      href={sectionLink(
+                        activeTab,
+                        Math.max(1, historyPage - 1),
+                        viewedOwnerId,
+                      )}
+                      className={`rounded-lg border px-3 py-2 ${historyPage <= 1 ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
+                    >
+                      上一页
+                    </Link>
+                    <Link
+                      aria-disabled={historyPage >= historyPageCount}
+                      href={sectionLink(
+                        activeTab,
+                        Math.min(historyPageCount, historyPage + 1),
+                        viewedOwnerId,
+                      )}
+                      className={`rounded-lg border px-3 py-2 ${historyPage >= historyPageCount ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
+                    >
+                      下一页
+                    </Link>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="mt-4 text-sm text-emerald-100/70">
+                当前没有已确认收款。
+              </p>
+            )}
+          </section>
         ) : null}
 
         {activeTab === "transfers" ? (
@@ -1744,74 +2482,215 @@ export default async function CashReconciliationPage(props: PageProps) {
               </span>
             </div>
             {payoutRows.length ? (
-              <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                {payoutRows.map(({ withdrawal, ownerId }) => {
-                  const boss = withdrawal.discordId
-                    ? relatedMemberByDiscordId.get(withdrawal.discordId)
-                    : null;
-                  const wechatBoss = !boss
-                    ? withdrawal.dlmUser?.manualWechatBoss
-                    : null;
+              <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="border-b border-white/10 bg-white/[0.03] text-xs text-white/55">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">
+                        提现记录 / 申请人
+                      </th>
+                      <th className="px-4 py-3 font-medium">提现方式</th>
+                      <th className="px-4 py-3 font-medium">金额</th>
+                      <th className="px-4 py-3 font-medium">申请时间</th>
+                      <th className="px-4 py-3 font-medium">负责人</th>
+                      <th className="px-4 py-3 font-medium">处理</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payoutRows.map(({ withdrawal, ownerId }) => {
+                      const boss = withdrawal.discordId
+                        ? relatedMemberByDiscordId.get(withdrawal.discordId)
+                        : null;
+                      const wechatBoss = !boss
+                        ? withdrawal.dlmUser?.manualWechatBoss
+                        : null;
 
-                  return (
-                    <div
-                      key={withdrawal.id}
-                      className="rounded-2xl border border-white/10 bg-black/20 p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-medium">
-                            {formatMoney(withdrawal.amount)} ·{" "}
-                            {withdrawal.method.split(":")[0]}
-                          </p>
-                          <div className="mt-1 text-xs text-white/55">
-                            <p>提现 {withdrawal.id} · 申请人</p>
-                            <BossIdentity discord={boss} wechat={wechatBoss} />
-                            <p className="mt-1">
-                              {formatDate(withdrawal.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                        <OwnerIdentity ownerId={ownerId} compact />
-                      </div>
-                      {isFinance || ownerId === session.discordId ? (
-                        <form
-                          action={ACTION_URL}
-                          method="post"
-                          className="mt-3"
+                      return (
+                        <tr
+                          key={withdrawal.id}
+                          className="border-b border-white/5 align-top last:border-0"
                         >
-                          <input
-                            type="hidden"
-                            name="action"
-                            value="payout-paid"
-                          />
-                          <input
-                            type="hidden"
-                            name="redirectTo"
-                            value={redirectTo}
-                          />
-                          <input
-                            type="hidden"
-                            name="withdrawalId"
-                            value={withdrawal.id}
-                          />
-                          <button className="rounded-lg bg-[#7356c6] px-3 py-2 text-xs hover:bg-[#6045aa]">
-                            标记已发放
-                          </button>
-                        </form>
-                      ) : (
-                        <p className="mt-3 text-xs text-white/45">
-                          等待 {ownerName(ownerId)} 发放
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+                          <td className="px-4 py-3 text-xs">
+                            <p className="font-mono text-white/75">
+                              提现 {withdrawal.id}
+                            </p>
+                            <div className="mt-1">
+                              <BossIdentity
+                                discord={boss}
+                                wechat={wechatBoss}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {withdrawal.method.split(":")[0]}
+                          </td>
+                          <td className="px-4 py-3 font-medium whitespace-nowrap">
+                            {formatMoney(withdrawal.amount)}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
+                            {formatDate(withdrawal.createdAt)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <OwnerIdentity ownerId={ownerId} compact />
+                          </td>
+                          <td className="px-4 py-3">
+                            {isFinance || ownerId === session.discordId ? (
+                              <form action={ACTION_URL} method="post">
+                                <input
+                                  type="hidden"
+                                  name="action"
+                                  value="payout-paid"
+                                />
+                                <input
+                                  type="hidden"
+                                  name="redirectTo"
+                                  value={redirectTo}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="withdrawalId"
+                                  value={withdrawal.id}
+                                />
+                                <button className="rounded-lg bg-[#7356c6] px-3 py-2 text-xs hover:bg-[#6045aa]">
+                                  标记已发放
+                                </button>
+                              </form>
+                            ) : (
+                              <span className="text-xs text-white/45">
+                                等待 {ownerName(ownerId)} 发放
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#ddd6fe]/75">
                 当前没有待发提现。
               </p>
+            )}
+          </section>
+        ) : null}
+
+        {activeTab === "paid-payouts" ? (
+          <section className={cardClass}>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {isAllFinanceView
+                    ? "全部负责人已发提现"
+                    : isOwnerReadOnlyView
+                      ? `${ownerName(currentOwnerId)}已发的提现`
+                      : "我已发的提现"}
+                </h2>
+                <p className="mt-1 text-sm text-white/60">
+                  仅保留实际标记为已发放的提现，金额已从对应负责人的应有总额扣除。
+                </p>
+              </div>
+              <span className="text-sm text-white/60">
+                已发 {paidPayoutRows.length} 笔
+              </span>
+            </div>
+            {paidPayoutSlice.length ? (
+              <>
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="border-b border-white/10 bg-white/[0.03] text-xs text-white/55">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">
+                          提现记录 / 申请人
+                        </th>
+                        <th className="px-4 py-3 font-medium">提现方式</th>
+                        <th className="px-4 py-3 font-medium">金额</th>
+                        <th className="px-4 py-3 font-medium">负责人</th>
+                        <th className="px-4 py-3 font-medium">实际发放人</th>
+                        <th className="px-4 py-3 font-medium">发放时间</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paidPayoutSlice.map(({ withdrawal, ownerId }) => {
+                        const payout = withdrawal.settlementPayout;
+                        if (!payout) return null;
+                        const boss = withdrawal.discordId
+                          ? relatedMemberByDiscordId.get(withdrawal.discordId)
+                          : null;
+                        const wechatBoss = !boss
+                          ? withdrawal.dlmUser?.manualWechatBoss
+                          : null;
+
+                        return (
+                          <tr
+                            key={withdrawal.id}
+                            className="border-b border-white/5 align-top last:border-0"
+                          >
+                            <td className="px-4 py-3 text-xs">
+                              <p className="font-mono text-white/75">
+                                提现 {withdrawal.id}
+                              </p>
+                              <div className="mt-1">
+                                <BossIdentity
+                                  discord={boss}
+                                  wechat={wechatBoss}
+                                />
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {withdrawal.method.split(":")[0]}
+                            </td>
+                            <td className="px-4 py-3 font-medium whitespace-nowrap">
+                              {formatMoney(payout.amount)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <OwnerIdentity ownerId={ownerId} compact />
+                            </td>
+                            <td className="px-4 py-3 text-xs text-white/70 whitespace-nowrap">
+                              {displayNameForDiscordId(payout.paidBy)}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
+                              {formatDate(payout.paidAt)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-3 text-sm text-white/60">
+                  <span>
+                    第 {historyPage} / {historyPageCount} 页，每页{" "}
+                    {RECHARGES_PER_PAGE} 笔
+                  </span>
+                  <div className="flex gap-2">
+                    <Link
+                      aria-disabled={historyPage <= 1}
+                      href={sectionLink(
+                        activeTab,
+                        Math.max(1, historyPage - 1),
+                        viewedOwnerId,
+                      )}
+                      className={`rounded-lg border px-3 py-2 ${historyPage <= 1 ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
+                    >
+                      上一页
+                    </Link>
+                    <Link
+                      aria-disabled={historyPage >= historyPageCount}
+                      href={sectionLink(
+                        activeTab,
+                        Math.min(historyPageCount, historyPage + 1),
+                        viewedOwnerId,
+                      )}
+                      className={`rounded-lg border px-3 py-2 ${historyPage >= historyPageCount ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
+                    >
+                      下一页
+                    </Link>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="mt-4 text-sm text-white/50">当前没有已发提现。</p>
             )}
           </section>
         ) : null}

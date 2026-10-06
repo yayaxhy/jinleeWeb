@@ -60,6 +60,29 @@ const assertOwnerOrFinance = (
     throw new Error("只能操作自己负责的账号，或由主财务代办。");
 };
 
+/** Automated ZPay/Stripe credits belong to revenue reporting, not cash reconciliation. */
+async function isAutomatedRechargeReference(reference: string) {
+  const [zpay, stripe] = await Promise.all([
+    prisma.zPayRechargeOrder.findFirst({
+      where: {
+        OR: [{ outTradeNo: reference }, { gatewayTradeNo: reference }],
+      },
+      select: { id: true },
+    }),
+    prisma.stripePayment.findFirst({
+      where: {
+        OR: [
+          { outTradeNo: reference },
+          { paymentIntentId: reference },
+          { checkoutSessionId: reference },
+        ],
+      },
+      select: { id: true },
+    }),
+  ]);
+  return Boolean(zpay || stripe);
+}
+
 async function saveEvidence(
   file: File,
   reconciliationId: string,
@@ -86,6 +109,7 @@ async function financeConfirm(formData: FormData, actorId: string) {
   const rechargeId = readText(formData, "rechargeId");
   const accountId = readText(formData, "accountId");
   const adjustmentNote = readText(formData, "adjustmentNote");
+  const financeNote = readText(formData, "financeNote");
   const redirect = readText(formData, "redirectTo");
   const receipt = formData.get("receipt");
 
@@ -98,7 +122,7 @@ async function financeConfirm(formData: FormData, actorId: string) {
         fromWhom: { in: [...MANUAL_RECHARGE_OPERATOR_IDS] },
         createdAt: newEntityOnlyTime(),
       },
-      select: { RechargeID: true, amount: true },
+      select: { RechargeID: true, amount: true, fromWhom: true },
     }),
     prisma.settlementAccount.findFirst({
       where: { id: accountId, active: true },
@@ -112,6 +136,11 @@ async function financeConfirm(formData: FormData, actorId: string) {
   ]);
   if (!recharge)
     throw new Error("该 cash 记录不在新开业后的有效待处理列表中。");
+  if (await isAutomatedRechargeReference(recharge.fromWhom)) {
+    throw new Error(
+      "ZPay 或 Stripe 自动充值由收益页统计，不能进入人工充值对账。",
+    );
+  }
   if (!account) throw new Error("请选择有效的收款账号。");
   if (existing?.status === SettlementReconciliationStatus.OWNER_CONFIRMED) {
     throw new Error("负责人已确认收款，不能重新分配账号。");
@@ -157,6 +186,7 @@ async function financeConfirm(formData: FormData, actorId: string) {
         originalReceivedCurrency: account.currency,
         exceptionReason: null,
         invalidReason: null,
+        financeNote: financeNote ? financeNote.slice(0, 500) : null,
         invalidatedBy: null,
         invalidatedAt: null,
         financeConfirmedBy: actorId,
@@ -187,10 +217,10 @@ async function financeConfirm(formData: FormData, actorId: string) {
           toStatus: SettlementReconciliationStatus.FINANCE_CONFIRMED,
           actorDiscordId: actorId,
           note: isNegativeAdjustment
-            ? `财务已独立处理负数 cash：${adjustmentNote.slice(0, 500)}`
+            ? `财务已独立处理负数 cash：${adjustmentNote.slice(0, 500)}${financeNote ? `；财务备注：${financeNote.slice(0, 500)}` : ""}`
             : priorStatus === SettlementReconciliationStatus.INVALIDATED
-              ? "财务已撤销无效并重新确认实收。"
-              : "财务已上传凭证并分配收款账号。",
+              ? `财务已撤销无效并重新确认实收。${financeNote ? `备注：${financeNote.slice(0, 500)}` : ""}`
+              : `财务已上传凭证并分配收款账号。${financeNote ? `备注：${financeNote.slice(0, 500)}` : ""}`,
         },
       });
     });
@@ -245,13 +275,18 @@ async function financeInvalidate(formData: FormData, actorId: string) {
         fromWhom: { in: [...MANUAL_RECHARGE_OPERATOR_IDS] },
         createdAt: newEntityOnlyTime(),
       },
-      select: { RechargeID: true },
+      select: { RechargeID: true, fromWhom: true },
     }),
     prisma.settlementRechargeReconciliation.findUnique({
       where: { rechargeId },
     }),
   ]);
   if (!recharge) throw new Error("未找到有效的 cash 记录。");
+  if (await isAutomatedRechargeReference(recharge.fromWhom)) {
+    throw new Error(
+      "ZPay 或 Stripe 自动充值由收益页统计，不能进入人工充值对账。",
+    );
+  }
   if (existing?.status === SettlementReconciliationStatus.INVALIDATED) {
     throw new Error("该充值已被标记为无效。");
   }
@@ -292,6 +327,57 @@ async function financeInvalidate(formData: FormData, actorId: string) {
     redirect,
     "notice",
     "已将本笔 cash 标为无效；不会改动老板的平台余额。",
+  );
+}
+
+/** Finance may keep a disputed receipt counted, but it must return to the owner
+ * queue for a fresh confirmation instead of silently clearing the dispute. */
+async function financeRetryConfirm(formData: FormData, actorId: string) {
+  financeOnly(actorId);
+  const reconciliationId = readText(formData, "reconciliationId");
+  const note = readText(formData, "note");
+  const redirect = readText(formData, "redirectTo");
+  if (!reconciliationId || !note) throw new Error("请填写财务复核说明。");
+
+  const reconciliation =
+    await prisma.settlementRechargeReconciliation.findUnique({
+      where: { id: reconciliationId },
+    });
+  if (!reconciliation) throw new Error("未找到该异常对账记录。");
+  if (reconciliation.status !== SettlementReconciliationStatus.OWNER_DISPUTED) {
+    throw new Error("只有负责人提出异常的记录可以重新复核。");
+  }
+
+  const priorFinanceNote = reconciliation.financeNote?.trim();
+  const financeNote = [priorFinanceNote, `复核：${note.slice(0, 500)}`]
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 500);
+  await prisma.$transaction(async (tx) => {
+    await tx.settlementRechargeReconciliation.update({
+      where: { id: reconciliationId },
+      data: {
+        status: SettlementReconciliationStatus.FINANCE_CONFIRMED,
+        exceptionReason: null,
+        financeNote,
+        financeConfirmedBy: actorId,
+        financeConfirmedAt: new Date(),
+      },
+    });
+    await tx.settlementReconciliationEvent.create({
+      data: {
+        reconciliationId,
+        fromStatus: SettlementReconciliationStatus.OWNER_DISPUTED,
+        toStatus: SettlementReconciliationStatus.FINANCE_CONFIRMED,
+        actorDiscordId: actorId,
+        note: `财务复核后仍计入实收，等待负责人再次确认。${note.slice(0, 500)}`,
+      },
+    });
+  });
+  return redirectTo(
+    redirect,
+    "notice",
+    "已完成财务复核，款项仍计入实收，等待负责人再次确认。",
   );
 }
 
@@ -577,6 +663,8 @@ export async function POST(request: NextRequest) {
         return await financeConfirm(formData, session.discordId);
       case "finance-invalidate":
         return await financeInvalidate(formData, session.discordId);
+      case "finance-retry-confirm":
+        return await financeRetryConfirm(formData, session.discordId);
       case "account-create":
         return await createAccount(formData, session.discordId);
       case "owner-confirm":

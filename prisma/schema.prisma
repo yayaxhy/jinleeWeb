@@ -1359,6 +1359,7 @@ model SettlementRechargeReconciliation {
   reversalRechargeId       String?
   exceptionReason          String?
   invalidReason            String?
+  financeNote              String?
   financeConfirmedBy       String?
   financeConfirmedAt       DateTime?
   ownerConfirmedBy         String?
