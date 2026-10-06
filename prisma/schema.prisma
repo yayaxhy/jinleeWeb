@@ -242,6 +242,7 @@ enum LotteryPrizeType {
 enum AccountProvider {
   DISCORD
   WECHAT_MINIPROGRAM
+  WECHAT_WEB
 }
 
 enum DlmAdminOperationType {

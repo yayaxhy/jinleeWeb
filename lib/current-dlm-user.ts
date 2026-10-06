@@ -34,7 +34,34 @@ export const getCurrentDlmUser = async (request?: Request): Promise<CurrentDlmUs
   }
 
   const webSession = await getServerSession();
-  if (!webSession?.discordId) {
+  if (!webSession) {
+    return null;
+  }
+
+  if (webSession.dlmId) {
+    const dlmUser = await prisma.dlmUser.findUnique({
+      where: { dlmId: webSession.dlmId },
+      include: dlmUserWithMember,
+    });
+
+    if (!dlmUser) {
+      return null;
+    }
+
+    // The web WeChat callback has already refreshed the WeChat profile. Do
+    // not treat its display name as a Discord name if this user later binds
+    // Discord as well.
+    if (webSession.authProvider === 'wechat_web') {
+      return {
+        sessionSource: 'web',
+        dlmUser,
+        dlmId: dlmUser.dlmId,
+        discordUserId: dlmUser.discordUserId ?? null,
+      };
+    }
+  }
+
+  if (!webSession.discordId) {
     return null;
   }
 

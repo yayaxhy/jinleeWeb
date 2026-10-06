@@ -15,6 +15,8 @@ type SessionPayload = AppSession & {
 const SESSION_COOKIE_NAME = 'dlm_session';
 const LOGIN_REDIRECT_COOKIE = 'discord_login_next';
 const LOGIN_STATE_COOKIE = 'discord_login_state';
+const WECHAT_WEB_LOGIN_REDIRECT_COOKIE = 'wechat_web_login_next';
+const WECHAT_WEB_LOGIN_STATE_COOKIE = 'wechat_web_login_state';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 const getSecret = () => {
@@ -70,7 +72,7 @@ export const getServerSession = async (): Promise<AppSession | null> => {
       where: { dlmId: payload.dlmId },
       select: { dlmId: true, discordUserId: true, sessionVersion: true },
     });
-    if (!dlmUser?.discordUserId) {
+    if (!dlmUser) {
       return null;
     }
 
@@ -81,7 +83,8 @@ export const getServerSession = async (): Promise<AppSession | null> => {
 
     return {
       dlmId: dlmUser.dlmId,
-      discordId: dlmUser.discordUserId,
+      authProvider: payload.authProvider ?? 'discord',
+      discordId: dlmUser.discordUserId ?? null,
       username: payload.username,
       discriminator: payload.discriminator ?? null,
       avatar: payload.avatar ?? null,
@@ -91,6 +94,7 @@ export const getServerSession = async (): Promise<AppSession | null> => {
 
   return {
     dlmId: payload.dlmId ?? null,
+    authProvider: payload.authProvider ?? 'discord',
     discordId: payload.discordId,
     username: payload.username,
     discriminator: payload.discriminator ?? null,
@@ -184,16 +188,78 @@ export const clearLoginStateCookie = (response: NextResponse) => {
   });
 };
 
+export const setWechatWebLoginRedirectCookie = (response: NextResponse, target: string) => {
+  response.cookies.set({
+    name: WECHAT_WEB_LOGIN_REDIRECT_COOKIE,
+    value: target,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: true,
+    path: '/',
+    maxAge: 60 * 10,
+  });
+};
+
+export const getWechatWebLoginRedirectCookie = async () =>
+  (await cookies()).get(WECHAT_WEB_LOGIN_REDIRECT_COOKIE)?.value ?? null;
+
+export const clearWechatWebLoginRedirectCookie = (response: NextResponse) => {
+  response.cookies.set({
+    name: WECHAT_WEB_LOGIN_REDIRECT_COOKIE,
+    value: '',
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    expires: new Date(0),
+  });
+};
+
+export const setWechatWebLoginStateCookie = (response: NextResponse, value: string) => {
+  response.cookies.set({
+    name: WECHAT_WEB_LOGIN_STATE_COOKIE,
+    value,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: true,
+    path: '/',
+    maxAge: 60 * 10,
+  });
+};
+
+export const getWechatWebLoginStateCookie = async () =>
+  (await cookies()).get(WECHAT_WEB_LOGIN_STATE_COOKIE)?.value ?? null;
+
+export const clearWechatWebLoginStateCookie = (response: NextResponse) => {
+  response.cookies.set({
+    name: WECHAT_WEB_LOGIN_STATE_COOKIE,
+    value: '',
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    expires: new Date(0),
+  });
+};
+
 export const generateLoginState = () => crypto.randomBytes(16).toString('hex');
 
 export const normalizeRedirectTarget = (value?: string | null, fallback = '/profile') => {
   if (!value) return fallback;
-  if (value.startsWith('/')) return value;
+  if (value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')) return value;
   return fallback;
 };
 
 export const summarizeSession = (session: AppSession | null) => {
   if (!session) return null;
-  const { dlmId, discordId, username, discriminator, avatar, sessionVersion } = session;
-  return { dlmId: dlmId ?? null, discordId, username, discriminator, avatar, sessionVersion: sessionVersion ?? null };
+  const { dlmId, authProvider, discordId, username, discriminator, avatar, sessionVersion } = session;
+  return {
+    dlmId: dlmId ?? null,
+    authProvider: authProvider ?? 'discord',
+    discordId: discordId ?? null,
+    username,
+    discriminator,
+    avatar,
+    sessionVersion: sessionVersion ?? null,
+  };
 };

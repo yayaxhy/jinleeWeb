@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { useSessionContext } from './SessionProvider';
 
 const buildLoginUrl = () => {
-  if (typeof window === 'undefined') return '/api/discord/login';
+  if (typeof window === 'undefined') return '/accounts/login';
   const callback = `${window.location.pathname}${window.location.search}`;
-  const url = new URL('/api/discord/login', window.location.origin);
+  const url = new URL('/accounts/login', window.location.origin);
   url.searchParams.set('callbackUrl', callback || '/profile');
   return url.toString();
 };

@@ -23,7 +23,7 @@ const PAYMENT_CODES = [
 export default async function WechatAlipayRechargePage() {
   const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
-    redirect('/accounts/discord/login?callbackUrl=%2Frecharge%2Fwechat-alipay');
+    redirect('/accounts/login?callbackUrl=%2Frecharge%2Fwechat-alipay');
   }
 
   return (

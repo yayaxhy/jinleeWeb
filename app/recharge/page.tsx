@@ -7,7 +7,7 @@ import RechargeClient from './RechargeClient';
 export default async function RechargePage() {
   const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
-    redirect('/accounts/discord/login?callbackUrl=%2Frecharge');
+    redirect('/accounts/login?callbackUrl=%2Frecharge');
   }
 
   const hasPriorRecharge = await prisma.recharge.count({

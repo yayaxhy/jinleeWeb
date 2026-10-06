@@ -26,6 +26,8 @@ type EnsureWechatProgramDlmUserInput = {
   profile?: Prisma.InputJsonValue;
 };
 
+type EnsureWechatWebDlmUserInput = EnsureWechatProgramDlmUserInput;
+
 type DlmProfilePatch = {
   discordDisplayName?: string | null;
   discordAvatarUrl?: string | null;
@@ -232,7 +234,9 @@ export const ensureDlmUserForWechatProgram = async ({
       unionId != null
         ? await tx.accountBinding.findFirst({
             where: {
-              provider: AccountProvider.WECHAT_MINIPROGRAM,
+              provider: {
+                in: [AccountProvider.WECHAT_MINIPROGRAM, AccountProvider.WECHAT_WEB],
+              },
               unionId,
             },
             include: {
@@ -263,6 +267,101 @@ export const ensureDlmUserForWechatProgram = async ({
         provider: AccountProvider.WECHAT_MINIPROGRAM,
         providerUserId: openId,
         unionId: unionId ?? null,
+        lastLoginAt: new Date(),
+        ...(profile !== undefined ? { profile } : {}),
+      },
+    });
+
+    return { dlmUser, bindingId: binding.id };
+  });
+};
+
+/**
+ * Connect a WeChat Open Platform website login to the same DLM account as the
+ * mini program. `unionId` is the only stable cross-application identifier, so
+ * callers must require it before creating a first binding. An existing website
+ * binding can still log in if WeChat temporarily omits profile fields.
+ */
+export const ensureDlmUserForWechatWeb = async ({
+  openId,
+  unionId,
+  displayName,
+  avatarUrl,
+  profile,
+}: EnsureWechatWebDlmUserInput): Promise<{ dlmUser: DlmUserWithMember; bindingId: string }> => {
+  return prisma.$transaction(async (tx) => {
+    const existingBinding = await tx.accountBinding.findUnique({
+      where: {
+        provider_providerUserId: {
+          provider: AccountProvider.WECHAT_WEB,
+          providerUserId: openId,
+        },
+      },
+      include: {
+        dlmUser: {
+          include: dlmUserWithMember,
+        },
+      },
+    });
+
+    if (existingBinding) {
+      if (unionId && existingBinding.unionId && existingBinding.unionId !== unionId) {
+        throw new Error('WECHAT_WEB_ACCOUNT_MISMATCH');
+      }
+
+      await tx.accountBinding.update({
+        where: { id: existingBinding.id },
+        data: buildBindingPatch(profile, unionId),
+      });
+
+      const dlmUser = await tx.dlmUser.update({
+        where: { dlmId: existingBinding.dlmId },
+        data: buildWechatProfilePatch(displayName, avatarUrl),
+        include: dlmUserWithMember,
+      });
+
+      return { dlmUser, bindingId: existingBinding.id };
+    }
+
+    if (!unionId) {
+      throw new Error('WECHAT_WEB_UNIONID_REQUIRED');
+    }
+
+    const reusableBinding = await tx.accountBinding.findFirst({
+      where: {
+        provider: {
+          in: [AccountProvider.WECHAT_MINIPROGRAM, AccountProvider.WECHAT_WEB],
+        },
+        unionId,
+      },
+      include: {
+        dlmUser: {
+          include: dlmUserWithMember,
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const dlmUser = reusableBinding
+      ? await tx.dlmUser.update({
+          where: { dlmId: reusableBinding.dlmId },
+          data: buildWechatProfilePatch(displayName, avatarUrl),
+          include: dlmUserWithMember,
+        })
+      : await tx.dlmUser.create({
+          data: {
+            dlmId: generateDlmId(),
+            ...buildWechatProfilePatch(displayName, avatarUrl),
+          },
+          include: dlmUserWithMember,
+        });
+
+    const binding = await tx.accountBinding.create({
+      data: {
+        dlmId: dlmUser.dlmId,
+        provider: AccountProvider.WECHAT_WEB,
+        providerUserId: openId,
+        unionId,
         lastLoginAt: new Date(),
         ...(profile !== undefined ? { profile } : {}),
       },

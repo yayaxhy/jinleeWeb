@@ -6,7 +6,7 @@ import WechatNativePayClient from './WechatNativePayClient';
 export default async function WechatPayPage() {
   const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
-    redirect('/accounts/discord/login?callbackUrl=%2Fwechat%2Fpay');
+    redirect('/accounts/login?callbackUrl=%2Fwechat%2Fpay');
   }
 
   const username =

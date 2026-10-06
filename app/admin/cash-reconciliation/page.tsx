@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { getAdminDiscordIds } from "@/lib/admin";
+import { ReceiptPasteUploader } from "@/components/admin/ReceiptPasteUploader";
 import { formatAmountDown2 } from "@/lib/numberFormat";
 import { newEntityOnlyTime } from "@/lib/operating-entity-cutover";
 import { prisma } from "@/lib/prisma";
@@ -960,12 +961,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                                   className={fieldClass}
                                 />
                                 {!isNegativeCash ? (
-                                  <input
-                                    name="receipt"
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/webp"
-                                    className="text-xs text-white/70"
-                                  />
+                                  <ReceiptPasteUploader />
                                 ) : null}
                                 <button className="rounded-xl bg-[#7356c6] px-3 py-2 text-xs hover:bg-[#6045aa]">
                                   {isNegativeCash

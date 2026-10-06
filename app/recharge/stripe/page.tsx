@@ -7,7 +7,7 @@ import RechargeClient from '../RechargeClient';
 export default async function StripeRechargePage() {
   const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
-    redirect('/accounts/discord/login?callbackUrl=%2Frecharge%2Fstripe');
+    redirect('/accounts/login?callbackUrl=%2Frecharge%2Fstripe');
   }
   if (!isAdminDiscordId(currentUser.discordUserId)) {
     redirect('/recharge');

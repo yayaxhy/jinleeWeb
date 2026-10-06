@@ -14,7 +14,7 @@ export const revalidate = 0;
 export default async function ConsolePage() {
   const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
-    redirect('/api/discord/login?callbackUrl=/console');
+    redirect('/accounts/login?callbackUrl=/console');
   }
 
   return <GuildConsole />;
