@@ -106,12 +106,48 @@ function OwnerIdentity({
 }) {
   return (
     <span
+      title={ownerId}
       className={compact ? "text-xs text-white/55" : "text-sm text-white/70"}
     >
-      {ownerName(ownerId)}{" "}
-      <span className="font-mono text-[#c4b5fd]">{ownerId}</span>
+      {ownerName(ownerId)}
     </span>
   );
+}
+
+function BossIdentity({
+  discord,
+  wechat,
+}: {
+  discord?: {
+    serverDisplayName: string | null;
+    discordUsername: string | null;
+  } | null;
+  wechat?: { displayName: string | null; wechatContact: string | null } | null;
+}) {
+  if (discord) {
+    return (
+      <>
+        <p className="font-medium text-white">
+          {discord.serverDisplayName ??
+            discord.discordUsername ??
+            "Discord 用户"}
+        </p>
+        <p className="mt-1 font-mono text-white/50">
+          @{discord.discordUsername ?? "用户名待同步"}
+        </p>
+      </>
+    );
+  }
+
+  if (wechat) {
+    return (
+      <p className="font-medium text-white">
+        微信 · {wechat.displayName ?? wechat.wechatContact ?? "老板"}
+      </p>
+    );
+  }
+
+  return <span className="text-white/50">用户资料待同步</span>;
 }
 
 function sectionLink(
@@ -197,7 +233,16 @@ export default async function CashReconciliationPage(props: PageProps) {
     prisma.withdraw.findMany({
       where: { createdAt: newEntityOnlyTime() },
       orderBy: { createdAt: "desc" },
-      include: { settlementPayout: true },
+      include: {
+        settlementPayout: true,
+        dlmUser: {
+          select: {
+            manualWechatBoss: {
+              select: { displayName: true, wechatContact: true },
+            },
+          },
+        },
+      },
     }),
   ]);
 
@@ -208,18 +253,23 @@ export default async function CashReconciliationPage(props: PageProps) {
     if (left.active !== right.active) return left.active ? -1 : 1;
     return left.name.localeCompare(right.name, "zh-CN");
   });
-  const rechargeDiscordIds = Array.from(
+  const relatedDiscordIds = Array.from(
     new Set(
-      rawRecharges
-        .map((recharge) => recharge.toWhom)
-        .filter((discordUserId): discordUserId is string =>
-          Boolean(discordUserId),
-        ),
+      [
+        ...rawRecharges.flatMap((recharge) => [
+          recharge.toWhom,
+          recharge.fromWhom,
+        ]),
+        ...withdrawals.map((withdrawal) => withdrawal.discordId),
+        ...transfers.map((transfer) => transfer.initiatedBy),
+      ].filter((discordUserId): discordUserId is string =>
+        Boolean(discordUserId),
+      ),
     ),
   );
-  const rechargeMembers = rechargeDiscordIds.length
+  const relatedMembers = relatedDiscordIds.length
     ? await prisma.member.findMany({
-        where: { discordUserId: { in: rechargeDiscordIds } },
+        where: { discordUserId: { in: relatedDiscordIds } },
         select: {
           discordUserId: true,
           serverDisplayName: true,
@@ -227,9 +277,19 @@ export default async function CashReconciliationPage(props: PageProps) {
         },
       })
     : [];
-  const rechargeMemberByDiscordId = new Map(
-    rechargeMembers.map((member) => [member.discordUserId, member]),
+  const relatedMemberByDiscordId = new Map(
+    relatedMembers.map((member) => [member.discordUserId, member]),
   );
+  const displayNameForDiscordId = (discordUserId?: string | null) => {
+    const member = discordUserId
+      ? relatedMemberByDiscordId.get(discordUserId)
+      : null;
+    return (
+      member?.serverDisplayName?.trim() ||
+      member?.discordUsername ||
+      "资料待同步"
+    );
+  };
 
   const ownedAccounts = accounts.filter(
     (account) => account.ownerDiscordId === session.discordId,
@@ -898,7 +958,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                   {rechargeSlice.map(({ recharge, row }) => {
                     const isNegativeCash = recharge.amount.lt(0);
                     const boss = recharge.toWhom
-                      ? rechargeMemberByDiscordId.get(recharge.toWhom)
+                      ? relatedMemberByDiscordId.get(recharge.toWhom)
                       : null;
                     const wechatBoss = !boss
                       ? recharge.dlmUser?.manualWechatBoss
@@ -919,37 +979,11 @@ export default async function CashReconciliationPage(props: PageProps) {
                             </span>
                           </div>
                           <span className="text-white/45">
-                            来源 {recharge.fromWhom}
+                            来源 {displayNameForDiscordId(recharge.fromWhom)}
                           </span>
                         </td>
                         <td className="px-3 py-4 text-xs">
-                          {boss ? (
-                            <>
-                              <p className="font-medium text-white">
-                                {boss.serverDisplayName ??
-                                  boss.discordUsername ??
-                                  "Discord 用户"}
-                              </p>
-                              <p className="mt-1 font-mono text-white/50">
-                                @{boss.discordUsername ?? "用户名待同步"}
-                              </p>
-                            </>
-                          ) : wechatBoss ? (
-                            <>
-                              <p className="font-medium text-white">
-                                微信 ·{" "}
-                                {wechatBoss.displayName ??
-                                  wechatBoss.wechatContact}
-                              </p>
-                              <p className="mt-1 font-mono text-white/50">
-                                DLM ID · {recharge.dlmId ?? "—"}
-                              </p>
-                            </>
-                          ) : (
-                            <span className="font-mono text-white/65">
-                              {recharge.toWhom ?? recharge.dlmId ?? "—"}
-                            </span>
-                          )}
+                          <BossIdentity discord={boss} wechat={wechatBoss} />
                         </td>
                         <td
                           className={`px-3 py-4 whitespace-nowrap ${isNegativeCash ? "text-rose-200" : ""}`}
@@ -1225,8 +1259,16 @@ export default async function CashReconciliationPage(props: PageProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {confirmationRows.map(({ recharge, row }, index) =>
-                        row ? (
+                      {confirmationRows.map(({ recharge, row }, index) => {
+                        if (!row) return null;
+                        const boss = recharge.toWhom
+                          ? relatedMemberByDiscordId.get(recharge.toWhom)
+                          : null;
+                        const wechatBoss = !boss
+                          ? recharge.dlmUser?.manualWechatBoss
+                          : null;
+
+                        return (
                           <Fragment key={row.id}>
                             <LocalDayDivider
                               date={recharge.createdAt.toISOString()}
@@ -1248,9 +1290,12 @@ export default async function CashReconciliationPage(props: PageProps) {
                                 </p>
                               </td>
                               <td className="px-4 py-3">
-                                <p className="font-mono text-xs text-white/75">
-                                  {recharge.toWhom ?? recharge.dlmId ?? "—"}
-                                </p>
+                                <div className="text-xs">
+                                  <BossIdentity
+                                    discord={boss}
+                                    wechat={wechatBoss}
+                                  />
+                                </div>
                                 <p className="mt-1 text-xs text-white/45">
                                   充值 {recharge.RechargeID}
                                 </p>
@@ -1359,8 +1404,8 @@ export default async function CashReconciliationPage(props: PageProps) {
                               </td>
                             </tr>
                           </Fragment>
-                        ) : null,
-                      )}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1520,7 +1565,8 @@ export default async function CashReconciliationPage(props: PageProps) {
                             <strong>{formatMoney(transfer.amount)}</strong>
                           </p>
                           <p className="mt-1 text-xs text-white/50">
-                            发起人 {transfer.initiatedBy} ·{" "}
+                            发起人{" "}
+                            {displayNameForDiscordId(transfer.initiatedBy)} ·{" "}
                             {formatDate(transfer.createdAt)}
                           </p>
                           {canActAsCurrentOwner ? (
@@ -1699,53 +1745,68 @@ export default async function CashReconciliationPage(props: PageProps) {
             </div>
             {payoutRows.length ? (
               <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                {payoutRows.map(({ withdrawal, ownerId }) => (
-                  <div
-                    key={withdrawal.id}
-                    className="rounded-2xl border border-white/10 bg-black/20 p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium">
-                          {formatMoney(withdrawal.amount)} ·{" "}
-                          {withdrawal.method.split(":")[0]}
-                        </p>
-                        <p className="mt-1 text-xs text-white/55">
-                          提现 {withdrawal.id} · 申请人{" "}
-                          {withdrawal.discordId ?? withdrawal.dlmId ?? "—"} ·{" "}
-                          {formatDate(withdrawal.createdAt)}
-                        </p>
+                {payoutRows.map(({ withdrawal, ownerId }) => {
+                  const boss = withdrawal.discordId
+                    ? relatedMemberByDiscordId.get(withdrawal.discordId)
+                    : null;
+                  const wechatBoss = !boss
+                    ? withdrawal.dlmUser?.manualWechatBoss
+                    : null;
+
+                  return (
+                    <div
+                      key={withdrawal.id}
+                      className="rounded-2xl border border-white/10 bg-black/20 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium">
+                            {formatMoney(withdrawal.amount)} ·{" "}
+                            {withdrawal.method.split(":")[0]}
+                          </p>
+                          <div className="mt-1 text-xs text-white/55">
+                            <p>提现 {withdrawal.id} · 申请人</p>
+                            <BossIdentity discord={boss} wechat={wechatBoss} />
+                            <p className="mt-1">
+                              {formatDate(withdrawal.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <OwnerIdentity ownerId={ownerId} compact />
                       </div>
-                      <OwnerIdentity ownerId={ownerId} compact />
+                      {isFinance || ownerId === session.discordId ? (
+                        <form
+                          action={ACTION_URL}
+                          method="post"
+                          className="mt-3"
+                        >
+                          <input
+                            type="hidden"
+                            name="action"
+                            value="payout-paid"
+                          />
+                          <input
+                            type="hidden"
+                            name="redirectTo"
+                            value={redirectTo}
+                          />
+                          <input
+                            type="hidden"
+                            name="withdrawalId"
+                            value={withdrawal.id}
+                          />
+                          <button className="rounded-lg bg-[#7356c6] px-3 py-2 text-xs hover:bg-[#6045aa]">
+                            标记已发放
+                          </button>
+                        </form>
+                      ) : (
+                        <p className="mt-3 text-xs text-white/45">
+                          等待 {ownerName(ownerId)} 发放
+                        </p>
+                      )}
                     </div>
-                    {isFinance || ownerId === session.discordId ? (
-                      <form action={ACTION_URL} method="post" className="mt-3">
-                        <input
-                          type="hidden"
-                          name="action"
-                          value="payout-paid"
-                        />
-                        <input
-                          type="hidden"
-                          name="redirectTo"
-                          value={redirectTo}
-                        />
-                        <input
-                          type="hidden"
-                          name="withdrawalId"
-                          value={withdrawal.id}
-                        />
-                        <button className="rounded-lg bg-[#7356c6] px-3 py-2 text-xs hover:bg-[#6045aa]">
-                          标记已发放
-                        </button>
-                      </form>
-                    ) : (
-                      <p className="mt-3 text-xs text-white/45">
-                        等待 {ownerName(ownerId)} 发放
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#ddd6fe]/75">
