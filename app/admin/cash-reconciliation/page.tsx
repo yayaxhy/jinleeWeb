@@ -40,11 +40,12 @@ const tabs = [
   "payouts",
   "forex",
 ] as const;
-const PROCESSED_RECONCILIATION_STATUSES = new Set<SettlementReconciliationStatus>([
-  SettlementReconciliationStatus.FINANCE_CONFIRMED,
-  SettlementReconciliationStatus.OWNER_CONFIRMED,
-  SettlementReconciliationStatus.INVALIDATED,
-]);
+const PROCESSED_RECONCILIATION_STATUSES =
+  new Set<SettlementReconciliationStatus>([
+    SettlementReconciliationStatus.FINANCE_CONFIRMED,
+    SettlementReconciliationStatus.OWNER_CONFIRMED,
+    SettlementReconciliationStatus.INVALIDATED,
+  ]);
 type ReconciliationTab = (typeof tabs)[number];
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -162,6 +163,13 @@ export default async function CashReconciliationPage(props: PageProps) {
       },
       orderBy: { createdAt: "desc" },
       include: {
+        dlmUser: {
+          select: {
+            manualWechatBoss: {
+              select: { displayName: true, wechatContact: true },
+            },
+          },
+        },
         settlementReconciliation: {
           include: {
             account: true,
@@ -199,7 +207,9 @@ export default async function CashReconciliationPage(props: PageProps) {
     new Set(
       rawRecharges
         .map((recharge) => recharge.toWhom)
-        .filter((discordUserId): discordUserId is string => Boolean(discordUserId)),
+        .filter((discordUserId): discordUserId is string =>
+          Boolean(discordUserId),
+        ),
     ),
   );
   const rechargeMembers = rechargeDiscordIds.length
@@ -252,7 +262,9 @@ export default async function CashReconciliationPage(props: PageProps) {
     ({ row }) => !row || !PROCESSED_RECONCILIATION_STATUSES.has(row.status),
   );
   const processedRechargeRows = rechargesWithRows
-    .filter(({ row }) => row && PROCESSED_RECONCILIATION_STATUSES.has(row.status))
+    .filter(
+      ({ row }) => row && PROCESSED_RECONCILIATION_STATUSES.has(row.status),
+    )
     .sort(({ row: left }, { row: right }) => {
       const leftProcessedAt =
         left?.ownerConfirmedAt ??
@@ -757,7 +769,8 @@ export default async function CashReconciliationPage(props: PageProps) {
           </>
         ) : null}
 
-        {(activeTab === "recharges" || activeTab === "processed") && isFinance ? (
+        {(activeTab === "recharges" || activeTab === "processed") &&
+        isFinance ? (
           <section className={cardClass}>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
@@ -780,11 +793,12 @@ export default async function CashReconciliationPage(props: PageProps) {
                   <>
                     <p>
                       历史记录共 {rechargesWithRows.length} 笔（正数{" "}
-                      {positiveCashRows.length} · 扣减 {negativeCashRows.length}）
+                      {positiveCashRows.length} · 扣减 {negativeCashRows.length}
+                      ）
                     </p>
                     <p className="mt-1 text-amber-100">
-                      待处理 {pendingFinanceCount} 笔 · 异常 {disputedRows.length}{" "}
-                      笔
+                      待处理 {pendingFinanceCount} 笔 · 异常{" "}
+                      {disputedRows.length} 笔
                     </p>
                   </>
                 )}
@@ -809,6 +823,9 @@ export default async function CashReconciliationPage(props: PageProps) {
                     const isNegativeCash = recharge.amount.lt(0);
                     const boss = recharge.toWhom
                       ? rechargeMemberByDiscordId.get(recharge.toWhom)
+                      : null;
+                    const wechatBoss = !boss
+                      ? recharge.dlmUser?.manualWechatBoss
                       : null;
 
                     return (
@@ -839,6 +856,17 @@ export default async function CashReconciliationPage(props: PageProps) {
                               </p>
                               <p className="mt-1 font-mono text-white/50">
                                 @{boss.discordUsername ?? "用户名待同步"}
+                              </p>
+                            </>
+                          ) : wechatBoss ? (
+                            <>
+                              <p className="font-medium text-white">
+                                微信 ·{" "}
+                                {wechatBoss.displayName ??
+                                  wechatBoss.wechatContact}
+                              </p>
+                              <p className="mt-1 font-mono text-white/50">
+                                DLM ID · {recharge.dlmId ?? "—"}
                               </p>
                             </>
                           ) : (
