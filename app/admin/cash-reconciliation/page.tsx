@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import {
   Prisma,
   SettlementPayoutStatus,
@@ -8,6 +9,7 @@ import {
 import { redirect } from "next/navigation";
 import { getAdminDiscordIds } from "@/lib/admin";
 import { ReceiptPasteUploader } from "@/components/admin/ReceiptPasteUploader";
+import { LocalDayDivider } from "@/components/admin/LocalDayDivider";
 import { formatAmountDown2 } from "@/lib/numberFormat";
 import { newEntityOnlyTime } from "@/lib/operating-entity-cutover";
 import { prisma } from "@/lib/prisma";
@@ -1207,100 +1209,160 @@ export default async function CashReconciliationPage(props: PageProps) {
                 </span>
               </div>
               {confirmationRows.length ? (
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  {confirmationRows.map(({ recharge, row }) =>
-                    row ? (
-                      <div
-                        key={row.id}
-                        className="rounded-2xl border border-amber-200/20 bg-black/20 p-4"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <div>
-                            <p className="font-medium">
-                              {row.account?.name ?? "账号已停用"} ·{" "}
-                              {formatMoney(row.rmbAmount)}
-                            </p>
-                            <p className="mt-1 text-xs text-amber-100/70">
-                              <OwnerIdentity
-                                ownerId={row.ownerDiscordId ?? ""}
-                                compact
-                              />{" "}
-                              · 充值 {recharge.RechargeID}
-                            </p>
-                          </div>
-                          <StatusBadge status={row.status} />
-                        </div>
-                        <p className="mt-3 text-xs text-white/55">
-                          老板 {recharge.toWhom ?? recharge.dlmId ?? "—"} ·{" "}
-                          {formatDate(recharge.createdAt)}
-                        </p>
-                        {isFinance ||
-                        row.ownerDiscordId === session.discordId ? (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <form action={ACTION_URL} method="post">
-                              <input
-                                type="hidden"
-                                name="action"
-                                value="owner-confirm"
-                              />
-                              <input
-                                type="hidden"
-                                name="redirectTo"
-                                value={redirectTo}
-                              />
-                              <input
-                                type="hidden"
-                                name="reconciliationId"
-                                value={row.id}
-                              />
-                              <button className="rounded-lg bg-emerald-400/20 px-3 py-2 text-xs text-emerald-50 hover:bg-emerald-400/30">
-                                确认收到
-                              </button>
-                            </form>
-                            <details>
-                              <summary className="cursor-pointer rounded-lg border border-rose-300/30 px-3 py-2 text-xs text-rose-100">
-                                未收到 / 金额不符
-                              </summary>
-                              <form
-                                action={ACTION_URL}
-                                method="post"
-                                className="mt-2 grid gap-2"
-                              >
-                                <input
-                                  type="hidden"
-                                  name="action"
-                                  value="owner-dispute"
-                                />
-                                <input
-                                  type="hidden"
-                                  name="redirectTo"
-                                  value={redirectTo}
-                                />
-                                <input
-                                  type="hidden"
-                                  name="reconciliationId"
-                                  value={row.id}
-                                />
-                                <input
-                                  required
-                                  name="reason"
-                                  placeholder="异常原因"
-                                  className={fieldClass}
-                                />
-                                <button className="rounded-lg bg-rose-400/20 px-3 py-2 text-xs text-rose-50">
-                                  提交异常
-                                </button>
-                              </form>
-                            </details>
-                          </div>
-                        ) : (
-                          <p className="mt-3 text-xs text-white/45">
-                            等待 {ownerName(row.ownerDiscordId ?? "")} 操作
-                          </p>
-                        )}
-                      </div>
-                    ) : null,
-                  )}
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-amber-200/20 bg-black/20">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="border-b border-amber-200/15 bg-amber-100/[0.03] text-xs text-amber-100/65">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">收款账号</th>
+                        <th className="px-4 py-3 font-medium">
+                          老板 / 充值记录
+                        </th>
+                        <th className="px-4 py-3 font-medium">金额</th>
+                        <th className="px-4 py-3 font-medium">转账截图</th>
+                        <th className="px-4 py-3 font-medium">时间</th>
+                        <th className="px-4 py-3 font-medium">状态</th>
+                        <th className="px-4 py-3 font-medium">处理</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {confirmationRows.map(({ recharge, row }, index) =>
+                        row ? (
+                          <Fragment key={row.id}>
+                            <LocalDayDivider
+                              date={recharge.createdAt.toISOString()}
+                              previousDate={confirmationRows[
+                                index - 1
+                              ]?.recharge.createdAt.toISOString()}
+                              colSpan={7}
+                            />
+                            <tr className="border-b border-white/5 align-top last:border-0">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <p className="font-medium">
+                                  {row.account?.name ?? "账号已停用"}
+                                </p>
+                                <p className="mt-1 text-xs text-amber-100/70">
+                                  <OwnerIdentity
+                                    ownerId={row.ownerDiscordId ?? ""}
+                                    compact
+                                  />
+                                </p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <p className="font-mono text-xs text-white/75">
+                                  {recharge.toWhom ?? recharge.dlmId ?? "—"}
+                                </p>
+                                <p className="mt-1 text-xs text-white/45">
+                                  充值 {recharge.RechargeID}
+                                </p>
+                              </td>
+                              <td className="px-4 py-3 font-medium whitespace-nowrap">
+                                {formatMoney(row.rmbAmount)}
+                              </td>
+                              <td className="px-4 py-3">
+                                {row.evidence.length ? (
+                                  <div className="flex min-w-28 flex-wrap gap-2">
+                                    {row.evidence.map((evidence) => (
+                                      <a
+                                        key={evidence.id}
+                                        href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        title="点击放大查看转账截图"
+                                        className="block overflow-hidden rounded-lg border border-white/15 bg-black/30 transition hover:border-[#c4b5fd]/70"
+                                      >
+                                        <img
+                                          src={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
+                                          alt="转账截图"
+                                          className="h-14 w-14 object-cover"
+                                        />
+                                      </a>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-rose-200">
+                                    未上传
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
+                                {formatDate(recharge.createdAt)}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <StatusBadge status={row.status} />
+                              </td>
+                              <td className="px-4 py-3">
+                                {isFinance ||
+                                row.ownerDiscordId === session.discordId ? (
+                                  <div className="flex min-w-52 flex-wrap gap-2">
+                                    <form action={ACTION_URL} method="post">
+                                      <input
+                                        type="hidden"
+                                        name="action"
+                                        value="owner-confirm"
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="redirectTo"
+                                        value={redirectTo}
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="reconciliationId"
+                                        value={row.id}
+                                      />
+                                      <button className="rounded-lg bg-emerald-400/20 px-3 py-2 text-xs text-emerald-50 hover:bg-emerald-400/30">
+                                        确认收到
+                                      </button>
+                                    </form>
+                                    <details>
+                                      <summary className="cursor-pointer rounded-lg border border-rose-300/30 px-3 py-2 text-xs text-rose-100">
+                                        未收到 / 金额不符
+                                      </summary>
+                                      <form
+                                        action={ACTION_URL}
+                                        method="post"
+                                        className="mt-2 grid min-w-52 gap-2"
+                                      >
+                                        <input
+                                          type="hidden"
+                                          name="action"
+                                          value="owner-dispute"
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="redirectTo"
+                                          value={redirectTo}
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="reconciliationId"
+                                          value={row.id}
+                                        />
+                                        <input
+                                          required
+                                          name="reason"
+                                          placeholder="异常原因"
+                                          className={fieldClass}
+                                        />
+                                        <button className="rounded-lg bg-rose-400/20 px-3 py-2 text-xs text-rose-50">
+                                          提交异常
+                                        </button>
+                                      </form>
+                                    </details>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-white/45">
+                                    等待 {ownerName(row.ownerDiscordId ?? "")}{" "}
+                                    操作
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          </Fragment>
+                        ) : null,
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               ) : (
                 <p className="mt-4 text-sm text-amber-100/70">
