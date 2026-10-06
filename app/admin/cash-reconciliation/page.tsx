@@ -112,11 +112,16 @@ function OwnerIdentity({
   );
 }
 
-function sectionLink(tab: ReconciliationTab, page = 1) {
+function sectionLink(
+  tab: ReconciliationTab,
+  page = 1,
+  ownerDiscordId?: string,
+) {
   const query = new URLSearchParams({ tab });
   if ((tab === "recharges" || tab === "processed") && page > 1) {
     query.set("page", String(page));
   }
+  if (ownerDiscordId) query.set("owner", ownerDiscordId);
   return `/admin/cash-reconciliation?${query.toString()}`;
 }
 
@@ -131,12 +136,10 @@ export default async function CashReconciliationPage(props: PageProps) {
     ? (rawTab as ReconciliationTab)
     : "overview";
   const isFinance = isSettlementFinance(session.discordId);
-  const allowedTabs: ReconciliationTab[] = isFinance
-    ? [...tabs]
-    : ["overview", "confirmations", "transfers", "payouts"];
-  const activeTab = allowedTabs.includes(requestedTab)
-    ? requestedTab
-    : "overview";
+  const requestedOwnerDiscordId =
+    isFinance && typeof searchParams.owner === "string"
+      ? searchParams.owner
+      : undefined;
   const requestedPage =
     typeof searchParams.page === "string" ? Number(searchParams.page) : 1;
   const notice =
@@ -234,6 +237,22 @@ export default async function CashReconciliationPage(props: PageProps) {
   const ownerIds = Array.from(
     new Set(accounts.map((account) => account.ownerDiscordId)),
   );
+  const viewedOwnerId = ownerIds.includes(requestedOwnerDiscordId ?? "")
+    ? requestedOwnerDiscordId
+    : undefined;
+  const isOwnerReadOnlyView = Boolean(viewedOwnerId);
+  const isAllFinanceView = isFinance && !isOwnerReadOnlyView;
+  const currentOwnerId = viewedOwnerId ?? session.discordId;
+  const allowedTabs: ReconciliationTab[] = isAllFinanceView
+    ? [...tabs]
+    : ["overview", "confirmations", "transfers", "payouts"];
+  const activeTab = allowedTabs.includes(requestedTab)
+    ? requestedTab
+    : "overview";
+  const viewedOwnerAccounts = accounts.filter(
+    (account) => account.ownerDiscordId === currentOwnerId,
+  );
+  const canActAsCurrentOwner = currentOwnerId === session.discordId;
   const accountById = new Map(accounts.map((account) => [account.id, account]));
   const rechargesWithRows = rawRecharges.map((recharge) => ({
     recharge,
@@ -406,26 +425,26 @@ export default async function CashReconciliationPage(props: PageProps) {
       foreignDue: totals.foreignExpected.sub(totals.foreignReturned),
     }),
   );
-  const visibleOwners = isFinance
+  const visibleOwners = isAllFinanceView
     ? ownerSummaryEntries
-    : ownerSummaryEntries.filter((row) => row.ownerId === session.discordId);
-  const visibleAccounts = isFinance ? accounts : ownedAccounts;
+    : ownerSummaryEntries.filter((row) => row.ownerId === currentOwnerId);
+  const visibleAccounts = isAllFinanceView ? accounts : viewedOwnerAccounts;
   const confirmationRows = pendingOwnerRows.filter(
-    ({ row }) => isFinance || row?.ownerDiscordId === session.discordId,
+    ({ row }) => isAllFinanceView || row?.ownerDiscordId === currentOwnerId,
   );
   const ownerTransferInbox = transfers.filter(
     (transfer) =>
-      transfer.toAccount.ownerDiscordId === session.discordId &&
+      transfer.toAccount.ownerDiscordId === currentOwnerId &&
       transfer.status ===
         SettlementTransferStatus.PENDING_RECEIVER_CONFIRMATION,
   );
-  const visibleTransfers = isFinance
+  const visibleTransfers = isAllFinanceView
     ? transfers.slice(0, 50)
     : transfers
         .filter(
           (transfer) =>
-            transfer.fromAccount.ownerDiscordId === session.discordId ||
-            transfer.toAccount.ownerDiscordId === session.discordId,
+            transfer.fromAccount.ownerDiscordId === currentOwnerId ||
+            transfer.toAccount.ownerDiscordId === currentOwnerId,
         )
         .slice(0, 50);
   const withdrawalItems = withdrawals
@@ -438,13 +457,13 @@ export default async function CashReconciliationPage(props: PageProps) {
     );
   const pendingPayouts = withdrawalItems.filter(
     ({ withdrawal, ownerId }) =>
-      ownerId === session.discordId && !withdrawal.settlementPayout,
+      ownerId === currentOwnerId && !withdrawal.settlementPayout,
   );
-  const payoutRows = isFinance
+  const payoutRows = isAllFinanceView
     ? withdrawalItems.filter(({ withdrawal }) => !withdrawal.settlementPayout)
     : pendingPayouts;
   const activeOwnerSummary = ownerSummaryEntries.find(
-    (row) => row.ownerId === session.discordId,
+    (row) => row.ownerId === currentOwnerId,
   );
   const isProcessedRechargeTab = activeTab === "processed";
   const displayedRechargeRows = isProcessedRechargeTab
@@ -464,10 +483,10 @@ export default async function CashReconciliationPage(props: PageProps) {
   );
   const redirectTo =
     activeTab === "recharges" || activeTab === "processed"
-      ? sectionLink(activeTab, rechargePage)
-      : sectionLink(activeTab);
+      ? sectionLink(activeTab, rechargePage, viewedOwnerId)
+      : sectionLink(activeTab, 1, viewedOwnerId);
   const tabItems = (
-    isFinance
+    isAllFinanceView
       ? [
           ["overview", "总览", 0],
           ["recharges", "充值处理", pendingFinanceCount],
@@ -482,10 +501,24 @@ export default async function CashReconciliationPage(props: PageProps) {
           ["forex", "外汇归还", 0],
         ]
       : [
-          ["overview", "我的收款账号", 0],
-          ["confirmations", "待我确认", confirmationRows.length],
+          [
+            "overview",
+            isOwnerReadOnlyView
+              ? `${ownerName(currentOwnerId)}的收款账号`
+              : "我的收款账号",
+            0,
+          ],
+          [
+            "confirmations",
+            isOwnerReadOnlyView ? "待确认收款" : "待我确认",
+            confirmationRows.length,
+          ],
           ["transfers", "内部转账", ownerTransferInbox.length],
-          ["payouts", "待我发放", pendingPayouts.length],
+          [
+            "payouts",
+            isOwnerReadOnlyView ? "待发提现" : "待我发放",
+            pendingPayouts.length,
+          ],
         ]
   ) as Array<[ReconciliationTab, string, number]>;
 
@@ -537,7 +570,7 @@ export default async function CashReconciliationPage(props: PageProps) {
             {tabItems.map(([tab, label, count]) => (
               <Link
                 key={tab}
-                href={sectionLink(tab)}
+                href={sectionLink(tab, 1, viewedOwnerId)}
                 aria-current={activeTab === tab ? "page" : undefined}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm transition ${activeTab === tab ? "bg-[#7356c6] text-white shadow-lg shadow-[#7356c6]/25" : "text-white/65 hover:bg-white/10 hover:text-white"}`}
               >
@@ -554,10 +587,38 @@ export default async function CashReconciliationPage(props: PageProps) {
           </div>
         </nav>
 
+        {isFinance ? (
+          <section className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+            <span className="mr-1 text-sm text-white/55">负责人页面：</span>
+            <Link
+              href={sectionLink("overview")}
+              className={`rounded-xl border px-3 py-2 text-sm transition ${isAllFinanceView ? "border-[#a78bfa]/60 bg-[#7356c6]/25 text-white" : "border-white/10 text-white/65 hover:bg-white/10"}`}
+            >
+              全部主财务视图
+            </Link>
+            {ownerSummaryEntries.map((owner) => (
+              <Link
+                key={owner.ownerId}
+                href={sectionLink("overview", 1, owner.ownerId)}
+                className={`rounded-xl border px-3 py-2 text-sm transition ${viewedOwnerId === owner.ownerId ? "border-[#a78bfa]/60 bg-[#7356c6]/25 text-white" : "border-white/10 text-white/65 hover:bg-white/10"}`}
+              >
+                {ownerName(owner.ownerId)}
+              </Link>
+            ))}
+            {isOwnerReadOnlyView ? (
+              <span className="ml-1 text-xs text-amber-100/80">
+                {canActAsCurrentOwner
+                  ? "这是你的负责人页，可正常处理自己的账项。"
+                  : "只读查看；实际操作仍须由对应负责人登录。"}
+              </span>
+            ) : null}
+          </section>
+        ) : null}
+
         {activeTab === "overview" ? (
           <>
             <section className="grid gap-4 xl:grid-cols-4">
-              {isFinance ? (
+              {isAllFinanceView ? (
                 <>
                   <div className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5">
                     <p className="text-sm text-amber-100/80">待财务处理净额</p>
@@ -600,7 +661,11 @@ export default async function CashReconciliationPage(props: PageProps) {
               ) : (
                 <>
                   <div className="rounded-3xl border border-[#c4b5fd]/25 bg-[#7356c6]/10 p-5">
-                    <p className="text-sm text-[#ddd6fe]">我的负责人应有总额</p>
+                    <p className="text-sm text-[#ddd6fe]">
+                      {isOwnerReadOnlyView
+                        ? `${ownerName(currentOwnerId)}的负责人应有总额`
+                        : "我的负责人应有总额"}
+                    </p>
                     <p className="mt-2 text-3xl font-semibold">
                       {formatMoney(activeOwnerSummary?.expectedTotal)}
                     </p>
@@ -612,13 +677,17 @@ export default async function CashReconciliationPage(props: PageProps) {
                     </p>
                   </div>
                   <div className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5">
-                    <p className="text-sm text-amber-100/80">待我确认收款</p>
+                    <p className="text-sm text-amber-100/80">
+                      {isOwnerReadOnlyView ? "待确认收款" : "待我确认收款"}
+                    </p>
                     <p className="mt-2 text-3xl font-semibold text-amber-50">
                       {confirmationRows.length} 笔
                     </p>
                   </div>
                   <div className="rounded-3xl border border-[#c4b5fd]/25 bg-[#7356c6]/10 p-5">
-                    <p className="text-sm text-[#ddd6fe]">待我发放提现</p>
+                    <p className="text-sm text-[#ddd6fe]">
+                      {isOwnerReadOnlyView ? "待发放提现" : "待我发放提现"}
+                    </p>
                     <p className="mt-2 text-3xl font-semibold">
                       {pendingPayouts.length} 笔
                     </p>
@@ -631,7 +700,7 @@ export default async function CashReconciliationPage(props: PageProps) {
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">
-                    {isFinance ? "负责人资金总览" : "我的资金总览"}
+                    {isAllFinanceView ? "负责人资金总览" : "我的资金总览"}
                   </h2>
                   <p className="mt-1 text-sm text-white/60">
                     应有总额 = 有效充值 + 已确认转入 − 已确认转出 − 外汇交回 +
@@ -668,7 +737,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                     账号卡片统计累计有效入账；提现按负责人总额扣减，不归属到单一账号。
                   </p>
                 </div>
-                {isFinance ? (
+                {isAllFinanceView ? (
                   <span className="text-xs text-white/45">
                     主财务可新建账号；账号一经建立不可转让负责人。
                   </span>
@@ -713,7 +782,7 @@ export default async function CashReconciliationPage(props: PageProps) {
               </div>
             </section>
 
-            {isFinance ? (
+            {isAllFinanceView ? (
               <section className={cardClass}>
                 <h2 className="text-xl font-semibold">新建收款账号</h2>
                 <p className="mt-1 text-sm text-white/60">
@@ -770,7 +839,7 @@ export default async function CashReconciliationPage(props: PageProps) {
         ) : null}
 
         {(activeTab === "recharges" || activeTab === "processed") &&
-        isFinance ? (
+        isAllFinanceView ? (
           <section className={cardClass}>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
@@ -1087,7 +1156,11 @@ export default async function CashReconciliationPage(props: PageProps) {
               <div className="flex gap-2">
                 <Link
                   aria-disabled={rechargePage <= 1}
-                  href={sectionLink(activeTab, Math.max(1, rechargePage - 1))}
+                  href={sectionLink(
+                    activeTab,
+                    Math.max(1, rechargePage - 1),
+                    viewedOwnerId,
+                  )}
                   className={`rounded-lg border px-3 py-2 ${rechargePage <= 1 ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
                 >
                   上一页
@@ -1097,6 +1170,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                   href={sectionLink(
                     activeTab,
                     Math.min(rechargePageCount, rechargePage + 1),
+                    viewedOwnerId,
                   )}
                   className={`rounded-lg border px-3 py-2 ${rechargePage >= rechargePageCount ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
                 >
@@ -1113,12 +1187,18 @@ export default async function CashReconciliationPage(props: PageProps) {
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold text-amber-50">
-                    {isFinance ? "负责人收款确认总览" : "等待我确认的收款"}
+                    {isAllFinanceView
+                      ? "负责人收款确认总览"
+                      : isOwnerReadOnlyView
+                        ? `${ownerName(currentOwnerId)}待确认的收款`
+                        : "等待我确认的收款"}
                   </h2>
                   <p className="mt-1 text-sm text-amber-100/75">
-                    {isFinance
+                    {isAllFinanceView
                       ? "主财务可查看所有负责人待确认项和异常；只有账号负责人可做二次确认或提出异常。"
-                      : "确认前请先核对你实际收款账号的到账记录。"}
+                      : isOwnerReadOnlyView && !canActAsCurrentOwner
+                        ? "只读查看该负责人的待确认收款；实际确认仍须由对应负责人登录。"
+                        : "确认前请先核对你实际收款账号的到账记录。"}
                   </p>
                 </div>
                 <span className="text-sm text-amber-100">
@@ -1226,7 +1306,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                 </p>
               )}
             </section>
-            {isFinance && disputedRows.length ? (
+            {isAllFinanceView && disputedRows.length ? (
               <section className="rounded-3xl border border-rose-300/25 bg-rose-300/10 p-5">
                 <h2 className="text-xl font-semibold text-rose-50">
                   负责人异常预警
@@ -1266,83 +1346,98 @@ export default async function CashReconciliationPage(props: PageProps) {
 
         {activeTab === "transfers" ? (
           <>
-            {ownedAccounts.filter(
+            {viewedOwnerAccounts.filter(
               (account) => account.active && isRmbCurrency(account.currency),
             ).length ? (
               <section className="grid gap-5 xl:grid-cols-2">
                 <div className={cardClass}>
-                  <h2 className="text-xl font-semibold">发起内部人民币转账</h2>
+                  <h2 className="text-xl font-semibold">
+                    {canActAsCurrentOwner
+                      ? "发起内部人民币转账"
+                      : `${ownerName(currentOwnerId)}的内部转账`}
+                  </h2>
                   <p className="mt-1 text-sm text-white/60">
-                    只能从你负责的人民币账号转入其他负责人的人民币账号；收款人确认前不计入双方总额。
+                    {canActAsCurrentOwner
+                      ? "只能从你负责的人民币账号转入其他负责人的人民币账号；收款人确认前不计入双方总额。"
+                      : "正在只读查看该负责人的人民币转账；实际发起与确认仍须由对应负责人登录。"}
                   </p>
-                  <form
-                    action={ACTION_URL}
-                    method="post"
-                    className="mt-4 grid gap-3"
-                  >
-                    <input
-                      type="hidden"
-                      name="action"
-                      value="transfer-create"
-                    />
-                    <input type="hidden" name="redirectTo" value={redirectTo} />
-                    <select
-                      required
-                      name="fromAccountId"
-                      defaultValue=""
-                      className={fieldClass}
+                  {canActAsCurrentOwner ? (
+                    <form
+                      action={ACTION_URL}
+                      method="post"
+                      className="mt-4 grid gap-3"
                     >
-                      <option value="" disabled>
-                        转出账号
-                      </option>
-                      {ownedAccounts
-                        .filter(
-                          (account) =>
-                            account.active && isRmbCurrency(account.currency),
-                        )
-                        .map((account) => (
-                          <option key={account.id} value={account.id}>
-                            {account.name}
-                          </option>
-                        ))}
-                    </select>
-                    <select
-                      required
-                      name="toAccountId"
-                      defaultValue=""
-                      className={fieldClass}
-                    >
-                      <option value="" disabled>
-                        转入账号
-                      </option>
-                      {accounts
-                        .filter(
-                          (account) =>
-                            account.active &&
-                            isRmbCurrency(account.currency) &&
-                            account.ownerDiscordId !== session.discordId,
-                        )
-                        .map((account) => (
-                          <option key={account.id} value={account.id}>
-                            {account.name} · {ownerName(account.ownerDiscordId)}
-                          </option>
-                        ))}
-                    </select>
-                    <input
-                      required
-                      name="amount"
-                      inputMode="decimal"
-                      placeholder="人民币金额"
-                      className={fieldClass}
-                    />
-                    <button className="rounded-xl bg-[#7356c6] px-4 py-2 text-sm hover:bg-[#6045aa]">
-                      提交转账
-                    </button>
-                  </form>
+                      <input
+                        type="hidden"
+                        name="action"
+                        value="transfer-create"
+                      />
+                      <input
+                        type="hidden"
+                        name="redirectTo"
+                        value={redirectTo}
+                      />
+                      <select
+                        required
+                        name="fromAccountId"
+                        defaultValue=""
+                        className={fieldClass}
+                      >
+                        <option value="" disabled>
+                          转出账号
+                        </option>
+                        {ownedAccounts
+                          .filter(
+                            (account) =>
+                              account.active && isRmbCurrency(account.currency),
+                          )
+                          .map((account) => (
+                            <option key={account.id} value={account.id}>
+                              {account.name}
+                            </option>
+                          ))}
+                      </select>
+                      <select
+                        required
+                        name="toAccountId"
+                        defaultValue=""
+                        className={fieldClass}
+                      >
+                        <option value="" disabled>
+                          转入账号
+                        </option>
+                        {accounts
+                          .filter(
+                            (account) =>
+                              account.active &&
+                              isRmbCurrency(account.currency) &&
+                              account.ownerDiscordId !== session.discordId,
+                          )
+                          .map((account) => (
+                            <option key={account.id} value={account.id}>
+                              {account.name} ·{" "}
+                              {ownerName(account.ownerDiscordId)}
+                            </option>
+                          ))}
+                      </select>
+                      <input
+                        required
+                        name="amount"
+                        inputMode="decimal"
+                        placeholder="人民币金额"
+                        className={fieldClass}
+                      />
+                      <button className="rounded-xl bg-[#7356c6] px-4 py-2 text-sm hover:bg-[#6045aa]">
+                        提交转账
+                      </button>
+                    </form>
+                  ) : null}
                 </div>
                 <div className={cardClass}>
                   <h2 className="text-xl font-semibold">
-                    等待我确认的内部转账
+                    {isOwnerReadOnlyView
+                      ? `${ownerName(currentOwnerId)}待确认的内部转账`
+                      : "等待我确认的内部转账"}
                   </h2>
                   {ownerTransferInbox.length ? (
                     <div className="mt-4 space-y-3">
@@ -1360,40 +1455,13 @@ export default async function CashReconciliationPage(props: PageProps) {
                             发起人 {transfer.initiatedBy} ·{" "}
                             {formatDate(transfer.createdAt)}
                           </p>
-                          <div className="mt-3 flex gap-2">
-                            <form action={ACTION_URL} method="post">
-                              <input
-                                type="hidden"
-                                name="action"
-                                value="transfer-confirm"
-                              />
-                              <input
-                                type="hidden"
-                                name="redirectTo"
-                                value={redirectTo}
-                              />
-                              <input
-                                type="hidden"
-                                name="transferId"
-                                value={transfer.id}
-                              />
-                              <button className="rounded-lg bg-emerald-400/20 px-3 py-2 text-xs">
-                                确认收到
-                              </button>
-                            </form>
-                            <details>
-                              <summary className="cursor-pointer rounded-lg border border-rose-300/30 px-3 py-2 text-xs text-rose-100">
-                                未收到
-                              </summary>
-                              <form
-                                action={ACTION_URL}
-                                method="post"
-                                className="mt-2 flex gap-2"
-                              >
+                          {canActAsCurrentOwner ? (
+                            <div className="mt-3 flex gap-2">
+                              <form action={ACTION_URL} method="post">
                                 <input
                                   type="hidden"
                                   name="action"
-                                  value="transfer-dispute"
+                                  value="transfer-confirm"
                                 />
                                 <input
                                   type="hidden"
@@ -1405,18 +1473,51 @@ export default async function CashReconciliationPage(props: PageProps) {
                                   name="transferId"
                                   value={transfer.id}
                                 />
-                                <input
-                                  required
-                                  name="reason"
-                                  placeholder="原因"
-                                  className={`${fieldClass} min-w-0`}
-                                />
-                                <button className="rounded-lg bg-rose-400/20 px-2 py-2 text-xs">
-                                  提交
+                                <button className="rounded-lg bg-emerald-400/20 px-3 py-2 text-xs">
+                                  确认收到
                                 </button>
                               </form>
-                            </details>
-                          </div>
+                              <details>
+                                <summary className="cursor-pointer rounded-lg border border-rose-300/30 px-3 py-2 text-xs text-rose-100">
+                                  未收到
+                                </summary>
+                                <form
+                                  action={ACTION_URL}
+                                  method="post"
+                                  className="mt-2 flex gap-2"
+                                >
+                                  <input
+                                    type="hidden"
+                                    name="action"
+                                    value="transfer-dispute"
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="redirectTo"
+                                    value={redirectTo}
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="transferId"
+                                    value={transfer.id}
+                                  />
+                                  <input
+                                    required
+                                    name="reason"
+                                    placeholder="原因"
+                                    className={`${fieldClass} min-w-0`}
+                                  />
+                                  <button className="rounded-lg bg-rose-400/20 px-2 py-2 text-xs">
+                                    提交
+                                  </button>
+                                </form>
+                              </details>
+                            </div>
+                          ) : (
+                            <p className="mt-3 text-xs text-white/45">
+                              等待 {ownerName(currentOwnerId)} 确认。
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1432,7 +1533,11 @@ export default async function CashReconciliationPage(props: PageProps) {
               <div className="flex flex-wrap justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">
-                    {isFinance ? "全部负责人内部转账流水" : "我的内部转账流水"}
+                    {isAllFinanceView
+                      ? "全部负责人内部转账流水"
+                      : isOwnerReadOnlyView
+                        ? `${ownerName(currentOwnerId)}的内部转账流水`
+                        : "我的内部转账流水"}
                   </h2>
                   <p className="mt-1 text-sm text-white/60">
                     仅收款人确认过的转账会影响双方负责人总额。
@@ -1510,7 +1615,11 @@ export default async function CashReconciliationPage(props: PageProps) {
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold">
-                  {isFinance ? "全部负责人待发提现" : "待我发放的提现"}
+                  {isAllFinanceView
+                    ? "全部负责人待发提现"
+                    : isOwnerReadOnlyView
+                      ? `${ownerName(currentOwnerId)}待发的提现`
+                      : "待我发放的提现"}
                 </h2>
                 <p className="mt-1 text-sm text-white/65">
                   提现申请不等于已发放；对应负责人点击“标记已发放”后才从该负责人应有总额扣除。
@@ -1578,7 +1687,7 @@ export default async function CashReconciliationPage(props: PageProps) {
           </section>
         ) : null}
 
-        {activeTab === "forex" && isFinance ? (
+        {activeTab === "forex" && isAllFinanceView ? (
           <>
             <section className={cardClass}>
               <h2 className="text-xl font-semibold">
