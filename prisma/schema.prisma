@@ -661,6 +661,8 @@ model Member {
 
   // Display name inside target Discord guild
   serverDisplayName String?
+  // Immutable-style Discord handle (the current username, without @).
+  discordUsername   String?
 
   // Optional app-level identity shared by web and mini program clients.
   dlmUser DlmUser? @relation("DlmUserMember")

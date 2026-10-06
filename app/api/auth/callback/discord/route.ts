@@ -113,8 +113,12 @@ export async function GET(request: Request) {
 
     await prisma.member.upsert({
       where: { discordUserId: discordUser.id },
-      update: { serverDisplayName },
-      create: { discordUserId: discordUser.id, serverDisplayName },
+      update: { serverDisplayName, discordUsername: discordUser.username },
+      create: {
+        discordUserId: discordUser.id,
+        serverDisplayName,
+        discordUsername: discordUser.username,
+      },
     });
 
     // If this member has a PEIWAN row, sync serverDisplayName onto it as展示字段。 Not fatal if not found.

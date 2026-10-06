@@ -195,6 +195,26 @@ export default async function CashReconciliationPage(props: PageProps) {
     if (left.active !== right.active) return left.active ? -1 : 1;
     return left.name.localeCompare(right.name, "zh-CN");
   });
+  const rechargeDiscordIds = Array.from(
+    new Set(
+      rawRecharges
+        .map((recharge) => recharge.toWhom)
+        .filter((discordUserId): discordUserId is string => Boolean(discordUserId)),
+    ),
+  );
+  const rechargeMembers = rechargeDiscordIds.length
+    ? await prisma.member.findMany({
+        where: { discordUserId: { in: rechargeDiscordIds } },
+        select: {
+          discordUserId: true,
+          serverDisplayName: true,
+          discordUsername: true,
+        },
+      })
+    : [];
+  const rechargeMemberByDiscordId = new Map(
+    rechargeMembers.map((member) => [member.discordUserId, member]),
+  );
 
   const ownedAccounts = accounts.filter(
     (account) => account.ownerDiscordId === session.discordId,
@@ -787,6 +807,9 @@ export default async function CashReconciliationPage(props: PageProps) {
                 <tbody>
                   {rechargeSlice.map(({ recharge, row }) => {
                     const isNegativeCash = recharge.amount.lt(0);
+                    const boss = recharge.toWhom
+                      ? rechargeMemberByDiscordId.get(recharge.toWhom)
+                      : null;
 
                     return (
                       <tr
@@ -806,8 +829,23 @@ export default async function CashReconciliationPage(props: PageProps) {
                             来源 {recharge.fromWhom}
                           </span>
                         </td>
-                        <td className="px-3 py-4 font-mono text-xs">
-                          {recharge.toWhom ?? recharge.dlmId ?? "—"}
+                        <td className="px-3 py-4 text-xs">
+                          {boss ? (
+                            <>
+                              <p className="font-medium text-white">
+                                {boss.serverDisplayName ??
+                                  boss.discordUsername ??
+                                  "Discord 用户"}
+                              </p>
+                              <p className="mt-1 font-mono text-white/50">
+                                @{boss.discordUsername ?? "用户名待同步"}
+                              </p>
+                            </>
+                          ) : (
+                            <span className="font-mono text-white/65">
+                              {recharge.toWhom ?? recharge.dlmId ?? "—"}
+                            </span>
+                          )}
                         </td>
                         <td
                           className={`px-3 py-4 whitespace-nowrap ${isNegativeCash ? "text-rose-200" : ""}`}

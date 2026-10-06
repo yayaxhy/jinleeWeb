@@ -1,0 +1,2 @@
+ALTER TABLE "Member"
+ADD COLUMN IF NOT EXISTS "discordUsername" TEXT;
