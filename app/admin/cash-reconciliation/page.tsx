@@ -811,8 +811,12 @@ export default async function CashReconciliationPage(props: PageProps) {
                     <th className="px-3 py-3">记录 / 来源</th>
                     <th className="px-3 py-3">老板</th>
                     <th className="px-3 py-3">金额 / 时间</th>
-                    <th className="px-3 py-3">对账状态</th>
-                    <th className="px-3 py-3">凭证</th>
+                    {isProcessedRechargeTab ? (
+                      <>
+                        <th className="px-3 py-3">对账状态</th>
+                        <th className="px-3 py-3">凭证</th>
+                      </>
+                    ) : null}
                     <th className="px-3 py-3">
                       {isProcessedRechargeTab ? "最后处理 / 操作" : "本笔处理"}
                     </th>
@@ -884,66 +888,62 @@ export default async function CashReconciliationPage(props: PageProps) {
                             {formatDate(recharge.createdAt)}
                           </span>
                         </td>
-                        <td className="px-3 py-4">
-                          {row ? (
-                            <>
-                              <StatusBadge status={row.status} />
-                              {row.account ? (
-                                <p className="mt-2 text-xs text-white/60">
-                                  {row.account.name} ·{" "}
-                                  {ownerName(row.ownerDiscordId ?? "")}
-                                </p>
+                        {isProcessedRechargeTab ? (
+                          <>
+                            <td className="px-3 py-4">
+                              {row ? (
+                                <>
+                                  <StatusBadge status={row.status} />
+                                  {row.account ? (
+                                    <p className="mt-2 text-xs text-white/60">
+                                      {row.account.name} ·{" "}
+                                      {ownerName(row.ownerDiscordId ?? "")}
+                                    </p>
+                                  ) : null}
+                                  {row.exceptionReason ? (
+                                    <p className="mt-2 max-w-52 text-xs text-rose-200">
+                                      异常：{row.exceptionReason}
+                                    </p>
+                                  ) : null}
+                                  {row.invalidReason ? (
+                                    <p className="mt-2 max-w-52 text-xs text-white/55">
+                                      无效：{row.invalidReason}
+                                    </p>
+                                  ) : null}
+                                  <p className="mt-2 text-xs text-white/45">
+                                    最后处理：
+                                    {formatDate(
+                                      row.ownerConfirmedAt ??
+                                        row.invalidatedAt ??
+                                        row.financeConfirmedAt ??
+                                        row.updatedAt,
+                                    )}
+                                  </p>
+                                </>
                               ) : null}
-                              {row.exceptionReason ? (
-                                <p className="mt-2 max-w-52 text-xs text-rose-200">
-                                  异常：{row.exceptionReason}
-                                </p>
-                              ) : null}
-                              {row.invalidReason ? (
-                                <p className="mt-2 max-w-52 text-xs text-white/55">
-                                  无效：{row.invalidReason}
-                                </p>
-                              ) : null}
-                              {isProcessedRechargeTab ? (
-                                <p className="mt-2 text-xs text-white/45">
-                                  最后处理：
-                                  {formatDate(
-                                    row.ownerConfirmedAt ??
-                                      row.invalidatedAt ??
-                                      row.financeConfirmedAt ??
-                                      row.updatedAt,
-                                  )}
-                                </p>
-                              ) : null}
-                            </>
-                          ) : (
-                            <StatusBadge
-                              status={
-                                SettlementReconciliationStatus.PENDING_FINANCE
-                              }
-                            />
-                          )}
-                        </td>
-                        <td className="px-3 py-4">
-                          {row?.evidence.length ? (
-                            <div className="space-y-1">
-                              {row.evidence.map((evidence) => (
-                                <a
-                                  key={evidence.id}
-                                  href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
-                                  target="_blank"
-                                  className="block text-xs text-[#c4b5fd] underline"
-                                >
-                                  查看截图
-                                </a>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-white/40">
-                              未上传
-                            </span>
-                          )}
-                        </td>
+                            </td>
+                            <td className="px-3 py-4">
+                              {row?.evidence.length ? (
+                                <div className="space-y-1">
+                                  {row.evidence.map((evidence) => (
+                                    <a
+                                      key={evidence.id}
+                                      href={`/api/admin/cash-reconciliation/evidence/${evidence.id}`}
+                                      target="_blank"
+                                      className="block text-xs text-[#c4b5fd] underline"
+                                    >
+                                      查看截图
+                                    </a>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-white/40">
+                                  未上传
+                                </span>
+                              )}
+                            </td>
+                          </>
+                        ) : null}
                         <td className="px-3 py-4">
                           <>
                             {row?.status !==
