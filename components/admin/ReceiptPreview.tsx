@@ -52,26 +52,26 @@ export function ReceiptPreview({
         <div
           role="presentation"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm"
         >
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="fixed top-5 right-5 z-10 rounded-full border border-white/25 bg-black/70 px-3 py-1.5 text-xs text-white hover:bg-black"
-          >
-            关闭预览
-          </button>
           <div
             role="dialog"
             aria-modal="true"
             aria-label="转账截图预览"
             onClick={(event) => event.stopPropagation()}
-            className="mx-auto min-h-full w-full rounded-2xl border border-white/20 bg-[#0a0a0f] p-3 shadow-2xl"
+            className="relative max-h-[90vh] max-w-[90vw] rounded-2xl border border-white/20 bg-[#0a0a0f] p-3 shadow-2xl"
           >
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="absolute top-5 right-5 z-10 rounded-full border border-white/25 bg-black/70 px-3 py-1.5 text-xs text-white hover:bg-black"
+            >
+              关闭
+            </button>
             <img
               src={source}
               alt={originalFileName}
-              className="h-auto w-full rounded-xl"
+              className="max-h-[84vh] max-w-[84vw] rounded-xl object-contain"
             />
           </div>
         </div>
