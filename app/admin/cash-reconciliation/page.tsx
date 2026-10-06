@@ -252,7 +252,8 @@ export default async function CashReconciliationPage(props: PageProps) {
   const viewedOwnerAccounts = accounts.filter(
     (account) => account.ownerDiscordId === currentOwnerId,
   );
-  const canActAsCurrentOwner = currentOwnerId === session.discordId;
+  const canActAsCurrentOwner =
+    isFinance || currentOwnerId === session.discordId;
   const accountById = new Map(accounts.map((account) => [account.id, account]));
   const rechargesWithRows = rawRecharges.map((recharge) => ({
     recharge,
@@ -608,7 +609,7 @@ export default async function CashReconciliationPage(props: PageProps) {
             {isOwnerReadOnlyView ? (
               <span className="ml-1 text-xs text-amber-100/80">
                 {canActAsCurrentOwner
-                  ? "这是你的负责人页，可正常处理自己的账项。"
+                  ? "主财务可代办该负责人的操作；操作记录会保留为主财务。"
                   : "只读查看；实际操作仍须由对应负责人登录。"}
               </span>
             ) : null}
@@ -1195,9 +1196,9 @@ export default async function CashReconciliationPage(props: PageProps) {
                   </h2>
                   <p className="mt-1 text-sm text-amber-100/75">
                     {isAllFinanceView
-                      ? "主财务可查看所有负责人待确认项和异常；只有账号负责人可做二次确认或提出异常。"
-                      : isOwnerReadOnlyView && !canActAsCurrentOwner
-                        ? "只读查看该负责人的待确认收款；实际确认仍须由对应负责人登录。"
+                      ? "主财务可查看所有负责人待确认项和异常，并可代办二次确认或提出异常。"
+                      : isOwnerReadOnlyView && canActAsCurrentOwner
+                        ? "主财务可代办确认或反馈异常；操作记录会保留为主财务。"
                         : "确认前请先核对你实际收款账号的到账记录。"}
                   </p>
                 </div>
@@ -1233,7 +1234,8 @@ export default async function CashReconciliationPage(props: PageProps) {
                           老板 {recharge.toWhom ?? recharge.dlmId ?? "—"} ·{" "}
                           {formatDate(recharge.createdAt)}
                         </p>
-                        {row.ownerDiscordId === session.discordId ? (
+                        {isFinance ||
+                        row.ownerDiscordId === session.discordId ? (
                           <div className="mt-3 flex flex-wrap gap-2">
                             <form action={ACTION_URL} method="post">
                               <input
@@ -1353,12 +1355,16 @@ export default async function CashReconciliationPage(props: PageProps) {
                 <div className={cardClass}>
                   <h2 className="text-xl font-semibold">
                     {canActAsCurrentOwner
-                      ? "发起内部人民币转账"
+                      ? isFinance && isOwnerReadOnlyView
+                        ? `代 ${ownerName(currentOwnerId)} 发起内部人民币转账`
+                        : "发起内部人民币转账"
                       : `${ownerName(currentOwnerId)}的内部转账`}
                   </h2>
                   <p className="mt-1 text-sm text-white/60">
                     {canActAsCurrentOwner
-                      ? "只能从你负责的人民币账号转入其他负责人的人民币账号；收款人确认前不计入双方总额。"
+                      ? isFinance && isOwnerReadOnlyView
+                        ? "主财务可从当前负责人的人民币账号发起转账；收款人确认前不计入双方总额。"
+                        : "只能从你负责的人民币账号转入其他负责人的人民币账号；收款人确认前不计入双方总额。"
                       : "正在只读查看该负责人的人民币转账；实际发起与确认仍须由对应负责人登录。"}
                   </p>
                   {canActAsCurrentOwner ? (
@@ -1386,7 +1392,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                         <option value="" disabled>
                           转出账号
                         </option>
-                        {ownedAccounts
+                        {viewedOwnerAccounts
                           .filter(
                             (account) =>
                               account.active && isRmbCurrency(account.currency),
@@ -1411,7 +1417,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                             (account) =>
                               account.active &&
                               isRmbCurrency(account.currency) &&
-                              account.ownerDiscordId !== session.discordId,
+                              account.ownerDiscordId !== currentOwnerId,
                           )
                           .map((account) => (
                             <option key={account.id} value={account.id}>
@@ -1650,7 +1656,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                       </div>
                       <OwnerIdentity ownerId={ownerId} compact />
                     </div>
-                    {ownerId === session.discordId ? (
+                    {isFinance || ownerId === session.discordId ? (
                       <form action={ACTION_URL} method="post" className="mt-3">
                         <input
                           type="hidden"

@@ -48,12 +48,16 @@ const financeOnly = (discordId?: string | null) => {
     throw new Error("只有财务管理员可以执行此操作。");
 };
 
-const assertOwner = (
+/** A responsible owner may act on their own account; main finance may operate any owner's queue. */
+const assertOwnerOrFinance = (
   actualOwnerId: string | null | undefined,
   actorId: string,
 ) => {
-  if (!actualOwnerId || actualOwnerId !== actorId)
-    throw new Error("只能操作自己负责的账号。");
+  if (
+    !actualOwnerId ||
+    (actualOwnerId !== actorId && !isSettlementFinance(actorId))
+  )
+    throw new Error("只能操作自己负责的账号，或由主财务代办。");
 };
 
 async function saveEvidence(
@@ -209,9 +213,7 @@ async function financeConfirm(formData: FormData, actorId: string) {
         if (path.basename(storageFileName) !== storageFileName)
           return Promise.resolve();
         return fs
-          .unlink(
-            path.join(getSettlementReceiptStorageDir(), storageFileName),
-          )
+          .unlink(path.join(getSettlementReceiptStorageDir(), storageFileName))
           .catch(() => undefined);
       }),
     );
@@ -322,7 +324,7 @@ async function ownerConfirm(formData: FormData, actorId: string) {
       where: { id: reconciliationId },
     });
   if (!reconciliation) throw new Error("未找到该对账记录。");
-  assertOwner(reconciliation.ownerDiscordId, actorId);
+  assertOwnerOrFinance(reconciliation.ownerDiscordId, actorId);
   if (
     reconciliation.status !== SettlementReconciliationStatus.FINANCE_CONFIRMED
   ) {
@@ -360,7 +362,7 @@ async function ownerDispute(formData: FormData, actorId: string) {
       where: { id: reconciliationId },
     });
   if (!reconciliation) throw new Error("未找到该对账记录。");
-  assertOwner(reconciliation.ownerDiscordId, actorId);
+  assertOwnerOrFinance(reconciliation.ownerDiscordId, actorId);
   if (
     reconciliation.status !== SettlementReconciliationStatus.FINANCE_CONFIRMED
   ) {
@@ -419,7 +421,7 @@ async function createTransfer(formData: FormData, actorId: string) {
   ) {
     throw new Error("内部转账仅支持两个有效人民币账号。");
   }
-  assertOwner(from.ownerDiscordId, actorId);
+  assertOwnerOrFinance(from.ownerDiscordId, actorId);
   if (from.ownerDiscordId === to.ownerDiscordId)
     throw new Error("仅支持转入其他负责人的账号。");
   await prisma.settlementAccountTransfer.create({
@@ -442,7 +444,7 @@ async function confirmTransfer(
     include: { toAccount: true },
   });
   if (!transfer) throw new Error("未找到转账记录。");
-  assertOwner(transfer.toAccount.ownerDiscordId, actorId);
+  assertOwnerOrFinance(transfer.toAccount.ownerDiscordId, actorId);
   if (
     transfer.status !== SettlementTransferStatus.PENDING_RECEIVER_CONFIRMATION
   ) {
@@ -522,7 +524,7 @@ async function markPayoutPaid(formData: FormData, actorId: string) {
   const responsibleOwner = resolveWithdrawalSettlementOwner(withdrawal.method);
   if (!responsibleOwner)
     throw new Error("该提现方式不属于微信或支付宝负责人队列。");
-  assertOwner(responsibleOwner, actorId);
+  assertOwnerOrFinance(responsibleOwner, actorId);
   await prisma.settlementWithdrawalPayout.create({
     data: {
       withdrawalId,
