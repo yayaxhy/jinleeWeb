@@ -101,7 +101,9 @@ async function financeConfirm(formData: FormData, actorId: string) {
     }),
     prisma.settlementRechargeReconciliation.findUnique({
       where: { rechargeId },
-      include: { evidence: { select: { id: true }, take: 1 } },
+      include: {
+        evidence: { select: { id: true, storageFileName: true } },
+      },
     }),
   ]);
   if (!recharge)
@@ -137,6 +139,7 @@ async function financeConfirm(formData: FormData, actorId: string) {
   if (receipt instanceof File && receipt.size > 0) {
     savedEvidence = await saveEvidence(receipt, reconciliationId, actorId);
   }
+  const evidenceToReplace = savedEvidence ? (existing?.evidence ?? []) : [];
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -164,6 +167,11 @@ async function financeConfirm(formData: FormData, actorId: string) {
             data: { id: reconciliationId, rechargeId, ...data },
           });
       if (savedEvidence) {
+        if (evidenceToReplace.length) {
+          await tx.settlementReceiptEvidence.deleteMany({
+            where: { reconciliationId: reconciliation.id },
+          });
+        }
         await tx.settlementReceiptEvidence.create({
           data: { reconciliationId: reconciliation.id, ...savedEvidence },
         });
@@ -193,6 +201,20 @@ async function financeConfirm(formData: FormData, actorId: string) {
         )
         .catch(() => undefined);
     throw error;
+  }
+
+  if (evidenceToReplace.length) {
+    await Promise.all(
+      evidenceToReplace.map(({ storageFileName }) => {
+        if (path.basename(storageFileName) !== storageFileName)
+          return Promise.resolve();
+        return fs
+          .unlink(
+            path.join(getSettlementReceiptStorageDir(), storageFileName),
+          )
+          .catch(() => undefined);
+      }),
+    );
   }
 
   return redirectTo(
