@@ -747,7 +747,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                 <p className="mt-1 max-w-4xl text-sm leading-6 text-white/60">
                   {isProcessedRechargeTab
                     ? "已确认实收、负责人已确认和已确认无效的记录都保留在此处；最新处理的记录排在最前。"
-                    : "每笔 `!cash` 都独立分配收款账号与确认。正数充值需上传截图；负数为独立扣减账项，填写调整原因后按负数计入对应账号和负责人总额，例如同一账号的 +150 与 -50 会自然汇总为 ¥100。"}
+                    : "每笔 `!cash` 都独立分配收款账号与确认，正数和负数都需上传截图。负数为独立扣减账项，填写调整原因后按负数计入对应账号和负责人总额，例如同一账号的 +150 与 -50 会自然汇总为 ¥100。"}
                 </p>
               </div>
               <div className="text-right text-sm text-white/60">
@@ -859,11 +859,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                           )}
                         </td>
                         <td className="px-3 py-4">
-                          {isNegativeCash ? (
-                            <span className="text-xs text-white/40">
-                              独立扣减，无需凭证
-                            </span>
-                          ) : row?.evidence.length ? (
+                          {row?.evidence.length ? (
                             <div className="space-y-1">
                               {row.evidence.map((evidence) => (
                                 <a
@@ -960,12 +956,10 @@ export default async function CashReconciliationPage(props: PageProps) {
                                   }
                                   className={fieldClass}
                                 />
-                                {!isNegativeCash ? (
-                                  <ReceiptPasteUploader />
-                                ) : null}
+                                <ReceiptPasteUploader />
                                 <button className="rounded-xl bg-[#7356c6] px-3 py-2 text-xs hover:bg-[#6045aa]">
                                   {isNegativeCash
-                                    ? "确认扣减账项"
+                                    ? "上传凭证并确认扣减"
                                     : row?.status ===
                                         SettlementReconciliationStatus.INVALIDATED
                                       ? "恢复为实收并等待确认"

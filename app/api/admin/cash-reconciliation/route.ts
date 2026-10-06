@@ -37,7 +37,10 @@ const redirectTo = (raw: string, kind: "error" | "notice", message: string) => {
   const target = raw.startsWith(DEFAULT_REDIRECT) ? raw : DEFAULT_REDIRECT;
   const url = new URL(target, "http://local");
   url.searchParams.set(kind, message);
-  return NextResponse.redirect(url, { status: 303 });
+  return new NextResponse(null, {
+    status: 303,
+    headers: { Location: `${url.pathname}${url.search}` },
+  });
 };
 
 const financeOnly = (discordId?: string | null) => {
@@ -124,10 +127,7 @@ async function financeConfirm(formData: FormData, actorId: string) {
     );
   }
 
-  if (
-    !isNegativeAdjustment &&
-    (!(receipt instanceof File) || receipt.size === 0)
-  ) {
+  if (!(receipt instanceof File) || receipt.size === 0) {
     if (!existing?.evidence.length)
       throw new Error("首次财务确认必须上传转账截图。");
   }
