@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import {
+  SettlementCashExpenseStatus,
   SettlementPayoutStatus,
   SettlementReconciliationStatus,
   SettlementTransferStatus,
@@ -438,6 +439,47 @@ async function ownerConfirm(formData: FormData, actorId: string) {
   return redirectTo(redirect, "notice", "已确认收到款项。");
 }
 
+async function ownerRevokeConfirmation(formData: FormData, actorId: string) {
+  const reconciliationId = readText(formData, "reconciliationId");
+  const redirect = readText(formData, "redirectTo");
+  const reconciliation =
+    await prisma.settlementRechargeReconciliation.findUnique({
+      where: { id: reconciliationId },
+    });
+  if (!reconciliation) throw new Error("未找到该对账记录。");
+  assertOwnerOrFinance(reconciliation.ownerDiscordId, actorId);
+  if (
+    reconciliation.status !== SettlementReconciliationStatus.OWNER_CONFIRMED
+  ) {
+    throw new Error("只有已确认收款的记录可以撤回确认。");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.settlementRechargeReconciliation.update({
+      where: { id: reconciliationId },
+      data: {
+        status: SettlementReconciliationStatus.FINANCE_CONFIRMED,
+        ownerConfirmedBy: null,
+        ownerConfirmedAt: null,
+      },
+    });
+    await tx.settlementReconciliationEvent.create({
+      data: {
+        reconciliationId,
+        fromStatus: SettlementReconciliationStatus.OWNER_CONFIRMED,
+        toStatus: SettlementReconciliationStatus.FINANCE_CONFIRMED,
+        actorDiscordId: actorId,
+        note: "撤回已确认收款，重新等待负责人确认。",
+      },
+    });
+  });
+  return redirectTo(
+    redirect,
+    "notice",
+    "已撤回确认；这笔款项已回到待确认收款，暂时仍计入实收。",
+  );
+}
+
 async function ownerDispute(formData: FormData, actorId: string) {
   const reconciliationId = readText(formData, "reconciliationId");
   const reason = readText(formData, "reason");
@@ -479,6 +521,126 @@ async function ownerDispute(formData: FormData, actorId: string) {
     "notice",
     "异常已反馈给财务；金额暂时仍计入应有总额。",
   );
+}
+
+async function createCashExpense(formData: FormData, actorId: string) {
+  financeOnly(actorId);
+  const accountId = readText(formData, "accountId");
+  const amount = parsePositiveDecimal(readText(formData, "amount"));
+  const note = readText(formData, "note");
+  const redirect = readText(formData, "redirectTo");
+  if (!accountId || !amount || !note) {
+    throw new Error("请选择支出账号，并填写金额和备注。");
+  }
+  const account = await prisma.settlementAccount.findFirst({
+    where: { id: accountId, active: true },
+  });
+  if (!account) {
+    throw new Error("请选择有效的收款账号。");
+  }
+  await prisma.settlementCashExpense.create({
+    data: {
+      accountId: account.id,
+      ownerDiscordId: account.ownerDiscordId,
+      amount,
+      note: note.slice(0, 500),
+      status: SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION,
+      createdBy: actorId,
+    },
+  });
+  return redirectTo(
+    redirect,
+    "notice",
+    "现金支出已登记并从负责人总额扣除，等待对应负责人确认。",
+  );
+}
+
+async function confirmCashExpense(formData: FormData, actorId: string) {
+  const expenseId = readText(formData, "expenseId");
+  const redirect = readText(formData, "redirectTo");
+  const expense = await prisma.settlementCashExpense.findUnique({
+    where: { id: expenseId },
+  });
+  if (!expense) throw new Error("未找到该现金支出记录。");
+  assertOwnerOrFinance(expense.ownerDiscordId, actorId);
+  if (
+    expense.status !== SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION
+  ) {
+    throw new Error("该现金支出已经处理。");
+  }
+  await prisma.settlementCashExpense.update({
+    where: { id: expenseId },
+    data: {
+      status: SettlementCashExpenseStatus.OWNER_CONFIRMED,
+      ownerConfirmedBy: actorId,
+      ownerConfirmedAt: new Date(),
+    },
+  });
+  return redirectTo(
+    redirect,
+    "notice",
+    "已确认现金支出；金额此前已在登记时从负责人应有总额扣除。",
+  );
+}
+
+async function disputeCashExpense(formData: FormData, actorId: string) {
+  const expenseId = readText(formData, "expenseId");
+  const reason = readText(formData, "reason");
+  const redirect = readText(formData, "redirectTo");
+  if (!expenseId || !reason) throw new Error("请填写现金支出有误的原因。");
+  const expense = await prisma.settlementCashExpense.findUnique({
+    where: { id: expenseId },
+  });
+  if (!expense) throw new Error("未找到该现金支出记录。");
+  assertOwnerOrFinance(expense.ownerDiscordId, actorId);
+  if (
+    expense.status !== SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION
+  ) {
+    throw new Error("该现金支出已经处理。");
+  }
+  await prisma.settlementCashExpense.update({
+    where: { id: expenseId },
+    data: {
+      status: SettlementCashExpenseStatus.OWNER_DISPUTED,
+      ownerDisputedBy: actorId,
+      ownerDisputedAt: new Date(),
+      disputeReason: reason.slice(0, 500),
+    },
+  });
+  return redirectTo(
+    redirect,
+    "notice",
+    "已反馈现金支出错误给主财务；金额暂时仍从负责人总额扣除。",
+  );
+}
+
+async function voidCashExpense(formData: FormData, actorId: string) {
+  financeOnly(actorId);
+  const expenseId = readText(formData, "expenseId");
+  const reason = readText(formData, "reason");
+  const redirect = readText(formData, "redirectTo");
+  if (!expenseId || !reason) throw new Error("请填写撤销原因。");
+  const updated = await prisma.settlementCashExpense.updateMany({
+    where: {
+      id: expenseId,
+      status: {
+        in: [
+          SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION,
+          SettlementCashExpenseStatus.OWNER_DISPUTED,
+        ],
+      },
+    },
+    data: {
+      status: SettlementCashExpenseStatus.VOIDED,
+      voidedBy: actorId,
+      voidedAt: new Date(),
+      voidReason: reason.slice(0, 500),
+    },
+  });
+  if (!updated.count) {
+    throw new Error("该现金支出已经确认、撤销或不存在，不能再次撤销。");
+  }
+  return redirectTo(redirect, "notice", "已撤销现金支出，负责人总额已恢复。");
 }
 
 async function createTransfer(formData: FormData, actorId: string) {
@@ -669,8 +831,18 @@ export async function POST(request: NextRequest) {
         return await createAccount(formData, session.discordId);
       case "owner-confirm":
         return await ownerConfirm(formData, session.discordId);
+      case "owner-revoke-confirm":
+        return await ownerRevokeConfirmation(formData, session.discordId);
       case "owner-dispute":
         return await ownerDispute(formData, session.discordId);
+      case "cash-expense-create":
+        return await createCashExpense(formData, session.discordId);
+      case "cash-expense-confirm":
+        return await confirmCashExpense(formData, session.discordId);
+      case "cash-expense-dispute":
+        return await disputeCashExpense(formData, session.discordId);
+      case "cash-expense-void":
+        return await voidCashExpense(formData, session.discordId);
       case "transfer-create":
         return await createTransfer(formData, session.discordId);
       case "transfer-confirm":

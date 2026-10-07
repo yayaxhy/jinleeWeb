@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Fragment } from "react";
 import {
   Prisma,
+  SettlementCashExpenseStatus,
   SettlementPayoutStatus,
   SettlementReconciliationStatus,
   SettlementTransferStatus,
@@ -41,11 +42,12 @@ const tabs = [
   "confirmations",
   "exceptions",
   "confirmed-receipts",
-  "transfers",
   "payouts",
   "paid-payouts",
   "forex",
   "audit",
+  "transfers",
+  "cash-expenses",
 ] as const;
 const PROCESSED_RECONCILIATION_STATUSES =
   new Set<SettlementReconciliationStatus>([
@@ -98,6 +100,21 @@ const statusClass: Record<SettlementReconciliationStatus, string> = {
   INVALIDATED: "border-white/15 bg-white/5 text-white/55",
 };
 
+const cashExpenseStatusLabel: Record<SettlementCashExpenseStatus, string> = {
+  PENDING_OWNER_CONFIRMATION: "待负责人确认",
+  OWNER_CONFIRMED: "负责人已确认",
+  OWNER_DISPUTED: "负责人反馈错误",
+  VOIDED: "主财务已撤销",
+};
+
+const cashExpenseStatusClass: Record<SettlementCashExpenseStatus, string> = {
+  PENDING_OWNER_CONFIRMATION:
+    "border-amber-300/30 bg-amber-300/10 text-amber-100",
+  OWNER_CONFIRMED: "border-emerald-300/30 bg-emerald-300/10 text-emerald-100",
+  OWNER_DISPUTED: "border-rose-300/30 bg-rose-300/10 text-rose-100",
+  VOIDED: "border-white/15 bg-white/5 text-white/55",
+};
+
 const fieldClass =
   "w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#a78bfa]/70";
 const cardClass = "rounded-3xl border border-white/10 bg-white/5 p-5";
@@ -108,6 +125,20 @@ function StatusBadge({ status }: { status: SettlementReconciliationStatus }) {
       className={`inline-flex rounded-full border px-2 py-1 text-xs ${statusClass[status]}`}
     >
       {statusLabel[status]}
+    </span>
+  );
+}
+
+function CashExpenseStatusBadge({
+  status,
+}: {
+  status: SettlementCashExpenseStatus;
+}) {
+  return (
+    <span
+      className={`inline-flex rounded-full border px-2 py-1 text-xs ${cashExpenseStatusClass[status]}`}
+    >
+      {cashExpenseStatusLabel[status]}
     </span>
   );
 }
@@ -177,7 +208,8 @@ function sectionLink(
       tab === "exceptions" ||
       tab === "confirmed-receipts" ||
       tab === "paid-payouts" ||
-      tab === "audit") &&
+      tab === "audit" ||
+      tab === "cash-expenses") &&
     page > 1
   ) {
     query.set("page", String(page));
@@ -214,6 +246,7 @@ export default async function CashReconciliationPage(props: PageProps) {
     transfers,
     recoveries,
     payouts,
+    cashExpenses,
     withdrawals,
     auditEvents,
     zPayRechargeReferences,
@@ -255,6 +288,10 @@ export default async function CashReconciliationPage(props: PageProps) {
     }),
     prisma.settlementWithdrawalPayout.findMany({
       orderBy: { paidAt: "desc" },
+    }),
+    prisma.settlementCashExpense.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { account: true },
     }),
     prisma.withdraw.findMany({
       where: { createdAt: newEntityOnlyTime() },
@@ -331,6 +368,12 @@ export default async function CashReconciliationPage(props: PageProps) {
         ]),
         ...recoveries.map((recovery) => recovery.recordedBy),
         ...payouts.flatMap((payout) => [payout.paidBy, payout.voidedBy]),
+        ...cashExpenses.flatMap((expense) => [
+          expense.createdBy,
+          expense.ownerConfirmedBy,
+          expense.ownerDisputedBy,
+          expense.voidedBy,
+        ]),
         ...auditEvents.map((event) => event.actorDiscordId),
       ].filter((discordUserId): discordUserId is string =>
         Boolean(discordUserId),
@@ -385,6 +428,7 @@ export default async function CashReconciliationPage(props: PageProps) {
         "transfers",
         "payouts",
         "paid-payouts",
+        "cash-expenses",
       ];
   const activeTab = allowedTabs.includes(requestedTab)
     ? requestedTab
@@ -448,6 +492,7 @@ export default async function CashReconciliationPage(props: PageProps) {
       {
         receivedRmb: new Prisma.Decimal(0),
         receivedOriginal: new Prisma.Decimal(0),
+        cashExpenses: new Prisma.Decimal(0),
         pendingOwner: 0,
         disputed: 0,
         confirmed: 0,
@@ -464,6 +509,7 @@ export default async function CashReconciliationPage(props: PageProps) {
         forexOut: new Prisma.Decimal(0),
         forexIn: new Prisma.Decimal(0),
         payouts: new Prisma.Decimal(0),
+        cashExpenses: new Prisma.Decimal(0),
         foreignExpected: new Prisma.Decimal(0),
         foreignReturned: new Prisma.Decimal(0),
       },
@@ -479,6 +525,7 @@ export default async function CashReconciliationPage(props: PageProps) {
       forexOut: new Prisma.Decimal(0),
       forexIn: new Prisma.Decimal(0),
       payouts: new Prisma.Decimal(0),
+      cashExpenses: new Prisma.Decimal(0),
       foreignExpected: new Prisma.Decimal(0),
       foreignReturned: new Prisma.Decimal(0),
     };
@@ -549,6 +596,18 @@ export default async function CashReconciliationPage(props: PageProps) {
       ).payouts.add(payout.amount);
     }
   }
+  for (const expense of cashExpenses) {
+    if (expense.status === SettlementCashExpenseStatus.VOIDED) continue;
+    const accountSummary = perAccount.get(expense.accountId);
+    if (accountSummary) {
+      accountSummary.cashExpenses = accountSummary.cashExpenses.add(
+        expense.amount,
+      );
+    }
+    getOwnerTotal(expense.ownerDiscordId).cashExpenses = getOwnerTotal(
+      expense.ownerDiscordId,
+    ).cashExpenses.add(expense.amount);
+  }
 
   const ownerSummaryEntries = [...ownerTotals.entries()].map(
     ([ownerId, totals]) => ({
@@ -562,7 +621,8 @@ export default async function CashReconciliationPage(props: PageProps) {
         .sub(totals.transferOut)
         .sub(totals.forexOut)
         .add(totals.forexIn)
-        .sub(totals.payouts),
+        .sub(totals.payouts)
+        .sub(totals.cashExpenses),
       foreignDue: totals.foreignExpected.sub(totals.foreignReturned),
     }),
   );
@@ -634,6 +694,18 @@ export default async function CashReconciliationPage(props: PageProps) {
         (right.settlementPayout?.paidAt?.getTime() ?? 0) -
         (left.settlementPayout?.paidAt?.getTime() ?? 0),
     );
+  const cashExpenseRows = cashExpenses.filter(
+    (expense) => isAllFinanceView || expense.ownerDiscordId === currentOwnerId,
+  );
+  const pendingCashExpenseRows = cashExpenseRows.filter(
+    (expense) =>
+      expense.status === SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION,
+  );
+  const disputedCashExpenseRows = cashExpenseRows.filter(
+    (expense) => expense.status === SettlementCashExpenseStatus.OWNER_DISPUTED,
+  );
+  const cashExpenseAttentionCount =
+    pendingCashExpenseRows.length + disputedCashExpenseRows.length;
   const withdrawalById = new Map(
     withdrawals.map((withdrawal) => [withdrawal.id, withdrawal]),
   );
@@ -739,6 +811,58 @@ export default async function CashReconciliationPage(props: PageProps) {
       }
       return entries;
     }),
+    ...cashExpenses.flatMap((expense) => {
+      const subject = expense.account.name;
+      const entries: AuditRow[] = [
+        {
+          id: `cash-expense-created-${expense.id}`,
+          occurredAt: expense.createdAt,
+          category: "现金支出",
+          action: "登记支出",
+          subject,
+          amount: expense.amount,
+          actorDiscordId: expense.createdBy,
+          note: expense.note,
+        },
+      ];
+      if (expense.ownerConfirmedAt && expense.ownerConfirmedBy) {
+        entries.push({
+          id: `cash-expense-confirmed-${expense.id}`,
+          occurredAt: expense.ownerConfirmedAt,
+          category: "现金支出",
+          action: "负责人确认",
+          subject,
+          amount: expense.amount,
+          actorDiscordId: expense.ownerConfirmedBy,
+          note: expense.note,
+        });
+      }
+      if (expense.ownerDisputedAt && expense.ownerDisputedBy) {
+        entries.push({
+          id: `cash-expense-disputed-${expense.id}`,
+          occurredAt: expense.ownerDisputedAt,
+          category: "现金支出",
+          action: "负责人反馈错误",
+          subject,
+          amount: expense.amount,
+          actorDiscordId: expense.ownerDisputedBy,
+          note: expense.disputeReason,
+        });
+      }
+      if (expense.voidedAt && expense.voidedBy) {
+        entries.push({
+          id: `cash-expense-voided-${expense.id}`,
+          occurredAt: expense.voidedAt,
+          category: "现金支出",
+          action: "撤销支出",
+          subject,
+          amount: expense.amount,
+          actorDiscordId: expense.voidedBy,
+          note: expense.voidReason,
+        });
+      }
+      return entries;
+    }),
   ].sort(
     (left, right) => right.occurredAt.getTime() - left.occurredAt.getTime(),
   );
@@ -765,7 +889,8 @@ export default async function CashReconciliationPage(props: PageProps) {
     activeTab === "confirmed-receipts" ||
     activeTab === "paid-payouts" ||
     activeTab === "exceptions" ||
-    activeTab === "audit";
+    activeTab === "audit" ||
+    activeTab === "cash-expenses";
   const historyRowCount =
     activeTab === "confirmed-receipts"
       ? confirmedReceiptRows.length
@@ -775,7 +900,9 @@ export default async function CashReconciliationPage(props: PageProps) {
           ? exceptionRows.length
           : activeTab === "audit"
             ? auditRows.length
-            : 0;
+            : activeTab === "cash-expenses"
+              ? cashExpenseRows.length
+              : 0;
   const historyPageCount = Math.max(
     1,
     Math.ceil(historyRowCount / RECHARGES_PER_PAGE),
@@ -800,13 +927,18 @@ export default async function CashReconciliationPage(props: PageProps) {
     (historyPage - 1) * RECHARGES_PER_PAGE,
     historyPage * RECHARGES_PER_PAGE,
   );
+  const cashExpenseSlice = cashExpenseRows.slice(
+    (historyPage - 1) * RECHARGES_PER_PAGE,
+    historyPage * RECHARGES_PER_PAGE,
+  );
   const redirectTo =
     activeTab === "recharges" ||
     activeTab === "processed" ||
     activeTab === "exceptions" ||
     activeTab === "confirmed-receipts" ||
     activeTab === "paid-payouts" ||
-    activeTab === "audit"
+    activeTab === "audit" ||
+    activeTab === "cash-expenses"
       ? sectionLink(
           activeTab,
           isHistoryListTab ? historyPage : rechargePage,
@@ -822,11 +954,12 @@ export default async function CashReconciliationPage(props: PageProps) {
           ["confirmations", "负责人确认", pendingOwnerRows.length],
           ["exceptions", "异常处理", exceptionRows.length],
           ["confirmed-receipts", "已确认收款", confirmedReceiptRows.length],
-          ["transfers", "内部转账", 0],
           ["payouts", "提现发放", payoutRows.length],
           ["paid-payouts", "已发提现", paidPayoutRows.length],
           ["forex", "外汇归还", 0],
           ["audit", "操作审计", auditRows.length],
+          ["transfers", "内部转账", 0],
+          ["cash-expenses", "现金支出", cashExpenseAttentionCount],
         ]
       : [
           [
@@ -843,13 +976,14 @@ export default async function CashReconciliationPage(props: PageProps) {
           ],
           ["exceptions", "未收到 / 金额不符", exceptionRows.length],
           ["confirmed-receipts", "已确认收款", confirmedReceiptRows.length],
-          ["transfers", "内部转账", ownerTransferInbox.length],
           [
             "payouts",
             isOwnerReadOnlyView ? "待发提现" : "待我发放",
             pendingPayouts.length,
           ],
           ["paid-payouts", "已发提现", paidPayoutRows.length],
+          ["transfers", "内部转账", ownerTransferInbox.length],
+          ["cash-expenses", "现金支出", cashExpenseAttentionCount],
         ]
   ) as Array<[ReconciliationTab, string, number]>;
 
@@ -1035,7 +1169,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                   </h2>
                   <p className="mt-1 text-sm text-white/60">
                     应有总额 = 有效充值 + 已确认转入 − 已确认转出 − 外汇交回 +
-                    外汇进入 − 已发放提现。
+                    外汇进入 − 已发放提现 − 已确认现金支出。
                   </p>
                 </div>
               </div>
@@ -1053,6 +1187,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                       <span>账号 {owner.accountCount} 个</span>
                       <span>有效充值 {formatMoney(owner.incoming)}</span>
                       <span>已发提现 {formatMoney(owner.payouts)}</span>
+                      <span>现金支出 {formatMoney(owner.cashExpenses)}</span>
                       <span>外币待交 {formatMoney(owner.foreignDue)}</span>
                     </div>
                   </div>
@@ -1065,7 +1200,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                 <div>
                   <h2 className="text-xl font-semibold">收款账号概况</h2>
                   <p className="mt-1 text-sm text-white/60">
-                    账号卡片统计累计有效入账；提现按负责人总额扣减，不归属到单一账号。
+                    账号卡片统计累计有效入账与已确认现金支出；提现仍按负责人总额扣减，不归属到单一账号。
                   </p>
                 </div>
                 {isAllFinanceView ? (
@@ -1102,6 +1237,10 @@ export default async function CashReconciliationPage(props: PageProps) {
                         原币/原额累计：
                         {formatAmountDown2(summary.receivedOriginal)}{" "}
                         {account.currency}
+                      </p>
+                      <p className="mt-1 text-xs text-white/55">
+                        已登记现金支出：
+                        {formatMoney(summary.cashExpenses)}
                       </p>
                       <p className="mt-3 text-xs text-white/55">
                         已确认 {summary.confirmed} · 待确认{" "}
@@ -2036,7 +2175,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                       : "我已确认的收款"}
                 </h2>
                 <p className="mt-1 text-sm text-emerald-100/75">
-                  仅保留负责人确认已收到的款项，按确认时间倒序；截图和财务备注可继续查看。
+                  仅保留负责人确认已收到的款项，按确认时间倒序；如误确认，可撤回并重新回到待确认收款。
                 </p>
               </div>
               <span className="text-sm text-emerald-100">
@@ -2058,6 +2197,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                         <th className="px-4 py-3 font-medium">财务备注</th>
                         <th className="px-4 py-3 font-medium">确认时间</th>
                         <th className="px-4 py-3 font-medium">确认人</th>
+                        <th className="px-4 py-3 font-medium">操作</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2125,6 +2265,33 @@ export default async function CashReconciliationPage(props: PageProps) {
                             </td>
                             <td className="px-4 py-3 text-xs text-white/70 whitespace-nowrap">
                               {displayNameForDiscordId(row.ownerConfirmedBy)}
+                            </td>
+                            <td className="px-4 py-3">
+                              {isFinance ||
+                              row.ownerDiscordId === session.discordId ? (
+                                <form action={ACTION_URL} method="post">
+                                  <input
+                                    type="hidden"
+                                    name="action"
+                                    value="owner-revoke-confirm"
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="redirectTo"
+                                    value={redirectTo}
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="reconciliationId"
+                                    value={row.id}
+                                  />
+                                  <button className="rounded-lg border border-amber-300/35 px-3 py-2 text-xs text-amber-100 hover:bg-amber-300/10">
+                                    撤回确认
+                                  </button>
+                                </form>
+                              ) : (
+                                <span className="text-xs text-white/45">—</span>
+                              )}
                             </td>
                           </tr>
                         );
@@ -2817,6 +2984,345 @@ export default async function CashReconciliationPage(props: PageProps) {
                 <p className="mt-4 text-sm text-white/50">
                   还没有外汇归还记录。
                 </p>
+              )}
+            </section>
+          </>
+        ) : null}
+
+        {activeTab === "cash-expenses" ? (
+          <>
+            {isAllFinanceView ? (
+              <section className="rounded-3xl border border-rose-300/25 bg-rose-300/10 p-5">
+                <h2 className="text-xl font-semibold text-rose-50">
+                  登记现金支出
+                </h2>
+                <p className="mt-1 text-sm text-rose-100/75">
+                  可从任意有效收款账号登记。登记后会立即从该负责人的应有总额扣除；负责人确认只是对实际支出的二次核对。若负责人标注错误，金额仍暂扣，直到主财务撤销。
+                </p>
+                <form
+                  action={ACTION_URL}
+                  method="post"
+                  className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+                >
+                  <input
+                    type="hidden"
+                    name="action"
+                    value="cash-expense-create"
+                  />
+                  <input type="hidden" name="redirectTo" value={redirectTo} />
+                  <select
+                    required
+                    name="accountId"
+                    defaultValue=""
+                    className={fieldClass}
+                  >
+                    <option value="" disabled>
+                      支出的收款账号
+                    </option>
+                    {accounts
+                      .filter((account) => account.active)
+                      .map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name} · {account.currency} ·{" "}
+                          {ownerName(account.ownerDiscordId)}
+                        </option>
+                      ))}
+                  </select>
+                  <input
+                    required
+                    name="amount"
+                    inputMode="decimal"
+                    placeholder="扣减金额（人民币）"
+                    className={fieldClass}
+                  />
+                  <input
+                    required
+                    name="note"
+                    maxLength={500}
+                    placeholder="支出备注，例如：线下采购"
+                    className={fieldClass}
+                  />
+                  <button className="rounded-xl bg-rose-400/80 px-4 py-2 text-sm text-white hover:bg-rose-400">
+                    登记并扣减
+                  </button>
+                </form>
+              </section>
+            ) : null}
+
+            <section className={cardClass}>
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold">
+                    {isAllFinanceView
+                      ? "全部现金支出"
+                      : isOwnerReadOnlyView
+                        ? `${ownerName(currentOwnerId)}的现金支出`
+                        : "我的现金支出"}
+                  </h2>
+                  <p className="mt-1 text-sm text-white/60">
+                    待确认、已确认及反馈错误的现金支出都已从负责人应有总额扣除；只有主财务撤销后才会恢复。
+                  </p>
+                </div>
+                <span className="text-sm text-white/60">
+                  待确认 {pendingCashExpenseRows.length} 笔 · 错误反馈{" "}
+                  {disputedCashExpenseRows.length} 笔 · 共{" "}
+                  {cashExpenseRows.length} 笔
+                </span>
+              </div>
+              {cashExpenseSlice.length ? (
+                <>
+                  <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/20">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="border-b border-white/10 bg-white/[0.03] text-xs text-white/55">
+                        <tr>
+                          <th className="px-4 py-3 font-medium">支出账号</th>
+                          <th className="px-4 py-3 font-medium">金额</th>
+                          <th className="px-4 py-3 font-medium">备注</th>
+                          <th className="px-4 py-3 font-medium">
+                            登记人 / 时间
+                          </th>
+                          <th className="px-4 py-3 font-medium">状态</th>
+                          <th className="px-4 py-3 font-medium">负责人反馈</th>
+                          <th className="px-4 py-3 font-medium">处理</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cashExpenseSlice.map((expense) => {
+                          const canActOnExpense =
+                            isFinance ||
+                            expense.ownerDiscordId === session.discordId;
+                          const isPending =
+                            expense.status ===
+                            SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION;
+                          const canVoid =
+                            isFinance &&
+                            (isPending ||
+                              expense.status ===
+                                SettlementCashExpenseStatus.OWNER_DISPUTED);
+
+                          return (
+                            <tr
+                              key={expense.id}
+                              className="border-b border-white/5 align-top last:border-0"
+                            >
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <p className="font-medium">
+                                  {expense.account.name}
+                                </p>
+                                <p className="mt-1 text-xs text-white/55">
+                                  {expense.account.currency} ·{" "}
+                                  <OwnerIdentity
+                                    ownerId={expense.ownerDiscordId}
+                                    compact
+                                  />
+                                </p>
+                              </td>
+                              <td className="px-4 py-3 font-medium whitespace-nowrap text-rose-100">
+                                −{formatMoney(expense.amount)}
+                              </td>
+                              <td className="max-w-72 px-4 py-3 text-xs whitespace-pre-wrap text-white/70">
+                                {expense.note}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
+                                {displayNameForDiscordId(expense.createdBy)}
+                                <br />
+                                {formatDate(expense.createdAt)}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <CashExpenseStatusBadge
+                                  status={expense.status}
+                                />
+                              </td>
+                              <td className="max-w-72 px-4 py-3 text-xs whitespace-pre-wrap text-white/65">
+                                {expense.status ===
+                                SettlementCashExpenseStatus.OWNER_CONFIRMED ? (
+                                  <>
+                                    {displayNameForDiscordId(
+                                      expense.ownerConfirmedBy,
+                                    )}
+                                    <br />
+                                    {formatDate(expense.ownerConfirmedAt)}
+                                  </>
+                                ) : expense.status ===
+                                  SettlementCashExpenseStatus.OWNER_DISPUTED ? (
+                                  <>
+                                    <p className="text-rose-100">
+                                      {expense.disputeReason}
+                                    </p>
+                                    <p className="mt-1 text-rose-100/60">
+                                      {displayNameForDiscordId(
+                                        expense.ownerDisputedBy,
+                                      )}{" "}
+                                      · {formatDate(expense.ownerDisputedAt)}
+                                    </p>
+                                  </>
+                                ) : expense.status ===
+                                  SettlementCashExpenseStatus.VOIDED ? (
+                                  <>
+                                    <p>{expense.voidReason ?? "—"}</p>
+                                    <p className="mt-1 text-white/45">
+                                      {displayNameForDiscordId(
+                                        expense.voidedBy,
+                                      )}{" "}
+                                      · {formatDate(expense.voidedAt)}
+                                    </p>
+                                  </>
+                                ) : (
+                                  "等待负责人核对"
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex min-w-52 flex-col gap-2">
+                                  {isPending && canActOnExpense ? (
+                                    <>
+                                      <form action={ACTION_URL} method="post">
+                                        <input
+                                          type="hidden"
+                                          name="action"
+                                          value="cash-expense-confirm"
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="redirectTo"
+                                          value={redirectTo}
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="expenseId"
+                                          value={expense.id}
+                                        />
+                                        <button className="w-full rounded-lg bg-emerald-400/20 px-3 py-2 text-xs text-emerald-50 hover:bg-emerald-400/30">
+                                          确认支出
+                                        </button>
+                                      </form>
+                                      <details>
+                                        <summary className="cursor-pointer rounded-lg border border-rose-300/30 px-3 py-2 text-center text-xs text-rose-100 hover:bg-rose-300/10">
+                                          标注错误
+                                        </summary>
+                                        <form
+                                          action={ACTION_URL}
+                                          method="post"
+                                          className="mt-2 grid gap-2"
+                                        >
+                                          <input
+                                            type="hidden"
+                                            name="action"
+                                            value="cash-expense-dispute"
+                                          />
+                                          <input
+                                            type="hidden"
+                                            name="redirectTo"
+                                            value={redirectTo}
+                                          />
+                                          <input
+                                            type="hidden"
+                                            name="expenseId"
+                                            value={expense.id}
+                                          />
+                                          <input
+                                            required
+                                            name="reason"
+                                            maxLength={500}
+                                            placeholder="必须填写错误原因"
+                                            className={fieldClass}
+                                          />
+                                          <button className="rounded-lg bg-rose-400/20 px-3 py-2 text-xs text-rose-50">
+                                            提交给主财务
+                                          </button>
+                                        </form>
+                                      </details>
+                                    </>
+                                  ) : null}
+                                  {canVoid ? (
+                                    <details>
+                                      <summary className="cursor-pointer rounded-lg border border-white/20 px-3 py-2 text-center text-xs text-white/70 hover:bg-white/10">
+                                        主财务撤销
+                                      </summary>
+                                      <form
+                                        action={ACTION_URL}
+                                        method="post"
+                                        className="mt-2 grid gap-2"
+                                      >
+                                        <input
+                                          type="hidden"
+                                          name="action"
+                                          value="cash-expense-void"
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="redirectTo"
+                                          value={redirectTo}
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="expenseId"
+                                          value={expense.id}
+                                        />
+                                        <input
+                                          required
+                                          name="reason"
+                                          maxLength={500}
+                                          placeholder="撤销原因"
+                                          className={fieldClass}
+                                        />
+                                        <button className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white">
+                                          确认撤销并恢复金额
+                                        </button>
+                                      </form>
+                                    </details>
+                                  ) : null}
+                                  {!isPending && !canVoid ? (
+                                    <span className="text-xs text-white/45">
+                                      {expense.status ===
+                                      SettlementCashExpenseStatus.OWNER_CONFIRMED
+                                        ? "已确认并扣减"
+                                        : expense.status ===
+                                            SettlementCashExpenseStatus.VOIDED
+                                          ? "已撤销并恢复"
+                                          : "已反馈主财务"}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3 text-sm text-white/60">
+                    <span>
+                      第 {historyPage} / {historyPageCount} 页，每页{" "}
+                      {RECHARGES_PER_PAGE} 笔
+                    </span>
+                    <div className="flex gap-2">
+                      <Link
+                        aria-disabled={historyPage <= 1}
+                        href={sectionLink(
+                          activeTab,
+                          Math.max(1, historyPage - 1),
+                          viewedOwnerId,
+                        )}
+                        className={`rounded-lg border px-3 py-2 ${historyPage <= 1 ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
+                      >
+                        上一页
+                      </Link>
+                      <Link
+                        aria-disabled={historyPage >= historyPageCount}
+                        href={sectionLink(
+                          activeTab,
+                          Math.min(historyPageCount, historyPage + 1),
+                          viewedOwnerId,
+                        )}
+                        className={`rounded-lg border px-3 py-2 ${historyPage >= historyPageCount ? "pointer-events-none border-white/5 text-white/25" : "border-white/15 hover:bg-white/10"}`}
+                      >
+                        下一页
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="mt-4 text-sm text-white/50">当前没有现金支出。</p>
               )}
             </section>
           </>
