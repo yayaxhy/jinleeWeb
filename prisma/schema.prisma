@@ -147,6 +147,16 @@ enum SettlementPayoutStatus {
   VOIDED
 }
 
+/// A real-world cash outflow from a named receiving account. It affects a
+/// responsible owner's total as soon as finance records it; the owner then
+/// confirms it or reports an error for finance to resolve.
+enum SettlementCashExpenseStatus {
+  PENDING_OWNER_CONFIRMATION
+  OWNER_CONFIRMED
+  OWNER_DISPUTED
+  VOIDED
+}
+
 enum QuotationCode {
   Q1
   Q2
@@ -211,6 +221,16 @@ enum FarmActionType {
   HARVEST
   EXPAND
   STEAL
+  WATER
+  CLEAR_WEED
+  CLEAR_PEST
+  HELP_FARM
+}
+
+enum FarmCareType {
+  WATER
+  WEED
+  PEST
 }
 
 enum PeiwanLevel {
@@ -730,6 +750,7 @@ model FarmPlot {
   id            String        @id @default(cuid())
   discordUserId String
   plotIndex     Int
+  cropCycle     Int           @default(0)
   seedType      FarmSeedType?
   plantedAt     DateTime?
   readyAt       DateTime?
@@ -740,10 +761,44 @@ model FarmPlot {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  profile FarmProfile @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade)
+  profile    FarmProfile          @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade)
+  careEvents FarmPlotCareEvent[]
+  helpers    FarmPlotHelp[]
 
   @@unique([discordUserId, plotIndex])
   @@index([discordUserId, readyAt])
+}
+
+model FarmPlotCareEvent {
+  id                String       @id @default(cuid())
+  farmPlotId        String
+  cropCycle         Int
+  type              FarmCareType
+  appearsAt         DateTime
+  resolvedAt        DateTime?
+  resolvedBy        String?
+  resolvedByIsHelper Boolean     @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  plot FarmPlot @relation(fields: [farmPlotId], references: [id], onDelete: Cascade)
+
+  @@unique([farmPlotId, cropCycle, type])
+  @@index([farmPlotId, cropCycle])
+  @@index([appearsAt])
+}
+
+model FarmPlotHelp {
+  id              String   @id @default(cuid())
+  farmPlotId      String
+  cropCycle       Int
+  helperDiscordId String
+  createdAt       DateTime @default(now())
+
+  plot FarmPlot @relation(fields: [farmPlotId], references: [id], onDelete: Cascade)
+
+  @@unique([farmPlotId, cropCycle, helperDiscordId])
+  @@index([farmPlotId, cropCycle])
 }
 
 model FarmActionLog {
@@ -1341,6 +1396,7 @@ model SettlementAccount {
   transfersTo           SettlementAccountTransfer[]        @relation("SettlementTransferTo")
   foreignRecoveriesFrom SettlementForexRecovery[]          @relation("SettlementForexRecoveryFrom")
   foreignRecoveriesTo   SettlementForexRecovery[]          @relation("SettlementForexRecoveryTo")
+  cashExpenses          SettlementCashExpense[]
 
   @@index([ownerDiscordId, active])
 }
@@ -1479,6 +1535,32 @@ model SettlementWithdrawalPayout {
   withdrawal Withdraw @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
 
   @@index([ownerDiscordId, status, paidAt])
+}
+
+/// Finance enters a cash outflow against a named receiving account. The amount
+/// is deducted immediately and the assigned account holder confirms or flags it.
+model SettlementCashExpense {
+  id               String                    @id @default(cuid())
+  accountId        String
+  ownerDiscordId   String
+  amount           Decimal                   @db.Decimal(19, 4)
+  note             String
+  status           SettlementCashExpenseStatus @default(PENDING_OWNER_CONFIRMATION)
+  createdBy        String
+  createdAt        DateTime                  @default(now())
+  ownerConfirmedBy String?
+  ownerConfirmedAt DateTime?
+  ownerDisputedBy  String?
+  ownerDisputedAt  DateTime?
+  disputeReason    String?
+  voidedBy         String?
+  voidedAt         DateTime?
+  voidReason       String?
+
+  account SettlementAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([accountId, status, createdAt])
+  @@index([ownerDiscordId, status, createdAt])
 }
 
 model ZPayRechargeOrder {
@@ -2603,4 +2685,142 @@ model InviteLinkUsage {
   invitee Member @relation("InviteeToInviteLinkUsage", fields: [inviteeId], references: [discordUserId], onDelete: Cascade)
 
   @@index([guildId, inviterId])
+}
+
+enum KnowledgeEntryKind {
+  DISCORD
+  MANUAL
+  CODE
+}
+
+enum KnowledgeEntryStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  REMOVED
+}
+
+enum KnowledgeSyncStatus {
+  IDLE
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum KnowledgeQuestionStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum KnowledgeQuestionSurface {
+  DM
+  GUILD
+}
+
+model KnowledgeSource {
+  id                 String              @id @default(cuid())
+  guildId            String
+  channelId          String
+  channelName        String?
+  trustedRoleIds     String[]
+  enabled            Boolean             @default(true)
+  syncStatus         KnowledgeSyncStatus @default(IDLE)
+  lastSyncedAt       DateTime?
+  lastSyncError      String?
+  createdByDiscordId String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  entries  KnowledgeEntry[]
+  syncRuns KnowledgeSyncRun[]
+
+  @@unique([guildId, channelId])
+  @@index([guildId, enabled])
+  @@index([syncStatus, updatedAt])
+}
+
+model KnowledgeEntry {
+  id                  String               @id @default(cuid())
+  kind                KnowledgeEntryKind
+  status              KnowledgeEntryStatus @default(DRAFT)
+  topic               String?
+  priority            Int                  @default(0)
+  title               String                @db.VarChar(240)
+  content             String                @db.Text
+  normalizedText      String                @db.Text
+  sourceId            String?
+  discordMessageId    String?              @unique
+  discordChannelId    String?
+  discordAuthorId     String?
+  sourceUrl           String?
+  sourceHash          String?
+  sourceFiles         Json?
+  createdByDiscordId  String?
+  updatedByDiscordId  String?
+  publishedAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  source    KnowledgeSource?          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  revisions KnowledgeEntryRevision[]
+
+  @@index([kind, status, priority, updatedAt])
+  @@index([sourceId, status])
+  @@index([topic, status])
+  @@index([discordChannelId])
+}
+
+model KnowledgeEntryRevision {
+  id                  String               @id @default(cuid())
+  entryId             String
+  version             Int
+  status              KnowledgeEntryStatus @default(DRAFT)
+  title               String                @db.VarChar(240)
+  content             String                @db.Text
+  normalizedText      String                @db.Text
+  sourceHash          String?
+  sourceFiles         Json?
+  createdByDiscordId  String?
+  approvedByDiscordId String?
+  approvedAt          DateTime?
+  createdAt           DateTime             @default(now())
+
+  entry KnowledgeEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, version])
+  @@index([status, createdAt])
+}
+
+model KnowledgeSyncRun {
+  id             String              @id @default(cuid())
+  sourceId       String?
+  kind           String              @db.VarChar(32)
+  status         KnowledgeSyncStatus @default(RUNNING)
+  processedCount Int                 @default(0)
+  error          String?
+  startedAt      DateTime            @default(now())
+  finishedAt     DateTime?
+
+  source KnowledgeSource? @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId, startedAt])
+  @@index([kind, startedAt])
+}
+
+model KnowledgeQuestion {
+  id             String                  @id @default(cuid())
+  surface        KnowledgeQuestionSurface
+  guildId        String?
+  channelId      String?
+  question       String                  @db.VarChar(1000)
+  normalizedText String                  @db.VarChar(1000)
+  reason         String                  @db.VarChar(120)
+  status         KnowledgeQuestionStatus @default(OPEN)
+  resolvedNote   String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@index([status, createdAt])
+  @@index([normalizedText])
 }
