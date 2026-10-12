@@ -23,6 +23,7 @@ import {
   summarizeOrderReferralExpenseRows,
 } from '@/lib/admin/revenue-expense';
 import {
+  LOTTERY_REVENUE_DRAW_WHERE,
   getLotteryFusionRevenueSummary,
   LOTTERY_FUSION_COUNT_BUCKET_LABEL,
   LOTTERY_FUSION_SOURCE_KIND_LABEL,
@@ -381,6 +382,7 @@ export default async function AdminRevenuePage(props: PageProps) {
 
   const lotteryWhere: Prisma.LotteryDrawWhereInput = {
     createdAt: { gte: start, lt: end },
+    ...LOTTERY_REVENUE_DRAW_WHERE,
     ...(buildIdentityExclusion(
       'dlmId',
       'userId',
