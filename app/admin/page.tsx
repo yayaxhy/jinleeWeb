@@ -6,12 +6,18 @@ import { SyncDlmPeiwanCardsCard } from '@/components/admin/SyncDlmPeiwanCardsCar
 import { SyncAllPeiwanTagsCard } from '@/components/admin/SyncAllPeiwanTagsCard';
 import { getServerSession } from '@/lib/session';
 import { canViewAdminHome, canViewStripePricing, canViewTraffic, isAdminDiscordId } from '@/lib/admin';
+import { getSettlementOperableOwnerIds } from '@/lib/settlement-reconciliation';
 
 export default async function AdminHomePage() {
   const session = await getServerSession();
-  if (!session?.discordId || !canViewAdminHome(session.discordId)) {
+  if (!session?.discordId) {
     redirect('/');
   }
+  const operableOwnerIds = getSettlementOperableOwnerIds(session.discordId);
+  if (!canViewAdminHome(session.discordId) && operableOwnerIds.length) {
+    redirect(`/admin/cash-reconciliation?owner=${encodeURIComponent(operableOwnerIds[0])}`);
+  }
+  if (!canViewAdminHome(session.discordId)) redirect('/');
 
   if (!isAdminDiscordId(session.discordId)) {
     return (

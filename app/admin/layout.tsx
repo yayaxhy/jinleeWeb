@@ -3,6 +3,7 @@ import './admin.css';
 import { redirect } from 'next/navigation';
 import { isBackofficeDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
+import { getSettlementOperableOwnerIds } from '@/lib/settlement-reconciliation';
 import { getServerSession } from '@/lib/session';
 
 export const metadata = {
@@ -22,7 +23,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const isSettlementAccountOwner = !isExistingBackofficeUser && session?.discordId
     ? await prisma.settlementAccount.count({ where: { ownerDiscordId: session.discordId, active: true } }).then((count) => count > 0)
     : false;
-  if (!session?.discordId || (!isExistingBackofficeUser && !isSettlementAccountOwner)) {
+  const hasSettlementOperableOwner = getSettlementOperableOwnerIds(session?.discordId).length > 0;
+  if (!session?.discordId || (!isExistingBackofficeUser && !isSettlementAccountOwner && !hasSettlementOperableOwner)) {
     redirect('/');
   }
 

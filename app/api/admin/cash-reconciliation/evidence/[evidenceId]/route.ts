@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { NextResponse } from 'next/server';
-import { isSettlementFinance, getSettlementReceiptStorageDir } from '@/lib/settlement-reconciliation';
+import { canViewSettlementOwner, getSettlementReceiptStorageDir } from '@/lib/settlement-reconciliation';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
 
@@ -20,7 +20,7 @@ export async function GET(_request: Request, context: { params: Promise<RoutePar
     include: { reconciliation: { select: { ownerDiscordId: true } } },
   });
   if (!evidence) return NextResponse.json({ error: '截图不存在' }, { status: 404 });
-  if (!isSettlementFinance(session.discordId) && evidence.reconciliation.ownerDiscordId !== session.discordId) {
+  if (!canViewSettlementOwner(session.discordId, evidence.reconciliation.ownerDiscordId)) {
     return NextResponse.json({ error: '无权查看该截图' }, { status: 403 });
   }
   if (path.basename(evidence.storageFileName) !== evidence.storageFileName) {

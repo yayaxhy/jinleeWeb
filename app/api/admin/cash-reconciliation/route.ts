@@ -12,6 +12,7 @@ import { newEntityOnlyTime } from "@/lib/operating-entity-cutover";
 import { getAdminDiscordIds } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import {
+  canOperateSettlementOwner,
   getSettlementReceiptStorageDir,
   isRmbCurrency,
   isSettlementFinance,
@@ -49,15 +50,12 @@ const financeOnly = (discordId?: string | null) => {
     throw new Error("只有财务管理员可以执行此操作。");
 };
 
-/** A responsible owner may act on their own account; main finance may operate any owner's queue. */
+/** An owner identity may act on that owner's account; main finance may operate any queue. */
 const assertOwnerOrFinance = (
   actualOwnerId: string | null | undefined,
   actorId: string,
 ) => {
-  if (
-    !actualOwnerId ||
-    (actualOwnerId !== actorId && !isSettlementFinance(actorId))
-  )
+  if (!actualOwnerId || !canOperateSettlementOwner(actorId, actualOwnerId))
     throw new Error("只能操作自己负责的账号，或由主财务代办。");
 };
 

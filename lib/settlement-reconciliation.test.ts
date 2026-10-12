@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { SettlementReconciliationStatus } from '@prisma/client';
 import {
+  canOperateSettlementOwner,
+  getSettlementOperableOwnerIds,
   isReconciliationCounted,
   isRmbCurrency,
   isSettlementFinance,
@@ -37,4 +39,12 @@ test('only the designated main finance user can perform finance settlement actio
   assert.equal(isSettlementFinance(SETTLEMENT_MAIN_FINANCE_ID), true);
   assert.equal(isSettlementFinance(SETTLEMENT_WECHAT_OWNER_ID), false);
   assert.equal(isSettlementFinance(SETTLEMENT_ALIPAY_OWNER_ID), false);
+});
+
+test('the delegated iria identity can operate only iria settlement records', () => {
+  const delegatedViewerId = '1533891644712026347';
+  assert.deepEqual(getSettlementOperableOwnerIds(delegatedViewerId), [SETTLEMENT_ALIPAY_OWNER_ID]);
+  assert.equal(canOperateSettlementOwner(delegatedViewerId, SETTLEMENT_ALIPAY_OWNER_ID), true);
+  assert.equal(canOperateSettlementOwner(delegatedViewerId, SETTLEMENT_WECHAT_OWNER_ID), false);
+  assert.equal(canOperateSettlementOwner(delegatedViewerId, SETTLEMENT_MAIN_FINANCE_ID), false);
 });

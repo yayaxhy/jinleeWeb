@@ -16,6 +16,8 @@ import { formatAmountDown2 } from "@/lib/numberFormat";
 import { newEntityOnlyTime } from "@/lib/operating-entity-cutover";
 import { prisma } from "@/lib/prisma";
 import {
+  canOperateSettlementOwner,
+  getSettlementOperableOwnerIds,
   isReconciliationCounted,
   isRmbCurrency,
   isSettlementFinance,
@@ -230,9 +232,7 @@ export default async function CashReconciliationPage(props: PageProps) {
     : "overview";
   const isFinance = isSettlementFinance(session.discordId);
   const requestedOwnerDiscordId =
-    isFinance && typeof searchParams.owner === "string"
-      ? searchParams.owner
-      : undefined;
+    typeof searchParams.owner === "string" ? searchParams.owner : undefined;
   const requestedPage =
     typeof searchParams.page === "string" ? Number(searchParams.page) : 1;
   const notice =
@@ -407,14 +407,26 @@ export default async function CashReconciliationPage(props: PageProps) {
   const ownedAccounts = accounts.filter(
     (account) => account.ownerDiscordId === session.discordId,
   );
-  if (!isFinance && !ownedAccounts.length) redirect("/");
-
   const ownerIds = Array.from(
     new Set(accounts.map((account) => account.ownerDiscordId)),
   );
-  const viewedOwnerId = ownerIds.includes(requestedOwnerDiscordId ?? "")
+  const operableOwnerIds = getSettlementOperableOwnerIds(
+    session.discordId,
+  ).filter((ownerId) => ownerIds.includes(ownerId));
+  if (!isFinance && !ownedAccounts.length && !operableOwnerIds.length) {
+    redirect("/");
+  }
+  const isAllowedRequestedOwner =
+    Boolean(requestedOwnerDiscordId) &&
+    ownerIds.includes(requestedOwnerDiscordId!) &&
+    (isFinance ||
+      requestedOwnerDiscordId === session.discordId ||
+      operableOwnerIds.includes(requestedOwnerDiscordId!));
+  const viewedOwnerId = isAllowedRequestedOwner
     ? requestedOwnerDiscordId
-    : undefined;
+    : !isFinance && !ownedAccounts.length
+      ? operableOwnerIds[0]
+      : undefined;
   const isOwnerReadOnlyView = Boolean(viewedOwnerId);
   const isAllFinanceView = isFinance && !isOwnerReadOnlyView;
   const currentOwnerId = viewedOwnerId ?? session.discordId;
@@ -436,8 +448,10 @@ export default async function CashReconciliationPage(props: PageProps) {
   const viewedOwnerAccounts = accounts.filter(
     (account) => account.ownerDiscordId === currentOwnerId,
   );
-  const canActAsCurrentOwner =
-    isFinance || currentOwnerId === session.discordId;
+  const canActAsCurrentOwner = canOperateSettlementOwner(
+    session.discordId,
+    currentOwnerId,
+  );
   const accountById = new Map(accounts.map((account) => [account.id, account]));
   const rechargesWithRows = rawRecharges.map((recharge) => ({
     recharge,
@@ -1080,6 +1094,26 @@ export default async function CashReconciliationPage(props: PageProps) {
           </section>
         ) : null}
 
+        {!isFinance && operableOwnerIds.length ? (
+          <section className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+            <span className="mr-1 text-sm text-white/55">
+              可查看负责人页面：
+            </span>
+            {operableOwnerIds.map((ownerId) => (
+              <Link
+                key={ownerId}
+                href={sectionLink("overview", 1, ownerId)}
+                className={`rounded-xl border px-3 py-2 text-sm transition ${viewedOwnerId === ownerId ? "border-[#a78bfa]/60 bg-[#7356c6]/25 text-white" : "border-white/10 text-white/65 hover:bg-white/10"}`}
+              >
+                {ownerName(ownerId)}
+              </Link>
+            ))}
+            <span className="ml-1 text-xs text-amber-100/80">
+              可完整操作该负责人的对账；不能查看或操作其他负责人的账目。
+            </span>
+          </section>
+        ) : null}
+
         {activeTab === "overview" ? (
           <>
             <section className="grid gap-4 xl:grid-cols-4">
@@ -1657,7 +1691,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                   <p className="mt-1 text-sm text-amber-100/75">
                     {isAllFinanceView
                       ? "主财务可查看所有负责人待确认项，并可代办二次确认或提出异常；已反馈的异常请在“异常处理”查看。"
-                      : isOwnerReadOnlyView && canActAsCurrentOwner
+                      : isOwnerReadOnlyView && isFinance
                         ? "主财务可代办确认或反馈异常；操作记录会保留为主财务。"
                         : "确认前请先核对你实际收款账号的到账记录。"}
                   </p>
@@ -1757,8 +1791,10 @@ export default async function CashReconciliationPage(props: PageProps) {
                                 <StatusBadge status={row.status} />
                               </td>
                               <td className="px-4 py-3">
-                                {isFinance ||
-                                row.ownerDiscordId === session.discordId ? (
+                                {canOperateSettlementOwner(
+                                  session.discordId,
+                                  row.ownerDiscordId,
+                                ) ? (
                                   <div className="flex min-w-52 flex-wrap gap-2">
                                     <form action={ACTION_URL} method="post">
                                       <input
@@ -2267,8 +2303,10 @@ export default async function CashReconciliationPage(props: PageProps) {
                               {displayNameForDiscordId(row.ownerConfirmedBy)}
                             </td>
                             <td className="px-4 py-3">
-                              {isFinance ||
-                              row.ownerDiscordId === session.discordId ? (
+                              {canOperateSettlementOwner(
+                                session.discordId,
+                                row.ownerDiscordId,
+                              ) ? (
                                 <form action={ACTION_URL} method="post">
                                   <input
                                     type="hidden"
@@ -2681,7 +2719,10 @@ export default async function CashReconciliationPage(props: PageProps) {
                             <OwnerIdentity ownerId={ownerId} compact />
                           </td>
                           <td className="px-4 py-3">
-                            {isFinance || ownerId === session.discordId ? (
+                            {canOperateSettlementOwner(
+                              session.discordId,
+                              ownerId,
+                            ) ? (
                               <form action={ACTION_URL} method="post">
                                 <input
                                   type="hidden"
@@ -3088,9 +3129,10 @@ export default async function CashReconciliationPage(props: PageProps) {
                       </thead>
                       <tbody>
                         {cashExpenseSlice.map((expense) => {
-                          const canActOnExpense =
-                            isFinance ||
-                            expense.ownerDiscordId === session.discordId;
+                          const canActOnExpense = canOperateSettlementOwner(
+                            session.discordId,
+                            expense.ownerDiscordId,
+                          );
                           const isPending =
                             expense.status ===
                             SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION;

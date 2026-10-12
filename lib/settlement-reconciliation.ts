@@ -8,6 +8,14 @@ export const SETTLEMENT_CNY = 'CNY';
 export const SETTLEMENT_MAIN_FINANCE_ID = '525770714574225408';
 export const SETTLEMENT_WECHAT_OWNER_ID = '308164614846414851';
 export const SETTLEMENT_ALIPAY_OWNER_ID = '1008032640445710447';
+/**
+ * Alternate Discord identities for a particular settlement owner.
+ * Keep this allow-list deliberately narrow: it grants owner-level actions only,
+ * never main-finance actions or access to another owner's records.
+ */
+const SETTLEMENT_OPERABLE_OWNER_IDS: Record<string, readonly string[]> = {
+  '1533891644712026347': [SETTLEMENT_ALIPAY_OWNER_ID],
+};
 export const MAX_SETTLEMENT_RECEIPT_BYTES = 10 * 1024 * 1024;
 
 export const getSettlementReceiptStorageDir = () =>
@@ -16,6 +24,23 @@ export const getSettlementReceiptStorageDir = () =>
 
 export const isSettlementFinance = (discordId?: string | null) =>
   discordId === SETTLEMENT_MAIN_FINANCE_ID;
+
+export const getSettlementOperableOwnerIds = (discordId?: string | null) =>
+  discordId ? (SETTLEMENT_OPERABLE_OWNER_IDS[discordId] ?? []) : [];
+
+export const canOperateSettlementOwner = (
+  viewerDiscordId: string | null | undefined,
+  ownerDiscordId: string | null | undefined,
+) => {
+  if (!ownerDiscordId) return false;
+  return (
+    isSettlementFinance(viewerDiscordId) ||
+    viewerDiscordId === ownerDiscordId ||
+    getSettlementOperableOwnerIds(viewerDiscordId).includes(ownerDiscordId)
+  );
+};
+
+export const canViewSettlementOwner = canOperateSettlementOwner;
 
 export const isRmbCurrency = (currency?: string | null) =>
   (currency ?? '').trim().toUpperCase() === SETTLEMENT_CNY;
