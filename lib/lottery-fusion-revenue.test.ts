@@ -1,6 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildLotteryFusionActivityBreakdown } from './admin/lottery-fusion-revenue';
+import {
+  buildLotteryFusionActivityBreakdown,
+  countLotteryRevenueDraws,
+  LOTTERY_REVENUE_DRAW_WHERE,
+} from './admin/lottery-fusion-revenue';
+
+test('fusion outputs stay out of draw income even when later consumed', () => {
+  const rows = [
+    { nonce: 'draw:paid' },
+    { nonce: 'fusion:replacement' },
+    { nonce: 'draw:free-voucher' },
+    { nonce: 'fusion:consumed-later', consumeAmount: 29 },
+  ];
+
+  assert.equal(countLotteryRevenueDraws(rows), 2);
+  assert.deepEqual(LOTTERY_REVENUE_DRAW_WHERE, {
+    nonce: { not: { startsWith: 'fusion:' } },
+  });
+});
 
 test('buildLotteryFusionActivityBreakdown summarizes rule, source, and reroll-chain usage', () => {
   const summary = buildLotteryFusionActivityBreakdown({

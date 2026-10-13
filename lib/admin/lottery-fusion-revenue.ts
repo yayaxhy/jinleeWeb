@@ -7,12 +7,19 @@ import {
 import { prisma } from '@/lib/prisma';
 import {
   isLotteryFusionNonce,
+  LOTTERY_FUSION_DRAW_NONCE_PREFIX,
   resolveLotteryFusionPoolFallback,
 } from '@/lib/lottery-fusion';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { COUPON_VOUCHER_META } from '@/lib/voucherCatalog';
 
-const LOTTERY_FUSION_DRAW_NONCE_PREFIX = 'fusion:';
+// Fusion creates a LotteryDraw as a replacement prize, without a new draw fee.
+export const LOTTERY_REVENUE_DRAW_WHERE = {
+  nonce: { not: { startsWith: LOTTERY_FUSION_DRAW_NONCE_PREFIX } },
+} satisfies Prisma.LotteryDrawWhereInput;
+
+export const countLotteryRevenueDraws = (rows: ReadonlyArray<{ nonce: string | null }>) =>
+  rows.filter((row) => !isLotteryFusionNonce(row.nonce)).length;
 
 export type LotteryFusionCountBucket = '3' | '4' | '6' | 'other';
 export type LotteryFusionSourceKind = 'lottery' | 'coupon' | 'pointshop';

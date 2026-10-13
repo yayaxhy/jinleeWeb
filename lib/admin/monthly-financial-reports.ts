@@ -37,11 +37,13 @@ import {
   summarizeOrderReferralExpenseRows,
 } from '@/lib/admin/revenue-expense';
 import {
+  countLotteryRevenueDraws,
   getLotteryFusionRevenueSummary,
   LOTTERY_FUSION_COUNT_BUCKET_LABEL,
   LOTTERY_FUSION_SOURCE_KIND_LABEL,
   type LotteryFusionCountBucket,
 } from '@/lib/admin/lottery-fusion-revenue';
+import { isLotteryFusionNonce } from '@/lib/lottery-fusion';
 import { getVoucherReversalAdjustments } from '@/lib/admin/voucher-reversal';
 
 // The new operating entity started with no money in its bank account.
@@ -759,7 +761,8 @@ async function loadMonthlyRevenueData(params: {
   const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee).sub(revertedOrderFee);
   const discountDeductionTotal = decimalSum(discountRebateRows, 'amountChange');
 
-  const drawCount = lotteryCreatedRows.length;
+  // A fusion output is a replacement prize, not a new lottery draw.
+  const drawCount = countLotteryRevenueDraws(lotteryCreatedRows);
   const grossIncome = new Prisma.Decimal(drawCount).mul(29);
   const consumeTotal = decimalSum(lotteryConsumeRows, 'consumeAmount').add(voucherReversals.lotteryAdjustment);
   const lotteryNetProfit = grossIncome.sub(consumeTotal);
@@ -769,12 +772,8 @@ async function loadMonthlyRevenueData(params: {
     excludeDlmIds: excludeMemberResolved.excludeDlmIds,
     excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
   });
-  const fusionCreatedRows = lotteryCreatedRows.filter((row) =>
-    typeof row.nonce === 'string' ? row.nonce.startsWith('fusion:') : false,
-  );
-  const fusionConsumeRows = lotteryConsumeRows.filter((row) =>
-    typeof row.nonce === 'string' ? row.nonce.startsWith('fusion:') : false,
-  );
+  const fusionCreatedRows = lotteryCreatedRows.filter((row) => isLotteryFusionNonce(row.nonce));
+  const fusionConsumeRows = lotteryConsumeRows.filter((row) => isLotteryFusionNonce(row.nonce));
   const fusionPoolBreakdownText = formatBreakdownText(
     fusionRevenue.createdPoolBreakdown,
     FUSION_POOL_LABEL,
