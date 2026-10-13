@@ -25,11 +25,13 @@ import {
   summarizeOrderReferralExpenseRows,
 } from '@/lib/admin/revenue-expense';
 import {
+  countLotteryRevenueDraws,
   getLotteryFusionRevenueSummary,
   LOTTERY_FUSION_COUNT_BUCKET_LABEL,
   LOTTERY_FUSION_SOURCE_KIND_LABEL,
   type LotteryFusionCountBucket,
 } from '@/lib/admin/lottery-fusion-revenue';
+import { isLotteryFusionNonce } from '@/lib/lottery-fusion';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -497,7 +499,8 @@ export async function GET(request: NextRequest) {
   const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee);
   const discountDeductionTotal = decimalSum(discountRebateRows, 'amountChange');
 
-  const drawCount = lotteryCreatedRows.length;
+  // Keep fusion outputs in the detail sheet, but do not count them as lottery draws.
+  const drawCount = countLotteryRevenueDraws(lotteryCreatedRows);
   const grossIncome = new Prisma.Decimal(drawCount).mul(29);
   const consumeTotal = decimalSum(lotteryConsumeRows, 'consumeAmount');
   const netProfit = grossIncome.sub(consumeTotal);
@@ -507,12 +510,8 @@ export async function GET(request: NextRequest) {
     excludeDlmIds: excludeMemberResolved.excludeDlmIds,
     excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
   });
-  const fusionCreatedRows = lotteryCreatedRows.filter((row) =>
-    typeof row.nonce === 'string' ? row.nonce.startsWith('fusion:') : false,
-  );
-  const fusionConsumeRows = lotteryConsumeRows.filter((row) =>
-    typeof row.nonce === 'string' ? row.nonce.startsWith('fusion:') : false,
-  );
+  const fusionCreatedRows = lotteryCreatedRows.filter((row) => isLotteryFusionNonce(row.nonce));
+  const fusionConsumeRows = lotteryConsumeRows.filter((row) => isLotteryFusionNonce(row.nonce));
   const fusionPoolBreakdownText = formatBreakdownText(
     fusionRevenue.createdPoolBreakdown,
     FUSION_POOL_LABEL,
