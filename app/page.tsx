@@ -28,7 +28,6 @@ import { DlmHoverLetters } from '@/components/home/DlmHoverLetters';
 import { RankingPeriodCard } from '@/components/home/RankingPeriodCard';
 import { DiscordSupportLink } from '@/components/home/DiscordSupportLink';
 import { DispatchTicker } from '@/components/home/DispatchTicker';
-import { OpeningBenefitsTeaser } from '@/components/home/OpeningBenefitsTeaser';
 
 const homeTitle = `欧服陪玩｜${SITE_NAME} ${SITE_ALTERNATE_NAME}`;
 const periods: PeriodKey[] = ['日榜', '周榜', '月榜'];
@@ -532,7 +531,6 @@ export default async function Home() {
 
       <NavBar />
       <HeroPanel dispatches={homeData.recentDispatches} />
-      <OpeningBenefitsTeaser />
       <RankingRail
         eyebrow="老板榜单"
         title="点了么老板榜"
