@@ -246,7 +246,7 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
         <h1>DLM 电竞<span>入职申请表</span></h1>
       </div>
       {!discordId && <div className={styles.notice}><div><strong>先登录 Discord，再填写申请</strong><p>登录后会自动带入你的 Discord ID，方便 HR 联系你。</p></div><Link href={LOGIN_URL} className={styles.primaryButton}>使用 Discord 登录<ArrowRightIcon /></Link></div>}
-      {receipt && <div id="application-result" className={styles.notice} role="status" tabIndex={-1}><div><strong>申请已发送给 HR</strong><p>申请编号：{receipt.applicationId}</p><p>请留意 Discord 和微信消息，HR 会联系你跟进。</p></div><Link href="/" className={styles.primaryButton}>返回官网<ArrowLeftIcon /></Link></div>}
+      {receipt && <div id="application-result" className={styles.notice} role="status" tabIndex={-1}><div><strong>申请已发送给 HR</strong><p>请留意 Discord 和微信消息，HR 会联系你跟进。</p></div><Link href="/" className={styles.primaryButton}>返回官网<ArrowLeftIcon /></Link></div>}
       <form className={styles.form} noValidate onSubmit={(event) => { event.preventDefault(); openPreview(); }}>
         {Object.keys(errors).length > 0 && <div className={styles.validationSummary} ref={errorSummary} tabIndex={-1} role="alert"><strong>请检查以下资料：</strong><ul>{Object.entries(errors).map(([id, message]) => <li key={id}><a href={`#${id}`} onClick={(event) => { event.preventDefault(); document.getElementById(id)?.focus(); document.getElementById(id)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }}>{message}</a></li>)}</ul></div>}
         <fieldset className={styles.applicationFields} disabled={!discordId || Boolean(busy) || Boolean(receipt)}>
