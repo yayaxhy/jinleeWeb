@@ -254,7 +254,7 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
           <div className={styles.twoColumns}>
             <Field label="Discord ID" htmlFor="discord" hint={discordId ? "已通过 Discord 登录验证，提交时自动带入。" : "请先登录 Discord，登录后自动填写。"}><input {...input('discord')} placeholder="登录后自动填写" readOnly inputMode="numeric" maxLength={20} /></Field>
             <Field label="公会昵称" htmlFor="nickname"><input {...input('nickname')} placeholder="希望大家怎么称呼你" maxLength={32} /></Field>
-            <Field label="性别" htmlFor="gender"><select {...input('gender')}><option value="">请选择</option><option>男</option><option>女</option><option>其他</option><option>不愿透露</option></select></Field>
+            <Field label="性别" htmlFor="gender"><select {...input('gender')}><option value="">请选择</option><option>男</option><option>女</option></select></Field>
             <Field label="音色" htmlFor="voice"><input {...input('voice')} placeholder="例如：甜美、温柔、元气、少年音" maxLength={80} /></Field>
             <Field label="所在地区" htmlFor="region" hint="填写目前所在的国家／地区和城市。"><input {...input('region')} placeholder="例如：德国，意大利" maxLength={100} /></Field>
             <Field label="微信号" htmlFor="wechat"><input {...input('wechat')} placeholder="用于 HR 后续联系" maxLength={64} /></Field>

@@ -41,7 +41,7 @@ export function validateJoinApplication(raw: unknown, discordId: string) {
     const inactive = (key === 'sourceGuild' && assessment !== 'transfer') || ((key === 'card' || key === 'heroes') && !master);
     fields[key] = inactive ? '' : text(values[key], key, label, max, key !== 'inviter');
   }
-  if (fields.gender && !['男', '女', '其他', '不愿透露'].includes(fields.gender)) errors.gender = '请选择性别。';
+  if (fields.gender && !['男', '女'].includes(fields.gender)) errors.gender = '请选择男或女。';
   const exclusive = input.exclusive === '是' ? '是' : '否';
   if (input.exclusive !== '是' && input.exclusive !== '否') errors.exclusive = '请选择是否独家入驻。';
   const rawGames = Array.isArray(input.games) ? input.games : [];
