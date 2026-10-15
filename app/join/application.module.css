@@ -1,0 +1,164 @@
+.page { --ink: #252622; --muted: #62685d; --line: #e7e7df; --accent: #a46128; min-height: 100vh; background: #f7f7f2; color: var(--ink); font-family: var(--font-geist-sans), 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+.page * { box-sizing: border-box; }
+.page button, .page input, .page select, .page textarea { font: inherit; }
+.page button, .page a, .page input, .page select, .page textarea { -webkit-tap-highlight-color: transparent; }
+.page button { cursor: pointer; }
+.page button:focus-visible, .page a:focus-visible { outline: 3px solid #ad7337; outline-offset: 4px; }
+.header { background: #fff; border-bottom: 1px solid var(--line); }
+.headerInner { max-width: 1220px; padding: 20px 32px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-size: 21px; font-weight: 900; letter-spacing: -.8px; }
+.brand img { border-radius: 10px; }
+.brandLight { font-weight: 400; }
+.brand small { display: block; font-size: 9px; font-weight: 500; letter-spacing: 3px; margin-top: 3px; color: #686b62; }
+.headerRight { display: flex; align-items: center; gap: 27px; font-size: 12px; }
+.headerRight > a { display: flex; gap: 7px; align-items: center; color: #65675e; }
+.headerRight > a svg { width: 14px; }
+.previewBadge { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #dfddcc; padding: 6px 10px; border-radius: 5px; color: #79734d; font-size: 11px; }
+.previewBadge > span { height: 5px; width: 5px; background: #a09b72; border-radius: 50%; }
+.main { max-width: 1220px; padding: 0 32px; margin: auto; }
+.hero { padding: 54px 0 42px; border-bottom: 1px solid #dfdfd4; margin-bottom: 36px; position: relative; }
+.eyebrow { display: flex; align-items: center; gap: 9px; font-size: 10px; letter-spacing: 2.3px; font-weight: 700; color: #797b6e; }
+.eyebrow > span { width: 22px; height: 1px; background: #9e6c3b; }
+.hero h1 { font-size: clamp(30px, 3.2vw, 43px); font-weight: 750; line-height: 1.3; letter-spacing: -1.5px; margin: 18px 0 14px; }
+.hero h1 > span { color: #8e6543; margin-left: 12px; }
+.form { min-width: 0; }
+.section { border: 1px solid var(--line); border-radius: 10px; background: #fff; margin-bottom: 20px; scroll-margin-top: 65px; overflow: hidden; }
+.sectionHeading { padding: 26px 30px; display: flex; gap: 16px; align-items: center; border-bottom: 1px solid #eeeee8; }
+.sectionNumber { width: 35px; height: 35px; border-radius: 7px; color: #9c744d; background: #f4efe6; display: grid; place-items: center; font-size: 11px; font-family: var(--font-geist-mono), monospace; }
+.sectionHeading h2 { font-size: 17px; line-height: 1.4; font-weight: 700; letter-spacing: .5px; }
+.sectionHeading p { margin-top: 4px; color: var(--muted); font-size: 12px; }
+.sectionBody { display: flex; flex-direction: column; gap: 25px; padding: 28px 30px 31px; }
+.twoColumns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 22px; }
+.field { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+.field > label, .fieldset legend, .fieldTitle > p, .uploadTitle { font-size: 13px; font-weight: 600; }
+.required { color: #b27a4e; font-size: 12px; margin-left: 5px; font-weight: 400; }
+.optional { font-size: 12px; color: var(--muted); margin-left: 8px; font-weight: 400; }
+.field > input, .field > select, .field > textarea { background: #fff; width: 100%; border: 1px solid #dedfd7; border-radius: 5px; outline: none; padding: 12px 13px; font-size: 13px; color: #3d4036; transition: border-color .15s, box-shadow .15s; }
+.field > input, .field > select { height: 43px; }
+.field > select { padding-right: 25px; }
+.field > textarea { resize: vertical; line-height: 1.9; min-height: 75px; }
+.field input::placeholder, .field textarea::placeholder { color: #a9ab9e; opacity: 1; }
+.field > input:focus, .field > select:focus, .field > textarea:focus { border-color: #ab8152; box-shadow: 0 0 0 3px #b5843d13; }
+.hint { color: var(--muted); font-size: 12px; line-height: 1.8; font-weight: 400; }
+.assessmentChoices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.fieldset legend { padding: 0; margin-bottom: 12px; width: 100%; }
+.legendHint { float: right; font-size: 12px; color: var(--muted); font-weight: 400; }
+.choice { position: relative; display: flex; gap: 11px; align-items: flex-start; border: 1px solid #e0e2d8; border-radius: 6px; padding: 17px 13px; cursor: pointer; transition: background .15s, border-color .15s; }
+.choice input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.choice:has(input:focus-visible) { outline: 3px solid #ba945c; outline-offset: 3px; }
+.choice strong { display: block; font-size: 12px; font-weight: 600; line-height: 1.4; }
+.choice small { display: block; color: var(--muted); font-size: 12px; margin-top: 8px; line-height: 1.7; }
+.choiceSelected { background: #faf7ef; border-color: #ba9b70; }
+.choiceSelected strong { color: #926436; }
+.checkbox { width: 15px; height: 15px; border: 1px solid #c7cabb; border-radius: 3px; margin-top: 1px; flex-shrink: 0; background: #fff; }
+.choiceSelected .checkbox { background: #9f7947; border-color: #9f7947; color: #fff; }
+.checkbox svg { width: 14px; height: 14px; stroke-width: 2.5; }
+.fieldTitle { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.fieldTitle > span { font-size: 12px; color: var(--muted); }
+.gameList { display: flex; flex-direction: column; gap: 15px; margin-top: -12px; }
+.gameRow { background: #fafbf7; border: 1px solid #e9ebe2; border-radius: 6px; padding: 17px; }
+.gameHeading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 17px; font-size: 10px; color: #898d7b; }
+.gameFields { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 13px; }
+.gameFields .field > label { font-size: 10px; }
+.removeGame { display: flex; align-items: center; gap: 3px; background: none; border: none; padding: 0; color: #989a8a; font-size: 10px !important; }
+.removeGame svg { width: 12px; }
+.priceInput { display: flex; align-items: center; border: 1px solid #dedfd7; border-radius: 5px; height: 43px; background: #fff; padding-left: 10px; overflow: hidden; }
+.priceInput:focus-within { border-color: #ab8152; box-shadow: 0 0 0 3px #b5843d13; }
+.priceInput > span { font-size: 12px; color: #929680; }
+.priceInput input { min-width: 0; width: 100%; border: none; outline: none; padding: 8px 4px; font-size: 11px; appearance: textfield; background: transparent; }
+.priceInput input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.priceInput select { width: 67px; flex-shrink: 0; border: 0; outline: 0; background: transparent; font-size: 10px; color: #7f826f; padding-right: 3px; height: 100%; }
+.addGame { display: flex; align-items: center; align-self: flex-start; gap: 7px; min-height: 44px; font-size: 13px !important; color: #795a32; border: none; border-radius: 5px; background: transparent; padding: 10px 12px; margin-top: -10px; }
+.addGame:hover { background: #f4efe6; }
+.addGame svg { width: 15px; }
+.uploadTitle { display: flex; align-items: center; margin-bottom: 7px; }
+.uploadCount { margin-left: auto; color: var(--muted); font-family: var(--font-geist-mono), monospace; font-size: 12px; font-weight: 400; }
+.uploadZone { position: relative; display: flex; align-items: center; gap: 14px; border: 1px dashed #d4d8c9; padding: 24px 20px; margin-top: 14px; border-radius: 6px; background: #fcfcf9; cursor: pointer; }
+.uploadZone:hover { background: #f7f8f1; border-color: #a2ac8f; }
+.uploadZone:focus-within { outline: 3px solid #b99665; outline-offset: 3px; }
+.uploadZone input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.uploadIcon { display: grid; place-items: center; width: 35px; height: 35px; color: #8b9478; background: #eff1e7; border-radius: 6px; flex-shrink: 0; }
+.uploadIcon svg { width: 18px; }
+.uploadZone strong { display: block; font-size: 13px; font-weight: 500; }
+.uploadZone small { display: block; font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.7; }
+.uploadPlus { width: 18px; color: #a6ac96; margin-left: auto; flex-shrink: 0; }
+.error { color: #ad3c27; font-size: 11px; line-height: 1.8; margin-top: 7px; }
+.thumbnails { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0 0; list-style: none; padding: 0; }
+.thumbnails li { position: relative; min-width: 0; }
+.thumbnails img { width: 100%; height: 100px; object-fit: contain; background: #f0f2ea; border-radius: 5px; border: 1px solid var(--line); }
+.thumbnails li > span { display: block; font-size: 10px; color: #929781; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 7px 0; }
+.thumbnails button { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; background: #fff; box-shadow: 0 1px 4px #0002; color: #555d47; border: 0; border-radius: 50%; width: 25px; height: 25px; }
+.thumbnails button svg { width: 15px; }
+.conditional { display: flex; flex-direction: column; gap: 22px; border-top: 1px solid var(--line); padding-top: 23px; }
+.conditionalHeading { display: flex; align-items: center; gap: 8px; color: #a17f51; font-size: 11px; }
+.conditionalHeading > span { width: 5px; height: 5px; border-radius: 50%; background: #b8986c; }
+.masterFields { background: #faf6ed; padding: 20px; border: 1px solid #eee3ce; border-radius: 6px; }
+.masterFields > p { color: #9c723c; font-size: 12px; font-weight: 600; margin-bottom: 18px; }
+.characterCount { display: block; text-align: right; font-size: 12px; color: var(--muted); margin-top: -3px; }
+.formFooter { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 19px 0 0; }
+.formFooter strong { font-size: 14px; font-weight: 600; }
+.formFooter p { font-size: 12px; color: var(--muted); line-height: 1.8; margin-top: 8px; }
+.primaryButton { background: #303a2c; color: #fff; border: 1px solid #303a2c; border-radius: 5px; padding: 14px 23px; display: inline-flex; align-items: center; justify-content: center; gap: 23px; flex-shrink: 0; font-size: 12px !important; font-weight: 500 !important; transition: background .15s; }
+.primaryButton:hover { background: #47503c; }
+.primaryButton svg { width: 16px; }
+.footer { display: flex; justify-content: space-between; gap: 15px; color: #a2a591; font-size: 10px; letter-spacing: .5px; border-top: 1px solid #e3e6da; padding: 26px 0 32px; margin-top: 60px; }
+.dialog { width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); border: 1px solid #e0e2d7; border-radius: 12px; padding: 0; background: #fff; color: #30382a; margin: auto; overflow: auto; }
+.dialog::backdrop { background: #19211599; backdrop-filter: blur(5px); }
+.dialogHeader { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 24px 30px; border-bottom: 1px solid var(--line); background: #f8f8f2; }
+.dialogHeader p { font-size: 9px; color: #999d86; letter-spacing: 2px; margin-bottom: 9px; }
+.dialogHeader h2 { font-size: 20px; font-weight: 650; }
+.dialogHeader > button { padding: 7px; border: 1px solid #e0e4d6; border-radius: 5px; background: white; color: #7c856c; }
+.dialogHeader svg { width: 19px; }
+.dialogBody { padding: 25px 30px; }
+.dialogNotice { padding: 13px 15px; border-radius: 6px; background: #f5f4eb; font-size: 12px; line-height: 1.8; color: var(--muted); }
+.summary { margin-top: 20px; }
+.summary > div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f2ea; font-size: 12px; line-height: 1.8; }
+.summary dt { color: #919783; }
+.summary dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.emptyValue { color: #b0b5a1; }
+.summaryGames { margin-top: 28px; }
+.summaryGames h3, .summaryImages h3 { font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+.summaryGames > div { display: flex; align-items: center; gap: 14px; background: #f9faf5; padding: 15px; margin-top: 10px; border-radius: 6px; }
+.summaryGames > div > span { color: #a6ae96; font-size: 10px; }
+.summaryGames strong, .summaryGames b { font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
+.summaryGames p { font-size: 10px; color: #959e85; margin-top: 5px; overflow-wrap: anywhere; }
+.summaryGames b { margin-left: auto; flex-shrink: 0; }
+.summaryImages { margin-top: 25px; }
+.summaryImages h3 { display: flex; justify-content: space-between; }
+.summaryImages h3 > span { font-size: 10px; color: #97a082; font-weight: 400; }
+.summaryImages > p { font-size: 11px; color: #a2aa92; }
+.summaryImages > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.summaryImages img { width: 100%; height: 130px; object-fit: contain; border-radius: 5px; background: #f1f3e9; }
+.dialogFooter { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 18px 30px; background: #fafbf7; border-top: 1px solid var(--line); }
+.dialogFooter > span { font-size: 12px; color: var(--muted); }
+@media (max-width: 1050px) { .assessmentChoices { grid-template-columns: 1fr; } .sectionHeading { padding: 23px; } .sectionBody { padding: 24px 23px; } .gameFields { grid-template-columns: 1fr 1fr; } .gameFields > :last-child { grid-column: 1 / -1; } .priceInput input { flex: 1; } .hero h1 { font-size: 36px; } }
+@media (max-width: 760px) {
+  .headerInner { padding: 16px 20px; } .brand { font-size: 19px; } .brand img { width: 34px; height: 34px; } .brand small { font-size: 8px; letter-spacing: 2px; } .headerRight { gap: 14px; } .headerRight > a { font-size: 0; } .headerRight > a svg { width: 18px; }
+  .main { padding: 0 20px; } .hero { padding: 35px 0 27px; margin-bottom: 0; border-bottom: none; } .hero h1 { font-size: 29px; letter-spacing: -1px; } .hero h1 > span { margin-left: 8px; } .eyebrow { font-size: 8px; letter-spacing: 1.7px; }
+  .section { border-radius: 8px; margin-bottom: 16px; } .sectionHeading { padding: 20px; gap: 12px; } .sectionHeading h2 { font-size: 16px; } .sectionBody { padding: 23px 20px; gap: 23px; } .sectionNumber { width: 31px; height: 31px; } .twoColumns { grid-template-columns: 1fr; gap: 21px; } .fieldset .twoColumns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .field > input, .field > select, .field > textarea, .priceInput input, .priceInput select { font-size: 16px; } .field > input, .field > select { height: 46px; } .choice { padding: 14px 11px; gap: 9px; } .choice small { line-height: 1.8; } .checkbox { width: 14px; height: 14px; } .checkbox svg { width: 12px; height: 12px; }
+  .fieldTitle { align-items: flex-start; flex-direction: column; gap: 8px; } .gameRow { padding: 15px; } .gameFields { grid-template-columns: 1fr; gap: 16px; } .gameFields .field > label { font-size: 11px; } .priceInput { height: 46px; } .priceInput select { width: 90px; } .uploadZone { padding: 20px 12px; gap: 11px; } .uploadPlus { display: none; } .uploadIcon { width: 30px; height: 34px; } .masterFields { padding: 16px; } .thumbnails img { height: 75px; } .thumbnails button { width: 28px; height: 28px; }
+  .formFooter { flex-direction: column; align-items: stretch; gap: 20px; padding-top: 10px; } .primaryButton { padding: 16px 23px; } .formFooter > div { text-align: center; } .footer { flex-direction: column; text-align: center; font-size: 9px; margin-top: 38px; padding: 24px 0; gap: 9px; }
+  .dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 8px; } .dialogHeader { padding: 20px; } .dialogHeader h2 { font-size: 17px; } .dialogBody { padding: 20px; } .summary > div { grid-template-columns: 105px minmax(0, 1fr); font-size: 11px; } .dialogFooter { padding: 15px 20px; } .dialogFooter .primaryButton { padding: 12px 16px; font-size: 11px !important; } .summaryImages img { height: 90px; } .summaryGames > div { padding: 12px; gap: 9px; } .summaryGames b { font-size: 10px; }
+}
+
+.applicationFields { border: 0; min-width: 0; margin: 0; padding: 0; }
+.notice { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 25px; margin-bottom: 24px; border: 1px solid #d8ddcd; border-radius: 8px; background: #f0f3e9; }
+.notice strong { font-size: 16px; }
+.notice p { font-size: 12px; color: var(--muted); line-height: 1.8; margin-top: 6px; }
+.validationSummary { margin-bottom: 20px; padding: 20px; border: 1px solid #d5a18b; border-radius: 8px; background: #fff6f0; color: #9b3524; font-size: 13px; }
+.validationSummary ul { margin: 10px 0 0; padding-left: 20px; line-height: 1.9; }
+.validationSummary a { text-decoration: underline; text-underline-offset: 3px; }
+.field [aria-invalid="true"] { border-color: #b94f36; }
+.field input:read-only { background: #f5f6f0; color: #62685d; }
+.primaryButton:disabled, .secondaryButton:disabled, .addGame:disabled { cursor: default; opacity: .55; }
+.secondaryButton { min-height: 44px; padding: 12px 18px; border: 1px solid #d4d9ca; border-radius: 5px; background: white; color: #505a43; font-size: 12px !important; }
+.submitError { padding: 16px 30px; color: #9b3524; background: #fff6f0; font-size: 13px; line-height: 1.8; }
+.submitError a { text-decoration: underline; }
+@media (max-width: 760px) {
+  .notice { flex-direction: column; align-items: stretch; padding: 20px; }
+  .notice .primaryButton { width: 100%; }
+  .submitError { padding: 16px 20px; }
+  .dialogFooter { flex-wrap: wrap; }
+}

@@ -195,13 +195,12 @@ function HeroPanel({ dispatches }: { dispatches: RecentDispatchItem[] }) {
             >
               联系客服
             </DiscordSupportLink>
-            <DiscordSupportLink
+            <Link
+              href="/join"
               className="rounded-full bg-gradient-to-b from-[#f8d990] to-[#bd7d1e] px-9 py-4 text-base font-bold text-[#211203] shadow-[0_12px_28px_rgba(190,125,30,0.3)] transition hover:-translate-y-0.5 hover:from-[#ffe6aa] hover:to-[#d89632]"
-              style={{}}
-              discordUserId="308164614846414851"
             >
               申请陪玩入职
-            </DiscordSupportLink>
+            </Link>
           </div>
           <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-white/64 md:text-base">
             点了么娱乐公会 DLMClub，欧洲最智能的陪玩公会，专注欧服陪玩，24小时客服全天候为您服务。提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。
