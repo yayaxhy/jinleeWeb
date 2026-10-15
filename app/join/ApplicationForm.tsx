@@ -302,7 +302,7 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
           <Field label="其他游戏" htmlFor="otherGames" ><textarea {...input('otherGames')} rows={2} placeholder="例如：双人成行、胡闹厨房、饥荒……" maxLength={500} /></Field>
         </Section>
         </fieldset>
-        {!receipt && <div className={styles.formFooter}><div><strong>期待认识真实的你。</strong><p>提交后，表格和图片将发送给 DLM HR，仅用于入职审核。</p></div><button type="submit" className={styles.primaryButton} disabled={!discordId || Boolean(busy)}>预览并提交<ArrowRightIcon /></button></div>}
+        {!receipt && <div className={styles.formFooter}><div><strong>DLM家庭很期待你的加入，希望你在咱这玩得开心。</strong><p>提交后，表格和图片将发送给 DLM HR，仅用于入职审核。</p></div><button type="submit" className={styles.primaryButton} disabled={!discordId || Boolean(busy)}>预览并提交<ArrowRightIcon /></button></div>}
         {sendError && !previewOpen && <p className={styles.error} role="alert">{sendError}</p>}
       </form>
       <footer className={styles.footer}><span>DLMCLUB · 点了么娱乐公会</span><span>让每一场游戏，都有好队友。</span></footer>
