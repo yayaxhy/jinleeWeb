@@ -39,7 +39,7 @@ export function validateJoinApplication(raw: unknown, discordId: string) {
   for (const key of Object.keys(JOIN_FIELDS) as (keyof JoinFields)[]) {
     const [label, max] = JOIN_FIELDS[key];
     const inactive = (key === 'sourceGuild' && assessment !== 'transfer') || ((key === 'card' || key === 'heroes') && !master);
-    fields[key] = inactive ? '' : text(values[key], key, label, max, key !== 'inviter');
+    fields[key] = inactive ? '' : text(values[key], key, label, max, key !== 'inviter' && key !== 'otherGames');
   }
   if (fields.gender && !['男', '女'].includes(fields.gender)) errors.gender = '请选择男或女。';
   const exclusive = input.exclusive === '是' ? '是' : '否';

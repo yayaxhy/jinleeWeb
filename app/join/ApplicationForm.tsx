@@ -299,7 +299,7 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
           </div>)}</div>
           <datalist id="game-options">{GAME_NAMES.map((name) => <option key={name} value={name} />)}</datalist>
           <button type="button" className={styles.addGame} disabled={games.length >= MAX_JOIN_GAMES} onClick={() => { const id = nextGameId.current++; setGames((previous) => [...previous, { id, name: '', level: '', price: '', unit: '小时' }]); }}><PlusIcon />{games.length >= MAX_JOIN_GAMES ? `最多 ${MAX_JOIN_GAMES} 个项目` : '添加主营项目'}</button>
-          <Field label="其他游戏" htmlFor="otherGames" ><textarea {...input('otherGames')} rows={2} placeholder="例如：双人成行、胡闹厨房、饥荒……" maxLength={500} /></Field>
+          <Field label="其他游戏" htmlFor="otherGames" optional><textarea {...input('otherGames')} rows={2} placeholder="例如：双人成行、胡闹厨房、饥荒……" maxLength={500} /></Field>
         </Section>
         </fieldset>
         {!receipt && <div className={styles.formFooter}><div><strong>DLM家庭很期待你的加入，希望你在咱这玩得开心。</strong><p>提交后，表格和图片将发送给 DLM HR，仅用于入职审核。</p></div><button type="submit" className={styles.primaryButton} disabled={!discordId || Boolean(busy)}>预览并提交<ArrowRightIcon /></button></div>}
