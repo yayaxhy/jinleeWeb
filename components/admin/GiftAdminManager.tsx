@@ -49,6 +49,12 @@ const normalizeCategory = (value: string) => {
   return trimmed ? trimmed : '默认';
 };
 
+const withoutKey = <T,>(record: Record<string, T>, key: string) => {
+  const next = { ...record };
+  delete next[key];
+  return next;
+};
+
 const normalizeSnapshot = (gift: GiftItem): GiftSnapshot => ({
   price: gift.price.trim(),
   urlLink: gift.urlLink.trim(),
@@ -81,6 +87,10 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
   const [inputKeys, setInputKeys] = useState<Record<string, number>>({});
   const [renameInputs, setRenameInputs] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState('全部');
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteMessage, setDeleteMessage] = useState('');
   const [createForm, setCreateForm] = useState({
     name: '',
     price: '',
@@ -104,6 +114,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
     });
     return ['全部', ...Array.from(set).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))];
   }, [displayCategories, giftOrder]);
+  const activeCategory = categoryOptions.includes(selectedCategory) ? selectedCategory : '全部';
   const groupedGifts = useMemo(() => {
     const groups: Array<{ category: string; items: GiftItem[] }> = [];
     const map = new Map<string, GiftItem[]>();
@@ -111,7 +122,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       const gift = giftMap.get(name);
       if (!gift) return;
       const category = normalizeCategory(displayCategories[name] ?? gift.category);
-      if (selectedCategory !== '全部' && category !== selectedCategory) return;
+      if (activeCategory !== '全部' && category !== activeCategory) return;
       let group = map.get(category);
       if (!group) {
         group = [];
@@ -121,7 +132,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       group.push(gift);
     });
     return groups;
-  }, [displayCategories, giftMap, giftOrder, selectedCategory]);
+  }, [displayCategories, giftMap, giftOrder, activeCategory]);
   const isGiftDirty = (giftName: string) => {
     const current = giftMap.get(giftName);
     if (!current) return false;
@@ -154,7 +165,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
 
   const handleUpdate = async (giftName: string) => {
     const current = giftMap.get(giftName);
-    if (!current) return;
+    if (!current || saving[giftName] || deleteTarget === giftName || deleting === giftName) return;
 
     setSaving((prev) => ({ ...prev, [giftName]: true }));
     setMessages((prev) => ({ ...prev, [giftName]: '' }));
@@ -227,6 +238,41 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
       setMessages((prev) => ({ ...prev, [giftName]: message }));
     } finally {
       setSaving((prev) => ({ ...prev, [giftName]: false }));
+    }
+  };
+
+  const handleDelete = async (giftName: string) => {
+    if (deleteTarget !== giftName || deleting || saving[giftName]) return;
+    setDeleting(giftName);
+    setDeleteError('');
+    setDeleteMessage('');
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ giftName }),
+      });
+      const data = (await response.json().catch(() => ({}))) as ApiResponse;
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? '删除失败，请稍后重试');
+      }
+
+      setGifts((prev) => prev.filter((gift) => gift.name !== giftName));
+      setGiftOrder((prev) => prev.filter((name) => name !== giftName));
+      setDisplayCategories((prev) => withoutKey(prev, giftName));
+      setSavedSnapshots((prev) => withoutKey(prev, giftName));
+      setFiles((prev) => withoutKey(prev, giftName));
+      setSaving((prev) => withoutKey(prev, giftName));
+      setMessages((prev) => withoutKey(prev, giftName));
+      setInputKeys((prev) => withoutKey(prev, giftName));
+      setRenameInputs((prev) => withoutKey(prev, giftName));
+      setDeleteTarget(null);
+      setDeleteMessage(`已删除「${giftName}」，历史打赏和交易流水已保留。`);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : '删除失败，请稍后重试');
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -396,6 +442,8 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
         ) : null}
       </div>
 
+      <p role="status" className="text-sm text-emerald-300 empty:hidden">{deleteMessage}</p>
+
       {gifts.length === 0 ? (
         <p className="text-sm text-white/60">暂无礼物配置。</p>
       ) : (
@@ -403,7 +451,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">按分类筛选</p>
             <select
-              value={selectedCategory}
+              value={activeCategory}
               onChange={(event) => setSelectedCategory(event.target.value)}
               className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white"
             >
@@ -430,6 +478,8 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
                   {group.items.map((gift) => {
                     const status = messages[gift.name];
                     const isSaving = saving[gift.name];
+                    const isDeleting = deleting === gift.name;
+                    const isConfirmingDelete = deleteTarget === gift.name;
                     const inputKey = inputKeys[gift.name] ?? 0;
                     const current = giftMap.get(gift.name);
                     const isDirty = isGiftDirty(gift.name);
@@ -458,7 +508,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
                           </div>
                         </div>
 
-                        <div className="grid gap-3 md:grid-cols-2">
+                        <fieldset disabled={isSaving || isConfirmingDelete} className="grid gap-3 md:grid-cols-2">
                           <label className="space-y-2 md:col-span-2">
                             <span className="text-xs text-white/70">更改名称（留空不改）</span>
                             <input
@@ -537,7 +587,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
                             />
                             仅客服可打赏
                           </label>
-                        </div>
+                        </fieldset>
 
                         <div className="space-y-2">
                           <input
@@ -546,12 +596,12 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
                             accept="image/png,image/jpeg,image/gif"
                             className="w-full cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white file:mr-4 file:rounded-md file:border-0 file:bg-[#5c43a3] file:px-3 file:py-1 file:text-white hover:border-white/20"
                             onChange={(event) => handleFileChange(gift.name, event.target.files?.[0] ?? null)}
-                            disabled={isSaving}
+                            disabled={isSaving || isConfirmingDelete}
                           />
                           <button
                             type="button"
                             onClick={() => handleUpdate(gift.name)}
-                            disabled={isSaving}
+                            disabled={isSaving || isConfirmingDelete}
                             className={`inline-flex w-full items-center justify-center rounded-full px-4 py-2 text-xs uppercase tracking-[0.3em] text-white disabled:opacity-60 ${
                               isDirty
                                 ? 'bg-emerald-500 hover:bg-emerald-400'
@@ -564,6 +614,39 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
                             <p className={`text-xs ${status === '已更新' ? 'text-emerald-300' : 'text-rose-300'}`}>
                               {status}
                             </p>
+                          ) : null}
+                          <button
+                            type="button"
+                            disabled={isSaving || deleting !== null}
+                            aria-expanded={isConfirmingDelete}
+                            onClick={() => {
+                              setDeleteTarget(isConfirmingDelete ? null : gift.name);
+                              setDeleteError('');
+                              setDeleteMessage('');
+                            }}
+                            className="inline-flex w-full items-center justify-center rounded-full border border-rose-400/30 px-4 py-2 text-xs text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
+                          >
+                            删除礼物
+                          </button>
+                          {isConfirmingDelete ? (
+                            <div role="group" aria-label={`确认删除${gift.name}`} className="space-y-3 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4">
+                              <p className="text-sm font-medium text-rose-200 break-all">确定删除「{gift.name}」？</p>
+                              <p className="text-xs leading-6 text-white/70">
+                                删除后会从礼物列表、打赏下拉列表和礼物墙移除，并清除该礼物的解锁记录。
+                                历史打赏和交易流水会保留。此操作无法撤销；如需保留解锁记录，请改用下架。
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                <button type="button" disabled={isDeleting} onClick={() => { setDeleteTarget(null); setDeleteError(''); }}
+                                  className="rounded-full border border-white/20 px-4 py-2 text-xs text-white hover:bg-white/10 disabled:opacity-60">
+                                  取消
+                                </button>
+                                <button type="button" disabled={isDeleting} onClick={() => handleDelete(gift.name)}
+                                  className="rounded-full bg-rose-600 px-4 py-2 text-xs text-white hover:bg-rose-500 disabled:opacity-60">
+                                  {isDeleting ? '删除中…' : '确认删除'}
+                                </button>
+                              </div>
+                              {deleteError ? <p role="alert" className="text-xs text-rose-300">{deleteError}</p> : null}
+                            </div>
                           ) : null}
                         </div>
                       </div>
