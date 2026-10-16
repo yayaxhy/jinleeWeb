@@ -289,3 +289,36 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({ ok: true, gift: serializeGift(gift, updatedImage) });
 }
+
+export async function DELETE(request: NextRequest) {
+  if (!(await ensureGiftAdmin())) {
+    return NextResponse.json({ error: '无权访问' }, { status: 403 });
+  }
+
+  const body: unknown = await request.json().catch(() => null);
+  const giftName = body && typeof body === 'object' && 'giftName' in body ? body.giftName : null;
+  if (typeof giftName !== 'string' || !giftName.trim()) {
+    return NextResponse.json({ error: '缺少礼物名' }, { status: 400 });
+  }
+
+  try {
+    // Existing foreign keys cascade to GiftImage and PeiwanGiftUnlock only.
+    // Keep audit/transaction history and image files used by old message links.
+    const gift = await prisma.gift.delete({
+      where: { GiftName: giftName },
+      select: { GiftName: true },
+    });
+    return NextResponse.json({ ok: true, giftName: gift.GiftName });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: '该礼物已删除或不存在，请刷新页面' }, { status: 404 });
+      }
+      if (error.code === 'P2003') {
+        return NextResponse.json({ error: '该礼物仍有关联资料，暂时无法删除，请先下架' }, { status: 409 });
+      }
+    }
+    console.error('[admin/gifts] Delete failed', error);
+    return NextResponse.json({ error: '删除失败，请稍后重试' }, { status: 500 });
+  }
+}
