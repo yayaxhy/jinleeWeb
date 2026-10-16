@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeftIcon, ArrowRightIcon, ArrowUpTrayIcon, CheckIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { SITE_LOGO } from '@/lib/site';
+import { DISCORD_INVITE_URL, SITE_LOGO } from '@/lib/site';
 import styles from './application.module.css';
 import { ASSESSMENT_LABELS, MAX_JOIN_GAMES, validateJoinApplication, type Assessment, type JoinErrors, type JoinImage } from '@/lib/join-application';
 import { prepareJoinImage } from '@/lib/join-image';
@@ -130,6 +130,7 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
   const sending = useRef(false);
   const [sendError, setSendError] = useState('');
   const [loginExpired, setLoginExpired] = useState(false);
+  const [membershipRequired, setMembershipRequired] = useState(false);
   const [uncertainId, setUncertainId] = useState('');
   const [receipt, setReceipt] = useState<{ applicationId: string; submittedAt: string } | null>(null);
   const hasMasterDetails = assessment !== 'unassessed' && tier.includes('大神');
@@ -188,6 +189,7 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
     setBusy('preparing');
     setSendError('');
     setLoginExpired(false);
+    setMembershipRequired(false);
     setUncertainId('');
     try {
       const selected: [JoinImage['kind'], Attachment | undefined][] = [
@@ -210,6 +212,7 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
       if (!response.ok || !data.ok) {
         if (data.fields && typeof data.fields === 'object') { displayErrors(data.fields); setPreviewOpen(false); }
         setLoginExpired(data.code === 'login_required');
+        setMembershipRequired(data.code === 'discord_membership_required');
         setUncertainId(typeof data.applicationId === 'string' ? data.applicationId : '');
         throw new Error(typeof data.error === 'string' ? data.error : '暂时无法确认发送结果，请稍后使用相同内容重试。');
       }
@@ -302,7 +305,7 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
           <Field label="其他游戏" htmlFor="otherGames" optional><textarea {...input('otherGames')} rows={2} placeholder="例如：双人成行、胡闹厨房、饥荒……" maxLength={500} /></Field>
         </Section>
         </fieldset>
-        {!receipt && <div className={styles.formFooter}><div><strong>DLM家庭很期待你的加入，希望你在咱这玩得开心。</strong><p>提交后，表格和图片将发送给 DLM HR，仅用于入职审核。</p></div><button type="submit" className={styles.primaryButton} disabled={!discordId || Boolean(busy)}>预览并提交<ArrowRightIcon /></button></div>}
+        {!receipt && <div className={styles.formFooter}><div><strong>DLM家庭很期待你的加入，希望你在咱这玩得开心。</strong><p>提交前请先加入 DLM Discord 服务器。表格和图片将发送给 DLM HR，仅用于入职审核。</p></div><button type="submit" className={styles.primaryButton} disabled={!discordId || Boolean(busy)}>预览并提交<ArrowRightIcon /></button></div>}
         {sendError && !previewOpen && <p className={styles.error} role="alert">{sendError}</p>}
       </form>
       <footer className={styles.footer}><span>DLMCLUB · 点了么娱乐公会</span><span>让每一场游戏，都有好队友。</span></footer>
@@ -314,8 +317,8 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
         <div className={styles.summaryGames}><h3>主营项目及报价</h3>{games.map((game, index) => <div key={game.id}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{game.name || '项目未填写'}</strong><p>{game.level || '水平未填写'}</p></div><b>{game.price ? `¥${game.price} / ${game.unit}` : '单价未填写'}</b></div>)}</div>
         {[{ title: '游戏段位截图', items: rankImages.items }, ...(assessment === 'transfer' ? [{ title: '其他公会考核记录', items: records.items }] : []), ...(assessment === 'passed' ? [{ title: '考核区通过记录', items: passedRecords.items }] : []), { title: '名片使用图片', items: photos.items }].map((group) => <div className={styles.summaryImages} key={group.title}><h3>{group.title}<span>{group.items.length} 张</span></h3>{group.items.length ? <div>{group.items.map((item) => <img key={item.id} src={item.url} alt={`${group.title}：${item.name}`} />)}</div> : <p>尚未选择图片</p>}</div>)}
       </div>
-      {sendError && <div className={styles.submitError} role="alert"><p>{sendError}</p>{uncertainId && <p>申请编号：{uncertainId}</p>}{loginExpired && <Link href={LOGIN_URL}>重新登录 Discord</Link>}</div>}
-      <div className={styles.dialogFooter}><button type="button" disabled={Boolean(busy)} className={styles.secondaryButton} onClick={() => setPreviewOpen(false)}>返回修改</button><button type="button" disabled={Boolean(busy) || loginExpired || Boolean(uncertainId)} className={styles.primaryButton} onClick={submitApplication}>{busy === 'preparing' ? '正在处理图片…' : busy === 'sending' ? '正在发送…' : '确认提交给 HR'}<ArrowRightIcon /></button></div>
+      {sendError && <div className={styles.submitError} role="alert"><p>{sendError}</p>{uncertainId && <p>申请编号：{uncertainId}</p>}{loginExpired && <Link href={LOGIN_URL}>重新登录 Discord</Link>}{membershipRequired && <a href={DISCORD_INVITE_URL} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}>加入 DLM Discord 服务器<ArrowRightIcon /></a>}</div>}
+      <div className={styles.dialogFooter}><button type="button" disabled={Boolean(busy)} className={styles.secondaryButton} onClick={() => setPreviewOpen(false)}>返回修改</button><button type="button" disabled={Boolean(busy) || loginExpired || Boolean(uncertainId)} className={styles.primaryButton} onClick={submitApplication}>{busy === 'preparing' ? '正在处理图片…' : busy === 'sending' ? '正在发送…' : membershipRequired ? '已加入，重新提交' : '确认提交给 HR'}<ArrowRightIcon /></button></div>
     </dialog>
   </div></ValidationContext.Provider>;
 }

@@ -53,6 +53,8 @@ export async function handleJoinSubmission(request: Request, deps: JoinSubmitDep
         delivery_uncertain: '暂时无法确认发送结果。请联系 HR 并提供下方申请编号，避免重复提交。',
         delivery_in_progress: '申请正在发送，请稍后重试；系统会避免重复发送。',
         recruitment_unavailable: 'HR 接收服务暂时不可用，请稍后重试。',
+        discord_membership_required: '请先加入 DLM Discord 服务器，再回来提交申请。已填写的资料会保留在当前页面，无需刷新。',
+        discord_membership_check_failed: '暂时无法确认你是否已加入 DLM 服务器，请稍后使用相同内容重试。',
       };
       return json({ error: messages[error.code] ?? '申请尚未确认送达，请稍后使用相同内容重试。', code: error.code, applicationId: error.applicationId }, error.status);
     }
@@ -74,7 +76,8 @@ export async function deliverJoinApplication(application: JoinApplication, image
   } catch { throw new JoinDeliveryError('recruitment_unavailable'); }
   const body = await response.json().catch(() => ({})) as Record<string, unknown>;
   if (!response.ok || body.ok !== true) {
-    throw new JoinDeliveryError(typeof body.error === 'string' ? body.error : 'recruitment_unavailable', [409, 429].includes(response.status) ? response.status : 503, typeof body.applicationId === 'string' ? body.applicationId : undefined);
+    const status = body.error === 'discord_membership_required' && response.status === 403 ? 403 : [409, 429].includes(response.status) ? response.status : 503;
+    throw new JoinDeliveryError(typeof body.error === 'string' ? body.error : 'recruitment_unavailable', status, typeof body.applicationId === 'string' ? body.applicationId : undefined);
   }
   if (typeof body.applicationId !== 'string' || !/^JOIN-[a-f0-9]{16}$/.test(body.applicationId) || typeof body.submittedAt !== 'string') throw new JoinDeliveryError('recruitment_unavailable');
   return { applicationId: body.applicationId, submittedAt: body.submittedAt };

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateJoinApplication, validateJoinImages, MAX_JOIN_IMAGE_BYTES, MAX_JOIN_BODY_BYTES } from './join-application';
-import { handleJoinSubmission, JoinDeliveryError } from './join-submit';
+import { deliverJoinApplication, handleJoinSubmission, JoinDeliveryError } from './join-submit';
 
 export const applicant = '123456789012345678';
 export const draft = () => ({
@@ -63,4 +63,31 @@ test('delivery failure never reports success, while ambiguous receipts are shown
   const response = await handleJoinSubmission(request({ application: draft(), images: [image()] }), deps);
   assert.equal(response.status, 409);
   const body = await response.json(); assert.notEqual(body.ok, true); assert.equal(body.applicationId, 'JOIN-1234567890abcdef');
+});
+test('nonmembers get an actionable rejection and membership outages are not mistaken for nonmembership', async () => {
+  for (const [code, status] of [['discord_membership_required', 403], ['discord_membership_check_failed', 503]] as const) {
+    const response = await handleJoinSubmission(request({ application: draft(), images: [image()] }), {
+      origin, getSession: async () => ({ discordId: applicant }), deliver: async () => { throw new JoinDeliveryError(code, status); },
+    });
+    const body = await response.json();
+    assert.equal(response.status, status); assert.equal(body.code, code); assert.notEqual(body.ok, true);
+    assert.equal(body.applicationId, undefined);
+    if (status === 403) assert.match(body.error, /请先加入 DLM Discord 服务器/);
+    else assert.match(body.error, /暂时无法确认/);
+  }
+});
+test('internal delivery preserves the membership rejection and keeps unrelated permission errors unavailable', async (t) => {
+  const previousPort = process.env.INTERNAL_API_PORT; const previousToken = process.env.INTERNAL_API_TOKEN;
+  process.env.INTERNAL_API_PORT = '1'; process.env.INTERNAL_API_TOKEN = 'test-only';
+  t.after(() => {
+    if (previousPort === undefined) delete process.env.INTERNAL_API_PORT; else process.env.INTERNAL_API_PORT = previousPort;
+    if (previousToken === undefined) delete process.env.INTERNAL_API_TOKEN; else process.env.INTERNAL_API_TOKEN = previousToken;
+  });
+  let code = 'discord_membership_required';
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ ok: false, error: code }, { status: 403 }));
+  const app = validateJoinApplication(draft(), applicant).data;
+  const images = validateJoinImages([image()], app.assessment).images;
+  await assert.rejects(deliverJoinApplication(app, images), (e: unknown) => e instanceof JoinDeliveryError && e.code === code && e.status === 403);
+  code = 'bot_missing_permissions';
+  await assert.rejects(deliverJoinApplication(app, images), (e: unknown) => e instanceof JoinDeliveryError && e.status === 503);
 });
