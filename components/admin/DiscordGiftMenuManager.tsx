@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   DISCORD_GIFT_MENU_LIMIT,
   giftMenuUnavailableReason,
@@ -10,6 +10,27 @@ import {
 const ENDPOINT = '/api/admin/gifts/discord-menu';
 const secondaryButton = 'rounded-lg border border-white/20 px-3 py-2 text-sm text-white/80 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 disabled:cursor-not-allowed disabled:opacity-35';
 
+type GiftDrag = {
+  name: string;
+  pointerId: number;
+  handle: HTMLButtonElement;
+  captureTarget: HTMLOListElement;
+  initialNames: string[];
+  names: string[];
+  startY: number;
+  clientY: number;
+  offsetY: number;
+  height: number;
+  moved: boolean;
+  frame: number;
+};
+
+function DragHandleIcon() {
+  return <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+    {[5, 10, 15].flatMap((y) => [7, 13].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.5" />))}
+  </svg>;
+}
+
 export function DiscordGiftMenuManager() {
   const [data, setData] = useState<DiscordGiftMenuState | null>(null);
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
@@ -18,6 +39,16 @@ export function DiscordGiftMenuManager() {
   const [saving, setSaving] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [feedback, setFeedback] = useState<{ error: boolean; text: string } | null>(null);
+  const sortHelpId = useId();
+  const listRef = useRef<HTMLOListElement>(null);
+  const dragRef = useRef<GiftDrag | null>(null);
+  const [draggingName, setDraggingName] = useState<string | null>(null);
+  const [dragPreview, setDragPreview] = useState<{ name: string; top: number; left: number; width: number } | null>(null);
+  const [sortAnnouncement, setSortAnnouncement] = useState('');
+
+  useEffect(() => () => {
+    if (dragRef.current) cancelAnimationFrame(dragRef.current.frame);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -44,6 +75,7 @@ export function DiscordGiftMenuManager() {
   const selected = selectedNames.map((name) => ({ name, gift: byName.get(name) }));
   const invalidSelection = selected.some(({ gift }) => !gift || giftMenuUnavailableReason(gift));
   const busy = loading || saving;
+  const editingLocked = busy || draggingName !== null;
   const available = (data?.gifts ?? []).filter((gift) =>
     !selectedNames.includes(gift.name) && gift.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
   );
@@ -54,15 +86,96 @@ export function DiscordGiftMenuManager() {
   }
 
   function move(index: number, offset: number) {
+    if (editingLocked) return;
     const next = [...selectedNames];
     const destination = index + offset;
     if (destination < 0 || destination >= next.length) return;
     [next[index], next[destination]] = [next[destination], next[index]];
     changeSelection(next);
+    setSortAnnouncement(`${selectedNames[index]}已移至第 ${destination + 1} 位`);
+  }
+
+  function updateDrag(drag: GiftDrag) {
+    const list = listRef.current;
+    if (!list || !drag.moved) return;
+    const rows = Array.from(list.querySelectorAll<HTMLLIElement>('li[data-gift-name]'));
+    const centerY = drag.clientY - drag.offsetY + drag.height / 2;
+    const otherRows = rows.filter((row) => row.dataset.giftName !== drag.name);
+    const nextRow = otherRows.findIndex((row) => {
+      const rect = row.getBoundingClientRect();
+      return centerY < rect.top + rect.height / 2;
+    });
+    const destination = nextRow === -1 ? otherRows.length : nextRow;
+    if (drag.names.indexOf(drag.name) !== destination) {
+      const next = drag.names.filter((name) => name !== drag.name);
+      next.splice(destination, 0, drag.name);
+      drag.names = next;
+      setSelectedNames(next);
+    }
+    const rect = list.getBoundingClientRect();
+    setDragPreview({ name: drag.name, top: drag.clientY - drag.offsetY, left: rect.left, width: rect.width });
+  }
+
+  function startDrag(event: ReactPointerEvent<HTMLButtonElement>, name: string) {
+    if (editingLocked || !event.isPrimary || event.button !== 0) return;
+    const row = event.currentTarget.closest('li');
+    const list = listRef.current;
+    if (!row || !list) return;
+    event.preventDefault();
+    // Capture on the stable list: moving a row in the DOM releases its pointer capture.
+    list.focus({ preventScroll: true });
+    list.setPointerCapture(event.pointerId);
+    const rect = row.getBoundingClientRect();
+    const drag: GiftDrag = {
+      name, pointerId: event.pointerId, handle: event.currentTarget, captureTarget: list,
+      initialNames: [...selectedNames], names: [...selectedNames],
+      startY: event.clientY, clientY: event.clientY, offsetY: event.clientY - rect.top,
+      height: rect.height, moved: false, frame: 0,
+    };
+    dragRef.current = drag;
+    setDraggingName(name);
+    const scroll = () => {
+      if (dragRef.current !== drag) return;
+      if (drag.moved) {
+        const edge = 72;
+        const distance = drag.clientY < edge ? drag.clientY - edge
+          : drag.clientY > window.innerHeight - edge ? drag.clientY - (window.innerHeight - edge) : 0;
+        const amount = Math.sign(distance) * Math.min(16, Math.abs(distance) / 4);
+        if (amount) {
+          window.scrollBy(0, amount);
+          updateDrag(drag);
+        }
+      }
+      drag.frame = requestAnimationFrame(scroll);
+    };
+    drag.frame = requestAnimationFrame(scroll);
+  }
+
+  function continueDrag(event: ReactPointerEvent<HTMLOListElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    drag.clientY = event.clientY;
+    if (!drag.moved && Math.abs(drag.clientY - drag.startY) < 4) return;
+    if (!drag.moved) setFeedback(null);
+    drag.moved = true;
+    updateDrag(drag);
+  }
+
+  function finishDrag(cancelled: boolean) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    dragRef.current = null;
+    cancelAnimationFrame(drag.frame);
+    if (drag.captureTarget.hasPointerCapture(drag.pointerId)) drag.captureTarget.releasePointerCapture(drag.pointerId);
+    drag.handle.focus({ preventScroll: true });
+    if (cancelled) setSelectedNames(drag.initialNames);
+    setDraggingName(null);
+    setDragPreview(null);
+    if (drag.moved) setSortAnnouncement(cancelled ? '已取消本次排序' : `${drag.name}已移至第 ${drag.names.indexOf(drag.name) + 1} 位`);
   }
 
   async function save() {
-    if (!data || busy || !dirty || invalidSelection) return;
+    if (!data || editingLocked || !dirty || invalidSelection) return;
     setSaving(true);
     setFeedback(null);
     try {
@@ -84,7 +197,13 @@ export function DiscordGiftMenuManager() {
   }
 
   return (
-    <div className="space-y-6" aria-busy={busy}>
+    <div className="space-y-6" aria-busy={busy} onKeyDown={(event) => {
+      if (event.key === 'Escape' && dragRef.current) {
+        event.preventDefault();
+        finishDrag(true);
+      }
+    }}>
+      <p role="status" className="sr-only">{sortAnnouncement}</p>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <h2 className="text-xl font-semibold">打赏下拉列表</h2>
@@ -94,12 +213,12 @@ export function DiscordGiftMenuManager() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" className={secondaryButton} disabled={busy} onClick={() => {
+          <button type="button" className={secondaryButton} disabled={editingLocked} onClick={() => {
             setLoading(true);
             setFeedback(null);
             setReloadToken((value) => value + 1);
           }}>{dirty ? '放弃修改并重新加载' : '刷新列表'}</button>
-          <button type="button" onClick={save} disabled={busy || !dirty || invalidSelection}
+          <button type="button" onClick={save} disabled={editingLocked || !dirty || invalidSelection}
             className="rounded-lg bg-[#5c43a3] px-5 py-2 text-sm font-medium text-white hover:bg-[#7054bd] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 disabled:cursor-not-allowed disabled:opacity-40">
             {saving ? '保存中…' : '保存列表'}
           </button>
@@ -127,7 +246,7 @@ export function DiscordGiftMenuManager() {
                     <p className={`mt-1 text-xs ${reason ? 'text-amber-200' : 'text-white/60'}`}>{reason ?? `¥${Number(gift.price).toFixed(2)}`}</p>
                   </div>
                   <button type="button" className={`${secondaryButton} shrink-0`} aria-label={`添加${gift.name}`}
-                    disabled={busy || !!reason || selectedNames.length >= DISCORD_GIFT_MENU_LIMIT}
+                    disabled={editingLocked || !!reason || selectedNames.length >= DISCORD_GIFT_MENU_LIMIT}
                     onClick={() => changeSelection([...selectedNames, gift.name])}>添加</button>
                 </li>;
               })}
@@ -140,21 +259,35 @@ export function DiscordGiftMenuManager() {
               <h3 className="font-medium">展示顺序</h3>
               <span className="text-sm text-white/65">{selectedNames.length} / {DISCORD_GIFT_MENU_LIMIT}{dirty ? ' · 未保存' : ''}</span>
             </div>
-            <p className="mt-2 text-xs leading-5 text-white/60">从上到下即下拉选项顺序。移除只影响此列表，不会下架礼物。</p>
-            <ol className="mt-3 space-y-2">
+            <p id={sortHelpId} className="mt-2 text-xs leading-5 text-white/60">拖动左侧手柄调整顺序，完成后点击“保存列表”。键盘可用上下方向键调整，Esc 取消拖动。移除不会下架礼物。</p>
+            <ol ref={listRef} tabIndex={-1} aria-label="礼物展示顺序" className="mt-3 space-y-2 focus:outline-none"
+              onPointerMove={continueDrag}
+              onPointerUp={(event) => { if (dragRef.current?.pointerId === event.pointerId) finishDrag(false); }}
+              onPointerCancel={(event) => { if (dragRef.current?.pointerId === event.pointerId) finishDrag(true); }}
+              onLostPointerCapture={(event) => {
+                if (event.target === event.currentTarget && dragRef.current?.pointerId === event.pointerId) finishDrag(true);
+              }}>
               {selected.map(({ name, gift }, index) => {
                 const reason = gift ? giftMenuUnavailableReason(gift) : '礼物已不存在';
-                return <li key={name} className="flex flex-wrap items-center gap-2 rounded-xl bg-white/5 p-3">
-                  <span className="w-6 text-sm text-white/45">{index + 1}</span>
-                  <div className="min-w-0 flex-1 basis-28">
+                return <li key={name} data-gift-name={name} className={`flex items-center gap-2 rounded-xl p-3 ${dragPreview?.name === name ? 'bg-violet-400/15 ring-1 ring-inset ring-violet-400/60' : 'bg-white/5'}`}>
+                  <button type="button" aria-label={`拖动排序：${name}`} aria-describedby={sortHelpId}
+                    aria-pressed={draggingName === name} disabled={busy || (draggingName !== null && draggingName !== name)}
+                    className="flex h-11 w-8 shrink-0 touch-none select-none items-center justify-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400 enabled:cursor-grab active:cursor-grabbing disabled:opacity-35"
+                    onPointerDown={(event) => startDrag(event, name)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        move(index, event.key === 'ArrowUp' ? -1 : 1);
+                      }
+                    }}>
+                    <DragHandleIcon />
+                  </button>
+                  <span className="w-5 shrink-0 text-sm text-white/45">{index + 1}</span>
+                  <div className="min-w-0 flex-1">
                     <p className="break-words text-sm">{name}</p>
                     <p className={`mt-1 text-xs ${reason ? 'text-amber-200' : 'text-white/60'}`}>{reason ? `${reason}，不会显示` : `¥${Number(gift!.price).toFixed(2)}`}</p>
                   </div>
-                  <div className="flex gap-1">
-                    <button type="button" className={secondaryButton} aria-label={`上移${name}`} disabled={busy || index === 0} onClick={() => move(index, -1)}>↑</button>
-                    <button type="button" className={secondaryButton} aria-label={`下移${name}`} disabled={busy || index === selected.length - 1} onClick={() => move(index, 1)}>↓</button>
-                    <button type="button" className={secondaryButton} aria-label={`移除${name}`} disabled={busy} onClick={() => changeSelection(selectedNames.filter((item) => item !== name))}>移除</button>
-                  </div>
+                  <button type="button" className={`${secondaryButton} shrink-0`} aria-label={`移除${name}`} disabled={editingLocked} onClick={() => changeSelection(selectedNames.filter((item) => item !== name))}>移除</button>
                 </li>;
               })}
             </ol>
@@ -180,6 +313,11 @@ export function DiscordGiftMenuManager() {
           </div>
         </section>
       </>}
+      {dragPreview && <div aria-hidden="true" className="pointer-events-none fixed z-50 flex items-center gap-3 rounded-xl border border-violet-400/60 bg-[#302744] p-3 text-white shadow-xl"
+        style={{ top: dragPreview.top, left: dragPreview.left, width: dragPreview.width }}>
+        <DragHandleIcon /><p className="min-w-0 flex-1 break-words text-sm">{dragPreview.name}</p>
+        <span className="shrink-0 text-xs text-white/65">拖动排序</span>
+      </div>}
     </div>
   );
 }
