@@ -632,8 +632,7 @@ export function GiftAdminManager({ initialGifts, endpoint }: Props) {
                             <div role="group" aria-label={`确认删除${gift.name}`} className="space-y-3 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4">
                               <p className="text-sm font-medium text-rose-200 break-all">确定删除「{gift.name}」？</p>
                               <p className="text-xs leading-6 text-white/70">
-                                删除后会从礼物列表、打赏下拉列表和礼物墙移除，并清除该礼物的解锁记录。
-                                历史打赏和交易流水会保留。此操作无法撤销；如需保留解锁记录，请改用下架。
+                                如需保留礼物墙记录，请改用下架。
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 <button type="button" disabled={isDeleting} onClick={() => { setDeleteTarget(null); setDeleteError(''); }}
