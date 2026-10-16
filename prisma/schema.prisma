@@ -1233,9 +1233,12 @@ model Gift {
   active        Boolean  @default(true)
   rate          Decimal  @default(1) @db.Decimal(10, 2)
   staffOnlyGift Boolean  @default(false)
+  discordMenuOrder Int?
 
   unlocks   PeiwanGiftUnlock[]
   giftImage GiftImage?
+
+  @@index([discordMenuOrder])
 }
 
 model GiftImage {

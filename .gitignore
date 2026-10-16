@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/lib/discord-gift-menu-admin.test.ts
+/output/playwright/discord-gift-menu-*.png
 
 # next.js
 /.next/
