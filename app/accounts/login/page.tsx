@@ -22,7 +22,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const callbackUrl = normalizeRedirectTarget(getFirstValue(params.callbackUrl), '/profile');
   const error = getFirstValue(params.error);
   const discordHref = `/api/discord/login?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-  const wechatHref = `/api/auth/wechat/login?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f7f3ef] px-6 py-12 text-[#171717]">
@@ -30,7 +29,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className="text-center text-xs font-medium tracking-[0.3em] text-[#2563eb]">点了么娱乐公会</p>
         <h1 className="mt-3 text-center text-3xl font-semibold tracking-wide">登录账户</h1>
         <p className="mt-3 text-center text-sm leading-6 text-neutral-600">
-          使用微信查看余额、下单和使用公会工作台；已有 Discord 账户也可以继续使用 Discord 登录。
+          使用 Discord 登录后，可查看余额、下单并管理个人资料。
         </p>
 
         {error && errorMessage[error] ? (
@@ -41,12 +40,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         <div className="mt-7 space-y-3">
           <Link
-            href={wechatHref}
-            className="flex w-full items-center justify-center rounded-full bg-[#07c160] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#06ad56]"
-          >
-            微信扫码登录
-          </Link>
-          <Link
             href={discordHref}
             className="flex w-full items-center justify-center rounded-full bg-[#5865f2] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#4752c4]"
           >
@@ -55,7 +48,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
 
         <p className="mt-6 text-center text-xs leading-5 text-neutral-500">
-          微信登录会通过微信官方授权页完成；网站不会获取你的微信密码。
+          登录将跳转至 Discord 官方授权页。
         </p>
       </section>
     </main>
