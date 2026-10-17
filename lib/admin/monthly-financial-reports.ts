@@ -76,13 +76,25 @@ type DecimalLike = Prisma.Decimal | string | number | bigint | null | undefined;
 
 export const calculateRecordedBankCash = (
   opening: Prisma.Decimal,
-  rechargeInflow: Prisma.Decimal,
+  rechargeNetInflow: Prisma.Decimal,
   withdrawalOutflow: Prisma.Decimal,
   manualExpenseOutflow: Prisma.Decimal,
   dividendPaymentOutflow = new Prisma.Decimal(0),
 ) => {
-  const movement = rechargeInflow.sub(withdrawalOutflow).sub(manualExpenseOutflow).sub(dividendPaymentOutflow);
+  const movement = rechargeNetInflow.sub(withdrawalOutflow).sub(manualExpenseOutflow).sub(dividendPaymentOutflow);
   return { movement, closing: opening.add(movement) };
+};
+
+export const summarizeRechargeCashFlow = (rows: ReadonlyArray<{ amount: Prisma.Decimal }>) => {
+  const positive = rows.reduce(
+    (sum, row) => row.amount.gt(0) ? sum.add(row.amount) : sum,
+    new Prisma.Decimal(0),
+  );
+  const negative = rows.reduce(
+    (sum, row) => row.amount.lt(0) ? sum.add(row.amount.abs()) : sum,
+    new Prisma.Decimal(0),
+  );
+  return { positive, negative, net: positive.sub(negative) };
 };
 
 type RevertedGiftRow = {
@@ -704,15 +716,11 @@ async function loadMonthlyRevenueData(params: {
   const blockReward = decimalSum(blockStackRows, 'collapseRewardNet');
   const blockEarning = blockTotalRevenue.sub(blockSettled).sub(blockEnvelope).sub(blockReward);
 
-  const rechargeTotal = decimalSum(rechargeRows, 'amount');
-  const rechargeCashInflow = rechargeRows.reduce(
-    (sum, row) => dec(row.amount).gt(0) ? sum.add(row.amount) : sum,
-    new Prisma.Decimal(0),
-  );
-  const negativeRechargeAmount = rechargeRows.reduce(
-    (sum, row) => dec(row.amount).lt(0) ? sum.add(dec(row.amount).abs()) : sum,
-    new Prisma.Decimal(0),
-  );
+  const rechargeCash = summarizeRechargeCashFlow(rechargeRows);
+  const rechargeTotal = rechargeCash.net;
+  const rechargeCashPositive = rechargeCash.positive;
+  const rechargeCashNetInflow = rechargeCash.net;
+  const negativeRechargeAmount = rechargeCash.negative;
   const withdrawTotal = decimalSum(withdrawRows, 'amount');
   const zpayTotal = decimalSum(zpayRows, 'amount');
   const stripeTotal = decimalSum(stripeRows, 'rechargeAmount');
@@ -928,7 +936,8 @@ async function loadMonthlyRevenueData(params: {
       blockReward,
       blockEarning,
       rechargeTotal,
-      rechargeCashInflow,
+      rechargeCashPositive,
+      rechargeCashNetInflow,
       negativeRechargeAmount,
       withdrawTotal,
       zpayTotal,
@@ -1347,7 +1356,7 @@ function buildFinancialStatementWorkbook(params: {
   const expenseTotal = expenseRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0));
   const netProfit = incomeTotal.sub(expenseTotal);
   const recordedBankCash = calculateRecordedBankCash(
-    cashOpeningBalance, data.totals.rechargeCashInflow,
+    cashOpeningBalance, data.totals.rechargeCashNetInflow,
     data.totals.withdrawTotal, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
   );
 
@@ -1531,7 +1540,9 @@ function buildFinancialStatementWorkbook(params: {
       })),
     ] : []),
     { section: '现金余额推算', key: '期初银行余额', value: cashOpeningBalance.toString() },
-    { section: '实际现金流入', key: '正数 Recharge', value: data.totals.rechargeCashInflow.toString() },
+    { section: '充值流水', key: '正数 Recharge', value: data.totals.rechargeCashPositive.toString() },
+    { section: '充值流水', key: '负数 Recharge（抵减）', value: data.totals.negativeRechargeAmount.toString() },
+    { section: '现金余额推算', key: 'Recharge 净额', value: data.totals.rechargeCashNetInflow.toString() },
     { section: '实际现金流出', key: '提现（按已打款口径）', value: data.totals.withdrawTotal.toString() },
     { section: '实际现金流出', key: '人工记录支出（不含前期调整）', value: data.totals.manualCashExpenseTotal.toString() },
     { section: '实际现金流出', key: '已支付股东分红', value: dividendLedger.paidThisMonth.toString() },
@@ -1540,7 +1551,7 @@ function buildFinancialStatementWorkbook(params: {
     { section: '现金余额推算', key: '本期已记录现金净流入', value: recordedBankCash.movement.toString() },
     { section: '现金余额推算', key: '期末账面银行余额（待核对）', value: recordedBankCash.closing.toString() },
     { section: '非当月现金流', key: '前期支出调整', value: data.totals.priorPeriodExpenseAdjustmentTotal.toString() },
-    { section: '待核对', key: '负数 Recharge（扣款或退款需区分）', value: data.totals.negativeRechargeAmount.toString() },
+    { section: '说明', key: '负数 Recharge', value: '已抵减正数 Recharge；仍需核对是否为现金退款或钱包纠错' },
     { section: '说明', key: '预存余额消费', value: '不产生新的银行现金流入' },
     { section: '说明', key: 'Stripe 手续费', value: '由人工支出记录，勿自动重复计入' },
     { section: '说明', key: '资产合计', value: '银行余额为已记录现金收支推算，须与银行流水核对；盈亏仅列入所有者权益，不作为资产或自动分红' },
@@ -1826,7 +1837,7 @@ const getRecordedBankOpeningBalance = async (monthKey: string) => {
     } else {
       const [recharges, withdrawals, manualExpenses] = await Promise.all([
         prisma.recharge.findMany({
-          where: { createdAt: { gte: newEntityReportStart(range.start), lt: range.end }, amount: { gt: 0 } },
+          where: { createdAt: { gte: newEntityReportStart(range.start), lt: range.end } },
           select: { amount: true },
         }),
         prisma.withdraw.findMany({
@@ -1839,7 +1850,7 @@ const getRecordedBankOpeningBalance = async (monthKey: string) => {
         }),
       ]);
       balance = balance
-        .add(decimalSum(recharges, 'amount'))
+        .add(summarizeRechargeCashFlow(recharges).net)
         .sub(decimalSum(withdrawals, 'amount'))
         .sub(decimalSum(manualExpenses, 'amount'));
     }
@@ -1949,7 +1960,7 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
   const expenseTotal = expenseRows.reduce((sum, row) => sum.add(dec(row.amount)), new Prisma.Decimal(0));
   const netProfit = incomeTotal.sub(expenseTotal);
   const recordedBankCash = calculateRecordedBankCash(
-    cashOpeningBalance, data.totals.rechargeCashInflow,
+    cashOpeningBalance, data.totals.rechargeCashNetInflow,
     data.totals.withdrawTotal, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
   );
   const balanceModel = buildMonthlyBalanceSheetModel({
@@ -1985,7 +1996,7 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
     netProfit: netProfit.toString(),
     cashFlow: {
       openingBankBalance: cashOpeningBalance.toString(),
-      rechargeInflow: data.totals.rechargeCashInflow.toString(),
+      rechargeInflow: data.totals.rechargeCashNetInflow.toString(),
       withdrawalOutflow: data.totals.withdrawTotal.toString(),
       manualExpenseOutflow: data.totals.manualCashExpenseTotal.toString(),
       dividendPaymentOutflow: dividendLedger.paidThisMonth.toString(),

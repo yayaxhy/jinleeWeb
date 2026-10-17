@@ -5,6 +5,7 @@ import {
   buildMonthlyBalanceSheetModel,
   calculateRecordedBankCash,
   rewindWalletTransactionChain,
+  summarizeRechargeCashFlow,
 } from './admin/monthly-financial-reports';
 
 const amount = (value: string) => new Prisma.Decimal(value);
@@ -23,18 +24,27 @@ test('month-end wallet rewind refuses a missing or disconnected transaction', ()
   ]), /无法接续/);
 });
 
-test('bank cash starts at zero and rolls forward using only recorded cash movements', () => {
-  const september = calculateRecordedBankCash(amount('0'), amount('14636'), amount('1815.92'), amount('0'));
-  assert.equal(september.movement.toString(), '12820.08');
-  assert.equal(september.closing.toString(), '12820.08');
+test('negative Recharge offsets positive Recharge in bank cash and later month opening', () => {
+  const recharge = summarizeRechargeCashFlow([
+    { amount: amount('14636') },
+    { amount: amount('-500') },
+    { amount: amount('-250') },
+  ]);
+  assert.equal(recharge.positive.toString(), '14636');
+  assert.equal(recharge.negative.toString(), '750');
+  assert.equal(recharge.net.toString(), '13886');
+
+  const september = calculateRecordedBankCash(amount('0'), recharge.net, amount('1815.92'), amount('2266'));
+  assert.equal(september.movement.toString(), '9804.08');
+  assert.equal(september.closing.toString(), '9804.08');
 
   const october = calculateRecordedBankCash(september.closing, amount('120'), amount('1064'), amount('0'), amount('8000'));
-  assert.equal(october.closing.toString(), '3876.08');
+  assert.equal(october.closing.toString(), '860.08');
 });
 
 test('a monthly loss reduces equity without becoming a negative dividend or asset', () => {
   const balanceSheet = buildMonthlyBalanceSheetModel({
-    estimatedBankCash: amount('12820.08'),
+    estimatedBankCash: amount('9804.08'),
     userBalance: amount('12735.71'),
     netProfit: amount('-2931.63'),
     openingCapital: amount('0'),
@@ -47,7 +57,7 @@ test('a monthly loss reduces equity without becoming a negative dividend or asse
   assert.deepEqual(balanceSheet.liabilityRows.map((row) => row.item), ['用户余额', '应付分红']);
   assert.equal(balanceSheet.equityRows.find((row) => row.item === '当月盈亏')?.category, '本期亏损');
   assert.equal(balanceSheet.equityTotal.toString(), '-2931.63');
-  assert.equal(balanceSheet.reconciliationDifference.toString(), '3016');
+  assert.equal(balanceSheet.reconciliationDifference.toString(), '0');
 });
 
 test('a monthly profit increases equity and prior profit stays separately identified', () => {

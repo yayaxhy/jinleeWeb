@@ -116,16 +116,16 @@ export default async function MonthlyRevenueFilePage({ params }: PageProps) {
         <h3 className="text-lg font-semibold">现金收支核对（不等于业务利润）</h3>
         <div className="grid gap-3 text-sm md:grid-cols-4">
           <p>期初银行余额：<span className="font-mono">{formatMoney(preview.cashFlow.openingBankBalance)}</span></p>
-          <p>充值现金流入：<span className="font-mono">{formatMoney(preview.cashFlow.rechargeInflow)}</span></p>
+          <p>充值净额（正数减负数）：<span className="font-mono">{formatMoney(preview.cashFlow.rechargeInflow)}</span></p>
           <p>提现现金流出：<span className="font-mono">{formatMoney(preview.cashFlow.withdrawalOutflow)}</span></p>
           <p>人工记录现金支出：<span className="font-mono">{formatMoney(preview.cashFlow.manualExpenseOutflow)}</span></p>
           <p>已支付股东分红：<span className="font-mono">{formatMoney(preview.cashFlow.dividendPaymentOutflow ?? '0')}</span></p>
           <p>本期已记录现金净流入：<span className="font-mono">{formatMoney(preview.cashFlow.netRecordedCashMovement)}</span></p>
           <p>期末账面银行余额（待核对）：<span className="font-mono">{formatMoney(preview.cashFlow.estimatedClosingBankBalance)}</span></p>
           <p>前期支出调整（非本月现金）：<span className="font-mono">{formatMoney(preview.cashFlow.priorPeriodExpenseAdjustment)}</span></p>
-          <p>负数充值待核对：<span className="font-mono">{formatMoney(preview.cashFlow.negativeRechargePendingReview)}</span></p>
+          <p>负数充值（已抵减）：<span className="font-mono">{formatMoney(preview.cashFlow.negativeRechargePendingReview)}</span></p>
         </div>
-        <p className="text-xs text-white/50">新主体 2026 年 9 月 25 日银行期初为 ¥0；以后月份从已记录收支逐月结转。预存余额购买抽奖或服务不产生新的银行入账；负数充值需确认是实际退款还是钱包扣款。补记旧月的支出不自动视作本月银行付款；Stripe 手续费由人工支出记录。账面结余并非银行对账单余额。</p>
+        <p className="text-xs text-white/50">新主体 2026 年 9 月 25 日银行期初为 ¥0；以后月份从已记录收支逐月结转。预存余额购买抽奖或服务不产生新的银行入账；负数充值已抵减正数充值，仍需核对它是实际退款还是钱包纠错。补记旧月的支出不自动视作本月银行付款；Stripe 手续费由人工支出记录。账面结余并非银行对账单余额。</p>
       </section>
 
       {preview.walletReconciliation ? (
