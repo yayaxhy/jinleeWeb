@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { DlmAdminOperationStatus, DlmAdminOperationType } from '@prisma/client';
 import { WechatBossManager } from '@/components/admin/WechatBossManager';
+import { RechargeCorrectionPanel } from '@/components/admin/RechargeCorrectionPanel';
 import { isAdminDiscordId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
@@ -11,7 +13,7 @@ export default async function WechatBossesAdminPage() {
   const session = await getServerSession();
   if (!session?.discordId || !isAdminDiscordId(session.discordId)) redirect('/');
 
-  const [bosses, gifts, peiwans, operations] = await Promise.all([
+  const [bosses, gifts, peiwans, operations, manualRecharges, correctedRechargeSources] = await Promise.all([
     prisma.manualWechatBoss.findMany({
       include: { dlmUser: { select: { totalBalance: true, recharge: true, loyaltyPoints: true } } },
       orderBy: { createdAt: 'desc' },
@@ -30,7 +32,35 @@ export default async function WechatBossesAdminPage() {
       take: 100,
       select: { id: true, dlmId: true, type: true, status: true, operatorDiscordId: true, details: true, result: true, createdAt: true },
     }),
+    prisma.dlmAdminOperation.findMany({
+      where: {
+        type: DlmAdminOperationType.MANUAL_WECHAT_RECHARGE,
+        status: DlmAdminOperationStatus.COMPLETED,
+        sourceOperationId: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      select: {
+        id: true,
+        dlmId: true,
+        createdAt: true,
+        result: true,
+        dlmUser: {
+          select: {
+            manualWechatBoss: { select: { displayName: true, wechatContact: true } },
+          },
+        },
+      },
+    }),
+    prisma.dlmAdminOperation.findMany({
+      where: { sourceOperationId: { not: null } },
+      select: { sourceOperationId: true },
+    }),
   ]);
+
+  const correctedSourceOperationIds = new Set(
+    correctedRechargeSources.flatMap((operation) => operation.sourceOperationId ? [operation.sourceOperationId] : []),
+  );
 
   const quotationFields = [
     ['Q1', 'quotation_Q1'], ['Q2', 'lolPrice'], ['Q3', 'valPrice'], ['Q4', 'deltaPrice'], ['Q5', 'csgoPrice'],
@@ -44,6 +74,25 @@ export default async function WechatBossesAdminPage() {
           <div><p className="text-xs tracking-[0.35em] text-white/50">ADMIN</p><h1 className="mt-2 text-3xl font-semibold">微信老板充值与代操作</h1><p className="mt-2 text-sm text-white/60">为没有 Discord 的老板登记微信号与备注名、分配 DLM ID、人工微信入账，并执行可审计的代打赏/代点单。</p></div>
           <Link href="/admin" className="rounded-full border border-white/20 px-4 py-2 text-sm text-white/80 hover:bg-white/10">返回后台</Link>
         </header>
+        <RechargeCorrectionPanel
+          bosses={bosses.map((boss) => ({ dlmId: boss.dlmId, wechatContact: boss.wechatContact, displayName: boss.displayName, totalBalance: boss.dlmUser.totalBalance.toFixed(2), loyaltyPoints: boss.dlmUser.loyaltyPoints.toFixed(2), createdAt: boss.createdAt.toISOString() }))}
+          manualRecharges={manualRecharges.flatMap((operation) => {
+            if (correctedSourceOperationIds.has(operation.id)) return [];
+            const result = operation.result as { amount?: unknown; rechargeId?: unknown } | null;
+            const amount = typeof result?.amount === 'string' ? result.amount : null;
+            const rechargeId = typeof result?.rechargeId === 'string' ? result.rechargeId : null;
+            const boss = operation.dlmUser?.manualWechatBoss;
+            if (!amount || !rechargeId || !boss) return [];
+            return [{
+              operationId: operation.id,
+              sourceDlmId: operation.dlmId,
+              bossLabel: boss.displayName || boss.wechatContact,
+              rechargeId,
+              amount,
+              createdAt: operation.createdAt.toISOString(),
+            }];
+          })}
+        />
         <WechatBossManager
           bosses={bosses.map((boss) => ({ dlmId: boss.dlmId, wechatContact: boss.wechatContact, displayName: boss.displayName, totalBalance: boss.dlmUser.totalBalance.toFixed(2), loyaltyPoints: boss.dlmUser.loyaltyPoints.toFixed(2), createdAt: boss.createdAt.toISOString() }))}
           gifts={gifts.map((gift) => ({ name: gift.GiftName, price: gift.price?.toFixed(2) ?? '0.00' }))}
