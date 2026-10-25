@@ -1,4 +1,8 @@
 "use client";
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
+
+import { PublicMessageError, publicMessage, rechargeErrorMessage, RECHARGE_UNCONFIRMED } from '@/lib/public-error-messages';
 
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -35,6 +39,7 @@ const formatCurrency = (value?: string) => {
 };
 
 export default function WechatNativePayClient({ username }: WechatNativePayClientProps) {
+  const siteCopy = useSiteCopy();
   const [amount, setAmount] = useState<string>(String(AMOUNT_OPTIONS[0]));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +90,7 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
       });
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload?.error ?? '下单失败，请稍后再试');
+        throw new PublicMessageError(rechargeErrorMessage(payload?.error));
       }
       setOrder({
         id: payload.orderId,
@@ -98,7 +103,7 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
       });
       setHint('订单已创建，请在 1 小时内使用微信扫一扫完成支付，系统会自动更新余额。');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '创建订单失败';
+      const message = siteCopy.text(publicMessage(err, RECHARGE_UNCONFIRMED), "site.lib.public.error.messages");
       setError(message);
     } finally {
       setLoading(false);
@@ -111,7 +116,7 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
       await navigator.clipboard.writeText(order.payUrl);
       setHint('二维码链接已复制，可在其他设备中打开继续生成二维码。');
     } catch {
-      setError('无法复制链接，请手动重试。');
+      setError(siteCopy("site.app.wechat.pay.wechatnativepayclient.97dd1933a05d"));
     }
   };
 
@@ -120,22 +125,19 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
       <div className="space-y-6">
         <div className="space-y-6 rounded-[32px] border border-black/5 bg-white p-6">
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">支付方式</p>
-            <div className="rounded-2xl border border-black/10 bg-black/5 px-4 py-3 text-sm">
-              微信扫码支付
-            </div>
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.a870784d0b6e" /></p>
+            <div className="rounded-2xl border border-black/10 bg-black/5 px-4 py-3 text-sm"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.c8715f381cf1" /></div>
             
-            <p className="text-xs text-gray-500">
-              当前用户标识：<span className="font-mono">{username ?? '未登录'}</span>
+            <p className="text-xs text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.233165aee9bc" /><span className="font-mono">{username ?? <SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.e8041a8c9358" />}</span>
             </p>
           </div>
 
           <div className="rounded-[24px] border border-black/5 bg-white p-5 text-left">
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">支付说明</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.b67221d19ae5" /></p>
             <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-gray-600">
-              <li>选择充值金额并创建订单。</li>
-              <li>使用微信扫一扫页面二维码完成支付。</li>
-              <li>支付成功后页面会自动更新到账状态。</li>
+              <li><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.811988ca2a85" /></li>
+              <li><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.a99f9b20258a" /></li>
+              <li><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.93bff56f07b0" /></li>
             </ol>
           </div>
         </div>
@@ -146,7 +148,7 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
         className="space-y-6 rounded-[32px] border border-black/5 bg-white p-8"
       >
         <div className="space-y-3">
-          <label className="text-xs uppercase tracking-[0.4em] text-gray-500">充值金额 *</label>
+          <label className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.3b8b236acaca" /></label>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {AMOUNT_OPTIONS.map((value) => {
               const active = amount === String(value);
@@ -170,7 +172,7 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
               );
             })}
           </div>
-          <p className="text-xs text-gray-500">请选择一项充值金额，暂不支持自定义金额。</p>
+          <p className="text-xs text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.71843f49b3dc" /></p>
         </div>
 
         <button
@@ -178,43 +180,41 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
           disabled={loading}
           className="w-full rounded-full bg-black px-6 py-3 text-sm uppercase tracking-[0.4em] text-white transition hover:bg-black/80 disabled:opacity-60"
         >
-          {loading ? '创建订单中…' : '生成微信二维码'}
+          {loading ? <SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.69988de37b6d" /> : <SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.f5543e33e6c6" />}
         </button>
 
-        {error ? <p className="text-sm text-red-500">{error}</p> : null}
+        {error ? <p className="text-sm text-red-500"><SiteText namespace="site.app.wechat.pay.wechatnativepayclient" value={error} /></p> : null}
         {hint ? <p className="text-sm text-emerald-600">{hint}</p> : null}
 
         {order ? (
           <div className="space-y-4 rounded-[24px] border border-black/5 bg-black/5 p-5">
             {order.qrCodeDataUrl ? (
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">微信扫码支付</p>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.c8715f381cf1" /></p>
                 <div className="mx-auto w-56 rounded-[28px] border border-black/10 bg-white p-4">
                   <Image
                     src={order.qrCodeDataUrl}
-                    alt="微信支付二维码"
+                    alt={siteCopy("site.app.wechat.pay.wechatnativepayclient.6eeebac2b29c")}
                     width={360}
                     height={360}
                     unoptimized
                     className="h-full w-full object-contain"
                   />
                 </div>
-                <p className="text-center text-xs text-gray-500">
-                  请使用微信扫一扫完成支付，页面会自动刷新到账状态。
-                </p>
+                <p className="text-center text-xs text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.de32b6a95b88" /></p>
               </div>
             ) : null}
 
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">订单号</span>
+              <span className="text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.459868e5cb99" /></span>
               <span className="font-mono text-xs">{order.id}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">金额</span>
+              <span className="text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.34943c40c9af" /></span>
               <span className="font-semibold">{formatCurrency(order.amount)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">状态</span>
+              <span className="text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.62e951a692ff" /></span>
               <span
                 className={
                   order.status === 'PAID'
@@ -228,17 +228,13 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
               </span>
             </div>
             {order.paidAt ? (
-              <p className="text-xs text-gray-500">
-                到账时间：
-                {new Date(order.paidAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
+              <p className="text-xs text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.e90da359904c" />{new Date(order.paidAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
               </p>
             ) : order.status === 'PENDING' ? (
-              <p className="text-xs text-gray-500">支付完成后请耐心等待 1-2 分钟，系统会自动确认。</p>
+              <p className="text-xs text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.8a4d6ea4a592" /></p>
             ) : null}
             {order.expiresAt && order.status === 'PENDING' ? (
-              <p className="text-xs text-gray-500">
-                二维码有效至：
-                {new Date(order.expiresAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
+              <p className="text-xs text-gray-500"><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.f4c45010e6d7" />{new Date(order.expiresAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
               </p>
             ) : null}
             <div className="flex flex-wrap gap-3 pt-2">
@@ -246,9 +242,7 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
                 type="button"
                 onClick={copyLink}
                 className="flex-1 rounded-full border border-black/20 px-4 py-2 text-xs uppercase tracking-[0.4em] transition hover:bg-black/5"
-              >
-                复制二维码链接
-              </button>
+              ><SiteText copyKey="site.app.wechat.pay.wechatnativepayclient.13a93c4be799" /></button>
             </div>
           </div>
         ) : null}

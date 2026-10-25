@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import { PeiwanReviewDisplayMode } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
@@ -17,7 +18,7 @@ const ALLOWED_MODES = new Set<PeiwanReviewDisplayMode>([
 export async function POST(request: Request) {
   const session = await getServerSession();
   if (!session?.discordId) {
-    return NextResponse.json({ error: '未登录' }, { status: 401 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.peiwan.reviews.display.mode.route.e8041a8c9358") }, { status: 401 });
   }
 
   const body = (await request.json().catch(() => ({}))) as UpdateDisplayModePayload;
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
   const mode = body.mode;
 
   if (!reviewId || !mode || !ALLOWED_MODES.has(mode)) {
-    return NextResponse.json({ error: '参数错误' }, { status: 400 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.peiwan.reviews.display.mode.route.3e64edf2ea33") }, { status: 400 });
   }
 
   const review = await prisma.peiwanReview.findUnique({
@@ -34,10 +35,10 @@ export async function POST(request: Request) {
   });
 
   if (!review) {
-    return NextResponse.json({ error: '评语不存在' }, { status: 404 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.peiwan.reviews.display.mode.route.5e51cdd0d2c6") }, { status: 404 });
   }
   if (review.peiwanDiscordId !== session.discordId) {
-    return NextResponse.json({ error: '无权限修改该评语' }, { status: 403 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.peiwan.reviews.display.mode.route.cf4872ff6ccc") }, { status: 403 });
   }
 
   await prisma.peiwanReview.update({

@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
@@ -5,7 +6,7 @@ import { getServerSession } from '@/lib/session';
 export async function GET(request: Request) {
   const session = await getServerSession();
   if (!session?.discordId) {
-    return NextResponse.json({ error: '未登录' }, { status: 401 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.peiwan.search.route.e8041a8c9358") }, { status: 401 });
   }
 
   const url = new URL(request.url);
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
 
   const rows = await prisma.pEIWAN.findMany({
     where: {
+      NOT: { discordUserId: { startsWith: 'detached:' } },
       OR: [
         Number.isInteger(parsedId) ? { PEIWANID: parsedId } : undefined,
         { discordUserId: { contains: keyword, mode: 'insensitive' } },

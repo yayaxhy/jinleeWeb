@@ -1,4 +1,8 @@
 'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
+
+import { PublicMessageError, publicMessage } from '@/lib/public-error-messages';
 
 import { ChangeEvent, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -39,6 +43,7 @@ const deriveFriendlyFilename = (filename: string | null, url: string | null) => 
 };
 
 export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
+  const siteCopy = useSiteCopy();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -56,11 +61,11 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
 
   const handleUpload = () => {
     if (!selectedFile) {
-      setNotice({ level: 'info', text: '请先选择一段试音音频。' });
+      setNotice({ level: 'info', text: siteCopy("site.components.profile.voicepreviewmanager.1b5fe8dffa8c") });
       return;
     }
     if (selectedFile.size > MAX_FILE_SIZE) {
-      setNotice({ level: 'error', text: '试音文件不能超过 10MB。' });
+      setNotice({ level: 'error', text: siteCopy("site.components.profile.voicepreviewmanager.7de1fabb79b4") });
       return;
     }
 
@@ -75,16 +80,16 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(typeof data?.error === 'string' ? data.error : '上传失败');
+          throw new PublicMessageError(typeof data?.error === 'string' ? data.error : '上传失败');
         }
         setSelectedFile(null);
         if (inputRef.current) inputRef.current.value = '';
-        setNotice({ level: 'success', text: '试音已保存，之后老板收到你的名片时会看到这段音频。' });
+        setNotice({ level: 'success', text: siteCopy("site.components.profile.voicepreviewmanager.5c56955a5191") });
         router.refresh();
       } catch (error) {
         setNotice({
           level: 'error',
-          text: error instanceof Error ? error.message : '上传失败，请稍后再试',
+          text: publicMessage(error, '暂时无法确认上传结果，请刷新查看当前试音。'),
         });
       }
     });
@@ -97,16 +102,16 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
       const res = await fetch('/api/profile/voice-preview', { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(typeof data?.error === 'string' ? data.error : '删除失败');
+        throw new PublicMessageError(typeof data?.error === 'string' ? data.error : '删除失败');
       }
       setSelectedFile(null);
       if (inputRef.current) inputRef.current.value = '';
-      setNotice({ level: 'success', text: '已删除当前试音。' });
+      setNotice({ level: 'success', text: siteCopy("site.components.profile.voicepreviewmanager.6929e31e50c0") });
       router.refresh();
     } catch (error) {
       setNotice({
         level: 'error',
-        text: error instanceof Error ? error.message : '删除失败，请稍后再试',
+        text: publicMessage(error, '暂时无法确认删除结果，请刷新查看当前试音。'),
       });
     } finally {
       setIsDeleting(false);
@@ -117,30 +122,27 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
     <div className="rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_10px_30px_rgba(17,24,39,0.04)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-xl font-semibold tracking-wide text-[#8a6000]">试音管理</h3>
-          <p className="text-sm text-gray-500">上传一段试音音频，机器人会在派单名片里一起发给老板。</p>
+          <h3 className="text-xl font-semibold tracking-wide text-[#8a6000]"><SiteText copyKey="site.components.profile.voicepreviewmanager.becd1c33a95f" /></h3>
+          <p className="text-sm text-gray-500"><SiteText copyKey="site.components.profile.voicepreviewmanager.551c32c1a83f" /></p>
         </div>
       </div>
 
       <div className="mt-4 space-y-4 rounded-3xl border border-black/5 bg-[#faf7f2] p-4">
         {notice ? (
-          <NoticeBanner level={notice.level} message={notice.text} onDismiss={() => setNotice(null)} />
+          <NoticeBanner level={notice.level} message={siteCopy.text(notice.text, "site.components.profile.voicepreviewmanager")} onDismiss={() => setNotice(null)} />
         ) : null}
 
         <div className="rounded-2xl border border-dashed border-[#d4b24c]/25 bg-gradient-to-br from-[#fff9e8] to-[#fff1c6] p-5 space-y-4">
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-[#171717]">当前试音</p>
-            <p className="text-xs text-gray-500">{SUPPORTED_TYPES_TEXT}</p>
+            <p className="text-sm font-semibold text-[#171717]"><SiteText copyKey="site.components.profile.voicepreviewmanager.df61d8d5c5f6" /></p>
+            <p className="text-xs text-gray-500"><SiteText namespace="site.components.profile.voicepreviewmanager" value={SUPPORTED_TYPES_TEXT} /></p>
           </div>
 
           {previewSrc ? (
             <div className="space-y-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-              <audio controls preload="metadata" className="w-full" src={previewSrc}>
-                你的浏览器暂不支持音频播放。
-              </audio>
+              <audio controls preload="metadata" className="w-full" src={previewSrc}><SiteText copyKey="site.components.profile.voicepreviewmanager.6414cdb2f0ee" /></audio>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="min-w-0 flex-1 truncate text-xs text-gray-500">
-                  当前文件：{displayFilename || '试音音频'}
+                <p className="min-w-0 flex-1 truncate text-xs text-gray-500"><SiteText copyKey="site.components.profile.voicepreviewmanager.1a11c2910390" />{displayFilename || <SiteText copyKey="site.components.profile.voicepreviewmanager.23d736fa86c8" />}
                 </p>
                 <button
                   type="button"
@@ -148,19 +150,17 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
                   disabled={isDeleting || isUploading}
                   className="rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-gray-600 transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isDeleting ? '删除中…' : '删除试音'}
+                  {isDeleting ? <SiteText copyKey="site.components.profile.voicepreviewmanager.60793243146e" /> : <SiteText copyKey="site.components.profile.voicepreviewmanager.4ccbfde078dc" />}
                 </button>
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-black/10 bg-white px-4 py-5 text-sm text-gray-500">
-              暂未上传试音。
-            </div>
+            <div className="rounded-2xl border border-dashed border-black/10 bg-white px-4 py-5 text-sm text-gray-500"><SiteText copyKey="site.components.profile.voicepreviewmanager.a23b0a713f88" /></div>
           )}
 
           <div className="space-y-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
             <label className="block space-y-2">
-              <span className="text-sm font-semibold text-[#171717]">上传新试音</span>
+              <span className="text-sm font-semibold text-[#171717]"><SiteText copyKey="site.components.profile.voicepreviewmanager.1f653dc91b3c" /></span>
               <input
                 ref={inputRef}
                 type="file"
@@ -172,7 +172,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
             </label>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="min-w-0 flex-1 text-xs text-gray-500">
-                {selectedFile ? `待上传：${selectedFile.name}` : '选择后会覆盖当前试音。'}
+                {selectedFile ? <SiteText copyKey="site.components.profile.voicepreviewmanager.7435e4045617" values={{value1: String(selectedFile.name)}} /> : <SiteText copyKey="site.components.profile.voicepreviewmanager.10ef6e55884e" />}
               </p>
               <button
                 type="button"
@@ -180,7 +180,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
                 disabled={!selectedFile || isUploading || isDeleting}
                 className="rounded-full border border-[#e7c56c] bg-[linear-gradient(180deg,_#fff4cc,_#f8df97)] px-5 py-3 text-sm font-semibold text-[#8a6000] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isUploading ? '上传中…' : '保存试音'}
+                {isUploading ? <SiteText copyKey="site.components.profile.voicepreviewmanager.670f6d264ca0" /> : <SiteText copyKey="site.components.profile.voicepreviewmanager.f80a2b85f3bd" />}
               </button>
             </div>
           </div>

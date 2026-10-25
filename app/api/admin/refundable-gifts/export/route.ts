@@ -1,3 +1,4 @@
+import { giftAuditIdentityFilter } from '@/lib/gift-history-ownership';
 import { NextRequest, NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
 import { Prisma } from '@prisma/client';
@@ -61,9 +62,7 @@ export async function GET(request: NextRequest) {
   const giverId = searchParams.get('giverId')?.trim() ?? '';
   const receiverId = searchParams.get('receiverId')?.trim() ?? '';
 
-  const where: Prisma.GiftAuditWhereInput = {};
-  if (giverId) where.giverId = giverId;
-  if (receiverId) where.receiverId = receiverId;
+  const where: Prisma.GiftAuditWhereInput = await giftAuditIdentityFilter(prisma, { giverId, receiverId });
 
   const records = await prisma.giftAudit.findMany({
     where,

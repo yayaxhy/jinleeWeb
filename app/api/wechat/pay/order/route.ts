@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -106,6 +107,6 @@ export async function POST(request: Request) {
     });
 
     console.error('[wechat.native.order.create] failed', error);
-    return NextResponse.json({ ok: false, error: failureMessage }, { status: 500 });
+    return NextResponse.json({ ok: false, error: await renderSiteCopy("site.app.api.wechat.pay.order.route.dd67d62748cf") }, { status: 500 });
   }
 }

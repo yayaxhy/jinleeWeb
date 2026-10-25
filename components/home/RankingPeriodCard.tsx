@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import { useRef, useState, type PointerEvent } from 'react';
 
@@ -23,6 +25,7 @@ function AvatarBadge({
   anonymous?: boolean;
   size?: 'default' | 'featured' | 'compact';
 }) {
+  const siteCopy = useSiteCopy();
   const initial = name.replace(/^神秘老板\s*/, '').trim().charAt(0) || '点';
   const resolvedAvatar = anonymous ? DEFAULT_RANKING_AVATAR : avatarUrl;
   const sizeClass = {
@@ -36,7 +39,7 @@ function AvatarBadge({
       {resolvedAvatar ? (
         <img
           src={resolvedAvatar}
-          alt={anonymous ? '点了么匿名头像' : `${name} 头像`}
+          alt={anonymous ? siteCopy("site.components.home.rankingperiodcard.028ebee80d33") : siteCopy("site.components.home.rankingperiodcard.864db463a3bd", {value1: String(name)})}
           className={`h-full w-full ${anonymous ? 'bg-white object-contain p-1.5' : 'object-cover'}`}
         />
       ) : (
@@ -110,13 +113,9 @@ function RankingEntries({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-amber-100/20 bg-amber-200/10 px-2 py-0.5 text-[0.65rem] font-semibold tracking-[0.16em] text-amber-100">
-                    TOP 1
-                  </span>
+                  <span className="rounded-full border border-amber-100/20 bg-amber-200/10 px-2 py-0.5 text-[0.65rem] font-semibold tracking-[0.16em] text-amber-100"><SiteText copyKey="site.components.home.rankingperiodcard.9ddc19b8c686" /></span>
                   {anonymous ? (
-                    <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[0.65rem] text-emerald-100">
-                      匿名
-                    </span>
+                    <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[0.65rem] text-emerald-100"><SiteText copyKey="site.components.home.rankingperiodcard.9117f23d722d" /></span>
                   ) : null}
                 </div>
                 <p className="mt-2 truncate text-lg font-bold text-[#fffaf0]">{champion.name}</p>
@@ -184,9 +183,7 @@ function RankingEntries({
               <div className="flex items-center gap-2">
                 <p className="truncate text-base font-semibold text-[#fff7ed]">{item.name}</p>
                 {anonymous ? (
-                  <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[0.65rem] text-emerald-100">
-                    匿名
-                  </span>
+                  <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[0.65rem] text-emerald-100"><SiteText copyKey="site.components.home.rankingperiodcard.9117f23d722d" /></span>
                 ) : null}
               </div>
               {showVipLevel && vipName ? <VipBadge vipName={vipName} compact /> : null}
@@ -214,6 +211,7 @@ export function RankingPeriodCard({
   showTag?: boolean;
   showVipLevel?: boolean;
 }) {
+  const siteCopy = useSiteCopy();
   const [page, setPage] = useState(0);
   const dragStartX = useRef<number | null>(null);
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
@@ -256,7 +254,7 @@ export function RankingPeriodCard({
         onPointerUp={finishDrag}
         onPointerCancel={() => { dragStartX.current = null; }}
         className="overflow-hidden [touch-action:pan-y]"
-        aria-label={`${period}榜单分页`}
+        aria-label={siteCopy("site.components.home.rankingperiodcard.1b7eb4317b13", {value1: String(period)})}
       >
         <div
           className="flex will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -285,17 +283,17 @@ export function RankingPeriodCard({
       </div>
 
       {pageCount > 1 ? (
-        <div className="mt-5 flex justify-center gap-2" aria-label={`${period}榜单第 ${safePage + 1} 页，共 ${pageCount} 页`}>
+        <div className="mt-5 flex justify-center gap-2" aria-label={siteCopy("site.components.home.rankingperiodcard.e0fb77768c2e", {value1: String(period), value2: String(safePage + 1), value3: String(pageCount)})}>
           {pages.map((_, pageIndex) => (
             <button
               key={`${period}-dot-${pageIndex}`}
               type="button"
               onClick={() => goToPage(pageIndex)}
-              aria-label={`查看第 ${pageIndex + 1} 页`}
+              aria-label={siteCopy("site.components.home.rankingperiodcard.ea2e25cae2ed", {value1: String(pageIndex + 1)})}
               aria-current={safePage === pageIndex ? 'page' : undefined}
               className={`h-2.5 rounded-full transition-all duration-300 ${safePage === pageIndex ? 'w-7 bg-amber-200 shadow-[0_0_16px_rgba(251,191,36,0.45)]' : 'w-2.5 bg-white/25 hover:bg-white/45'}`}
             >
-              <span className="sr-only">第 {pageIndex + 1} 页</span>
+              <span className="sr-only"><SiteText copyKey="site.components.home.rankingperiodcard.f495347d6acf" />{pageIndex + 1}<SiteText copyKey="site.components.home.rankingperiodcard.73422182ab45" /></span>
             </button>
           ))}
         </div>

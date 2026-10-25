@@ -1,3 +1,5 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getDiscordMigrationConfig } from '@/lib/discord-migration';
@@ -125,12 +127,12 @@ export default async function DiscordMigrationPage({ searchParams }: MigrationPa
     <main className="min-h-screen bg-[#f7f3ef] px-6 py-16 text-[#171717]">
       <section className="mx-auto max-w-2xl">
         <article className="rounded-[32px] border border-black/5 bg-white p-8 shadow-[0_10px_30px_rgba(17,24,39,0.04)] sm:p-10">
-          <h1 className="text-3xl font-semibold tracking-wide">加入 {config.targetGuildName}</h1>
+          <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.discord.migration.page.843941e192fe" />{config.targetGuildName}</h1>
 
           {message ? (
             <div className={`mt-6 rounded-2xl border px-5 py-4 ${toneClasses[message.tone]}`}>
-              <h2 className="font-semibold">{message.title}</h2>
-              <p className="mt-1 text-sm leading-6 opacity-85">{message.body}</p>
+              <h2 className="font-semibold"><SiteText namespace="site.app.discord.migration.page" value={message.title} /></h2>
+              <p className="mt-1 text-sm leading-6 opacity-85"><SiteText namespace="site.app.discord.migration.page" value={message.body} /></p>
             </div>
           ) : null}
 
@@ -139,20 +141,14 @@ export default async function DiscordMigrationPage({ searchParams }: MigrationPa
               <a
                 href={config.inviteUrl}
                 className="flex w-full items-center justify-center rounded-2xl bg-[#f8c84a] px-6 py-4 text-base font-semibold text-[#4e3600] transition hover:bg-[#e9b42d]"
-              >
-                打开新公会邀请
-              </a>
+              ><SiteText copyKey="site.app.discord.migration.page.21a719d9f236" /></a>
             ) : (
-              <span className="flex w-full items-center justify-center rounded-2xl bg-gray-200 px-6 py-4 text-base font-semibold text-gray-500">
-                迁移入口暂未开放
-              </span>
+              <span className="flex w-full items-center justify-center rounded-2xl bg-gray-200 px-6 py-4 text-base font-semibold text-gray-500"><SiteText copyKey="site.app.discord.migration.page.a684e7cbbcde" /></span>
             )}
             <Link
               href="/profile"
               className="flex w-full items-center justify-center rounded-2xl border border-black/15 px-6 py-4 text-base font-semibold text-gray-700 transition hover:border-[#f8c84a] hover:text-[#b77900]"
-            >
-              返回个人中心
-            </Link>
+            ><SiteText copyKey="site.app.discord.migration.page.867271dd72c5" /></Link>
           </div>
         </article>
       </section>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Delivery = {
   id: string;
@@ -13,7 +13,16 @@ type Delivery = {
   status: string;
   attempts: number;
   error: string | null;
+  canRetry: boolean;
   updatedAt: string;
+};
+
+type DeliveryPage = {
+  deliveries: Delivery[];
+  page: number;
+  totalPages: number;
+  total: number;
+  retryableCount: number;
 };
 
 async function api<T>(input: string, init?: RequestInit): Promise<T> {
@@ -26,35 +35,59 @@ async function api<T>(input: string, init?: RequestInit): Promise<T> {
   });
   const payload = (await response.json().catch(() => ({}))) as T & {
     error?: string;
+    attempted?: number;
+    uncertain?: number;
+    processingErrors?: number;
   };
-  if (!response.ok) throw new Error(payload.error ?? "通知投递状态加载失败");
+  if (!response.ok) {
+    if (payload.error === 'notification_retry_incomplete') {
+      throw new Error(`本次重试未完成：已处理 ${payload.attempted ?? 0} 个渠道，${payload.uncertain ?? 0} 个结果待核实，${payload.processingErrors ?? 0} 项处理故障。请查看投递状态和服务日志。`);
+    }
+    throw new Error(payload.error ?? "通知投递状态加载失败");
+  }
   return payload;
 }
 
 const channelName: Record<string, string> = {
   DISCORD: "Discord DM",
-  WEB_PUSH: "网页 Push",
-  EMAIL: "邮件",
+  WEB_PUSH: "网页推送（停用历史）",
+  EMAIL: "邮件（停用历史）",
 };
 
-export function NotificationDeliveryMonitor() {
+export function NotificationDeliveryMonitor({ source = 'center' }: { source?: 'center' | 'outbox' }) {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [retryableCount, setRetryableCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const loadVersion = useRef(0);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const load = useCallback(async (preserveMessage = false) => {
+  const load = useCallback(async (preserveMessage = false, requestedPage = 1) => {
+    const version = ++loadVersion.current;
+    setLoading(true);
     try {
-      const response = await api<{ deliveries: Delivery[] }>(
-        "/api/admin/notification-deliveries",
+      const response = await api<DeliveryPage>(
+        `/api/admin/notification-deliveries?page=${requestedPage}&pageSize=100&source=${source}`,
       );
+      if (version !== loadVersion.current) return;
       setDeliveries(response.deliveries ?? []);
+      setPage(response.page);
+      setTotalPages(response.totalPages);
+      setTotal(response.total);
+      setRetryableCount(response.retryableCount);
       if (!preserveMessage) setMessage(null);
     } catch (error) {
+      if (version !== loadVersion.current) return;
       setMessage(
         error instanceof Error ? error.message : "通知投递状态加载失败",
       );
+    } finally {
+      if (version === loadVersion.current) setLoading(false);
     }
-  }, []);
+  }, [source]);
 
   useEffect(() => {
     void load();
@@ -63,13 +96,16 @@ export function NotificationDeliveryMonitor() {
   const retry = async () => {
     setBusy(true);
     try {
-      const response = await api<{ attempted: number }>(
+      const response = await api<{ attempted: number; uncertain: number }>(
         "/api/admin/notification-deliveries",
-        { method: "POST", body: JSON.stringify({ limit: 100 }) },
+        { method: "POST", body: JSON.stringify({ limit: 100, source }) },
       );
-      await load(true);
-      setMessage(`已尝试重发 ${response.attempted} 条通知。`);
+      await load(true, page);
+      setMessage(`本次处理 ${response.attempted} 条可重试投递，其中 ${response.uncertain} 个结果待核实。未知结果会在间隔满 5 分钟后有限补发；已成功、超过 24 小时或已达 3 次上限的私信不再发送。`);
     } catch (error) {
+      // A failed batch may already have completed some channels. Refresh their
+      // state and the global eligibility count before presenting the error.
+      await load(true, page);
       setMessage(error instanceof Error ? error.message : "通知重试失败");
     } finally {
       setBusy(false);
@@ -77,19 +113,19 @@ export function NotificationDeliveryMonitor() {
   };
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5">
+    <section aria-busy={loading || busy} className="rounded-2xl border border-white/10 bg-white/5">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
         <div>
-          <h2 className="font-semibold">通知投递异常</h2>
+          <h2 className="font-semibold">{source === 'outbox' ? '余额及资料私信任务' : '订单通知投递异常'}</h2>
           <p className="mt-1 text-xs text-white/55">
-            最近 24 小时未完成的 Discord、网页 Push 或邮件；最多重试 3 次。
+            仅发送 Discord 私信：每 5 分钟检查，创建 24 小时内总共最多 3 次（含首次）。未知结果允许有限补发，可能重复提醒；已成功不重发，过期催接停止。通知结果不代表订单或余额操作失败，请勿重做原业务。
           </p>
         </div>
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => void load()}
-            disabled={busy}
+            onClick={() => void load(false, page)}
+            disabled={busy || loading}
             className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/75 hover:bg-white/10 disabled:opacity-50"
           >
             刷新
@@ -97,7 +133,7 @@ export function NotificationDeliveryMonitor() {
           <button
             type="button"
             onClick={() => void retry()}
-            disabled={busy || !deliveries.length}
+            disabled={busy || loading || retryableCount === 0}
             className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-black disabled:opacity-50"
           >
             {busy ? "重试中…" : "立即重试"}
@@ -132,7 +168,7 @@ export function NotificationDeliveryMonitor() {
                     {channelName[delivery.channel] ?? delivery.channel}
                   </td>
                   <td className="px-4 py-3 text-amber-100">
-                    {delivery.status === "FAILED" ? "失败" : "待投递"} ·{" "}
+                    {delivery.status === "UNCERTAIN" ? "结果待核实" : delivery.status === "FAILED" ? "失败" : delivery.status === "SKIPPED" ? "已停止" : delivery.status === "REQUIRES_REVIEW" ? "归属待核实" : "待投递"} ·{" "}
                     {delivery.attempts}/3
                   </td>
                   <td className="max-w-80 px-4 py-3 text-white/55">
@@ -148,9 +184,31 @@ export function NotificationDeliveryMonitor() {
         </div>
       ) : (
         <p className="px-4 py-5 text-sm text-white/55">
-          最近 24 小时没有待处理的通知投递。
+          {loading ? "正在加载通知投递状态…" : "最近 24 小时没有待处理投递，也没有尚待核实的结果。"}
         </p>
       )}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-4 py-3 text-xs text-white/55">
+        <p>共 {total} 个异常渠道；全部页面中有 {retryableCount} 个渠道可重试。</p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void load(false, page - 1)}
+            disabled={busy || loading || page <= 1}
+            className="rounded-lg border border-white/15 px-3 py-2 hover:bg-white/10 disabled:opacity-50"
+          >
+            上一页
+          </button>
+          <span aria-live="polite">第 {page} / {totalPages} 页</span>
+          <button
+            type="button"
+            onClick={() => void load(false, page + 1)}
+            disabled={busy || loading || page >= totalPages}
+            className="rounded-lg border border-white/15 px-3 py-2 hover:bg-white/10 disabled:opacity-50"
+          >
+            下一页
+          </button>
+        </div>
+      </div>
       {message ? (
         <p className="border-t border-white/10 px-4 py-3 text-xs text-amber-100">
           {message}

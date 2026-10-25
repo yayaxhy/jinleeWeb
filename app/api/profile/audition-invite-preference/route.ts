@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
@@ -8,7 +9,7 @@ const ensureEditablePeiwan = async (request?: Request) => {
   const currentUser = await getCurrentDlmUser(request);
   const discordUserId = currentUser?.discordUserId?.trim();
   if (!discordUserId) {
-    return { error: NextResponse.json({ error: '未登录' }, { status: 401 }) };
+    return { error: NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.audition.invite.preference.route.e8041a8c9358") }, { status: 401 }) };
   }
 
   const member = await prisma.member.findUnique({
@@ -16,7 +17,7 @@ const ensureEditablePeiwan = async (request?: Request) => {
     include: { peiwan: true },
   });
   if (!member || member.status !== 'PEIWAN' || !member.peiwan) {
-    return { error: NextResponse.json({ error: '仅限陪玩设置真人试音邀请' }, { status: 403 }) };
+    return { error: NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.audition.invite.preference.route.3cdf0657c5ed") }, { status: 403 }) };
   }
 
   const deletionRecord = await prisma.peiwanDeletion.findUnique({
@@ -24,7 +25,7 @@ const ensureEditablePeiwan = async (request?: Request) => {
     select: { peiwanId: true },
   });
   if (deletionRecord) {
-    return { error: NextResponse.json({ error: '你的陪玩资料当前不可编辑' }, { status: 403 }) };
+    return { error: NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.audition.invite.preference.route.e80e8677d567") }, { status: 403 }) };
   }
 
   return {
@@ -43,10 +44,10 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const enabled = body?.enabled;
     if (typeof enabled !== 'boolean') {
-      return NextResponse.json({ error: '缺少有效的 enabled 参数' }, { status: 400 });
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.audition.invite.preference.route.825d9c887174") }, { status: 400 });
     }
     if (enabled && !current.peiwan.voicePreviewUrl) {
-      return NextResponse.json({ error: '请先上传试音音频，再开启真人试音邀请' }, { status: 400 });
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.audition.invite.preference.route.9fa559a03ec9") }, { status: 400 });
     }
 
     await prisma.pEIWAN.update({
@@ -56,7 +57,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, enabled });
   } catch (error) {
-    const message = error instanceof Error ? error.message : '保存失败，请稍后再试';
+    console.error('[audition-invite-preference] save failed', error);
+    const message = '暂时无法保存设置，请刷新查看当前状态或联系客服。';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

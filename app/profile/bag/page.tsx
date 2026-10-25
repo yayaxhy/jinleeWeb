@@ -1,3 +1,6 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
+import { getSiteCopy } from "@/lib/site-copy-server";
 import Link from 'next/link';
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
@@ -6,6 +9,7 @@ import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { DiscountUsageButton } from '@/components/profile/DiscountUsageButton';
 import { GiftUsageButton, SelfUseButton } from '@/components/profile/GiftAndSelfUseButtons';
+import { GiftExecutionRecovery } from '@/components/profile/GiftExecutionRecovery';
 import {
   CommissionVoucherButton,
   FlowVoucherButton,
@@ -41,6 +45,7 @@ const toMillis = (value?: Date | string | null) => {
 };
 
 export default async function BagPage() {
+  const siteCopy = await getSiteCopy();
   const currentUser = await getCurrentDlmUser();
   if (!currentUser) {
     redirect('/');
@@ -178,29 +183,28 @@ export default async function BagPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
+      <div className="mx-auto mb-6 max-w-6xl"><GiftExecutionRecovery actor={{ dlmId: currentUser.dlmId, discordId: currentUser.discordUserId }} kind="VOUCHER_GIFT" /></div>
       <section className="max-w-5xl mx-auto space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.6em] text-gray-500">My Bag</p>
-            <h1 className="text-3xl font-semibold tracking-wide">我的背包</h1>
-            <p className="text-sm text-gray-500">展示你在背包中的全部资产。</p>
+            <p className="text-xs uppercase tracking-[0.6em] text-gray-500"><SiteText copyKey="site.app.profile.bag.page.0945e42ac05d" /></p>
+            <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.profile.bag.page.afc3a43e5b41" /></h1>
+            <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.bag.page.ca56351fd6c2" /></p>
           </div>
           <Link
             href="/profile"
             className="rounded-full border border-black/10 px-4 py-2 text-xs uppercase tracking-[0.4em] text-gray-600 hover:bg-black/5 transition"
-          >
-            返回个人主页
-          </Link>
+          ><SiteText copyKey="site.app.profile.bag.page.425652af65a9" /></Link>
         </div>
 
         <div className="bg-white rounded-[32px] border border-black/5 p-6 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[#5c43a3]">我的资产</h2>
-            <span className="text-xs uppercase tracking-[0.4em] text-gray-500">共 {allItems.length} 个</span>
+            <h2 className="text-xl font-semibold text-[#5c43a3]"><SiteText copyKey="site.app.profile.bag.page.0c8254689746" /></h2>
+            <span className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.profile.bag.page.497064be1f41" />{allItems.length}<SiteText copyKey="site.app.profile.bag.page.f7b2a6ee68ec" /></span>
           </div>
 
           {allItems.length === 0 ? (
-            <p className="text-gray-500 text-sm">暂无记录。</p>
+            <p className="text-gray-500 text-sm"><SiteText copyKey="site.app.profile.bag.page.12cf516d9659" /></p>
           ) : (
             <div className="space-y-8">
               {[
@@ -211,12 +215,12 @@ export default async function BagPage() {
                 <div key={title} className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-[#171717]">{title}</h3>
-                      <span className="text-xs uppercase tracking-[0.3em] text-gray-400">{list.length} 个</span>
+                      <h3 className="text-lg font-semibold text-[#171717]"><SiteText namespace="site.app.profile.bag.page" value={title} /></h3>
+                      <span className="text-xs uppercase tracking-[0.3em] text-gray-400">{list.length}<SiteText copyKey="site.app.profile.bag.page.f7b2a6ee68ec" /></span>
                     </div>
                   </div>
                   {list.length === 0 ? (
-                    <p className="text-sm text-gray-400">暂无{title}记录。</p>
+                    <p className="text-sm text-gray-400"><SiteText copyKey="site.app.profile.bag.page.5dbd015496af" /><SiteText namespace="site.app.profile.bag.page" value={title} /><SiteText copyKey="site.app.profile.bag.page.11e2b0e36bc4" /></p>
                   ) : (
                     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                       {list.map((item) => {
@@ -240,7 +244,7 @@ export default async function BagPage() {
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
                                 <span className="px-3 py-1 rounded-full border border-black/10 bg-white/60 text-xs uppercase tracking-[0.3em] text-gray-600">
-                                  {status}
+                                  <SiteText namespace="site.app.profile.bag.page" value={status} />
                                 </span>
                                 {item.status === 'UNUSED' ? (
                                   (() => {
@@ -315,6 +319,7 @@ export default async function BagPage() {
                                     if (prizeType === 'GIFT') {
                                       return (
                                         <GiftUsageButton
+                                          actor={{ dlmId: currentUser.dlmId, discordId: currentUser.discordUserId }}
                                           lotteryId={item.lotteryId}
                                           couponId={item.couponId}
                                           prizeName={prizeName}
@@ -338,17 +343,17 @@ export default async function BagPage() {
                                 <div className="flex h-28 items-center justify-center overflow-hidden rounded-xl border border-black/5 bg-white/70 p-2">
                                   <Image
                                     src={localArt}
-                                    alt={prizeName}
+                                    alt={siteCopy.text(prizeName, "site.lib.vouchercatalog")}
                                     width={180}
                                     height={104}
                                     className="max-h-full w-auto object-contain"
                                   />
                                 </div>
                               ) : null}
-                              <p className="text-lg font-semibold text-[#171717]">{prizeName}</p>
-                              <p className="text-sm text-gray-500">{isUsed ? '使用时间' : '到期时间'}：{metaTime}</p>
+                              <p className="text-lg font-semibold text-[#171717]"><SiteText namespace="site.lib.vouchercatalog" value={prizeName} /></p>
+                              <p className="text-sm text-gray-500">{isUsed ? <SiteText copyKey="site.app.profile.bag.page.03b2f370ae5c" /> : <SiteText copyKey="site.app.profile.bag.page.3144a998f054" />}：{metaTime}</p>
                               {isBlockStackVoucher ? (
-                                <p className="text-xs text-[#7a5b14]">使用方式：在 Discord 频道发送 `!抽积木` 消耗该代金券。</p>
+                                <p className="text-xs text-[#7a5b14]"><SiteText copyKey="site.app.profile.bag.page.5001c27f2bab" /></p>
                               ) : null}
                             </div>
                             </div>

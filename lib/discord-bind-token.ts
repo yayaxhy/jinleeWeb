@@ -4,7 +4,8 @@ type DiscordBindTokenPayload = {
   dlmId: string;
   issuedAt: number;
   expiresAt: number;
-  version: 1;
+  sessionVersion: number;
+  version: 2;
 };
 
 const DISCORD_BIND_TOKEN_TTL_MS = 1000 * 60 * 10;
@@ -30,12 +31,13 @@ const encodeToken = (payload: DiscordBindTokenPayload) => {
   return `${encoded}.${signature}`;
 };
 
-export const createDiscordBindToken = (dlmId: string) => {
+export const createDiscordBindToken = (dlmId: string, sessionVersion: number) => {
   const payload: DiscordBindTokenPayload = {
     dlmId,
     issuedAt: Date.now(),
     expiresAt: Date.now() + DISCORD_BIND_TOKEN_TTL_MS,
-    version: 1,
+    sessionVersion,
+    version: 2,
   };
 
   return {
@@ -47,12 +49,14 @@ export const createDiscordBindToken = (dlmId: string) => {
 export const verifyDiscordBindToken = (token?: string | null): DiscordBindTokenPayload | null => {
   if (!token) return null;
 
-  const [encoded, signature] = token.split('.');
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [encoded, signature] = parts;
   if (!encoded || !signature) return null;
 
   const expected = signPayload(encoded);
   const valid =
-    expected.length === signature.length &&
+    Buffer.byteLength(expected) === Buffer.byteLength(signature) &&
     crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 
   if (!valid) {
@@ -61,7 +65,7 @@ export const verifyDiscordBindToken = (token?: string | null): DiscordBindTokenP
 
   try {
     const payload = JSON.parse(base64UrlDecode(encoded).toString()) as DiscordBindTokenPayload;
-    if (payload.version !== 1 || payload.expiresAt < Date.now() || !payload.dlmId) {
+    if (payload.version !== 2 || !Number.isFinite(payload.expiresAt) || payload.expiresAt <= Date.now() || !payload.dlmId || !Number.isSafeInteger(payload.sessionVersion) || payload.sessionVersion < 1) {
       return null;
     }
 

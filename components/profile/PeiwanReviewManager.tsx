@@ -1,4 +1,6 @@
 'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,6 +23,7 @@ type Props = {
 const actionBtn = 'rounded-full border border-black/10 px-3 py-1.5 text-xs font-semibold transition';
 
 export function PeiwanReviewManager({ reviews }: Props) {
+  const siteCopy = useSiteCopy();
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -36,9 +39,9 @@ export function PeiwanReviewManager({ reviews }: Props) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(typeof data?.error === 'string' ? data.error : '操作失败');
+        throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.peiwanreviewmanager.09e424b5e896"));
       }
-      setMessage('保存成功');
+      setMessage(siteCopy("site.components.profile.peiwanreviewmanager.7e68eb622d38"));
       router.refresh();
     } catch (err) {
       setMessage((err as Error).message);
@@ -48,7 +51,7 @@ export function PeiwanReviewManager({ reviews }: Props) {
   };
 
   if (reviews.length === 0) {
-    return <p className="text-sm text-gray-400">暂无老板评语。</p>;
+    return <p className="text-sm text-gray-400"><SiteText copyKey="site.components.profile.peiwanreviewmanager.f4346953f743" /></p>;
   }
 
   return (
@@ -73,10 +76,9 @@ export function PeiwanReviewManager({ reviews }: Props) {
           >
             <div className="space-y-1">
               <p className="text-sm font-semibold text-[#171717]">{review.content}</p>
-              <p className="text-xs text-gray-500">
-                来自：{reviewerName} · 时间：{review.createdAtLabel}
+              <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.peiwanreviewmanager.494e653bc946" />{reviewerName}<SiteText copyKey="site.components.profile.peiwanreviewmanager.07c0fbeffdc1" />{review.createdAtLabel}
               </p>
-              <p className="text-xs text-[#8a6000]">名片预览：{previewText}</p>
+              <p className="text-xs text-[#8a6000]"><SiteText copyKey="site.components.profile.peiwanreviewmanager.274d3bda2faa" />{previewText}</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -108,7 +110,7 @@ export function PeiwanReviewManager({ reviews }: Props) {
           </div>
         );
       })}
-      {message ? <p className="text-xs text-gray-500">{message}</p> : null}
+      {message ? <p className="text-xs text-gray-500"><SiteText namespace="site.components.profile.peiwanreviewmanager" value={message} /></p> : null}
     </div>
   );
 }

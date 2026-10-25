@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
@@ -50,14 +51,14 @@ const errorResponse = (error: OpeningBenefitError) => {
 export async function POST(request: Request) {
   const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
-    return NextResponse.json({ error: '未登录' }, { status: 401 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.opening.benefits.claim.route.e8041a8c9358") }, { status: 401 });
   }
 
   const body = (await request.json().catch(() => ({}))) as {
     benefit?: unknown;
   };
   if (typeof body.benefit !== 'string' || !BENEFITS.has(body.benefit)) {
-    return NextResponse.json({ error: '未知福利类型' }, { status: 400 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.opening.benefits.claim.route.37412307c1b6") }, { status: 400 });
   }
 
   try {
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
     if (error instanceof OpeningBenefitError) return errorResponse(error);
     console.error('[opening-benefits] claim failed', error);
     return NextResponse.json(
-      { error: '领取失败，请稍后再试。' },
+      { error: await renderSiteCopy("site.app.api.opening.benefits.claim.route.ac02e61e853a") },
       { status: 500 },
     );
   }

@@ -498,6 +498,32 @@ model WebPushSubscription {
 
 /// The durable, in-app record for an operational event. `dedupeKey` lets a
 /// retrying Bot or web worker safely submit the same event more than once.
+/// Durable Discord-only tasks. Recipient fields preserve the original identity;
+/// accountOwnership resolves approved migrations at send time.
+model GuildNotificationOutbox {
+  id                 String   @id @default(uuid())
+  dedupeKey          String   @unique @db.VarChar(255)
+  recipientDlmId     String?
+  recipientDiscordId String?
+  event              String   @db.VarChar(80)
+  title              String   @db.VarChar(160)
+  body               String   @db.VarChar(1000)
+  href               String?  @db.VarChar(512)
+  status             String   @default("PENDING") @db.VarChar(24)
+  attempts           Int      @default(0)
+  claimToken         String?
+  leaseUntil         DateTime?
+  nextAttemptAt      DateTime @default(now())
+  error              String?  @db.VarChar(160)
+  sentAt             DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
+
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([recipientDlmId, createdAt])
+  @@index([recipientDiscordId, createdAt])
+}
+
 model GuildNotification {
   id        String                 @id @default(cuid())
   dlmId     String
@@ -935,6 +961,11 @@ model AuditionInvite {
   bossId                String
   workerId              String
   peiwanId              Int?
+  bossDlmId             String? // immutable invitation identity, not a current-account FK
+  workerDlmId           String?
+  bossDiscordIdSnapshot String?
+  workerDiscordIdSnapshot String?
+  quotedGross           Decimal?             @db.Decimal(19, 4)
   roomChannelId         String
   roomGuildId           String
   bossContactChannelId  String?
@@ -1252,6 +1283,15 @@ model GiftImage {
 
 model GiftAudit {
   id                      String   @id @default(cuid())
+  auditVersion            Int      @default(1) // v1 lacks complete applied-effect facts; only new writes use v2
+  giverDlmId              String?
+  giverDiscordId          String? // original giver identity; null for a DLM-only delegated gift
+  receiverDlmId           String?
+  receiverIncomeDelta     Decimal? @db.Decimal(19, 4)
+  receiverRechargeDelta   Decimal? @db.Decimal(19, 4)
+  receiverEarnDelta       Decimal? @db.Decimal(19, 4) // actual PEIWAN.totalEarn increment; zero if no worker accrual
+  receiverPeiwanId        Int? // fixed profile credited by this gift; legacy nulls require review for positive earn
+  heartApplied            Int? // actual increment committed with this audit, not the calculated heartGain
   paymentTransactionId    String   @unique
   individualTransactionId String   @unique
   orderId                 Int
@@ -1273,15 +1313,129 @@ model GiftAudit {
   spendRemainingBefore    Decimal  @db.Decimal(19, 4)
   flowBonusExtra          Decimal  @db.Decimal(19, 4)
   flowRemainingBefore     Decimal  @db.Decimal(19, 4)
+  spendQuotaUsage Json? // immutable [{amount, expiresAt}] from the actual consumption
+  flowQuotaUsage  Json? // null means legacy expiry is unknown
   voucherIds              Json?
   couponIds               Json?
+  voucherConsumption      Json? // immutable exact gift voucher consumption, including source and lifecycle key
   bossReferralInviterId   String?
   bossReferralAmount      Decimal? @db.Decimal(19, 4)
   workerReferralInviterId String?
   workerReferralAmount    Decimal? @db.Decimal(19, 4)
   createdAt               DateTime @default(now())
 
+  reviewNotes GiftAuditReviewNote[]
+  executionRequest GiftExecutionRequest?
+
   @@map("gift_audit")
+  referralLedgerFacts Json? // versioned original referral transaction IDs; no inferred backfill
+
+}
+
+/// Persistent gift intent; completion, receipt and money effects commit together.
+/// Identity fields live in immutable intent JSON and never follow account merges.
+model GiftExecutionRequest {
+  requestId   String   @id
+  kind        String
+  intent      Json
+  intentHash  String
+  status      String   @default("PENDING")
+  giftAuditId String?  @unique
+  result      Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Fixed initiating Web session identity; never inferred/backfilled or moved by account merges.
+  recoveryOwnerDlmId     String?
+  recoveryOwnerDiscordId String?
+  recoverySnapshot      Json? // safe display/scope only; never confirmation or API tokens
+
+  giftAudit GiftAudit? @relation(fields: [giftAuditId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([recoveryOwnerDlmId, kind, createdAt, requestId], map: "GiftExecutionRequest_recovery_owner_idx")
+  postCommitTasks GiftPostCommitTask[]
+
+}
+
+
+/// Transactional work created with a committed gift. External unknown outcomes never auto-replay.
+model GiftPostCommitTask {
+  id           String   @id
+  requestId    String
+  taskKey      String
+  kind         String
+  payload      Json
+  status       String   @default("PENDING")
+  attempts     Int      @default(0)
+  claimToken   String?
+  claimedAt    DateTime?
+  completedAt  DateTime?
+  result       Json?
+  errorCode    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  request GiftExecutionRequest @relation(fields: [requestId], references: [requestId], onDelete: Restrict)
+  retries GiftPostCommitRetry[]
+
+  @@unique([requestId, taskKey])
+  @@index([status, createdAt])
+}
+
+model GiftPostCommitRetry {
+  id               String   @id
+  taskId           String
+  actorDiscordId   String
+  previousAttempts Int
+  createdAt        DateTime @default(now())
+
+  task GiftPostCommitTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
+
+  @@index([taskId, createdAt])
+}
+
+model GiftAuditReviewNote {
+  id                      String   @id @default(cuid())
+  requestId               String   @unique
+  giftAuditId             String
+  individualTransactionId String
+  actorDiscordId          String
+  outcome                 String // NEEDS_EVIDENCE or EVIDENCE_ADDED; never approval to move funds
+  note                    String
+  evidenceReferences      Json
+  snapshotHash            String
+  sourceSnapshot          Json
+  createdAt               DateTime @default(now())
+
+  giftAudit GiftAudit @relation(fields: [giftAuditId], references: [id], onDelete: Restrict)
+
+  @@index([giftAuditId, createdAt, id])
+  @@map("gift_audit_review_note")
+}
+
+model OrderDiscountAudit {
+  id                    String   @id @default(cuid())
+  orderId               String   @unique
+  auditVersion          Int      @default(1)
+  voucherKind           String // coupon, pointshop, lottery
+  voucherId             String
+  rebateTransactionId   String   @unique
+  ownerDlmId            String // settlement snapshot; current owner comes from the original ledger
+  ownerDiscordId        String?
+  workerDlmId           String
+  workerDiscordId       String
+  amount                Decimal  @db.Decimal(19, 4)
+  rechargeDelta         Decimal  @db.Decimal(19, 4)
+  voucherIssuedAt       DateTime
+  voucherExpiresAt      DateTime
+  consumedAt            DateTime
+  voucherType           String // CouponType value or LotteryPrize.id, never a mutable display name
+  voucherLabel          String
+  createdAt             DateTime @default(now())
+
+  @@index([ownerDlmId, createdAt])
+  @@map("order_discount_audit")
 }
 
 model OrderAudit {
@@ -1308,10 +1462,19 @@ model OrderAudit {
   spendRemainingBefore          Decimal  @db.Decimal(19, 4)
   flowBonusExtra                Decimal? @db.Decimal(19, 4)
   flowRemainingBefore           Decimal? @db.Decimal(19, 4)
+  spendQuotaUsage Json? // immutable [{amount, expiresAt}] from the actual consumption
+  flowQuotaUsage  Json? // null means legacy expiry is unknown
   bossReferralInviterId         String?
   bossReferralAmount            Decimal? @db.Decimal(19, 4)
   workerReferralInviterId       String?
   workerReferralAmount          Decimal? @db.Decimal(19, 4)
+  // v2 saves the actual committed effects; legacy nulls are never inferred.
+  auditVersion                  Int      @default(1)
+  workerIncomeDelta             Decimal? @db.Decimal(19, 4)
+  workerRechargeDelta           Decimal? @db.Decimal(19, 4)
+  workerEarnDelta               Decimal? @db.Decimal(19, 4)
+  heartApplied                  Int?
+  referralLedgerFacts           Json? // {version:1,boss:{transactionId}|null,worker:{transactionId}|null}
   createdAt                     DateTime @default(now())
 
   @@index([hostDlmId, createdAt])
@@ -1347,6 +1510,9 @@ model PeiwanGiftUnlock {
   discordUserId String
   giftName      String
   unlockedAt    DateTime @default(now())
+  ownerDlmIdSnapshot String?
+  peiwanIdSnapshot Int?
+  giftAuditIdSnapshot String?
 
   member Member @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade)
   gift   Gift   @relation(fields: [giftName], references: [GiftName], onDelete: Cascade)
@@ -1360,6 +1526,11 @@ model PeiwanGiftRewardClaim {
   discordUserId String
   rewardKey     String
   grantedAt     DateTime @default(now())
+  ownerDlmIdSnapshot String?
+  peiwanIdSnapshot Int?
+  giftAuditIdSnapshot String?
+  couponIds Json?
+  rewardSnapshot Json?
 
   member Member @relation(fields: [discordUserId], references: [discordUserId], onDelete: Cascade)
 
@@ -2200,6 +2371,34 @@ model SpendBuff {
   @@map("spend_buff")
 }
 
+/// Ordinary quota batches from new vouchers or preserved legacy transfers.
+/// Expiry is fixed; new vouchers never renew an existing batch.
+model ManualQuotaBatch {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  kind           String // flow or spend; never a reversal/restoration source
+  remainingExtra Decimal  @map("remaining_extra") @db.Decimal(19, 4)
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([userId, kind, expiresAt, id])
+  @@map("manual_quota_batch")
+}
+
+model ManualQuotaRestoration {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  kind           String // flow or spend; each restored slice retains its original expiry
+  remainingExtra Decimal  @map("remaining_extra") @db.Decimal(19, 4)
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([userId, kind, expiresAt, id])
+  @@map("manual_quota_restoration")
+}
+
 model LotteryDraw {
   id                 String        @id @default(cuid())
   nonce              String        @unique
@@ -2665,11 +2864,12 @@ model Revert {
 
 /// 记录用户是否曾经进入过目标 Guild（只插入一次，用于防止重复邀请奖励）
 model GuildJoinRecord {
-  userId        String   @id
+  userId        String
   guildId       String
   firstJoinedAt DateTime @default(now())
   createdAt     DateTime @default(now())
 
+  @@id([userId, guildId])
   @@index([guildId])
 }
 
@@ -2677,7 +2877,7 @@ model GuildJoinRecord {
 model InviteLinkUsage {
   id           String   @id @default(cuid())
   guildId      String
-  inviteeId    String   @unique
+  inviteeId    String
   inviterId    String
   code         String?
   rewardedAt   DateTime @default(now())
@@ -2687,6 +2887,7 @@ model InviteLinkUsage {
   inviter Member @relation("MemberToInviteLinkUsage", fields: [inviterId], references: [discordUserId], onDelete: Cascade)
   invitee Member @relation("InviteeToInviteLinkUsage", fields: [inviteeId], references: [discordUserId], onDelete: Cascade)
 
+  @@unique([guildId, inviteeId])
   @@index([guildId, inviterId])
 }
 
@@ -2826,4 +3027,162 @@ model KnowledgeQuestion {
 
   @@index([status, createdAt])
   @@index([normalizedText])
+}
+
+/// Durable claim for a confirmed assistant write. An uncertain outcome is never
+/// automatically retried, preventing duplicate charges after disconnects.
+model AssistantExecution {
+  confirmationId String   @id
+  userId         String
+  actionKind     String   @db.VarChar(40)
+  status         String   @default("CLAIMED") @db.VarChar(20)
+  errorCode      String?  @db.VarChar(120)
+  createdAt      DateTime @default(now())
+  finishedAt     DateTime?
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+/// Single-guild runtime routing. Revisions guard concurrent admin edits.
+model BotRuntimeConfig {
+  guildId        String   @id
+  revision       Int      @default(0)
+  activeVersion  Int      @default(0)
+  draft          Json?
+  draftUpdatedBy String?
+  draftUpdatedAt DateTime?
+  updatedAt      DateTime @updatedAt
+  versions       BotRuntimeConfigVersion[]
+}
+
+/// Application code only inserts versions; rollback creates a new version.
+model BotRuntimeConfigVersion {
+  guildId     String
+  version     Int
+  settings    Json
+  createdBy   String
+  reason      String   @db.VarChar(300)
+  rollbackOf  Int?
+  createdAt   DateTime @default(now())
+  config      BotRuntimeConfig @relation(fields: [guildId], references: [guildId], onDelete: Restrict)
+
+  @@id([guildId, version])
+}
+
+/// Completed ownership changes and independent Discord role follow-up. No FK to
+/// either account: deleting a migrated account must never remove its evidence.
+model AccountMigration {
+  id                            String   @id
+  mode                          String
+  sourceDlmId                   String
+  targetDlmId                   String
+  sourceDiscordId               String?
+  targetDiscordId               String?
+  sourcePeiwanId                Int?
+  targetPeiwanId                Int?
+  actorDlmId                    String?
+  actorDiscordId                String?
+  previewHash                   String
+  status                        String   @default("COMPLETED")
+  snapshot                      Json
+  result                        Json
+  rolePlan                      Json
+  inheritedAutoCommissionUntil  DateTime?
+  autoCommissionProgressDiscordId String?
+  rolesStatus                   String   @default("PENDING")
+  rolesClaimToken               String?
+  rolesClaimedAt                 DateTime?
+  rolesError                     String?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+
+  @@index([sourceDlmId, createdAt])
+  @@index([targetDlmId, createdAt])
+  @@index([rolesStatus, createdAt])
+}
+
+/// Original identity plus original account distinguish historical ownership from
+/// a later explicit registration reusing the same Discord account.
+model AccountOwnership {
+  id               String   @id @default(cuid())
+  identityKind     String
+  identityKey      String
+  originalDlmId    String
+  currentDlmId     String
+  currentDiscordId String?
+  currentPeiwanId  Int?
+  migrationId      String
+  retiredAt        DateTime
+
+  @@unique([identityKind, identityKey, originalDlmId])
+  @@index([currentDlmId])
+  @@index([identityKind, identityKey, retiredAt])
+}
+
+/// Original rows before ownership updates, merged unique state, and incompatible
+/// activity archived by policy. Payloads are never fed back into live balances.
+model AccountMigrationArchive {
+  id          String   @id @default(cuid())
+  migrationId String
+  model       String
+  recordKey   String
+  disposition String
+  payload     Json
+  createdAt   DateTime @default(now())
+
+  @@index([migrationId, model])
+  @@index([model, recordKey])
+}
+
+/// Internal custody for an account whose Discord login has been detached.
+/// It is not a Discord user and must never be used as a message recipient.
+model DetachedDiscordAccount {
+  ownerDlmId        String   @id
+  memberKey         String   @unique
+  originalDiscordId String
+  detachedAt       DateTime @default(now())
+}
+
+/// Immutable administrator evidence for filling missing legacy audition metadata.
+/// No ownership FKs: migration must preserve the original actor and snapshots.
+model AuditionLegacyTransition {
+  requestId         String   @id
+  inviteId          String   @unique
+  actorDiscordId    String
+  actorDlmId        String?
+  inputHash         String
+  previewHash       String
+  beforeSnapshot    Json
+  afterSnapshot     Json
+  evidenceReference String
+  evidenceNote      String
+  createdAt         DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Presentation-only copy; shared by the website editor and Bot read-only poller.
+model EditableCopyConfig {
+  scope         String   @id
+  revision      Int      @default(0)
+  activeVersion Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  versions      EditableCopyVersion[]
+}
+
+model EditableCopyVersion {
+  id         String   @id @default(cuid())
+  scope      String
+  version    Int
+  overrides  Json
+  actorId    String
+  reason     String
+  rollbackOf Int?
+  createdAt  DateTime @default(now())
+  config     EditableCopyConfig @relation(fields: [scope], references: [scope], onDelete: Restrict)
+
+  @@unique([scope, version])
+  @@index([scope, createdAt])
 }

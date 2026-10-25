@@ -1,9 +1,11 @@
 "use client";
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import Link from 'next/link';
 import Image from 'next/image';
 import { LoginButton } from './LoginButton';
-import { SITE_ALTERNATE_NAME, SITE_LOGO, SITE_NAME } from '@/lib/site';
+import { SITE_LOGO, SITE_NAME } from '@/lib/site';
 
 const links = [
   { href: '/', label: 'HOME' },
@@ -14,6 +16,7 @@ const links = [
 ];
 
 export function NavBar() {
+  const siteCopy = useSiteCopy();
   return (
     <header className="relative z-20 w-full">
       <div className="h-[3px] bg-black" />
@@ -21,13 +24,13 @@ export function NavBar() {
         <nav className="flex items-center gap-4 sm:gap-8 px-4 sm:px-8 py-4 text-xs sm:text-sm uppercase tracking-[0.22em] text-black w-full">
           <Link
             href="/"
-            aria-label={`${SITE_NAME}首页`}
+            aria-label={siteCopy("site.components.navbar.4411bd10cf03", {value1: String(SITE_NAME)})}
             className="mr-4 flex shrink-0 items-center gap-2 leading-tight transition-colors duration-150 hover:text-neutral-600"
           >
-            <Image src={SITE_LOGO} alt={SITE_NAME} width={52} height={52} className="rounded-xl object-contain" />
+            <Image src={SITE_LOGO} alt={siteCopy("site.lib.site.7a183c580075")} width={52} height={52} className="rounded-xl object-contain" />
             <span className="flex flex-col gap-1">
-              <span className="text-xl sm:text-2xl font-bold normal-case tracking-[0.08em]">{SITE_ALTERNATE_NAME}</span>
-              <span className="text-[10px] sm:text-xs tracking-[0.12em]">{SITE_NAME}</span>
+              <span className="text-xl sm:text-2xl font-bold normal-case tracking-[0.08em]"><SiteText copyKey="site.lib.site.0b3df39130a2" /></span>
+              <span className="text-[10px] sm:text-xs tracking-[0.12em]"><SiteText copyKey="site.lib.site.7a183c580075" /></span>
             </span>
           </Link>
           <div className="text-xl sm:text-xl flex flex-1 items-center font-serif gap-4 sm:gap-16 overflow-x-auto">
@@ -37,7 +40,7 @@ export function NavBar() {
                 href={link.href}
                 className="whitespace-nowrap font-semibold transition-colors duration-150 hover:text-neutral-500"
               >
-                {link.label}
+                <SiteText namespace="site.components.navbar" value={link.label} />
               </Link>
             ))}
           </div>

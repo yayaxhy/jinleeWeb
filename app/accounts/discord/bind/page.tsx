@@ -1,3 +1,5 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import BindDiscordClient from './BindDiscordClient';
 import { verifyDiscordBindToken } from '@/lib/discord-bind-token';
 
@@ -14,10 +16,8 @@ export default async function DiscordBindPage({ searchParams }: DiscordBindPageP
     return (
       <main className="min-h-screen flex items-center justify-center bg-[#111827] text-white px-6 text-center">
         <div className="max-w-lg space-y-4">
-          <h1 className="text-3xl font-semibold tracking-wide">绑定链接已失效</h1>
-          <p className="text-sm leading-7 text-white/70">
-            请回到微信小程序重新生成绑定链接，再发起一次 Discord 绑定。
-          </p>
+          <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.accounts.discord.bind.page.56ccddf003fb" /></h1>
+          <p className="text-sm leading-7 text-white/70"><SiteText copyKey="site.app.accounts.discord.bind.page.cb7d96815d23" /></p>
         </div>
       </main>
     );

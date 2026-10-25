@@ -1,3 +1,4 @@
+import { getSiteCopy } from "./site-copy-server";
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -413,6 +414,7 @@ async function readRecommendationImages(issues: string[]) {
 }
 
 async function loadRecommendedCompanions(issues: string[]) {
+  const copy = await getSiteCopy();
   const images = await readRecommendationImages(issues);
   const imageIds = images.map((item) => item.id);
 
@@ -430,7 +432,8 @@ async function loadRecommendedCompanions(issues: string[]) {
     : [];
 
   const rowById = new Map(rows.map((row) => [row.PEIWANID, row]));
-  const recommended = images.map((image, index): RecommendedCompanion => {
+  const activeImages = images.filter(image => !rowById.get(image.id)?.discordUserId.startsWith('detached:'));
+  const recommended = activeImages.map((image, index): RecommendedCompanion => {
     const row = rowById.get(image.id);
 
     if (!row) {
@@ -441,8 +444,8 @@ async function loadRecommendedCompanions(issues: string[]) {
         game: '未配置游戏',
         price: '资料缺失',
         image: image.src,
-        highlight: '推荐图存在 · 资料缺失',
-        description: '这张推荐图存在，但后台陪玩资料没有匹配到。',
+        highlight: copy("site.lib.home.page.data.5180911d31fb"),
+        description: copy("site.lib.home.page.data.a1772e75c146"),
         tags: ['缺少陪玩资料'],
         tone: recommendationTones[index % recommendationTones.length],
         missing: ['PEIWAN 资料'],
@@ -465,7 +468,7 @@ async function loadRecommendedCompanions(issues: string[]) {
       price,
       image: image.src,
       highlight: `${row.level} · ${row.status === 'free' ? '当前空闲' : '当前忙碌'}`,
-      description: `${name} 当前配置了 ${labels.join('、')}。`,
+      description: copy("site.lib.home.page.data.ebc62c0c8c4b", {value1: String(name), value2: String(labels.join('、'))}),
       tags: [row.sex, row.type, ...labels].slice(0, 4),
       tone: recommendationTones[index % recommendationTones.length],
       missing,
@@ -635,6 +638,7 @@ const sanitizeOrderRequestContent = (value: string | null | undefined) => {
 };
 
 async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
+  const copy = await getSiteCopy();
   try {
     const now = Date.now();
     const recentOrderAndGiftCutoff = new Date(now - 14 * 24 * 60 * 60 * 1000);
@@ -712,10 +716,10 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             occurredAt: row.createdAt,
             item: {
               id: row.id,
-              title: `${game}陪玩需求待确认`,
+              title: copy("site.lib.home.page.data.f97134a3b709", {value1: String(game)}),
               detail: requestContent,
               timeLabel: formatRelativeTime(row.createdAt),
-              statusLabel: '新需求',
+              statusLabel: copy("site.lib.home.page.data.da4ed2e4187c"),
             },
           };
         case 'RUNNING':
@@ -723,10 +727,10 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             occurredAt: row.acceptedAt ?? row.createdAt,
             item: {
               id: row.id,
-              title: `${game}陪玩服务进行中`,
-              detail: '已由点了么娱乐公会安排，正在进行服务。',
+              title: copy("site.lib.home.page.data.48ca58d08c90", {value1: String(game)}),
+              detail: copy("site.lib.home.page.data.d26f68d79796"),
               timeLabel: formatRelativeTime(row.acceptedAt ?? row.createdAt),
-              statusLabel: '服务中',
+              statusLabel: copy("site.lib.home.page.data.55ccf47e2854"),
             },
           };
         case 'ENDED':
@@ -734,10 +738,10 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             occurredAt: row.endedAt ?? row.createdAt,
             item: {
               id: row.id,
-              title: `${game}陪玩服务已完成`,
-              detail: '本次服务已顺利结束，感谢板板选择点了么娱乐公会。',
+              title: copy("site.lib.home.page.data.6c2186b30bc3", {value1: String(game)}),
+              detail: copy("site.lib.home.page.data.36ad16d9bfd0"),
               timeLabel: formatRelativeTime(row.endedAt ?? row.createdAt),
-              statusLabel: '已完成',
+              statusLabel: copy("site.lib.home.page.data.e99b48a29bdf"),
             },
           };
         case 'DECLINED':
@@ -745,10 +749,10 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             occurredAt: row.createdAt,
             item: {
               id: row.id,
-              title: `${game}陪玩订单暂未接单`,
-              detail: '匿名订单已关闭，客服可协助重新安排。',
+              title: copy("site.lib.home.page.data.2e0671e5e425", {value1: String(game)}),
+              detail: copy("site.lib.home.page.data.4ec2f4044176"),
               timeLabel: formatRelativeTime(row.createdAt),
-              statusLabel: '匿名订单',
+              statusLabel: copy("site.lib.home.page.data.41f2ad137370"),
             },
           };
         case 'CANCELED':
@@ -756,10 +760,10 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             occurredAt: row.createdAt,
             item: {
               id: row.id,
-              title: `${game}陪玩订单已取消`,
-              detail: '匿名订单已取消，如有需要可重新联系点了么客服。',
+              title: copy("site.lib.home.page.data.2ae0266bfb90", {value1: String(game)}),
+              detail: copy("site.lib.home.page.data.b1faeebb1bb3"),
               timeLabel: formatRelativeTime(row.createdAt),
-              statusLabel: '匿名订单',
+              statusLabel: copy("site.lib.home.page.data.41f2ad137370"),
             },
           };
         case 'EXPIRED':
@@ -767,10 +771,10 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             occurredAt: row.createdAt,
             item: {
               id: row.id,
-              title: `${game}陪玩订单已过期`,
-              detail: '匿名订单已过期，客服可协助发起新的需求。',
+              title: copy("site.lib.home.page.data.ca1342042200", {value1: String(game)}),
+              detail: copy("site.lib.home.page.data.9b268b9550c3"),
               timeLabel: formatRelativeTime(row.createdAt),
-              statusLabel: '匿名订单',
+              statusLabel: copy("site.lib.home.page.data.41f2ad137370"),
             },
           };
         default:
@@ -778,10 +782,10 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
             occurredAt: row.createdAt,
             item: {
               id: row.id,
-              title: '点了么陪玩订单动态',
-              detail: '订单状态已更新，客服会继续协助处理。',
+              title: copy("site.lib.home.page.data.16a22cb0e80d"),
+              detail: copy("site.lib.home.page.data.7864df141bf7"),
               timeLabel: formatRelativeTime(row.createdAt),
-              statusLabel: '订单动态',
+              statusLabel: copy("site.lib.home.page.data.fd309453a911"),
             },
           };
       }
@@ -793,10 +797,10 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
         occurredAt: row.createdAt,
         item: {
           id: `dispatch-${row.orderId}`,
-          title: '新的陪玩需求已发布',
+          title: copy("site.lib.home.page.data.636f07079cb8"),
           detail: sanitizeOrderRequestContent(row.content),
           timeLabel: formatRelativeTime(row.createdAt),
-          statusLabel: row._count.clicks > 0 ? `已有 ${row._count.clicks} 位陪玩抢单` : '新需求',
+          statusLabel: row._count.clicks > 0 ? copy("site.lib.home.page.data.c20e5e1f2729", {value1: String(row._count.clicks)}) : copy("site.lib.home.page.data.da4ed2e4187c"),
         },
       }));
 
@@ -804,10 +808,10 @@ async function loadRecentCommunityActivity(): Promise<RecentDispatchItem[]> {
       occurredAt: gift.createdAt,
       item: {
         id: `gift-${gift.id}`,
-        title: `陪陪收到了价值 ¥${formatAmountDown2(gift.gross)} 的打赏`,
-        detail: '感谢板板对点了么陪玩的支持。',
+        title: copy("site.lib.home.page.data.f692b6234e77", {value1: String(formatAmountDown2(gift.gross))}),
+        detail: copy("site.lib.home.page.data.917b0ecf10db"),
         timeLabel: formatRelativeTime(gift.createdAt),
-        statusLabel: '高价值打赏',
+        statusLabel: copy("site.lib.home.page.data.1e8713532419"),
       },
     }));
 

@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
@@ -46,7 +47,7 @@ const formatEntry = (
 async function getSessionMemberId() {
   const session = await getServerSession();
   if (!session?.discordId) {
-    return { error: NextResponse.json({ error: '未登录' }, { status: 401 }) };
+    return { error: NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.blacklist.route.e8041a8c9358") }, { status: 401 }) };
   }
 
   const member = await prisma.member.findUnique({
@@ -54,7 +55,7 @@ async function getSessionMemberId() {
     select: { discordUserId: true },
   });
   if (!member) {
-    return { error: NextResponse.json({ error: '仅限已有会员使用黑名单功能' }, { status: 403 }) };
+    return { error: NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.blacklist.route.2fca623cf6cc") }, { status: 403 }) };
   }
 
   return { blockerId: member.discordUserId };
@@ -86,10 +87,10 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as BlacklistPayload;
   const blockedId = body.blockedId?.trim();
   if (!blockedId) {
-    return NextResponse.json({ error: '缺少拉黑对象' }, { status: 400 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.blacklist.route.9c0f964b0c23") }, { status: 400 });
   }
   if (blockedId === sessionMember.blockerId) {
-    return NextResponse.json({ error: '不能将自己加入黑名单' }, { status: 400 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.blacklist.route.207de740bdc7") }, { status: 400 });
   }
 
   const target = await prisma.member.findUnique({
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
     select: { discordUserId: true },
   });
   if (!target) {
-    return NextResponse.json({ error: '未找到该用户' }, { status: 404 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.blacklist.route.11d76c8a59f0") }, { status: 404 });
   }
 
   const entry = await prisma.blacklist.upsert({
@@ -130,7 +131,7 @@ export async function DELETE(request: Request) {
   const body = (await request.json().catch(() => ({}))) as BlacklistPayload;
   const blockedId = body.blockedId?.trim();
   if (!blockedId) {
-    return NextResponse.json({ error: '缺少解除对象' }, { status: 400 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.blacklist.route.ce2701092af7") }, { status: 400 });
   }
 
   await prisma.blacklist.deleteMany({

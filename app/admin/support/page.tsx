@@ -29,6 +29,7 @@ export default async function SupportPage() {
         </Link>
       </div>
       <NotificationDeliveryMonitor />
+      <NotificationDeliveryMonitor source="outbox" />
       <SupportInbox />
     </main>
   );

@@ -1,4 +1,8 @@
 "use client";
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
+
+import { PublicMessageError, publicMessage, rechargeErrorMessage, RECHARGE_UNCONFIRMED } from '@/lib/public-error-messages';
 
 import Image from 'next/image';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
@@ -84,6 +88,7 @@ export default function RechargeClient({
   stripeNotice,
   paymentInstructionText,
 }: RechargeClientProps) {
+  const siteCopy = useSiteCopy();
   const visibleChannels = useMemo(
     () => PAYMENT_CHANNELS.filter((item) => visibleChannelIds.includes(item.id)),
     [visibleChannelIds],
@@ -188,15 +193,15 @@ export default function RechargeClient({
       const payload = await response.json();
       if (!response.ok) {
         if (payload?.error === 'stripe_first_recharge_limited') {
-          throw new Error(`首次信用卡/银行卡充值仅支持 ¥${Number(payload.allowedAmount ?? 500).toFixed(0)}。`);
+          throw new PublicMessageError(`首次信用卡/银行卡充值仅支持 ¥${Number(payload.allowedAmount ?? 500).toFixed(0)}。`);
         }
         if (payload?.error === 'stripe_amount_too_small') {
-          throw new Error(payload?.message ?? 'Stripe 最低付款金额约为 50 美分');
+          throw new PublicMessageError(rechargeErrorMessage('stripe_amount_too_small'));
         }
         if (payload?.error === 'unsupported_stripe_currency') {
-          throw new Error('暂不支持该 Stripe 支付币种。');
+          throw new PublicMessageError(rechargeErrorMessage('unsupported_stripe_currency'));
         }
-        throw new Error(payload?.error ?? '下单失败，请稍后再试');
+        throw new PublicMessageError(rechargeErrorMessage(payload?.error));
       }
       setOrder({
         id: payload.orderId,
@@ -216,7 +221,7 @@ export default function RechargeClient({
             : '订单已创建，请在 15 分钟内完成支付，系统会自动更新余额。',
       );
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '创建订单失败';
+      const message = siteCopy.text(publicMessage(err, RECHARGE_UNCONFIRMED), "site.lib.public.error.messages");
       setError(message);
     } finally {
       setLoading(false);
@@ -229,7 +234,7 @@ export default function RechargeClient({
       await navigator.clipboard.writeText(order.payUrl);
       setHint('支付链接已复制，可在浏览器中打开继续支付。');
     } catch {
-      setError('无法复制链接，请手动打开支付页面。');
+      setError(siteCopy("site.app.recharge.rechargeclient.b207f8a132b7"));
     }
   };
 
@@ -238,7 +243,7 @@ export default function RechargeClient({
       <div className="space-y-6">
         <div className="rounded-[32px] border border-black/5 bg-white p-6 space-y-5">
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">选择支付方式</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.1693e9b2c7da" /></p>
             <div className="flex flex-wrap gap-3">
               {visibleChannels.map((item) => {
                 const active = item.id === channel;
@@ -261,20 +266,20 @@ export default function RechargeClient({
                       setError(null);
                     }}
                   >
-                    {item.label}
+                    <SiteText namespace="site.app.recharge.rechargeclient" value={item.label} />
                   </button>
                 );
               })}
             </div>
-            <p className="text-sm text-gray-500">{selectedChannel.description}</p>
+            <p className="text-sm text-gray-500"><SiteText namespace="site.app.recharge.rechargeclient" value={selectedChannel.description} /></p>
             {channel === 'stripe' ? (
               stripeNotice ? (
                 <p className="text-xs text-gray-500">{stripeNotice}</p>
               ) : !hasPriorRecharge ? (
-                <p className="text-xs text-gray-500">首次信用卡/银行卡充值仅开放 ¥500，完成首次到账后可选择更高档位。</p>
+                <p className="text-xs text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.8b7c01c0461e" /></p>
               ) : null
             ) : (
-              <p className="text-xs text-gray-500">微信官方支付无需填写转账备注。</p>
+              <p className="text-xs text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.c1837f65af61" /></p>
             )}
           </div>
 
@@ -297,11 +302,11 @@ export default function RechargeClient({
           </div> */}
 
           <div className="rounded-[24px] border border-black/5 bg-white p-5 space-y-3 text-left">
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">充值说明</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.37c49b192027" /></p>
             <ol className="space-y-2 text-sm text-gray-600 list-decimal list-inside">
-              <li>下方选择充值金额点击生成订单，系统会按支付方式生成二维码或支付链接。</li>
+              <li><SiteText copyKey="site.app.recharge.rechargeclient.95a80185cc9c" /></li>
               <li>{instructionText}</li>
-              <li>支付成功后，余额将自动增加。</li>
+              <li><SiteText copyKey="site.app.recharge.rechargeclient.209ceb5e5fa4" /></li>
             </ol>
           </div>
         </div>
@@ -312,7 +317,7 @@ export default function RechargeClient({
         className="rounded-[32px] border border-black/5 bg-white p-8 space-y-6"
       >
         <div className="space-y-3">
-          <label className="text-xs uppercase tracking-[0.4em] text-gray-500">充值金额 *</label>
+          <label className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.3b8b236acaca" /></label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {amountOptions.map((value) => {
               const active = amount === String(value);
@@ -336,12 +341,12 @@ export default function RechargeClient({
               );
             })}
           </div>
-          <p className="text-xs text-gray-500">请选择一项充值金额，暂不支持自定义金额。</p>
+          <p className="text-xs text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.71843f49b3dc" /></p>
         </div>
 
         {channel === 'stripe' && currentStripeCurrencyOptions.length > 0 ? (
           <div className="space-y-3">
-            <label className="text-xs uppercase tracking-[0.4em] text-gray-500">支付币种 *</label>
+            <label className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.6045c3447a7b" /></label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {currentStripeCurrencyOptions.map((currency) => {
                 const meta = STRIPE_CURRENCY_OPTIONS.find((item) => item.code === currency);
@@ -363,13 +368,13 @@ export default function RechargeClient({
                   >
                     <span className="block">{meta?.shortLabel ?? currency.toUpperCase()}</span>
                     <span className={`mt-1 block text-xs ${active ? 'text-white/70' : 'text-gray-400'}`}>
-                      {meta?.label ?? currency.toUpperCase()}
+                      <SiteText namespace="site.app.recharge.rechargeclient" value={meta?.label ?? currency.toUpperCase()} />
                     </span>
                   </button>
                 );
               })}
             </div>
-            <p className="text-xs text-gray-500">付款页会显示所选币种对应的价格。</p>
+            <p className="text-xs text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.0b2495559e52" /></p>
           </div>
         ) : null}
 
@@ -378,48 +383,40 @@ export default function RechargeClient({
           disabled={loading}
           className="w-full rounded-full bg-black px-6 py-3 text-sm uppercase tracking-[0.4em] text-white hover:bg-black/80 transition disabled:opacity-60"
         >
-          {loading
-            ? '创建订单中…'
-            : channel === 'stripe'
-              ? '前往信用卡/银行卡支付'
-              : channel === 'wechat_native'
-                ? '生成微信支付二维码'
-                : '生成支付二维码'}
+          {loading ? <SiteText copyKey="site.app.recharge.rechargeclient.69988de37b6d" /> : channel === 'stripe' ? <SiteText copyKey="site.app.recharge.rechargeclient.37c34c99cb91" /> : channel === 'wechat_native' ? <SiteText copyKey="site.app.recharge.rechargeclient.3b3587d4cf5e" /> : <SiteText copyKey="site.app.recharge.rechargeclient.693a1f22ff1d" />}
         </button>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500"><SiteText namespace="site.app.recharge.rechargeclient" value={error} /></p>}
         {hint && <p className="text-sm text-emerald-600">{hint}</p>}
 
         {order && (
           <div className="space-y-4 rounded-[24px] border border-black/5 bg-black/5 p-5">
             {order.displayMode === 'qrcode' && order.qrCodeDataUrl ? (
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">微信扫码支付</p>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.c8715f381cf1" /></p>
                 <div className="mx-auto w-56 rounded-[28px] border border-black/10 bg-white p-4">
                   <Image
                     src={order.qrCodeDataUrl}
-                    alt="微信支付二维码"
+                    alt={siteCopy("site.app.recharge.rechargeclient.6eeebac2b29c")}
                     width={360}
                     height={360}
                     unoptimized
                     className="h-full w-full object-contain"
                   />
                 </div>
-                <p className="text-center text-xs text-gray-500">
-                  请使用微信扫一扫完成支付，页面会自动刷新到账状态。
-                </p>
+                <p className="text-center text-xs text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.de32b6a95b88" /></p>
               </div>
             ) : null}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">订单号</span>
+              <span className="text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.459868e5cb99" /></span>
               <span className="font-mono text-xs">{order.id}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">金额</span>
+              <span className="text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.34943c40c9af" /></span>
               <span className="font-semibold">{formatCurrency(order.amount)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">状态</span>
+              <span className="text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.62e951a692ff" /></span>
               <span
                 className={
                   order.status === 'PAID'
@@ -433,19 +430,13 @@ export default function RechargeClient({
               </span>
             </div>
             {order.paidAt ? (
-              <p className="text-xs text-gray-500">
-                到账时间：
-                {new Date(order.paidAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
+              <p className="text-xs text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.e90da359904c" />{new Date(order.paidAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
               </p>
             ) : order.status === 'PENDING' ? (
-              <p className="text-xs text-gray-500">
-                支付完成后请耐心等待 1-2 分钟，系统会自动确认。
-              </p>
+              <p className="text-xs text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.8a4d6ea4a592" /></p>
             ) : null}
             {order.expiresAt && order.status === 'PENDING' ? (
-              <p className="text-xs text-gray-500">
-                二维码有效至：
-                {new Date(order.expiresAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
+              <p className="text-xs text-gray-500"><SiteText copyKey="site.app.recharge.rechargeclient.f4c45010e6d7" />{new Date(order.expiresAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE })}
               </p>
             ) : null}
             <div className="flex flex-wrap gap-3 pt-2">
@@ -455,16 +446,14 @@ export default function RechargeClient({
                   target="_blank"
                   rel="noreferrer"
                   className="flex-1 rounded-full border border-black/20 px-4 py-2 text-xs uppercase tracking-[0.4em] text-center hover:bg-black/5 transition"
-                >
-                  打开支付页面
-                </a>
+                ><SiteText copyKey="site.app.recharge.rechargeclient.65539cef986c" /></a>
               ) : null}
               <button
                 type="button"
                 onClick={copyLink}
                 className="flex-1 rounded-full border border-black/20 px-4 py-2 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition"
               >
-                {order.displayMode === 'qrcode' ? '复制二维码链接' : '复制链接'}
+                {order.displayMode === 'qrcode' ? <SiteText copyKey="site.app.recharge.rechargeclient.13a93c4be799" /> : <SiteText copyKey="site.app.recharge.rechargeclient.abb22bd95c4a" />}
               </button>
             </div>
           </div>

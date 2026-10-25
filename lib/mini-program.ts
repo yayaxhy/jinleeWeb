@@ -1,3 +1,5 @@
+import { getSiteCopy } from "./site-copy-server";
+import { knownPublicMessage } from './public-error-messages';
 import {
   AccountProvider,
   DispatchCandidateStatus,
@@ -301,14 +303,15 @@ export async function listDispatchRequests(currentUser: CurrentDlmUser, scope: s
 }
 
 export async function createDispatchRequest(currentUser: CurrentDlmUser, payload: Record<string, unknown>) {
+  const copy = await getSiteCopy();
   const sexRequirement = normalizeSexRequirement(payload);
   if (!sexRequirement.length) {
-    return { ok: false, status: 400, error: '请选择男生或女生，至少选择一个。' };
+    return { ok: false, status: 400, error: copy("site.lib.mini.program.f5663df6ff1c") };
   }
 
   const requirement = String(payload.requirement || '').trim();
   if (!requirement) {
-    return { ok: false, status: 400, error: '请填写派单要求。' };
+    return { ok: false, status: 400, error: copy("site.lib.mini.program.dd6f43c04bcf") };
   }
 
   const now = new Date();
@@ -355,14 +358,15 @@ async function resolveCurrentPeiwan(currentUser: CurrentDlmUser) {
 }
 
 export async function grabDispatchRequest(currentUser: CurrentDlmUser, dispatchId: string) {
+  const copy = await getSiteCopy();
   const peiwan = await resolveCurrentPeiwan(currentUser);
   if (!peiwan || currentUser.dlmUser.member?.status !== MemberStatus.PEIWAN) {
-    return { ok: false, status: 403, error: '需要先完善陪玩资料后才能抢单。' };
+    return { ok: false, status: 403, error: copy("site.lib.mini.program.3a065da4e327") };
   }
 
   const deleted = await prisma.peiwanDeletion.findUnique({ where: { peiwanId: peiwan.PEIWANID } });
   if (deleted) {
-    return { ok: false, status: 403, error: '陪玩资料审核通过并可展示后才能抢单。' };
+    return { ok: false, status: 403, error: copy("site.lib.mini.program.d3cbf5422972") };
   }
 
   const runningOrder = await prisma.order.findFirst({
@@ -374,7 +378,7 @@ export async function grabDispatchRequest(currentUser: CurrentDlmUser, dispatchI
     select: { id: true },
   });
   if (runningOrder) {
-    return { ok: false, status: 409, error: '你有进行中订单，系统已强制显示忙碌。' };
+    return { ok: false, status: 409, error: copy("site.lib.mini.program.62654406bef2") };
   }
 
   try {
@@ -460,10 +464,15 @@ export async function grabDispatchRequest(currentUser: CurrentDlmUser, dispatchI
     return { ok: true, candidate: serializeCandidate(candidate.candidate) };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return { ok: false, status: 409, error: '你已经抢过这条派单。' };
+      return { ok: false, status: 409, error: copy("site.lib.mini.program.5998ae0a745a") };
     }
 
-    return { ok: false, status: 400, error: error instanceof Error ? error.message : '抢单失败。' };
+    console.error('[mini-dispatch] grab failed', { dispatchId, error });
+    return { ok: false, status: 400, error: knownPublicMessage(error, {
+      '派单不存在。': '派单不存在。',
+      '不能抢自己的派单。': '不能抢自己的派单。',
+      '派单已关闭。': '派单已关闭。',
+    }, '暂时无法确认抢单结果，请先查看订单或联系客服。') };
   }
 }
 
@@ -472,9 +481,10 @@ export async function selectDispatchCandidate(
   dispatchId: string,
   payload: Record<string, unknown>,
 ) {
+  const copy = await getSiteCopy();
   const candidateId = String(payload.candidateId || '').trim();
   if (!candidateId) {
-    return { ok: false, status: 400, error: '缺少候选陪玩。' };
+    return { ok: false, status: 400, error: copy("site.lib.mini.program.e3a97d4749e3") };
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -583,10 +593,11 @@ export async function selectDispatchCandidate(
       await publishGuildNotification({
         dlmId: result.workerDlmId,
         event: GuildNotificationEvent.ORDER_CREATED,
-        title: `订单 #${result.order.displayNo} 等待接单`,
-        body: '老板已选中你，请尽快确认接单。',
+        title: copy("site.lib.mini.program.f773ec73dfe0", {value1: String(result.order.displayNo)}),
+        body: copy("site.lib.mini.program.b957d6787ad5"),
         href: '/console?tab=orders',
         dedupeKey: `order-created:${result.order.id}:${result.workerDlmId}`,
+        details: { orderId: result.order.id },
       });
     } catch (error) {
       // The order is already committed. Preserve the completed business action
@@ -759,6 +770,7 @@ export async function getConversation(currentUser: CurrentDlmUser, conversationI
 }
 
 export async function startConversation(currentUser: CurrentDlmUser, payload: Record<string, unknown>) {
+  const copy = await getSiteCopy();
   const peiwanId = Number(payload.peiwanId);
   let peerDlmId = String(payload.peerDlmId || '').trim();
 
@@ -767,8 +779,8 @@ export async function startConversation(currentUser: CurrentDlmUser, payload: Re
       where: { PEIWANID: peiwanId },
       include: { member: true },
     });
-    if (!peiwan) {
-      return { ok: false, status: 404, error: '未找到陪玩。' };
+    if (!peiwan || peiwan.discordUserId.startsWith('detached:')) {
+      return { ok: false, status: 404, error: copy("site.lib.mini.program.96c347102cfd") };
     }
 
     const ensured = await ensureDlmUserForDiscordMember({
@@ -779,7 +791,7 @@ export async function startConversation(currentUser: CurrentDlmUser, payload: Re
   }
 
   if (!peerDlmId || peerDlmId === currentUser.dlmId) {
-    return { ok: false, status: 400, error: '无法发起该聊天。' };
+    return { ok: false, status: 400, error: copy("site.lib.mini.program.73a6d5ca9a24") };
   }
 
   const peer = await prisma.dlmUser.findUnique({
@@ -787,7 +799,7 @@ export async function startConversation(currentUser: CurrentDlmUser, payload: Re
     include: { member: true },
   });
   if (!peer) {
-    return { ok: false, status: 404, error: '未找到聊天对象。' };
+    return { ok: false, status: 404, error: copy("site.lib.mini.program.1a04757d8865") };
   }
 
   const peerKey = buildDirectPeerKey(currentUser.dlmId, peer.dlmId);
@@ -811,7 +823,7 @@ export async function startConversation(currentUser: CurrentDlmUser, payload: Re
       messages: {
         create: {
           senderType: MiniMessageSenderType.SYSTEM,
-          body: '未下单前聊天已通知管理员监控。',
+          body: copy("site.lib.mini.program.3609dd5b2141"),
           status: MiniMessageStatus.NOTICE,
         },
       },
@@ -839,6 +851,7 @@ export async function startConversation(currentUser: CurrentDlmUser, payload: Re
 
 /** Creates one durable, staff-visible support thread per DLM account. */
 export async function startSupportConversation(currentUser: CurrentDlmUser) {
+  const copy = await getSiteCopy();
   const peerKey = `support:${currentUser.dlmId}`;
   const conversation = await prisma.miniConversation.upsert({
     where: { type_peerKey: { type: MiniConversationType.SUPPORT, peerKey } },
@@ -852,7 +865,7 @@ export async function startSupportConversation(currentUser: CurrentDlmUser) {
       messages: {
         create: {
           senderType: MiniMessageSenderType.SYSTEM,
-          body: '已接入公会客服。请描述你的订单、充值、余额或提现问题，管理人员会在此回复。',
+          body: copy("site.lib.mini.program.f95050a48426"),
           status: MiniMessageStatus.NOTICE,
         },
       },
@@ -909,18 +922,23 @@ async function moderateMessage(currentUser: CurrentDlmUser, text: string) {
 }
 
 export async function sendMiniMessage(currentUser: CurrentDlmUser, payload: Record<string, unknown>) {
+  const copy = await getSiteCopy();
   const conversationId = String(payload.conversationId || '').trim();
   const text = String(payload.text || payload.body || '').trim();
   if (!conversationId || !text) {
-    return { ok: false, status: 400, error: '消息不能为空。' };
+    return { ok: false, status: 400, error: copy("site.lib.mini.program.3936495bb492") };
   }
 
   const conversation = await prisma.miniConversation.findUnique({
     where: { id: conversationId },
-    select: { id: true, type: true, userAId: true, userBId: true, adminWatched: true },
+    select: { id: true, type: true, peerKey: true, userAId: true, userBId: true, adminWatched: true },
   });
   if (!conversation || !canAccessConversation(conversation, currentUser)) {
-    return { ok: false, status: 404, error: '会话不存在。' };
+    return { ok: false, status: 404, error: copy("site.lib.mini.program.1211c69ea1e3") };
+  }
+
+  if (conversation.peerKey?.startsWith('migration-history:')) {
+    return { ok: false, status: 409, error: copy("site.lib.mini.program.b5bdca8f7459") };
   }
 
   const moderation = conversation.type === MiniConversationType.SUPPORT

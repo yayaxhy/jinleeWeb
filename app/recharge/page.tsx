@@ -1,3 +1,5 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
@@ -21,16 +23,12 @@ export default async function RechargePage() {
           <Link
             href="/profile"
             className="rounded-full border border-black/10 px-5 py-2 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition"
-          >
-            返回个人中心
-          </Link>
+          ><SiteText copyKey="site.app.recharge.page.867271dd72c5" /></Link>
           </div>
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-wide">余额充值</h1>
-            <p className="text-sm text-gray-500">
-              网页支持信用卡/银行卡自动充值；也可选择微信/支付宝扫码充值。
-            </p>
+            <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.recharge.page.b7a52389ccbc" /></h1>
+            <p className="text-sm text-gray-500"><SiteText copyKey="site.app.recharge.page.81d8581d636f" /></p>
           </div>
         </div>
 
@@ -40,13 +38,11 @@ export default async function RechargePage() {
         >
           <div className="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
             <div>
-              <p className="text-xs font-medium tracking-[0.24em] text-[#2563eb]">扫码转账</p>
-              <h2 className="mt-2 text-xl font-semibold text-[#172554]">微信/支付宝充值</h2>
-              <p className="mt-2 text-sm text-[#475569]">扫描收款码转账，付款成功后将截图私信 Discord 客服。</p>
+              <p className="text-xs font-medium tracking-[0.24em] text-[#2563eb]"><SiteText copyKey="site.app.recharge.page.7fd093fba143" /></p>
+              <h2 className="mt-2 text-xl font-semibold text-[#172554]"><SiteText copyKey="site.app.recharge.page.f7276d412b7d" /></h2>
+              <p className="mt-2 text-sm text-[#475569]"><SiteText copyKey="site.app.recharge.page.724fcc2d141f" /></p>
             </div>
-            <span className="rounded-full bg-[#2563eb] px-5 py-2.5 text-sm font-medium text-white transition group-hover:bg-[#1d4ed8]">
-              查看收款码
-            </span>
+            <span className="rounded-full bg-[#2563eb] px-5 py-2.5 text-sm font-medium text-white transition group-hover:bg-[#1d4ed8]"><SiteText copyKey="site.app.recharge.page.9257e8380fdb" /></span>
           </div>
         </Link>
 

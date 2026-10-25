@@ -1,4 +1,6 @@
 "use client";
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -33,21 +35,20 @@ type ApiResponse = {
 };
 
 const PAGE_SIZE = 6;
-const formatPrice = (value: PeiwanItem['price']) => {
-  if (value === null || value === undefined) return '未设置';
+const formatPrice = (value: PeiwanItem['price'], fallback: string) => {
+  if (value === null || value === undefined) return fallback;
   const formatted = formatAmountDown2(value);
   if (formatted === '—') return String(value);
   return `${formatted} 币/H`;
 };
 
 const CardImage = ({ item, onPreview }: { item: PeiwanItem; onPreview?: (src: string) => void }) => {
+  const siteCopy = useSiteCopy();
   const cardUrl = item.cardUrl?.trim() || null;
 
   if (!cardUrl) {
     return (
-      <div className="w-full h-40 bg-gradient-to-r from-[#d0c3ff] to-[#f1e6ff] flex items-center justify-center text-gray-500 text-sm">
-        无名片
-      </div>
+      <div className="w-full h-40 bg-gradient-to-r from-[#d0c3ff] to-[#f1e6ff] flex items-center justify-center text-gray-500 text-sm"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.002fcd0b76f3" /></div>
     );
   }
 
@@ -55,7 +56,7 @@ const CardImage = ({ item, onPreview }: { item: PeiwanItem; onPreview?: (src: st
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={cardUrl}
-      alt={`Peiwan ${item.id}`}
+      alt={siteCopy("site.app.peiwanlist.peiwanlistclient.e37b73587612", {value1: String(item.id)})}
       className="w-full h-40 object-cover cursor-zoom-in"
       onClick={() => onPreview?.(cardUrl)}
     />
@@ -83,6 +84,7 @@ const FilterChip = ({
 );
 
 export function PeiwanListClient() {
+  const siteCopy = useSiteCopy();
   const [games, setGames] = useState<Set<PeiwanGameCodeValue>>(new Set());
   const [technicalOnly, setTechnicalOnly] = useState(false);
   const [level, setLevel] = useState<string>('');
@@ -118,13 +120,13 @@ export function PeiwanListClient() {
       try {
         const res = await fetch(`/api/peiwan?${queryString}`, { signal: controller.signal, cache: 'no-store' });
         if (!res.ok) {
-          throw new Error('加载失败，请稍后再试');
+          throw new Error(siteCopy("site.app.peiwanlist.peiwanlistclient.d131bfa4542b"));
         }
         const data = (await res.json()) as ApiResponse;
         setResult(data);
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        const message = err instanceof Error ? err.message : '加载失败';
+        const message = err instanceof Error ? err.message : siteCopy("site.app.peiwanlist.peiwanlistclient.f6b7a41e5600");
         setError(message);
       } finally {
         setLoading(false);
@@ -132,7 +134,7 @@ export function PeiwanListClient() {
     };
     fetchData();
     return () => controller.abort();
-  }, [queryString]);
+  }, [queryString, siteCopy]);
 
   const toggleGame = (tag: PeiwanGameCodeValue) => {
     setPage(1);
@@ -166,23 +168,19 @@ export function PeiwanListClient() {
           <Link
             href="/"
             className="inline-flex items-center justify-center rounded-full border border-black/20 px-4 py-2 text-sm text-gray-700 hover:border-black hover:text-black transition"
-          >
-            返回主页
-          </Link>
-          <h1 className="text-3xl font-bold tracking-wide text-[#2800ff]">陪玩列表</h1>
-          <p className="max-w-2xl text-sm leading-6 text-gray-600">
-            每张陪玩卡片均展示当前服务单价，价格单位为“币/小时”；具体游戏、时长与最终费用以下单前确认内容为准。
-          </p>
+          ><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.20b6e2fcece9" /></Link>
+          <h1 className="text-3xl font-bold tracking-wide text-[#2800ff]"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.01258d8583fe" /></h1>
+          <p className="max-w-2xl text-sm leading-6 text-gray-600"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.7293127d8d6f" /></p>
         </div>
       </header>
 
       <section className="rounded-3xl bg-white border border-black/5 shadow-sm p-5 space-y-4">
         <div className="flex flex-wrap gap-3 items-center">
-          <span className="text-sm text-gray-500 min-w-[72px]">游戏：</span>
+          <span className="text-sm text-gray-500 min-w-[72px]"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.7d1b8fc5aa09" /></span>
           <div className="flex flex-wrap gap-2">
             {PEIWAN_GAME_OPTIONS.map((tag) => (
               <FilterChip key={tag.code} active={games.has(tag.code)} onClick={() => toggleGame(tag.code)}>
-                {tag.label}
+                <SiteText namespace="site.constants.peiwan" value={tag.label} />
               </FilterChip>
             ))}
             <FilterChip
@@ -191,14 +189,12 @@ export function PeiwanListClient() {
                 setTechnicalOnly((v) => !v);
                 setPage(1);
               }}
-            >
-              技术/大神
-            </FilterChip>
+            ><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.7497825fba56" /></FilterChip>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-3 items-center">
-          <span className="text-sm text-gray-500 min-w-[72px]">等级：</span>
+          <span className="text-sm text-gray-500 min-w-[72px]"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.064729536c32" /></span>
           <div className="flex flex-wrap gap-2">
             {PEIWAN_LEVEL_OPTIONS.map((item) => (
               <FilterChip
@@ -213,69 +209,57 @@ export function PeiwanListClient() {
         </div>
 
         <div className="flex flex-wrap gap-3 items-center">
-          <span className="text-sm text-gray-500 min-w-[72px]">性别：</span>
+          <span className="text-sm text-gray-500 min-w-[72px]"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.8b21072c5274" /></span>
           <div className="flex flex-wrap gap-2">
             <FilterChip
               active={gender === 'female'}
               onClick={() => { setGender(gender === 'female' ? '' : 'female'); setPage(1); }}
-            >
-              女陪陪
-            </FilterChip>
+            ><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.b55c55dff50f" /></FilterChip>
             <FilterChip
               active={gender === 'male'}
               onClick={() => { setGender(gender === 'male' ? '' : 'male'); setPage(1); }}
-            >
-              男陪陪
-            </FilterChip>
+            ><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.66dd36173d3b" /></FilterChip>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-3 items-center">
-          <span className="text-sm text-gray-500 min-w-[72px]">ID 搜索：</span>
+          <span className="text-sm text-gray-500 min-w-[72px]"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.8601ab3ad0c0" /></span>
           <input
             type="number"
             value={idFilter}
             onChange={(e) => { setIdFilter(e.target.value); setPage(1); }}
-            placeholder="精确匹配陪玩数字ID"
+            placeholder={siteCopy("site.app.peiwanlist.peiwanlistclient.61a22b426b9a")}
             className="w-48 rounded-full border border-black/10 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2800ff]"
           />
           <button
             type="button"
             onClick={resetFilters}
             className="rounded-full border border-black/20 px-4 py-2 text-sm text-gray-700 hover:border-black hover:text-black"
-          >
-            清空筛选
-          </button>
+          ><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.4f761bb4a49d" /></button>
         </div>
       </section>
 
       <section className="space-y-3">
         <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>
-            共 {result?.total ?? '—'} 人 · 第 {result?.page ?? 1} / {totalPages} 页
-          </span>
+          <span><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.497064be1f41" />{result?.total ?? '—'}<SiteText copyKey="site.app.peiwanlist.peiwanlistclient.019eca9da464" />{result?.page ?? 1} / {totalPages}<SiteText copyKey="site.app.peiwanlist.peiwanlistclient.73422182ab45" /></span>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1 || loading}
               className="rounded-full border border-black/20 px-3 py-1 text-xs uppercase tracking-[0.2em] disabled:opacity-50"
-            >
-              上一页
-            </button>
+            ><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.b41561d80765" /></button>
             <button
               type="button"
               onClick={() => setPage((p) => p + 1)}
               disabled={loading || (result ? page >= totalPages : false)}
               className="rounded-full border border-black/20 px-3 py-1 text-xs uppercase tracking-[0.2em] disabled:opacity-50"
-            >
-              下一页
-            </button>
+            ><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.67a246a344ae" /></button>
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        {loading && <p className="text-sm text-gray-500">加载中…</p>}
+        {error && <p className="text-sm text-red-500"><SiteText namespace="site.app.peiwanlist.peiwanlistclient" value={error} /></p>}
+        {loading && <p className="text-sm text-gray-500"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.300ee3dee4dc" /></p>}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.map((item) => (
@@ -283,15 +267,14 @@ export function PeiwanListClient() {
               <CardImage item={item} onPreview={(src) => setPreviewSrc(src)} />
               <div className="p-4 space-y-2 flex-1">
                 <div className="flex items-center justify-between">
-                  <div className="font-semibold text-lg">{item.serverDisplayName ?? '未设置昵称'}</div>
+                  <div className="font-semibold text-lg">{item.serverDisplayName ?? <SiteText copyKey="site.app.peiwanlist.peiwanlistclient.4370bc5cc29f" />}</div>
                   <span className="text-xs px-2 py-1 rounded-full bg-black text-white">{item.type}</span>
                 </div>
-                <div className="text-sm text-gray-600">ID: {item.id}</div>
+                <div className="text-sm text-gray-600"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.f63a6e990610" />{item.id}</div>
                 <div className="flex flex-wrap gap-2 text-xs text-gray-600">
                   <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">{item.level}</span>
                   <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">{item.sex}</span>
-                  <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">
-                    价格: {formatPrice(item.price)}
+                  <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.d2c1bb7046b5" />{formatPrice(item.price, siteCopy("site.app.peiwanlist.peiwanlistclient.55a04b58cd2c"))}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-2">
@@ -310,7 +293,7 @@ export function PeiwanListClient() {
         </div>
 
         {!loading && data.length === 0 && (
-          <p className="text-gray-500 text-sm">暂无数据，换个筛选条件试试。</p>
+          <p className="text-gray-500 text-sm"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.5625a085df02" /></p>
         )}
       </section>
 
@@ -322,7 +305,7 @@ export function PeiwanListClient() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewSrc}
-            alt="预览"
+            alt={siteCopy("site.app.peiwanlist.peiwanlistclient.de61aa8e1cbc")}
             className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
@@ -330,7 +313,7 @@ export function PeiwanListClient() {
             type="button"
             onClick={() => setPreviewSrc(null)}
             className="absolute top-6 right-6 text-white text-2xl"
-            aria-label="关闭预览"
+            aria-label={siteCopy("site.app.peiwanlist.peiwanlistclient.bf7630879471")}
           >
             ×
           </button>

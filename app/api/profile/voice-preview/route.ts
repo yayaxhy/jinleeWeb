@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
@@ -54,7 +55,7 @@ const ensurePeiwan = async (request?: Request) => {
   const currentUser = await getCurrentDlmUser(request);
   const discordUserId = currentUser?.discordUserId?.trim();
   if (!discordUserId) {
-    return { error: NextResponse.json({ error: '未登录' }, { status: 401 }) };
+    return { error: NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.voice.preview.route.e8041a8c9358") }, { status: 401 }) };
   }
 
   const member = await prisma.member.findUnique({
@@ -64,7 +65,7 @@ const ensurePeiwan = async (request?: Request) => {
     },
   });
   if (!member || member.status !== 'PEIWAN' || !member.peiwan) {
-    return { error: NextResponse.json({ error: '仅限陪玩上传试音' }, { status: 403 }) };
+    return { error: NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.voice.preview.route.eb1044a1dfa7") }, { status: 403 }) };
   }
 
   const deletionRecord = await prisma.peiwanDeletion.findUnique({
@@ -72,7 +73,7 @@ const ensurePeiwan = async (request?: Request) => {
     select: { peiwanId: true },
   });
   if (deletionRecord) {
-    return { error: NextResponse.json({ error: '你的陪玩资料当前不可编辑' }, { status: 403 }) };
+    return { error: NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.voice.preview.route.e80e8677d567") }, { status: 403 }) };
   }
 
   return {
@@ -110,7 +111,7 @@ export async function GET(request: Request) {
 
     const storedFileName = resolveStoredVoicePreviewFileNameFromUrl(current.peiwan.voicePreviewUrl);
     if (!storedFileName) {
-      return NextResponse.json({ error: '暂无试音文件' }, { status: 404 });
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.voice.preview.route.24775b82b379") }, { status: 404 });
     }
 
     const filePath = path.join(VOICE_PREVIEW_TARGET_DIR, storedFileName);
@@ -118,9 +119,10 @@ export async function GET(request: Request) {
     return await buildVoicePreviewAudioResponse(request, filePath, downloadName);
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
-      return NextResponse.json({ error: '试音文件不存在' }, { status: 404 });
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.voice.preview.route.dd32374a635d") }, { status: 404 });
     }
-    const message = error instanceof Error ? error.message : '读取试音失败，请稍后再试';
+    console.error('[voice-preview.get] failed', error);
+    const message = '试音暂时无法读取，请稍后再试。';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -136,17 +138,17 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get('file');
     if (!(file instanceof File) || file.size <= 0) {
-      return NextResponse.json({ error: '请上传试音文件' }, { status: 400 });
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.voice.preview.route.b013c9e09846") }, { status: 400 });
     }
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: '试音文件不能超过 10MB' }, { status: 400 });
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.voice.preview.route.82bdc6fe63e0") }, { status: 400 });
     }
 
     const ext = path.extname(file.name).trim().toLowerCase();
     const contentType = normalizeContentType(file.type);
     if (!ALLOWED_EXTS.has(ext) && !ALLOWED_CONTENT_TYPES.has(contentType)) {
       return NextResponse.json(
-        { error: '仅支持 mp3、m4a、wav、ogg、opus、webm、flac、aac 音频文件' },
+        { error: await renderSiteCopy("site.app.api.profile.voice.preview.route.b70fed13cd3b") },
         { status: 400 },
       );
     }
@@ -181,10 +183,11 @@ export async function POST(request: Request) {
       voicePreviewFilename: originalFilename,
     });
   } catch (error) {
+    console.error('[voice-preview.upload] failed', error);
     if (uploadedFileName) {
       await removeStoredFile({ filename: uploadedFileName });
     }
-    const message = error instanceof Error ? error.message : '上传失败，请稍后再试';
+    const message = '暂时无法确认上传结果，请刷新查看当前试音或联系客服。';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -212,7 +215,8 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : '删除失败，请稍后再试';
+    console.error('[voice-preview.delete] failed', error);
+    const message = '暂时无法确认删除结果，请刷新查看当前试音或联系客服。';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

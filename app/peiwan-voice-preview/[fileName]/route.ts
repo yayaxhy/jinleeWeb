@@ -34,7 +34,8 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
       return NextResponse.json({ error: '试音文件不存在' }, { status: 404 });
     }
-    const message = error instanceof Error ? error.message : '读取试音失败，请稍后再试';
+    console.error('[voice-preview.audio] read failed', error);
+    const message = '试音暂时无法播放，请稍后再试。';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

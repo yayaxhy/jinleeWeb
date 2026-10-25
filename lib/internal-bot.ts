@@ -5,11 +5,13 @@ const INTERNAL_API_TOKEN = process.env.INTERNAL_API_TOKEN;
 export class InternalBotError extends Error {
   status: number;
   code: string;
+  safeMessage: boolean;
 
-  constructor(code: string, status = 503) {
+  constructor(code: string, status = 503, safeMessage = false) {
     super(code);
     this.code = code;
     this.status = status;
+    this.safeMessage = safeMessage;
   }
 }
 
@@ -37,6 +39,7 @@ export async function postInternalBot<T>(path: string, payload: Record<string, u
       throw new InternalBotError(
         typeof data.error === 'string' ? data.error : `internal_bot_http_${response.status}`,
         response.status,
+        data.safeMessage === true,
       );
     }
     return data as T;
@@ -45,6 +48,36 @@ export async function postInternalBot<T>(path: string, payload: Record<string, u
     if (error instanceof Error && error.name === 'AbortError') {
       throw new InternalBotError('internal_bot_timeout');
     }
+    throw new InternalBotError('internal_bot_unavailable');
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function getInternalBot<T>(path: string): Promise<T> {
+  if (!INTERNAL_API_PORT || !INTERNAL_API_TOKEN) {
+    throw new InternalBotError('internal_bot_not_configured');
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`http://${INTERNAL_API_HOST}:${INTERNAL_API_PORT}${path}`, {
+      headers: { 'X-Internal-Token': INTERNAL_API_TOKEN },
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+    const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!response.ok) {
+      throw new InternalBotError(
+        typeof data.error === 'string' ? data.error : `internal_bot_http_${response.status}`,
+        response.status,
+        data.safeMessage === true,
+      );
+    }
+    return data as T;
+  } catch (error) {
+    if (error instanceof InternalBotError) throw error;
+    if (error instanceof Error && error.name === 'AbortError') throw new InternalBotError('internal_bot_timeout');
     throw new InternalBotError('internal_bot_unavailable');
   } finally {
     clearTimeout(timeout);

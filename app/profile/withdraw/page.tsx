@@ -1,3 +1,5 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import WithdrawForm from '@/components/profile/WithdrawForm';
@@ -55,30 +57,28 @@ export default async function WithdrawPage() {
       <section className="max-w-4xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">Withdraw</p>
-            <h1 className="text-3xl font-semibold tracking-wide">提现</h1>
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.profile.withdraw.page.47e564194604" /></p>
+            <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.profile.withdraw.page.a471daf080b6" /></h1>
           </div>
           <Link
             href="/profile"
             className="text-xs uppercase tracking-[0.4em] text-gray-500 hover:text-black transition"
-          >
-            返回个人主页
-          </Link>
+          ><SiteText copyKey="site.app.profile.withdraw.page.425652af65a9" /></Link>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-3xl border border-black/5 bg-white p-6 space-y-2">
-            <p className="text-xs tracking-[0.4em] text-gray-500">账户余额</p>
+            <p className="text-xs tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.profile.withdraw.page.870c0ab88bd9" /></p>
             <p className="text-3xl font-mono">{formatNumber(totalBalance)}</p>
           </div>
           <div className="rounded-3xl border border-black/5 bg-white p-6 space-y-2">
-            <p className="text-xs tracking-[0.4em] text-gray-500">可提现余额</p>
+            <p className="text-xs tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.profile.withdraw.page.c098616830c3" /></p>
             <p className="text-3xl font-mono">{formatNumber(income)}</p>
           </div>
         </div>
 
         <div className="rounded-3xl border border-black/5 bg-white p-8 space-y-4 shadow-sm">
-          <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">提交提现</h2>
+          <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]"><SiteText copyKey="site.app.profile.withdraw.page.39aa2acc468b" /></h2>
           
           <WithdrawForm
             maxAmount={String(income ?? '0')}

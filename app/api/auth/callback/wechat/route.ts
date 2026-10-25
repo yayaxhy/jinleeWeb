@@ -1,3 +1,5 @@
+import { completeWechatAttachmentOAuth } from '@/lib/wechat-attach-callback';
+import { WechatIdentityError } from '@/lib/wechat-identity-transaction';
 import crypto from 'node:crypto';
 import { AccountProvider, Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
@@ -56,7 +58,7 @@ const readWechatResponse = async (url: URL) => {
 };
 
 const sameState = (provided: string | null, expected: string | null) => {
-  if (!provided || !expected || provided.length !== expected.length) return false;
+  if (!provided || !expected || Buffer.byteLength(provided) !== Buffer.byteLength(expected)) return false;
   return crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
 };
 
@@ -138,6 +140,9 @@ export async function GET(request: Request) {
       provider: AccountProvider.WECHAT_WEB,
     }).catch((error) => console.error('[wechat.web.callback] login audit failed', error));
 
+    const attachment = await completeWechatAttachmentOAuth(origin, expectedState, dlmUser);
+    if (attachment) return attachment;
+
     const redirectTarget = normalizeRedirectTarget(await getWechatWebLoginRedirectCookie(), '/profile');
     const response = NextResponse.redirect(new URL(redirectTarget, origin), { status: 302 });
     attachSessionToResponse(response, {
@@ -152,6 +157,7 @@ export async function GET(request: Request) {
     clearWechatWebLoginStateCookie(response);
     return response;
   } catch (error) {
+    if (error instanceof WechatIdentityError) return buildErrorRedirect(origin, error.code === 'wechat_unionid_required' ? 'wechat_unionid_missing' : 'wechat_account_mismatch');
     if (error instanceof WechatWebLoginError) {
       return buildErrorRedirect(origin, error.code);
     }

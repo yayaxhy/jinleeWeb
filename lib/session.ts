@@ -3,14 +3,9 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import type { SessionSnapshot } from '@/types/session';
+import { decodeSessionToken, encodeSessionToken, hasCurrentBrowserSessionIdentity, type SessionPayload } from './session-validation';
 
 export type AppSession = SessionSnapshot;
-
-type SessionPayload = AppSession & {
-  issuedAt: number;
-  expiresAt: number;
-  version: 1;
-};
 
 const SESSION_COOKIE_NAME = 'dlm_session';
 const LOGIN_REDIRECT_COOKIE = 'discord_login_next';
@@ -27,79 +22,33 @@ const getSecret = () => {
   return secret;
 };
 
-const base64UrlEncode = (data: Buffer) => data.toString('base64url');
-const base64UrlDecode = (value: string) => Buffer.from(value, 'base64url');
-
-const signPayload = (payload: string) => {
-  return crypto.createHmac('sha256', getSecret()).update(payload).digest('base64url');
-};
-
-const encodeSessionToken = (payload: SessionPayload) => {
-  const json = Buffer.from(JSON.stringify(payload));
-  const encoded = base64UrlEncode(json);
-  const signature = signPayload(encoded);
-  return `${encoded}.${signature}`;
-};
-
-const decodeSessionToken = (token?: string | null): SessionPayload | null => {
-  if (!token) return null;
-  const [encoded, signature] = token.split('.');
-  if (!encoded || !signature) return null;
-  const expected = signPayload(encoded);
-  // Prevent subtle timing attacks when possible
-  const valid =
-    expected.length === signature.length &&
-    crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-  if (!valid) return null;
-  try {
-    const payload = JSON.parse(base64UrlDecode(encoded).toString()) as SessionPayload;
-    if (payload.expiresAt < Date.now()) {
-      return null;
-    }
-    return payload;
-  } catch {
-    return null;
-  }
-};
+const sessionIdentitySelect = {
+  dlmId: true, discordUserId: true, sessionVersion: true,
+  accountBindings: { select: { dlmId: true, provider: true, providerUserId: true, createdAt: true } },
+} as const;
 
 export const getServerSession = async (): Promise<AppSession | null> => {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  const payload = decodeSessionToken(token);
+  const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+  const payload = decodeSessionToken(token, getSecret());
   if (!payload) return null;
-  if (payload.dlmId) {
-    const dlmUser = await prisma.dlmUser.findUnique({
-      where: { dlmId: payload.dlmId },
-      select: { dlmId: true, discordUserId: true, sessionVersion: true },
-    });
-    if (!dlmUser) {
-      return null;
-    }
-
-    const tokenSessionVersion = payload.sessionVersion ?? 1;
-    if (tokenSessionVersion !== dlmUser.sessionVersion) {
-      return null;
-    }
-
-    return {
-      dlmId: dlmUser.dlmId,
-      authProvider: payload.authProvider ?? 'discord',
-      discordId: dlmUser.discordUserId ?? null,
-      username: payload.username,
-      discriminator: payload.discriminator ?? null,
-      avatar: payload.avatar ?? null,
-      sessionVersion: dlmUser.sessionVersion,
-    };
-  }
-
+  const dlmUser = payload.dlmId
+    ? await prisma.dlmUser.findUnique({ where: { dlmId: payload.dlmId }, select: sessionIdentitySelect })
+    : payload.discordId && (payload.authProvider ?? 'discord') === 'discord'
+      ? (await prisma.accountBinding.findUnique({
+          where: { provider_providerUserId: { provider: 'DISCORD', providerUserId: payload.discordId } },
+          select: { dlmUser: { select: sessionIdentitySelect } },
+        }))?.dlmUser ?? null
+      : null;
+  if (!hasCurrentBrowserSessionIdentity(payload, dlmUser) || !dlmUser) return null;
   return {
-    dlmId: payload.dlmId ?? null,
+    dlmId: dlmUser.dlmId,
     authProvider: payload.authProvider ?? 'discord',
-    discordId: payload.discordId,
+    discordId: payload.discordId ?? null,
     username: payload.username,
     discriminator: payload.discriminator ?? null,
     avatar: payload.avatar ?? null,
-    sessionVersion: payload.sessionVersion ?? null,
+    sessionVersion: dlmUser.sessionVersion,
   };
 };
 
@@ -113,7 +62,7 @@ export const attachSessionToResponse = (response: NextResponse, session: AppSess
   };
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
-    value: encodeSessionToken(payload),
+    value: encodeSessionToken(payload, getSecret()),
     httpOnly: true,
     sameSite: 'lax',
     secure: true,

@@ -1,4 +1,6 @@
 'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 /* eslint-disable @next/next/no-img-element -- Local file previews use temporary blob URLs. */
 import Image from 'next/image';
@@ -63,10 +65,10 @@ function useAttachments() {
 function Field({ label, htmlFor, children, hint, optional = false }: { label: string; htmlFor: string; children: ReactNode; hint?: string; optional?: boolean }) {
   const error = useContext(ValidationContext)[htmlFor];
   return <div className={styles.field}>
-    <label htmlFor={htmlFor}>{label}<span className={optional ? styles.optional : styles.required}>{optional ? '选填' : '*'}</span></label>
+    <label htmlFor={htmlFor}>{label}<span className={optional ? styles.optional : styles.required}>{optional ? <SiteText copyKey="site.app.join.applicationform.924b8c1dd07b" /> : '*'}</span></label>
     {children}
     {hint && <p className={styles.hint}>{hint}</p>}
-    {error && <p id={`${htmlFor}-error`} className={styles.error}>{error}</p>}
+    {error && <p id={`${htmlFor}-error`} className={styles.error}><SiteText namespace="site.app.join.applicationform" value={error} /></p>}
   </div>;
 }
 
@@ -82,22 +84,23 @@ function Section({ index, children }: { index: number; children: ReactNode }) {
 }
 
 function Upload({ id, title, description, attachments, optional = false }: { id: string; title: string; description: ReactNode; attachments: ReturnType<typeof useAttachments>; optional?: boolean }) {
+  const siteCopy = useSiteCopy();
   const error = useContext(ValidationContext)[id] || attachments.error;
   return <div className={styles.uploadGroup}>
-    <p className={styles.uploadTitle}>{title}<span className={optional ? styles.optional : styles.required}>{optional ? '选填' : '*'}</span><span className={styles.uploadCount}>{attachments.items.length} / {MAX_IMAGES}</span></p>
+    <p className={styles.uploadTitle}>{title}<span className={optional ? styles.optional : styles.required}>{optional ? <SiteText copyKey="site.app.join.applicationform.924b8c1dd07b" /> : '*'}</span><span className={styles.uploadCount}>{attachments.items.length} / {MAX_IMAGES}</span></p>
     <p className={styles.hint}>{description}</p>
     <label className={styles.uploadZone} htmlFor={id}>
-      <input id={id} type="file" accept="image/jpeg,image/png,image/webp" aria-label={`选择${title}`} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} onChange={(event) => { attachments.add(event.target.files); event.target.value = ''; }} />
+      <input id={id} type="file" accept="image/jpeg,image/png,image/webp" aria-label={siteCopy("site.app.join.applicationform.7dfa88e2563b", {value1: String(title)})} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} onChange={(event) => { attachments.add(event.target.files); event.target.value = ''; }} />
       <span className={styles.uploadIcon}><ArrowUpTrayIcon /></span>
-      <span><strong>{attachments.items.length ? '点击更换图片' : '点击选择图片'}</strong><small>JPG、PNG · 1 张图片 · 不限制图片大小</small></span>
+      <span><strong>{attachments.items.length ? <SiteText copyKey="site.app.join.applicationform.c70264022122" /> : <SiteText copyKey="site.app.join.applicationform.4f528c177134" />}</strong><small><SiteText copyKey="site.app.join.applicationform.519a20439d67" /></small></span>
       <PlusIcon className={styles.uploadPlus} />
     </label>
-    {error && <p id={`${id}-error`} className={styles.error} role="alert">{error}</p>}
+    {error && <p id={`${id}-error`} className={styles.error} role="alert"><SiteText namespace="site.app.join.applicationform" value={error} /></p>}
     {attachments.items.length > 0 && <ul className={styles.thumbnails}>
       {attachments.items.map((item) => <li key={item.id}>
-        <img src={item.url} alt={`${title}：${item.name}`} />
+        <img src={item.url} alt={siteCopy("site.app.join.applicationform.e9cd8dc12918", {value1: String(title), value2: String(item.name)})} />
         <span title={item.name}>{item.name}</span>
-        <button type="button" onClick={() => attachments.remove(item.id)} aria-label={`移除${item.name}`}><XMarkIcon /></button>
+        <button type="button" onClick={() => attachments.remove(item.id)} aria-label={siteCopy("site.app.join.applicationform.dcf206159d29", {value1: String(item.name)})}><XMarkIcon /></button>
       </li>)}
     </ul>}
   </div>;
@@ -112,6 +115,7 @@ function Choice({ name, value, checked, onChange, title, children }: { name: str
 }
 
 export function ApplicationForm({ discordId }: { discordId: string | null }) {
+  const siteCopy = useSiteCopy();
   const [fields, setFields] = useState({ discord: discordId ?? '', nickname: '', gender: '', voice: '', region: '', otherGames: '', intro: '', guild: '', inviter: '', wechat: '', card: '', heroes: '', sourceGuild: '' });
   const [exclusive, setExclusive] = useState('');
   const [assessment, setAssessment] = useState<Assessment>('unassessed');
@@ -201,20 +205,20 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
       for (const [kind, item] of selected) {
         if (item) {
           try { images.push(await prepareJoinImage(item.file, kind)); }
-          catch { throw new Error(`无法处理图片“${item.name}”，请返回重新选择清晰的 JPG、PNG 或 WebP 图片。`); }
+          catch { throw new Error(siteCopy("site.app.join.applicationform.d1dd65c775a4", {value1: String(item.name)})); }
         }
       }
       setBusy('sending');
       const response = await fetch('/api/join', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ application, images }), signal: AbortSignal.timeout(60000),
-      }).catch(() => { throw new Error('网络连接中断，暂时无法确认发送结果。请稍后使用相同内容重试。'); });
+      }).catch(() => { throw new Error(siteCopy("site.app.join.applicationform.4e2a7f3cf9e1")); });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.ok) {
         if (data.fields && typeof data.fields === 'object') { displayErrors(data.fields); setPreviewOpen(false); }
         setLoginExpired(data.code === 'login_required');
         setMembershipRequired(data.code === 'discord_membership_required');
         setUncertainId(typeof data.applicationId === 'string' ? data.applicationId : '');
-        throw new Error(typeof data.error === 'string' ? data.error : '暂时无法确认发送结果，请稍后使用相同内容重试。');
+        throw new Error(typeof data.error === 'string' ? data.error : siteCopy("site.app.join.applicationform.23a1d28a457a"));
       }
       setReceipt({ applicationId: data.applicationId, submittedAt: data.submittedAt });
       setPreviewOpen(false);
@@ -239,86 +243,86 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
   return <ValidationContext.Provider value={errors}><div className={styles.page}>
     <header className={styles.header}>
       <div className={styles.headerInner}>
-        <Link href="/" prefetch={false} className={styles.brand} aria-label="DLMClub 首页"><Image src={SITE_LOGO} width={40} height={40} alt="" /><span>DLM<span className={styles.brandLight}>CLUB</span><small>点了么娱乐公会</small></span></Link>
-        <div className={styles.headerRight}><span className={styles.previewBadge}><span />入职申请</span><Link href="/" prefetch={false}><ArrowLeftIcon />返回官网</Link></div>
+        <Link href="/" prefetch={false} className={styles.brand} aria-label={siteCopy("site.app.join.applicationform.b7f4b9462cd0")}><Image src={SITE_LOGO} width={40} height={40} alt={""} /><span><SiteText copyKey="site.app.join.applicationform.fa228b4727d6" /><span className={styles.brandLight}><SiteText copyKey="site.app.join.applicationform.bdb3c096791a" /></span><small><SiteText copyKey="site.app.join.applicationform.7a183c580075" /></small></span></Link>
+        <div className={styles.headerRight}><span className={styles.previewBadge}><span /><SiteText copyKey="site.app.join.applicationform.0612bfe2360d" /></span><Link href="/" prefetch={false}><ArrowLeftIcon /><SiteText copyKey="site.app.join.applicationform.2f0018b92363" /></Link></div>
       </div>
     </header>
     <main className={styles.main}>
       <div className={styles.hero}>
-        <p className={styles.eyebrow}><span />DLM TALENT RECRUITMENT</p>
-        <h1>DLM 电竞<span>入职申请表</span></h1>
+        <p className={styles.eyebrow}><span /><SiteText copyKey="site.app.join.applicationform.243acaeecd6f" /></p>
+        <h1><SiteText copyKey="site.app.join.applicationform.d92a0403e804" /><span><SiteText copyKey="site.app.join.applicationform.da8389cfb0a7" /></span></h1>
       </div>
-      {!discordId && <div className={styles.notice}><div><strong>先登录 Discord，再填写申请</strong><p>登录后会自动带入你的 Discord ID，方便 HR 联系你。</p></div><Link href={LOGIN_URL} className={styles.primaryButton}>使用 Discord 登录<ArrowRightIcon /></Link></div>}
-      {receipt && <div id="application-result" className={styles.notice} role="status" tabIndex={-1}><div><strong>申请已发送给 HR</strong><p>请留意 Discord 和微信消息，HR 会联系你跟进。</p></div><Link href="/" className={styles.primaryButton}>返回官网<ArrowLeftIcon /></Link></div>}
+      {!discordId && <div className={styles.notice}><div><strong><SiteText copyKey="site.app.join.applicationform.3870cbf40c98" /></strong><p><SiteText copyKey="site.app.join.applicationform.e31cc2817b40" /></p></div><Link href={LOGIN_URL} className={styles.primaryButton}><SiteText copyKey="site.app.join.applicationform.1f39c0d17884" /><ArrowRightIcon /></Link></div>}
+      {receipt && <div id="application-result" className={styles.notice} role="status" tabIndex={-1}><div><strong><SiteText copyKey="site.app.join.applicationform.30050a039799" /></strong><p><SiteText copyKey="site.app.join.applicationform.c73521adcfed" /></p></div><Link href="/" className={styles.primaryButton}><SiteText copyKey="site.app.join.applicationform.2f0018b92363" /><ArrowLeftIcon /></Link></div>}
       <form className={styles.form} noValidate onSubmit={(event) => { event.preventDefault(); openPreview(); }}>
-        {Object.keys(errors).length > 0 && <div className={styles.validationSummary} ref={errorSummary} tabIndex={-1} role="alert"><strong>请检查以下资料：</strong><ul>{Object.entries(errors).map(([id, message]) => <li key={id}><a href={`#${id}`} onClick={(event) => { event.preventDefault(); document.getElementById(id)?.focus(); document.getElementById(id)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }}>{message}</a></li>)}</ul></div>}
+        {Object.keys(errors).length > 0 && <div className={styles.validationSummary} ref={errorSummary} tabIndex={-1} role="alert"><strong><SiteText copyKey="site.app.join.applicationform.c0bcc3117a57" /></strong><ul>{Object.entries(errors).map(([id, message]) => <li key={id}><a href={`#${id}`} onClick={(event) => { event.preventDefault(); document.getElementById(id)?.focus(); document.getElementById(id)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }}><SiteText namespace="site.app.join.applicationform" value={message} /></a></li>)}</ul></div>}
         <fieldset className={styles.applicationFields} disabled={!discordId || Boolean(busy) || Boolean(receipt)}>
         <Section index={0}>
           <div className={styles.twoColumns}>
-            <Field label="Discord ID" htmlFor="discord" hint={discordId ? "已通过 Discord 登录验证，提交时自动带入。" : "请先登录 Discord，登录后自动填写。"}><input {...input('discord')} placeholder="登录后自动填写" readOnly inputMode="numeric" maxLength={20} /></Field>
-            <Field label="公会昵称" htmlFor="nickname"><input {...input('nickname')} placeholder="希望大家怎么称呼你" maxLength={32} /></Field>
-            <Field label="性别" htmlFor="gender"><select {...input('gender')}><option value="">请选择</option><option>男</option><option>女</option></select></Field>
-            <Field label="音色" htmlFor="voice"><input {...input('voice')} placeholder="例如：甜美、温柔、元气、少年音" maxLength={80} /></Field>
-            <Field label="所在地区" htmlFor="region" hint="填写目前所在的国家／地区和城市。"><input {...input('region')} placeholder="例如：德国，意大利" maxLength={100} /></Field>
-            <Field label="微信号" htmlFor="wechat"><input {...input('wechat')} placeholder="用于 HR 后续联系" maxLength={64} /></Field>
+            <Field label={siteCopy("site.app.join.applicationform.de14c2aa9b39")} htmlFor="discord" hint={discordId ? siteCopy("site.app.join.applicationform.fc60380116c8") : siteCopy("site.app.join.applicationform.8e37e3fe8f51")}><input {...input('discord')} placeholder={siteCopy("site.app.join.applicationform.82cffa7461ee")} readOnly inputMode="numeric" maxLength={20} /></Field>
+            <Field label={siteCopy("site.app.join.applicationform.059e0dd290c4")} htmlFor="nickname"><input {...input('nickname')} placeholder={siteCopy("site.app.join.applicationform.4e97e187b3ca")} maxLength={32} /></Field>
+            <Field label={siteCopy("site.app.join.applicationform.fe8aa4ef93bd")} htmlFor="gender"><select {...input('gender')}><option value=""><SiteText copyKey="site.app.join.applicationform.382f4b5559b3" /></option><option value="男"><SiteText copyKey="site.app.join.applicationform.51625d909cf3" /></option><option value="女"><SiteText copyKey="site.app.join.applicationform.26bc84961cad" /></option></select></Field>
+            <Field label={siteCopy("site.app.join.applicationform.c4301894a290")} htmlFor="voice"><input {...input('voice')} placeholder={siteCopy("site.app.join.applicationform.2adfe7176cf6")} maxLength={80} /></Field>
+            <Field label={siteCopy("site.app.join.applicationform.829177f6e5a4")} htmlFor="region" hint={siteCopy("site.app.join.applicationform.48965118ab8a")}><input {...input('region')} placeholder={siteCopy("site.app.join.applicationform.01fad157abdc")} maxLength={100} /></Field>
+            <Field label={siteCopy("site.app.join.applicationform.ec63fe9cedf6")} htmlFor="wechat"><input {...input('wechat')} placeholder={siteCopy("site.app.join.applicationform.58fd9ddb63bc")} maxLength={64} /></Field>
           </div>
-          <fieldset id="exclusive" tabIndex={-1} className={styles.fieldset}><legend>是否独家入驻<span className={styles.required}>*</span><span className={styles.legendHint}>请如实填写</span></legend>
-            <div className={styles.twoColumns}><Choice name="exclusive" value="yes" checked={exclusive === '是'} onChange={() => setExclusive('是')} title="是，独家入驻">仅在欧服 Discord 平台 DLM 娱乐接单</Choice><Choice name="exclusive" value="no" checked={exclusive === '否'} onChange={() => setExclusive('否')} title="否，非独家入驻">请在下方如实填写当前挂名公会</Choice></div>
+          <fieldset id="exclusive" tabIndex={-1} className={styles.fieldset}><legend><SiteText copyKey="site.app.join.applicationform.4326f5f8cc8a" /><span className={styles.required}>*</span><span className={styles.legendHint}><SiteText copyKey="site.app.join.applicationform.29473ae84081" /></span></legend>
+            <div className={styles.twoColumns}><Choice name="exclusive" value="yes" checked={exclusive === '是'} onChange={() => setExclusive('是')} title={siteCopy("site.app.join.applicationform.6f40f207999e")}><SiteText copyKey="site.app.join.applicationform.ea46d9dd7dfc" /></Choice><Choice name="exclusive" value="no" checked={exclusive === '否'} onChange={() => setExclusive('否')} title={siteCopy("site.app.join.applicationform.cb0c02b7b972")}><SiteText copyKey="site.app.join.applicationform.a553dfaf3b43" /></Choice></div>
             {errors.exclusive && <p className={styles.error}>{errors.exclusive}</p>}
           </fieldset>
-          <div className={styles.twoColumns}><Field label="当前挂名公会" htmlFor="guild"><input {...input('guild')} placeholder="有则如实填写，没有请填“无”" maxLength={200} /></Field><Field label="邀请人" htmlFor="inviter" optional><input {...input('inviter')} placeholder="邀请人的昵称或 Discord ID" maxLength={100} /></Field></div>
-          <Field label="个人简介" htmlFor="intro" ><textarea {...input('intro')} rows={2} placeholder="放在名片上的介绍。" maxLength={20} /><span className={styles.characterCount}>{fields.intro.length} / 20</span></Field>
-          <Upload id="personal-photos" title="名片使用图片" description={<>请选择清晰的图片。如果是真人照，请使用本人照片。<br />使用假照/网红照/网图会罚款50到200。</>} attachments={photos} />
+          <div className={styles.twoColumns}><Field label={siteCopy("site.app.join.applicationform.0e5f38cee80f")} htmlFor="guild"><input {...input('guild')} placeholder={siteCopy("site.app.join.applicationform.2d6d28f9a150")} maxLength={200} /></Field><Field label={siteCopy("site.app.join.applicationform.242dcf8cea56")} htmlFor="inviter" optional><input {...input('inviter')} placeholder={siteCopy("site.app.join.applicationform.28c38c617964")} maxLength={100} /></Field></div>
+          <Field label={siteCopy("site.app.join.applicationform.43255c4b6997")} htmlFor="intro" ><textarea {...input('intro')} rows={2} placeholder={siteCopy("site.app.join.applicationform.7700ce900e95")} maxLength={20} /><span className={styles.characterCount}>{fields.intro.length} / 20</span></Field>
+          <Upload id="personal-photos" title={siteCopy("site.app.join.applicationform.21a456194384")} description={<><SiteText copyKey="site.app.join.applicationform.photo.instructions" /><br /><SiteText copyKey="site.app.join.applicationform.photo.penalty" /></>} attachments={photos} />
         </Section>
         <Section index={1}>
-          <fieldset className={styles.fieldset}><legend>申请方式<span className={styles.required}>*</span><span className={styles.legendHint}>以下三项三选一</span></legend>
+          <fieldset className={styles.fieldset}><legend><SiteText copyKey="site.app.join.applicationform.c3b3224d1405" /><span className={styles.required}>*</span><span className={styles.legendHint}><SiteText copyKey="site.app.join.applicationform.68c7006e3833" /></span></legend>
             <div className={styles.assessmentChoices}>
-              <Choice name="assessment" value="unassessed" checked={assessment === 'unassessed'} onChange={() => setAssessment('unassessed')} title="尚未考核">小姐姐可以免考核入职</Choice>
-              <Choice name="assessment" value="transfer" checked={assessment === 'transfer'} onChange={() => setAssessment('transfer')} title="平移考核记录">请上传其他公会的考核记录</Choice>
-              <Choice name="assessment" value="passed" checked={assessment === 'passed'} onChange={() => setAssessment('passed')} title="已考核通过">请上传考核区的通过记录</Choice>
+              <Choice name="assessment" value="unassessed" checked={assessment === 'unassessed'} onChange={() => setAssessment('unassessed')} title={siteCopy("site.app.join.applicationform.7b4bd45a8b23")}><SiteText copyKey="site.app.join.applicationform.a7e94f11c4a4" /></Choice>
+              <Choice name="assessment" value="transfer" checked={assessment === 'transfer'} onChange={() => setAssessment('transfer')} title={siteCopy("site.app.join.applicationform.18a5b6077797")}><SiteText copyKey="site.app.join.applicationform.43c8cb83bfda" /></Choice>
+              <Choice name="assessment" value="passed" checked={assessment === 'passed'} onChange={() => setAssessment('passed')} title={siteCopy("site.app.join.applicationform.27d00de9c01a")}><SiteText copyKey="site.app.join.applicationform.03017eeec42d" /></Choice>
             </div>
           </fieldset>
-          <Upload id="rank-images" title="游戏段位截图" description="可选上传能看清游戏昵称和当前段位的截图。" attachments={rankImages} optional />
+          <Upload id="rank-images" title={siteCopy("site.app.join.applicationform.db3d76944979")} description={siteCopy("site.app.join.applicationform.2fad410f783f")} attachments={rankImages} optional />
           {assessment !== 'unassessed' && <div className={styles.conditional}>
-            <div className={styles.conditionalHeading}><span />{assessment === 'transfer' ? '平移申请' : '已考核通过'} · 补充资料</div>
+            <div className={styles.conditionalHeading}><span />{assessment === 'transfer' ? <SiteText copyKey="site.app.join.applicationform.ff1331412957" /> : <SiteText copyKey="site.app.join.applicationform.27d00de9c01a" />}<SiteText copyKey="site.app.join.applicationform.047fbea58319" /></div>
             {assessment === 'transfer' ? <>
-              <Upload id="assessment-records" title="其他公会考核记录" description="请提供考核项目及结果的记录。" attachments={records} />
-              <Field label="来源公会" htmlFor="sourceGuild"><input {...input('sourceGuild')} placeholder="请填写提供考核记录的公会名称" maxLength={100} /></Field>
-            </> : <Upload id="passed-records" title="考核区通过记录" description="请上传考核区的通过记录。" attachments={passedRecords} />}
-            <Field label="考核过的水平" htmlFor="tier"><input id="tier" aria-invalid={Boolean(errors.tier)} aria-describedby={errors.tier ? 'tier-error' : undefined} value={tier} onChange={(event) => setTier(event.target.value)} placeholder="请填写考核项目及水平，例如：VAL 技术、VAL 大神" maxLength={100} /></Field>
-            {hasMasterDetails && <div className={styles.masterFields}><p>大神名片资料</p><div className={styles.twoColumns}><Field label="大神名片类型" htmlFor="card"><input {...input('card')} placeholder="例如：瓦 Jett" maxLength={80} /></Field><Field label="擅长英雄／位置" htmlFor="heroes"><input {...input('heroes')} placeholder="例如：Jett、Reyna / 一突" maxLength={150} /></Field></div></div>}
-            <p className={styles.hint}>填写你已有的考核结果由 HR 核实。</p>
+              <Upload id="assessment-records" title={siteCopy("site.app.join.applicationform.f5d825af156b")} description={siteCopy("site.app.join.applicationform.3fff5f4a0379")} attachments={records} />
+              <Field label={siteCopy("site.app.join.applicationform.82ab38b963d6")} htmlFor="sourceGuild"><input {...input('sourceGuild')} placeholder={siteCopy("site.app.join.applicationform.17164f43db8a")} maxLength={100} /></Field>
+            </> : <Upload id="passed-records" title={siteCopy("site.app.join.applicationform.4a38bb315be2")} description={siteCopy("site.app.join.applicationform.1957a342bf95")} attachments={passedRecords} />}
+            <Field label={siteCopy("site.app.join.applicationform.dd48e443744a")} htmlFor="tier"><input id="tier" aria-invalid={Boolean(errors.tier)} aria-describedby={errors.tier ? 'tier-error' : undefined} value={tier} onChange={(event) => setTier(event.target.value)} placeholder={siteCopy("site.app.join.applicationform.38321ab84c5c")} maxLength={100} /></Field>
+            {hasMasterDetails && <div className={styles.masterFields}><p><SiteText copyKey="site.app.join.applicationform.c2825cc01334" /></p><div className={styles.twoColumns}><Field label={siteCopy("site.app.join.applicationform.169d482b89ff")} htmlFor="card"><input {...input('card')} placeholder={siteCopy("site.app.join.applicationform.dfdcad98b810")} maxLength={80} /></Field><Field label={siteCopy("site.app.join.applicationform.c5801d82adb1")} htmlFor="heroes"><input {...input('heroes')} placeholder={siteCopy("site.app.join.applicationform.4d014b4055a7")} maxLength={150} /></Field></div></div>}
+            <p className={styles.hint}><SiteText copyKey="site.app.join.applicationform.e485f3b1d6cd" /></p>
           </div>}
         </Section>
         <Section index={2}>
-          <div className={styles.fieldTitle}><p>主营项目及水平<span className={styles.required}>*</span></p><span>可添加多个项目，分别填写报价</span></div>
+          <div className={styles.fieldTitle}><p><SiteText copyKey="site.app.join.applicationform.5f68c9555b73" /><span className={styles.required}>*</span></p><span><SiteText copyKey="site.app.join.applicationform.cbcafa2eaa3c" /></span></div>
           <div className={styles.gameList}>{games.map((game, index) => <div key={game.id} className={styles.gameRow}>
-            <div className={styles.gameHeading}><span>项目 {String(index + 1).padStart(2, '0')}</span>{games.length > 1 && <button type="button" className={styles.removeGame} aria-label={`删除项目 ${index + 1}`} onClick={() => setGames((previous) => previous.filter((entry) => entry.id !== game.id))}><XMarkIcon />移除</button>}</div>
+            <div className={styles.gameHeading}><span><SiteText copyKey="site.app.join.applicationform.599b829d2f93" />{String(index + 1).padStart(2, '0')}</span>{games.length > 1 && <button type="button" className={styles.removeGame} aria-label={siteCopy("site.app.join.applicationform.f0bfc3ceba54", {value1: String(index + 1)})} onClick={() => setGames((previous) => previous.filter((entry) => entry.id !== game.id))}><XMarkIcon /><SiteText copyKey="site.app.join.applicationform.2f752c005ec5" /></button>}</div>
             <div className={styles.gameFields}>
-              <Field label="游戏／项目" htmlFor={`game-${game.id}`}><input id={`game-${game.id}`} aria-invalid={Boolean(errors[`game-${game.id}`])} aria-describedby={errors[`game-${game.id}`] ? `game-${game.id}-error` : undefined} list="game-options" value={game.name} onChange={(event) => updateGame(game.id, 'name', event.target.value)} placeholder="选择或输入游戏" maxLength={80} /></Field>
-              <Field label="游戏水平／段位" htmlFor={`level-${game.id}`}><input id={`level-${game.id}`} aria-invalid={Boolean(errors[`level-${game.id}`])} aria-describedby={errors[`level-${game.id}`] ? `level-${game.id}-error` : undefined} value={game.level} onChange={(event) => updateGame(game.id, 'level', event.target.value)} placeholder="例如：超凡入圣" maxLength={100} /></Field>
-              <Field label="单价" htmlFor={`price-${game.id}`}><div className={styles.priceInput}><span>¥</span><input id={`price-${game.id}`} aria-invalid={Boolean(errors[`price-${game.id}`])} aria-describedby={errors[`price-${game.id}`] ? `price-${game.id}-error` : undefined} type="number" min="0" step="0.01" value={game.price} onChange={(event) => updateGame(game.id, 'price', event.target.value)} placeholder="0.00" /><select aria-label={`项目 ${index + 1} 计价单位`} value={game.unit} onChange={(event) => updateGame(game.id, 'unit', event.target.value)}><option value="小时">/ 小时</option><option value="局">/ 局</option></select></div></Field>
+              <Field label={siteCopy("site.app.join.applicationform.763ef1ba9a5c")} htmlFor={`game-${game.id}`}><input id={`game-${game.id}`} aria-invalid={Boolean(errors[`game-${game.id}`])} aria-describedby={errors[`game-${game.id}`] ? `game-${game.id}-error` : undefined} list="game-options" value={game.name} onChange={(event) => updateGame(game.id, 'name', event.target.value)} placeholder={siteCopy("site.app.join.applicationform.e5f1ce66cfc8")} maxLength={80} /></Field>
+              <Field label={siteCopy("site.app.join.applicationform.7b2d5d633c9a")} htmlFor={`level-${game.id}`}><input id={`level-${game.id}`} aria-invalid={Boolean(errors[`level-${game.id}`])} aria-describedby={errors[`level-${game.id}`] ? `level-${game.id}-error` : undefined} value={game.level} onChange={(event) => updateGame(game.id, 'level', event.target.value)} placeholder={siteCopy("site.app.join.applicationform.ad461aa9af5f")} maxLength={100} /></Field>
+              <Field label={siteCopy("site.app.join.applicationform.0b370511a765")} htmlFor={`price-${game.id}`}><div className={styles.priceInput}><span>¥</span><input id={`price-${game.id}`} aria-invalid={Boolean(errors[`price-${game.id}`])} aria-describedby={errors[`price-${game.id}`] ? `price-${game.id}-error` : undefined} type="number" min="0" step="0.01" value={game.price} onChange={(event) => updateGame(game.id, 'price', event.target.value)} placeholder={siteCopy.text("0.00", "site.app.join.applicationform")} /><select aria-label={siteCopy("site.app.join.applicationform.edcee40ed129", {value1: String(index + 1)})} value={game.unit} onChange={(event) => updateGame(game.id, 'unit', event.target.value)}><option value="小时">/ 小时</option><option value="局">/ 局</option></select></div></Field>
             </div>
           </div>)}</div>
           <datalist id="game-options">{GAME_NAMES.map((name) => <option key={name} value={name} />)}</datalist>
-          <button type="button" className={styles.addGame} disabled={games.length >= MAX_JOIN_GAMES} onClick={() => { const id = nextGameId.current++; setGames((previous) => [...previous, { id, name: '', level: '', price: '', unit: '小时' }]); }}><PlusIcon />{games.length >= MAX_JOIN_GAMES ? `最多 ${MAX_JOIN_GAMES} 个项目` : '添加主营项目'}</button>
-          <Field label="其他游戏" htmlFor="otherGames" optional><textarea {...input('otherGames')} rows={2} placeholder="例如：双人成行、胡闹厨房、饥荒……" maxLength={500} /></Field>
+          <button type="button" className={styles.addGame} disabled={games.length >= MAX_JOIN_GAMES} onClick={() => { const id = nextGameId.current++; setGames((previous) => [...previous, { id, name: '', level: '', price: '', unit: '小时' }]); }}><PlusIcon />{games.length >= MAX_JOIN_GAMES ? <SiteText copyKey="site.app.join.applicationform.ed5d84d7177c" values={{value1: String(MAX_JOIN_GAMES)}} /> : <SiteText copyKey="site.app.join.applicationform.71ab693d1a13" />}</button>
+          <Field label={siteCopy("site.app.join.applicationform.04d3ffc8a012")} htmlFor="otherGames" optional><textarea {...input('otherGames')} rows={2} placeholder={siteCopy("site.app.join.applicationform.0852c1ceffb6")} maxLength={500} /></Field>
         </Section>
         </fieldset>
-        {!receipt && <div className={styles.formFooter}><div><strong>DLM家庭很期待你的加入，希望你在咱这玩得开心。</strong><p>提交前请先加入 DLM Discord 服务器。表格和图片将发送给 DLM HR，仅用于入职审核。</p></div><button type="submit" className={styles.primaryButton} disabled={!discordId || Boolean(busy)}>预览并提交<ArrowRightIcon /></button></div>}
+        {!receipt && <div className={styles.formFooter}><div><strong><SiteText copyKey="site.app.join.applicationform.b4de692de5d0" /></strong><p><SiteText copyKey="site.app.join.applicationform.1260d9b5dbbf" /></p></div><button type="submit" className={styles.primaryButton} disabled={!discordId || Boolean(busy)}><SiteText copyKey="site.app.join.applicationform.0577dbc6f6af" /><ArrowRightIcon /></button></div>}
         {sendError && !previewOpen && <p className={styles.error} role="alert">{sendError}</p>}
       </form>
-      <footer className={styles.footer}><span>DLMCLUB · 点了么娱乐公会</span><span>让每一场游戏，都有好队友。</span></footer>
+      <footer className={styles.footer}><span><SiteText copyKey="site.app.join.applicationform.7c23d632063f" /></span><span><SiteText copyKey="site.app.join.applicationform.10a046039bd5" /></span></footer>
     </main>
     <dialog ref={dialog} className={styles.dialog} aria-labelledby="application-preview-title" onClose={() => setPreviewOpen(false)} onCancel={(event) => { if (busy) event.preventDefault(); }} onClick={(event) => { if (!busy && event.target === event.currentTarget) setPreviewOpen(false); }}>
-      <div className={styles.dialogHeader}><div><p>APPLICATION PREVIEW</p><h2 id="application-preview-title">DLM 电竞入职申请表</h2></div><button type="button" disabled={Boolean(busy)} onClick={() => setPreviewOpen(false)} aria-label="关闭申请预览"><XMarkIcon /></button></div>
-      <div className={styles.dialogBody}><p className={styles.dialogNotice}>请确认以下资料和图片。点击“确认提交给 HR”后，申请才会发送。</p>
-        <dl className={styles.summary}>{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd className={!value.trim() ? styles.emptyValue : undefined}>{value.trim() || '未填写'}</dd></div>)}</dl>
-        <div className={styles.summaryGames}><h3>主营项目及报价</h3>{games.map((game, index) => <div key={game.id}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{game.name || '项目未填写'}</strong><p>{game.level || '水平未填写'}</p></div><b>{game.price ? `¥${game.price} / ${game.unit}` : '单价未填写'}</b></div>)}</div>
-        {[{ title: '游戏段位截图', items: rankImages.items }, ...(assessment === 'transfer' ? [{ title: '其他公会考核记录', items: records.items }] : []), ...(assessment === 'passed' ? [{ title: '考核区通过记录', items: passedRecords.items }] : []), { title: '名片使用图片', items: photos.items }].map((group) => <div className={styles.summaryImages} key={group.title}><h3>{group.title}<span>{group.items.length} 张</span></h3>{group.items.length ? <div>{group.items.map((item) => <img key={item.id} src={item.url} alt={`${group.title}：${item.name}`} />)}</div> : <p>尚未选择图片</p>}</div>)}
+      <div className={styles.dialogHeader}><div><p><SiteText copyKey="site.app.join.applicationform.2a88a05faabe" /></p><h2 id="application-preview-title"><SiteText copyKey="site.app.join.applicationform.40e2bac81db9" /></h2></div><button type="button" disabled={Boolean(busy)} onClick={() => setPreviewOpen(false)} aria-label={siteCopy("site.app.join.applicationform.032fc4ad2392")}><XMarkIcon /></button></div>
+      <div className={styles.dialogBody}><p className={styles.dialogNotice}><SiteText copyKey="site.app.join.applicationform.e1d5f82c28df" /></p>
+        <dl className={styles.summary}>{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd className={!value.trim() ? styles.emptyValue : undefined}>{value.trim() || <SiteText copyKey="site.app.join.applicationform.287a1d10348b" />}</dd></div>)}</dl>
+        <div className={styles.summaryGames}><h3><SiteText copyKey="site.app.join.applicationform.7cb36cd3d41e" /></h3>{games.map((game, index) => <div key={game.id}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{game.name || <SiteText copyKey="site.app.join.applicationform.e97c86b9306a" />}</strong><p>{game.level || <SiteText copyKey="site.app.join.applicationform.257ec9ebc061" />}</p></div><b>{game.price ? <SiteText copyKey="site.app.join.applicationform.2a8dc1838c28" values={{value1: String(game.price), value2: String(game.unit)}} /> : <SiteText copyKey="site.app.join.applicationform.5a5a604deb8b" />}</b></div>)}</div>
+        {[{ title: siteCopy("site.app.join.applicationform.db3d76944979"), items: rankImages.items }, ...(assessment === 'transfer' ? [{ title: siteCopy("site.app.join.applicationform.f5d825af156b"), items: records.items }] : []), ...(assessment === 'passed' ? [{ title: siteCopy("site.app.join.applicationform.4a38bb315be2"), items: passedRecords.items }] : []), { title: siteCopy("site.app.join.applicationform.21a456194384"), items: photos.items }].map((group) => <div className={styles.summaryImages} key={group.title}><h3>{group.title}<span>{group.items.length}<SiteText copyKey="site.app.join.applicationform.9273cc90ea18" /></span></h3>{group.items.length ? <div>{group.items.map((item) => <img key={item.id} src={item.url} alt={siteCopy("site.app.join.applicationform.e9cd8dc12918", {value1: String(group.title), value2: String(item.name)})} />)}</div> : <p><SiteText copyKey="site.app.join.applicationform.549bb78bd2f2" /></p>}</div>)}
       </div>
-      {sendError && <div className={styles.submitError} role="alert"><p>{sendError}</p>{uncertainId && <p>申请编号：{uncertainId}</p>}{loginExpired && <Link href={LOGIN_URL}>重新登录 Discord</Link>}{membershipRequired && <a href={DISCORD_INVITE_URL} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}>加入 DLM Discord 服务器<ArrowRightIcon /></a>}</div>}
-      <div className={styles.dialogFooter}><button type="button" disabled={Boolean(busy)} className={styles.secondaryButton} onClick={() => setPreviewOpen(false)}>返回修改</button><button type="button" disabled={Boolean(busy) || loginExpired || Boolean(uncertainId)} className={styles.primaryButton} onClick={submitApplication}>{busy === 'preparing' ? '正在处理图片…' : busy === 'sending' ? '正在发送…' : membershipRequired ? '已加入，重新提交' : '确认提交给 HR'}<ArrowRightIcon /></button></div>
+      {sendError && <div className={styles.submitError} role="alert"><p>{sendError}</p>{uncertainId && <p><SiteText copyKey="site.app.join.applicationform.a58b214bfd9f" />{uncertainId}</p>}{loginExpired && <Link href={LOGIN_URL}><SiteText copyKey="site.app.join.applicationform.e51c78df3bdd" /></Link>}{membershipRequired && <a href={DISCORD_INVITE_URL} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}><SiteText copyKey="site.app.join.applicationform.4fcca05e8733" /><ArrowRightIcon /></a>}</div>}
+      <div className={styles.dialogFooter}><button type="button" disabled={Boolean(busy)} className={styles.secondaryButton} onClick={() => setPreviewOpen(false)}><SiteText copyKey="site.app.join.applicationform.9a233f23b4ec" /></button><button type="button" disabled={Boolean(busy) || loginExpired || Boolean(uncertainId)} className={styles.primaryButton} onClick={submitApplication}>{busy === 'preparing' ? <SiteText copyKey="site.app.join.applicationform.2402420b805d" /> : busy === 'sending' ? <SiteText copyKey="site.app.join.applicationform.a822c08742d9" /> : membershipRequired ? <SiteText copyKey="site.app.join.applicationform.f1a9aae2f4e7" /> : <SiteText copyKey="site.app.join.applicationform.d3877dc1f70a" />}<ArrowRightIcon /></button></div>
     </dialog>
   </div></ValidationContext.Provider>;
 }

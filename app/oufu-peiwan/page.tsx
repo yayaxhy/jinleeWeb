@@ -1,3 +1,7 @@
+import { localizeSiteMetadata } from "@/lib/site-copy-metadata";
+import { getSiteCopy } from "@/lib/site-copy-server";
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
@@ -47,7 +51,7 @@ const faqs = [
   },
 ];
 
-export const metadata: Metadata = {
+const defaultMetadata: Metadata = {
   title: pageTitle,
   description: pageDescription,
   alternates: {
@@ -76,6 +80,11 @@ export const metadata: Metadata = {
     images: [SITE_OG_IMAGE],
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  return localizeSiteMetadata(defaultMetadata, await getSiteCopy(), "site.app.oufu.peiwan.page");
+}
+
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -133,30 +142,20 @@ export default function OufuPeiwanPage() {
       <section className="relative overflow-hidden px-6 py-20 sm:py-28">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.2),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(220,38,38,0.16),transparent_30%)]" />
         <div className="relative mx-auto max-w-6xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.45em] text-orange-700">
-            DLMClub
-          </p>
-          <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-tight sm:text-6xl">
-            欧服陪玩｜点了么娱乐公会
-          </h1>
-          <p className="mt-6 max-w-3xl text-base leading-8 text-neutral-700 sm:text-lg">
-            点了么娱乐公会 DLMClub 是欧洲最智能的陪玩公会，专注欧服陪玩，24 小时客服全天候为您服务。我们提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.45em] text-orange-700"><SiteText copyKey="site.app.oufu.peiwan.page.0b3df39130a2" /></p>
+          <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-tight sm:text-6xl"><SiteText copyKey="site.app.oufu.peiwan.page.4434c76e4061" /></h1>
+          <p className="mt-6 max-w-3xl text-base leading-8 text-neutral-700 sm:text-lg"><SiteText copyKey="site.app.oufu.peiwan.page.1f26a4fad242" /></p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/peiwanList"
               className="rounded-full bg-neutral-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
-            >
-              查看陪玩列表
-            </Link>
+            ><SiteText copyKey="site.app.oufu.peiwan.page.58cc2256c52c" /></Link>
             <Link
               href={DISCORD_INVITE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-full border border-neutral-950 px-6 py-3 text-sm font-semibold transition hover:bg-white"
-            >
-              加入 Discord
-            </Link>
+            ><SiteText copyKey="site.app.oufu.peiwan.page.ea7c9c08db40" /></Link>
           </div>
         </div>
       </section>
@@ -166,9 +165,7 @@ export default function OufuPeiwanPage() {
           {games.map((game) => (
             <article key={game} className="rounded-2xl bg-white p-5 shadow-sm">
               <h2 className="text-lg font-semibold">{game}</h2>
-              <p className="mt-3 text-sm leading-7 text-neutral-700">
-                面向欧洲时区玩家，提供中文沟通、游戏组队和陪玩服务。
-              </p>
+              <p className="mt-3 text-sm leading-7 text-neutral-700"><SiteText copyKey="site.app.oufu.peiwan.page.ae9e8d6d617b" /></p>
             </article>
           ))}
         </div>
@@ -177,10 +174,8 @@ export default function OufuPeiwanPage() {
       <section className="px-6 py-14">
         <div className="mx-auto grid max-w-6xl gap-8 rounded-3xl bg-white p-6 shadow-sm md:grid-cols-[0.9fr_1.1fr] md:p-10">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-700">
-              Why DLMClub
-            </p>
-            <h2 className="mt-4 text-3xl font-semibold">为什么选择点了么欧服陪玩？</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-700"><SiteText copyKey="site.app.oufu.peiwan.page.844ffa0960c2" /></p>
+            <h2 className="mt-4 text-3xl font-semibold"><SiteText copyKey="site.app.oufu.peiwan.page.38f52d69ec65" /></h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {[
@@ -200,7 +195,7 @@ export default function OufuPeiwanPage() {
 
       <section className="px-6 py-14">
         <div className="mx-auto max-w-4xl">
-          <h2 className="text-3xl font-semibold">欧服陪玩常见问题</h2>
+          <h2 className="text-3xl font-semibold"><SiteText copyKey="site.app.oufu.peiwan.page.73e84c7f8692" /></h2>
           <div className="mt-6 space-y-4">
             {faqs.map((item) => (
               <article key={item.question} className="rounded-2xl bg-white p-5 shadow-sm">

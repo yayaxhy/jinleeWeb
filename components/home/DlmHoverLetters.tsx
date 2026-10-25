@@ -1,4 +1,6 @@
 "use client";
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import type { CSSProperties, FocusEvent, PointerEvent } from 'react';
 import { SITE_WORDMARK } from '@/lib/site';
@@ -105,6 +107,7 @@ function HoverLetter({
   index: number;
   maskSize: string;
 }) {
+  const siteCopy = useSiteCopy();
   const mask = buildLetterMask(item.letter);
   const maskStyle = {
     WebkitMaskImage: mask,
@@ -121,7 +124,7 @@ function HoverLetter({
     <div
       role="button"
       tabIndex={0}
-      aria-label={`${item.label}: hover to play video`}
+      aria-label={siteCopy("site.components.home.dlmhoverletters.cbf1f4274d56", {value1: siteCopy("site.components.home.dlmhoverletters.video.letter", {value1: item.letter})})}
       className="group relative h-full min-h-0 flex-1 cursor-pointer outline-none transition duration-500 hover:-translate-y-3 focus-visible:-translate-y-3"
       onPointerEnter={playVideo}
       onPointerLeave={stopVideo}
@@ -197,16 +200,11 @@ export function DlmHoverLetters({
       {showIntro ? (
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4 px-1">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.52em] text-orange-200/70">
-              点了么互动
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.52em] text-orange-200/70"><SiteText copyKey="site.components.home.dlmhoverletters.ab9d93cb21bb" /></p>
             <h2 className="mt-3 text-2xl font-semibold text-[#fff7ed] md:text-4xl">
-              {SITE_WORDMARK} 字母视频墙
-            </h2>
+              <SiteText copyKey="site.lib.site.2b4090bd1405" /><SiteText copyKey="site.components.home.dlmhoverletters.76692f2c98d4" /></h2>
           </div>
-          <p className="max-w-md text-sm leading-6 text-white/45">
-            鼠标划过每个字母会播放视频。正式版可以换成游戏片段、陪玩语音房或点了么社区视频。
-          </p>
+          <p className="max-w-md text-sm leading-6 text-white/45"><SiteText copyKey="site.components.home.dlmhoverletters.5aa3f89270af" /></p>
         </div>
       ) : null}
       <div className={`relative flex ${containerSizeClass} gap-2 overflow-hidden rounded-[2rem] border border-white/10 bg-black/18 px-3 py-4 shadow-[0_30px_90px_rgba(0,0,0,0.28)] backdrop-blur sm:gap-3 md:px-5`}>

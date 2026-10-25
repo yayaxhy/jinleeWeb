@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
@@ -9,12 +10,12 @@ type UpdatePreferencePayload = {
 export async function POST(request: Request) {
   const session = await getServerSession();
   if (!session?.discordId) {
-    return NextResponse.json({ error: '未登录' }, { status: 401 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.vip.role.sync.preference.route.e8041a8c9358") }, { status: 401 });
   }
 
   const body = (await request.json().catch(() => ({}))) as UpdatePreferencePayload;
   if (typeof body.enabled !== 'boolean') {
-    return NextResponse.json({ error: '参数错误' }, { status: 400 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.vip.role.sync.preference.route.3e64edf2ea33") }, { status: 400 });
   }
 
   const member = await prisma.member.findUnique({
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
     select: { discordUserId: true },
   });
   if (!member) {
-    return NextResponse.json({ error: '仅限已有会员修改该设置' }, { status: 403 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.vip.role.sync.preference.route.da7a5079cce5") }, { status: 403 });
   }
 
   const profile = await prisma.vipBenefitProfile.upsert({

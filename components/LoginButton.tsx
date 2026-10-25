@@ -1,4 +1,6 @@
 "use client";
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import Link from 'next/link';
 import { useState } from 'react';
@@ -17,6 +19,7 @@ type LoginButtonProps = {
 };
 
 export function LoginButton({ className }: LoginButtonProps) {
+  const siteCopy = useSiteCopy();
   const { session, loading } = useSessionContext();
   const [isProcessing, setIsProcessing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -64,7 +67,7 @@ export function LoginButton({ className }: LoginButtonProps) {
         <Link
           href="/profile"
           className={`${baseClass} inline-flex items-center`}
-          title="进入个人主页"
+          title={siteCopy("site.components.loginbutton.a22de385a764")}
           onMouseEnter={openMenu}
         >
           {session.username}
@@ -86,15 +89,11 @@ export function LoginButton({ className }: LoginButtonProps) {
           <Link
             href="/profile"
             className="block w-full px-4 py-2 text-left text-black hover:bg-neutral-100"
-          >
-            个人主页
-          </Link>
+          ><SiteText copyKey="site.components.loginbutton.d04c1f47483e" /></Link>
           <button
             className="block w-full px-4 py-2 text-left text-black hover:bg-neutral-100"
             onClick={handleLogout}
-          >
-            退出登录
-          </button>
+          ><SiteText copyKey="site.components.loginbutton.094774b4a77b" /></button>
         </div>
       </div>
     );
@@ -104,8 +103,6 @@ export function LoginButton({ className }: LoginButtonProps) {
     <button
       className={baseClass}
       onClick={handleLogin}
-    >
-      登录
-    </button>
+    ><SiteText copyKey="site.components.loginbutton.21f1e88275aa" /></button>
   );
 }

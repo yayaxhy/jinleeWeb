@@ -1,3 +1,5 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 
 import {
@@ -24,12 +26,12 @@ export function Footer() {
     <footer className="bg-white text-neutral-900 border-t border-neutral-200">
       <div className="mx-auto grid w-full max-w-5xl gap-8 px-6 py-10 text-center sm:grid-cols-2">
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em]">服务与规则</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em]"><SiteText copyKey="site.components.footer.29230db9f13f" /></p>
           <ul className="space-y-1 text-sm leading-6">
             {legalLinks.map((link) => (
               <li key={link.label}>
                 <Link href={link.href} className="hover:underline">
-                  {link.label}
+                  <SiteText namespace="site.components.footer" value={link.label} />
                 </Link>
               </li>
             ))}
@@ -37,7 +39,7 @@ export function Footer() {
         </div>
 
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em]">售后联系</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em]"><SiteText copyKey="site.components.footer.a6750c8207d0" /></p>
           <ul className="space-y-1 text-sm leading-6">
             {supportLinks.map((link) => (
               <li key={link.label}>
@@ -47,17 +49,14 @@ export function Footer() {
                   target={link.newTab ? '_blank' : undefined}
                   rel={link.newTab ? 'noopener noreferrer' : undefined}
                 >
-                  {link.label}
+                  <SiteText namespace="site.components.footer" value={link.label} />
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="text-sm leading-6 text-neutral-700">
-            微信客服：<span className="font-semibold">{SUPPORT_WECHAT_ID}</span>
+          <p className="text-sm leading-6 text-neutral-700"><SiteText copyKey="site.components.footer.0a9d4593aced" /><span className="font-semibold">{SUPPORT_WECHAT_ID}</span>
           </p>
-          <p className="text-sm leading-6 text-neutral-700">
-            负责人邮箱：
-            <a className="font-semibold hover:underline" href={`mailto:${PUBLIC_CONTACT_EMAIL}`}>
+          <p className="text-sm leading-6 text-neutral-700"><SiteText copyKey="site.components.footer.8a8a8fb22888" /><a className="font-semibold hover:underline" href={`mailto:${PUBLIC_CONTACT_EMAIL}`}>
               {PUBLIC_CONTACT_EMAIL}
             </a>
           </p>

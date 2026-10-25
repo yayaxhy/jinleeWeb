@@ -1,3 +1,7 @@
+import { localizeSiteMetadata } from "@/lib/site-copy-metadata";
+import { getSiteCopy } from "@/lib/site-copy-server";
+
+import { SiteText } from "@/components/SiteCopyProvider";
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -35,7 +39,7 @@ const SHOW_RECOMMENDED_COMPANIONS = false;
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
+const defaultMetadata: Metadata = {
   title: homeTitle,
   description: SITE_DESCRIPTION,
   alternates: {
@@ -64,6 +68,11 @@ export const metadata: Metadata = {
     images: [SITE_OG_IMAGE],
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  return localizeSiteMetadata(defaultMetadata, await getSiteCopy(), "site.app.page");
+}
+
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -170,11 +179,9 @@ function HeroPanel({ dispatches }: { dispatches: RecentDispatchItem[] }) {
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto mb-7 max-w-5xl text-center">
           <h1 className="text-[clamp(2.65rem,6vw,5.7rem)] font-black leading-[0.9] tracking-[-0.075em] text-orange-200/80">
-            {SITE_NAME}
+            <SiteText copyKey="site.lib.site.7a183c580075" />
           </h1>
-          <p className="mx-auto mt-4 inline-flex rounded-full border border-white/12 bg-white/[0.055] px-4 py-1.5 text-xs font-semibold tracking-[0.28em] text-white/42 backdrop-blur md:text-sm">
-            欧服陪玩社区
-          </p>
+          <p className="mx-auto mt-4 inline-flex rounded-full border border-white/12 bg-white/[0.055] px-4 py-1.5 text-xs font-semibold tracking-[0.28em] text-white/42 backdrop-blur md:text-sm"><SiteText copyKey="site.app.page.0d0d62d53b00" /></p>
         </div>
 
         <DlmHoverLetters word={SITE_WORDMARK} showIntro={false} className="mt-0" size="hero" />
@@ -186,25 +193,17 @@ function HeroPanel({ dispatches }: { dispatches: RecentDispatchItem[] }) {
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-full bg-gradient-to-b from-[#f8d990] to-[#bd7d1e] px-9 py-4 text-base font-bold text-[#211203] shadow-[0_12px_28px_rgba(190,125,30,0.3)] transition hover:-translate-y-0.5 hover:from-[#ffe6aa] hover:to-[#d89632]"
-            >
-              加入 Discord
-            </Link>
+            ><SiteText copyKey="site.app.page.ea7c9c08db40" /></Link>
             <DiscordSupportLink
               className="rounded-full bg-gradient-to-b from-[#f8d990] to-[#bd7d1e] px-9 py-4 text-base font-bold text-[#211203] shadow-[0_12px_28px_rgba(190,125,30,0.3)] transition hover:-translate-y-0.5 hover:from-[#ffe6aa] hover:to-[#d89632]"
               style={{}}
-            >
-              联系客服
-            </DiscordSupportLink>
+            ><SiteText copyKey="site.app.page.b139d74c0170" /></DiscordSupportLink>
             <Link
               href="/join"
               className="rounded-full bg-gradient-to-b from-[#f8d990] to-[#bd7d1e] px-9 py-4 text-base font-bold text-[#211203] shadow-[0_12px_28px_rgba(190,125,30,0.3)] transition hover:-translate-y-0.5 hover:from-[#ffe6aa] hover:to-[#d89632]"
-            >
-              申请陪玩入职
-            </Link>
+            ><SiteText copyKey="site.app.page.37abb027cfdd" /></Link>
           </div>
-          <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-white/64 md:text-base">
-            点了么娱乐公会 DLMClub，欧洲最智能的陪玩公会，专注欧服陪玩，24小时客服全天候为您服务。提供 Valorant/无畏契约、英雄联盟、三角洲、Overwatch/OW 等游戏陪玩服务。
-          </p>
+          <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-white/64 md:text-base"><SiteText copyKey="site.app.page.2b8d522c7918" /></p>
           <DispatchTicker dispatches={dispatches} />
         </div>
       </div>
@@ -237,7 +236,7 @@ function RankingRail({
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.45em] text-orange-200/70">{eyebrow}</p>
-            {honor ? <span className="inline-flex items-center gap-1 rounded-full border border-amber-100/25 bg-amber-200/10 px-2.5 py-1 text-[0.65rem] font-bold tracking-[0.16em] text-amber-100">♛ 荣耀榜单</span> : null}
+            {honor ? <span className="inline-flex items-center gap-1 rounded-full border border-amber-100/25 bg-amber-200/10 px-2.5 py-1 text-[0.65rem] font-bold tracking-[0.16em] text-amber-100"><SiteText copyKey="site.app.page.e1baeca568cf" /></span> : null}
           </div>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#fff7ed] md:text-5xl">{title}</h2>
         </div>
@@ -272,9 +271,7 @@ function CompanionImage({
 }) {
   if (!src) {
     return (
-      <div className="grid h-full w-full place-items-center bg-gradient-to-br from-white/10 to-orange-200/10 text-sm text-white/42">
-        推荐图更新中
-      </div>
+      <div className="grid h-full w-full place-items-center bg-gradient-to-br from-white/10 to-orange-200/10 text-sm text-white/42"><SiteText copyKey="site.app.page.cee44b0449ba" /></div>
     );
   }
 
@@ -288,11 +285,9 @@ function CommunityFloor({ companions }: { companions: RecommendedCompanion[] }) 
     return (
       <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="rounded-[2rem] border border-white/10 bg-[#11100d]/80 p-8 text-center">
-          <p className="text-xs font-semibold tracking-[0.45em] text-orange-200/70">推荐陪玩</p>
-          <h2 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#fff7ed]">推荐陪玩更新中</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/50">
-            你可以先进入陪玩列表查看所有可预约的点了么陪玩。
-          </p>
+          <p className="text-xs font-semibold tracking-[0.45em] text-orange-200/70"><SiteText copyKey="site.app.page.723d4432e210" /></p>
+          <h2 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#fff7ed]"><SiteText copyKey="site.app.page.c9a9fb158146" /></h2>
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/50"><SiteText copyKey="site.app.page.d618421d8767" /></p>
         </div>
       </section>
     );
@@ -302,20 +297,14 @@ function CommunityFloor({ companions }: { companions: RecommendedCompanion[] }) 
     <section className="mx-auto max-w-7xl px-6 py-16">
       <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold tracking-[0.45em] text-orange-200/70">推荐陪玩</p>
-          <h2 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#fff7ed] md:text-6xl">
-            本周推荐陪玩
-          </h2>
-          <p className="mt-4 text-sm leading-7 text-white/50">
-            精选陪玩会根据推荐图、游戏标签和当前资料展示。想看完整名单，可以进入陪玩列表继续筛选。
-          </p>
+          <p className="text-xs font-semibold tracking-[0.45em] text-orange-200/70"><SiteText copyKey="site.app.page.723d4432e210" /></p>
+          <h2 className="mt-3 text-4xl font-black tracking-[-0.055em] text-[#fff7ed] md:text-6xl"><SiteText copyKey="site.app.page.cff06bea8e21" /></h2>
+          <p className="mt-4 text-sm leading-7 text-white/50"><SiteText copyKey="site.app.page.a816c948c7dd" /></p>
         </div>
         <Link
           href="/peiwanList"
           className="w-fit rounded-full border border-white/14 px-5 py-2.5 text-sm font-semibold text-white/62 transition hover:bg-white/10"
-        >
-          查看全部陪玩
-        </Link>
+        ><SiteText copyKey="site.app.page.83236c289a7f" /></Link>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
@@ -332,12 +321,8 @@ function CommunityFloor({ companions }: { companions: RecommendedCompanion[] }) 
             </div>
             <div className="relative flex flex-col justify-end p-6 md:p-8">
               <div className="mb-auto flex items-center justify-between gap-3">
-                <span className="rounded-full border border-white/14 bg-black/20 px-3 py-1 text-xs font-semibold tracking-[0.22em] text-orange-100/78">
-                  主推陪玩
-                </span>
-                <span className="rounded-full bg-emerald-400/12 px-3 py-1 text-xs font-semibold text-emerald-100">
-                  在线推荐
-                </span>
+                <span className="rounded-full border border-white/14 bg-black/20 px-3 py-1 text-xs font-semibold tracking-[0.22em] text-orange-100/78"><SiteText copyKey="site.app.page.ad6dca42dec9" /></span>
+                <span className="rounded-full bg-emerald-400/12 px-3 py-1 text-xs font-semibold text-emerald-100"><SiteText copyKey="site.app.page.0528bbc840a4" /></span>
               </div>
               <p className="mt-8 text-sm font-semibold tracking-[0.36em] text-white/35">
                 #{primaryCompanion.id}
@@ -363,9 +348,7 @@ function CommunityFloor({ companions }: { companions: RecommendedCompanion[] }) 
                 <Link
                   href="/peiwanList"
                   className="rounded-full bg-[#fff7ed] px-5 py-2.5 text-sm font-semibold text-[#15100c] transition hover:bg-orange-100"
-                >
-                  查看陪玩列表
-                </Link>
+                ><SiteText copyKey="site.app.page.58cc2256c52c" /></Link>
               </div>
             </div>
           </div>
@@ -415,9 +398,7 @@ function CommunityFloor({ companions }: { companions: RecommendedCompanion[] }) 
           <Link
             href="/peiwanList"
             className="rounded-[2rem] border border-dashed border-white/16 bg-white/[0.035] p-5 text-center text-sm font-semibold text-white/54 transition hover:bg-white/[0.07]"
-          >
-            进入陪玩列表查看更多推荐 →
-          </Link>
+          ><SiteText copyKey="site.app.page.cbedd7622fa4" /></Link>
         </div>
       </div>
     </section>
@@ -451,16 +432,16 @@ function HowItWorks() {
       <div className="mx-auto max-w-7xl rounded-[2.4rem] bg-[#f7f0e8] p-6 text-[#17110d] md:p-10">
         <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr]">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.42em] text-orange-700">服务流程</p>
-            <h2 className="mt-3 text-4xl font-black tracking-[-0.05em]">怎么开始</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.42em] text-orange-700"><SiteText copyKey="site.app.page.c7128d1749ad" /></p>
+            <h2 className="mt-3 text-4xl font-black tracking-[-0.05em]"><SiteText copyKey="site.app.page.07ee65a38c72" /></h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {steps.map(({ step, title, text, href, openInNewTab, support }, index) => {
               const content = (
                 <>
                   <p className="text-sm font-black text-orange-600">{step}</p>
-                  <h3 className="mt-3 font-semibold md:mt-8">{title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-neutral-600">{text}</p>
+                  <h3 className="mt-3 font-semibold md:mt-8"><SiteText namespace="site.app.page" value={title} /></h3>
+                  <p className="mt-2 text-sm leading-6 text-neutral-600"><SiteText namespace="site.app.page" value={text} /></p>
                 </>
               );
               const className = `block rounded-[1.7rem] bg-white p-5 shadow-sm transition hover:shadow-md md:min-h-[210px] ${index % 2 === 0 ? '' : 'md:translate-y-6'}`;
@@ -497,8 +478,8 @@ function FaqSection() {
   return (
     <section className="mx-auto grid max-w-7xl gap-7 px-6 py-16 lg:grid-cols-[0.85fr_1.15fr]">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.45em] text-orange-200/70">常见问题</p>
-        <h2 className="mt-3 text-4xl font-black tracking-[-0.05em] text-[#fff7ed]">公会新手指南</h2>
+        <p className="text-xs font-semibold uppercase tracking-[0.45em] text-orange-200/70"><SiteText copyKey="site.app.page.0adb1147b3a9" /></p>
+        <h2 className="mt-3 text-4xl font-black tracking-[-0.05em] text-[#fff7ed]"><SiteText copyKey="site.app.page.ffdd4aca3b70" /></h2>
       </div>
       <div className="space-y-3">
         {faqs.map(([question, answer]) => (
@@ -513,6 +494,7 @@ function FaqSection() {
 }
 
 export default async function Home() {
+  const siteCopy = await getSiteCopy();
   const homeData = await loadHomePageData();
 
   return (
@@ -532,7 +514,7 @@ export default async function Home() {
       <HeroPanel dispatches={homeData.recentDispatches} />
       <RankingRail
         eyebrow="老板榜单"
-        title="点了么老板榜"
+        title={siteCopy("site.app.page.67c503479f4c")}
         data={homeData.bossRankings}
         accent="bg-orange-300"
         showTag={false}
@@ -541,7 +523,7 @@ export default async function Home() {
       />
       <RankingRail
         eyebrow="陪玩榜单"
-        title="陪玩人气榜"
+        title={siteCopy("site.app.page.f113eb4bb7b4")}
         data={homeData.companionRankings}
         accent="bg-orange-300"
       />

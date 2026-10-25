@@ -1,3 +1,8 @@
+import type { Metadata } from "next";
+import { localizeSiteMetadata } from "@/lib/site-copy-metadata";
+import { getSiteCopy } from "@/lib/site-copy-server";
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
@@ -12,9 +17,14 @@ const formatDate = (value?: Date | string | null) => {
   return date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
 };
 
-export const metadata = {
+const defaultMetadata = {
   title: '礼物墙',
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  return localizeSiteMetadata(defaultMetadata, await getSiteCopy(), "site.app.profile.giftwall.page");
+}
+
 
 export default async function GiftWallPage() {
   const session = await getServerSession();
@@ -33,13 +43,11 @@ export default async function GiftWallPage() {
     return (
       <main className="min-h-screen bg-black text-white px-6 py-16 flex items-center justify-center">
         <div className="space-y-4 text-center">
-          <p className="text-white/70">未找到该成员。</p>
+          <p className="text-white/70"><SiteText copyKey="site.app.profile.giftwall.page.d7109d1f99b6" /></p>
           <Link
             href="/"
             className="inline-flex items-center justify-center rounded-full border border-white/30 px-6 py-2 text-sm uppercase tracking-[0.2em] hover:bg-white/10"
-          >
-            返回主页
-          </Link>
+          ><SiteText copyKey="site.app.profile.giftwall.page.20b6e2fcece9" /></Link>
         </div>
       </main>
     );
@@ -97,41 +105,36 @@ export default async function GiftWallPage() {
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
       <section className="max-w-5xl mx-auto space-y-8">
         <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-3">
-          <p className="text-xs uppercase tracking-[0.5em] text-gray-400">Gift Wall</p>
+          <p className="text-xs uppercase tracking-[0.5em] text-gray-400"><SiteText copyKey="site.app.profile.giftwall.page.c32deb700f9f" /></p>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-semibold tracking-wide">礼物墙</h1>
+              <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.profile.giftwall.page.1e972bb1a1ad" /></h1>
               <p className="text-sm text-gray-500">{displayName}</p>
             </div>
             <Link
               href="/profile"
               className="inline-flex items-center justify-center rounded-full border border-black/10 px-4 py-2 text-xs uppercase tracking-[0.4em] text-gray-500 hover:bg-black/5 transition"
-            >
-              返回个人主页
-            </Link>
+            ><SiteText copyKey="site.app.profile.giftwall.page.425652af65a9" /></Link>
           </div>
         </div>
 
         {!isPeiwanMember && (
-          <div className="bg-white rounded-[32px] border border-black/5 p-8 text-sm text-gray-500">
-            仅陪玩账号可查看礼物墙。
-          </div>
+          <div className="bg-white rounded-[32px] border border-black/5 p-8 text-sm text-gray-500"><SiteText copyKey="site.app.profile.giftwall.page.4be8c2cb510d" /></div>
         )}
 
         {isPeiwanMember && (
           <div className="bg-white rounded-[32px] border border-black/5 p-8 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">礼物图鉴</h2>
-                <p className="text-sm text-gray-500">
-                  已解锁 {giftWallUnlockedCount} / {giftWallItems.length}
+                <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]"><SiteText copyKey="site.app.profile.giftwall.page.55e6b5ef84d7" /></h2>
+                <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.giftwall.page.94b532274a29" />{giftWallUnlockedCount} / {giftWallItems.length}
                 </p>
               </div>
-              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">收到对应礼物即可解锁</span>
+              <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.giftwall.page.77e31844cefb" /></span>
             </div>
 
             {visibleGiftWallItems.length === 0 ? (
-              <p className="text-sm text-gray-500">暂无礼物配置。</p>
+              <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.giftwall.page.c19c518ac843" /></p>
             ) : (
               <div className="space-y-8">
                 {groupedGiftWallList.map((group) => (
@@ -139,8 +142,7 @@ export default async function GiftWallPage() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="text-lg font-semibold text-gray-700">{group.category}</h3>
                       <span className="text-xs uppercase tracking-[0.3em] text-gray-400">
-                        {group.items.length} 件
-                      </span>
+                        {group.items.length}<SiteText copyKey="site.app.profile.giftwall.page.04d7e6fc2cc7" /></span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                       {group.items.map((gift) => (
@@ -159,15 +161,13 @@ export default async function GiftWallPage() {
                                 loading="lazy"
                               />
                             ) : (
-                              <div className="h-full w-full flex items-center justify-center text-xs text-gray-400">
-                                暂无图片
-                              </div>
+                              <div className="h-full w-full flex items-center justify-center text-xs text-gray-400"><SiteText copyKey="site.app.profile.giftwall.page.56872a6c3b66" /></div>
                             )}
                           </div>
                           <div className="text-sm font-medium text-gray-700 truncate">{gift.name}</div>
                           <div className="text-xs text-gray-400">
-                            {gift.unlocked ? `已解锁 · ${formatDate(gift.unlockedAt)}` : '未解锁'}
-                            {!gift.active ? ' · 已下架' : ''}
+                            {gift.unlocked ? <SiteText copyKey="site.app.profile.giftwall.page.df24da0d2639" values={{value1: String(formatDate(gift.unlockedAt))}} /> : <SiteText copyKey="site.app.profile.giftwall.page.b25a509d561f" />}
+                            {!gift.active ? <SiteText copyKey="site.app.profile.giftwall.page.313fad352afe" /> : ''}
                           </div>
                         </div>
                       ))}
