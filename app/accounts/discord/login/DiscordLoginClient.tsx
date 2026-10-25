@@ -1,4 +1,6 @@
 "use client";
+import { SiteText } from "@/components/SiteCopyProvider";
+
 
 import { useEffect, useMemo, useRef } from 'react';
 
@@ -48,16 +50,14 @@ export default function DiscordLoginClient({ callbackUrl: raw }: DiscordLoginCli
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-black text-white space-y-6 text-center px-6">
       <div className="space-y-4 max-w-md">
-        <h1 className="text-3xl font-semibold tracking-wide">正在前往 Discord 登录…</h1>
-        <p className="text-white/70">如果浏览器没有自动跳转，请点击下面的按钮手动启动授权流程。</p>
+        <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.accounts.discord.login.discordloginclient.a3d23a0568ec" /></h1>
+        <p className="text-white/70"><SiteText copyKey="site.app.accounts.discord.login.discordloginclient.aacc1d83dde2" /></p>
         <button
           className="inline-flex items-center justify-center rounded-full bg-[#5865F2] px-8 py-3 text-sm uppercase tracking-[0.4em] hover:bg-[#4753c7] transition"
           onClick={() => {
             window.location.href = buildLoginUrl(callbackUrl);
           }}
-        >
-          Sign in with Discord
-        </button>
+        ><SiteText copyKey="site.app.accounts.discord.login.discordloginclient.f53d128960b0" /></button>
       </div>
     </main>
   );

@@ -1,3 +1,5 @@
+import { createSiteCopy, type SiteCopyRenderer } from "./site-copy";
+import { enqueueNotificationTx, suppressGenericBalanceNoticeTx } from './notification-outbox';
 import { DlmAdminOperationStatus, DlmAdminOperationType, Prisma } from '@prisma/client';
 
 import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
@@ -22,7 +24,7 @@ export const correctManualWechatBossRecharge = async (params: {
   sourceOperationId: string;
   targetDlmId: string;
   reason: string;
-}) => {
+}, copy: SiteCopyRenderer = createSiteCopy()) => {
   const requestId = cleanText(params.requestId, 120);
   const operatorDiscordId = cleanText(params.operatorDiscordId, 32);
   const sourceOperationId = cleanText(params.sourceOperationId, 100);
@@ -69,6 +71,7 @@ export const correctManualWechatBossRecharge = async (params: {
         await tx.$executeRaw`SELECT 1 FROM "DlmUser" WHERE "dlmId" = ${dlmId} FOR UPDATE`;
       }
 
+      await suppressGenericBalanceNoticeTx(tx);
       const sourceBefore = await getDlmWalletSnapshotTx(tx, { dlmId: sourceOperation.dlmId, discordUserId: sourceBoss.dlmUser.discordUserId });
       if (sourceBefore.totalBalance.lt(amount)) throw new Error(`原老板当前余额不足 ¥${amount.toFixed(2)}，不能更正；请先人工核实已使用金额。`);
       if (sourceBefore.recharge.lt(amount)) throw new Error('原老板累计充值余额不足，无法安全更正该笔充值。');
@@ -107,6 +110,9 @@ export const correctManualWechatBossRecharge = async (params: {
           result: resultPayload as Prisma.InputJsonValue,
         },
       });
+      await enqueueNotificationTx(tx, { dedupeKey: `manual-correction:${requestId}`, recipientDlmId: targetDlmId,
+        recipientDiscordId: targetBoss.dlmUser.discordUserId, event: 'BALANCE_ADJUSTED', title: copy("site.lib.manual.wechat.recharge.correction.ee3080c6807e"),
+        body: copy("site.lib.manual.wechat.recharge.correction.70d9c17d5c0c", {value1: String(amount.toFixed(2)), value2: String(targetAfter.totalBalance.toString())}), href: '/console?tab=wallet' });
       return resultPayload;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     return { result, replayed: false };

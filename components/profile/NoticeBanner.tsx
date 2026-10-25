@@ -1,4 +1,6 @@
 'use client';
+import { SiteText } from "@/components/SiteCopyProvider";
+
 
 type NoticeLevel = 'info' | 'success' | 'error';
 
@@ -67,17 +69,15 @@ export function NoticeBanner({ level, message, title, onDismiss }: NoticeBannerP
           {style.icon}
         </div>
         <div className="min-w-0 flex-1">
-          <p className={`text-sm font-semibold ${style.titleClass}`}>{title ?? style.title}</p>
-          <p className={`mt-1 text-sm leading-6 ${style.messageClass}`}>{message}</p>
+          <p className={`text-sm font-semibold ${style.titleClass}`}><SiteText namespace="site.components.profile.noticebanner" value={title ?? style.title} /></p>
+          <p className={`mt-1 text-sm leading-6 ${style.messageClass}`}><SiteText namespace="site.components.profile.noticebanner" value={message} /></p>
         </div>
         {onDismiss ? (
           <button
             type="button"
             onClick={onDismiss}
             className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${style.buttonClass}`}
-          >
-            关闭
-          </button>
+          ><SiteText copyKey="site.components.profile.noticebanner.6c14bd7f6f9e" /></button>
         ) : null}
       </div>
     </div>

@@ -1,4 +1,6 @@
 "use client";
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import Image from "next/image";
 import Link from "next/link";
@@ -13,6 +15,7 @@ const characterArt = "/brand/dlm-v1/operations/18-thankBoss.gif";
 const DAILY_POPUP_STORAGE_PREFIX = "dlm-opening-benefits-popup-shown";
 
 export function OpeningBenefitsModal() {
+  const siteCopy = useSiteCopy();
   const pathname = usePathname();
   const { session } = useSessionContext();
   const [open, setOpen] = useState(false);
@@ -29,7 +32,10 @@ export function OpeningBenefitsModal() {
     const effectKey = `${checkKey}:${pathname}`;
     let shouldShow = false;
 
-    if (pathname === "/opening-benefits") {
+    if (pathname === "/farm/lab") {
+      // The isolated game lab must not be covered by unrelated promotions.
+      return;
+    } else if (pathname === "/opening-benefits") {
       try {
         window.localStorage.setItem(storageKey, dayKey);
       } catch {
@@ -77,7 +83,7 @@ export function OpeningBenefitsModal() {
     };
   }, [open]);
 
-  if (!mounted || !open || pathname === "/opening-benefits") return null;
+  if (!mounted || !open || pathname === "/opening-benefits" || pathname === "/farm/lab") return null;
 
   return createPortal(
     <div
@@ -88,7 +94,7 @@ export function OpeningBenefitsModal() {
     >
       <button
         type="button"
-        aria-label="关闭开业福利提示"
+        aria-label={siteCopy("site.components.home.openingbenefitsmodal.79b7844cfe1c")}
         className="absolute inset-0 z-0 bg-[#301722]/60 backdrop-blur-sm"
         onClick={() => setOpen(false)}
       />
@@ -99,7 +105,7 @@ export function OpeningBenefitsModal() {
         <button
           type="button"
           className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-sm text-[#9d6379] transition hover:bg-white"
-          aria-label="关闭开业福利提示"
+          aria-label={siteCopy("site.components.home.openingbenefitsmodal.79b7844cfe1c")}
           onClick={() => setOpen(false)}
         >
           ×
@@ -107,31 +113,22 @@ export function OpeningBenefitsModal() {
         <div className="pointer-events-none absolute -left-4 top-10 h-20 w-20 -rotate-6 overflow-hidden rounded-2xl bg-white shadow-[0_8px_12px_rgba(72,61,151,0.16)]">
           <Image
             src={characterArt}
-            alt="抽奖角色插画"
+            alt={siteCopy("site.components.home.openingbenefitsmodal.a731b36ba6d9")}
             fill
             sizes="80px"
             unoptimized
             className="object-contain"
           />
         </div>
-        <p className="relative text-xs font-black tracking-[0.26em] text-[#d64f79]">
-          DLM OPENING PARTY
-        </p>
+        <p className="relative text-xs font-black tracking-[0.26em] text-[#d64f79]"><SiteText copyKey="site.components.home.openingbenefitsmodal.1af215a34764" /></p>
         <h2
           id="opening-benefits-title"
           className="relative mt-3 text-3xl font-black tracking-[-0.055em]"
-        >
-          给你准备了一份
-          <br />
-          开业小礼物
-        </h2>
-        <p className="relative mt-3 text-sm leading-6 text-[#8d6274]">
-          每日可领特殊 9 折券；一周内实际消费累计满 ¥1,000，还可领取日冠 75
-          折券。打开福利页，看看今天能领什么吧！
-        </p>
+        ><SiteText copyKey="site.components.home.openingbenefitsmodal.4a6305c65867" /><br /><SiteText copyKey="site.components.home.openingbenefitsmodal.51502e5b67a1" /></h2>
+        <p className="relative mt-3 text-sm leading-6 text-[#8d6274]"><SiteText copyKey="site.components.home.openingbenefitsmodal.a361f75fb10a" /></p>
         <Image
           src={couponImage}
-          alt="特殊九折券"
+          alt={siteCopy("site.components.home.openingbenefitsmodal.8fd8b9c4ee21")}
           width={650}
           height={433}
           className="relative mx-auto -mb-2 mt-2 w-[88%] rotate-[-3deg] drop-shadow-[0_15px_12px_rgba(168,64,96,0.24)]"
@@ -141,16 +138,12 @@ export function OpeningBenefitsModal() {
           href="/opening-benefits"
           onClick={() => setOpen(false)}
           className="relative mt-1 inline-flex w-full items-center justify-center rounded-full bg-[#e85c86] px-5 py-3 text-sm font-black text-white shadow-[0_8px_0_#bd4166] transition hover:-translate-y-0.5 hover:bg-[#f26d95] active:translate-y-1 active:shadow-[0_4px_0_#bd4166]"
-        >
-          打开开业福利
-        </Link>
+        ><SiteText copyKey="site.components.home.openingbenefitsmodal.e1712901b6c6" /></Link>
         <button
           type="button"
           onClick={() => setOpen(false)}
           className="relative mt-5 text-xs font-medium text-[#a97789] underline-offset-4 hover:underline"
-        >
-          先逛逛，晚点再看
-        </button>
+        ><SiteText copyKey="site.components.home.openingbenefitsmodal.304560764fdc" /></button>
       </section>
     </div>,
     document.body,

@@ -1,4 +1,6 @@
 'use client';
+import { SiteText } from "@/components/SiteCopyProvider";
+
 
 import Script from 'next/script';
 import { useState } from 'react';
@@ -29,9 +31,7 @@ export default function BindResultActions() {
         type="button"
         className="inline-flex w-full items-center justify-center rounded-full bg-[#171717] px-6 py-3 text-sm font-semibold text-[#f5deb0]"
         onClick={returnToMiniProgram}
-      >
-        返回微信小程序
-      </button>
+      ><SiteText copyKey="site.app.accounts.discord.bind.result.bindresultactions.8b04967d389c" /></button>
       {hint ? <p className="text-xs leading-6 text-amber-700">{hint}</p> : null}
     </>
   );

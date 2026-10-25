@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
@@ -7,7 +8,7 @@ const MAX_INT32 = 2147483647;
 export async function GET(request: Request) {
   const session = await getServerSession();
   if (!session?.discordId) {
-    return NextResponse.json({ error: '未登录' }, { status: 401 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.member.search.route.e8041a8c9358") }, { status: 401 });
   }
 
   const url = new URL(request.url);

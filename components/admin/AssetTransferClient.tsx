@@ -1,336 +1,88 @@
 'use client';
-
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { DISCORD_ID_PATTERN, isDiscordSnowflake } from '@/lib/discord-id';
+import { migrationModelLabel, migrationRolesLabel } from '@/lib/account-migration-labels';
 
-type Status = { type: 'success' | 'error'; text: string };
-
-type AccountSummary = {
-  discordId: string;
-  exists: boolean;
-  memberExists: boolean;
-  dlmId: string | null;
-  serverDisplayName: string | null;
-  memberStatus: string | null;
-  wallet: {
-    totalBalance: string;
-    income: string;
-    recharge: string;
-    totalSpent: string;
-    loyaltyPoints: string;
-  };
-  vip: {
-    derivedLevel: number;
-    lastSettledLevel: number;
-    roleOptOut: boolean;
-    announcementEnabled: boolean;
-    hasDispatchImage: boolean;
-  };
-  heart: {
-    outgoingPairs: number;
-    incomingPairs: number;
-    maxSent: number;
-    maxReceived: number;
-  };
-  commission: {
-    currentRate: string;
-    baseRate: string;
-    isPeiwan: boolean;
-    peiwanId: number | null;
-  };
-  peiwan: {
-    exists: boolean;
-    peiwanId: number | null;
-    totalEarn: string;
-    balance: string;
-    hasMpUrl: boolean;
-    hasVoicePreview: boolean;
-    auditionInviteEnabled: boolean;
-    status: string | null;
-    exclusive: boolean;
-    type: string | null;
-    level: string | null;
-    gameProfileCount: number;
-  };
-  buffs: {
-    commissionBoostExpiresAt: string | null;
-    flowRemaining: string;
-    flowExpiresAt: string | null;
-    spendRemaining: string;
-    spendExpiresAt: string | null;
-    autoCommissionActiveUntil: string | null;
-  };
-  hasTransferableData: boolean;
-};
-
-type TransferResult = {
-  totalBalance: string;
-  income: string;
-  recharge: string;
-  totalSpent: string;
-  loyaltyPoints: string;
-  vipLevelAfter: number;
-  peiwanTransferred: boolean;
-  peiwanId: number | null;
-  peiwanTotalEarn: string | null;
-};
-
-const SummaryCard = ({ title, summary }: { title: string; summary: AccountSummary | null }) => {
-  if (!summary) {
-    return null;
-  }
-
-  return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-4 space-y-3">
-      <div className="space-y-1">
-        <p className="text-xs uppercase tracking-[0.3em] text-white/45">{title}</p>
-        <p className="text-base text-white/90">{summary.serverDisplayName ?? summary.discordId}</p>
-        <p className="text-xs text-white/55">
-          {summary.memberStatus ?? '未知状态'} · {summary.dlmId ?? '无 DLMClub 身份'}
-        </p>
-      </div>
-      <div className="grid gap-2 text-sm text-white/70 sm:grid-cols-2">
-        <p>总余额：{summary.wallet.totalBalance}</p>
-        <p>可提现：{summary.wallet.income}</p>
-        <p>充值池：{summary.wallet.recharge}</p>
-        <p>累计消费：{summary.wallet.totalSpent}</p>
-        <p>积分：{summary.wallet.loyaltyPoints}</p>
-        <p>VIP：{summary.vip.derivedLevel} / 已结算 {summary.vip.lastSettledLevel}</p>
-        <p>心动发出关系：{summary.heart.outgoingPairs}</p>
-        <p>心动收到关系：{summary.heart.incomingPairs}</p>
-        <p>基础抽成：{summary.commission.baseRate}</p>
-        <p>当前抽成：{summary.commission.currentRate}</p>
-        <p>陪玩档案：{summary.peiwan.exists ? `是 #${summary.peiwan.peiwanId ?? '—'}` : '否'}</p>
-        <p>陪玩累计流水：{summary.peiwan.totalEarn}</p>
-      </div>
-    </div>
-  );
-};
-
-export function AssetTransferClient() {
-  const [sourceId, setSourceId] = useState('');
-  const [targetId, setTargetId] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [status, setStatus] = useState<Status | null>(null);
-  const [changed, setChanged] = useState<Record<string, number>>({});
-  const [warnings, setWarnings] = useState<string[]>([]);
-  const [previewSource, setPreviewSource] = useState<AccountSummary | null>(null);
-  const [previewTarget, setPreviewTarget] = useState<AccountSummary | null>(null);
-  const [confirmMerge, setConfirmMerge] = useState(false);
-  const [transferred, setTransferred] = useState<TransferResult | null>(null);
-
-  const resetPreview = () => {
-    setPreviewSource(null);
-    setPreviewTarget(null);
-    setConfirmMerge(false);
-  };
-
-  const isDisabled = useMemo(
-    () =>
-      !sourceId.trim() ||
-      !targetId.trim() ||
-      isSubmitting ||
-      (Boolean(previewTarget?.hasTransferableData) && !confirmMerge),
-    [sourceId, targetId, isSubmitting, previewTarget, confirmMerge],
-  );
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setStatus(null);
-    setChanged({});
-    setWarnings([]);
-    setTransferred(null);
-    setIsSubmitting(true);
-
+type Account = { dlmId: string; discordId: string | null; displayName: string; wallet: Record<string, string>; peiwanId: number | null };
+type Preview = { previewHash: string; source: Account; target: Account; mergedWallet: Record<string, string>; peiwanId: number | null; vipLevel: number; suppressedVipLevels: number[]; conflicts: Array<{ model: string; recordKey: string; policy: string }>; notice: string };
+type Result = { requestId: string; completed: boolean; sourceDlmId: string; targetDlmId: string; mergedWallet: Record<string, string>; peiwanId: number | null; rolesStatus: string; skipped: Array<{ model: string; recordKey: string; reason: string }>; warnings: string[] };
+const labels: Record<string, string> = { totalBalance: '总余额', income: '可提现收入', recharge: '充值余额', totalSpent: '累计消费', loyaltyPoints: '积分' };
+const wallet = (values: Record<string, string>) => <dl className="grid gap-2 sm:grid-cols-2">{Object.entries(values).map(([key, value]) => <div key={key}><dt className="inline text-white/50">{labels[key] ?? key}：</dt><dd className="inline">{value}</dd></div>)}</dl>;
+export default function AssetTransferClient() {
+  const [sourceIdentifier, setSource] = useState('');
+  const [targetIdentifier, setTarget] = useState('');
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [requestId, setRequestId] = useState('');
+  const [lookupId, setLookupId] = useState('');
+  const [message, setMessage] = useState('');
+  const [unknown, setUnknown] = useState(false);
+  const change = (setter: (value: string) => void, value: string) => { setter(value); setPreview(null); setConfirmed(false); };
+  async function previewMerge(event: FormEvent) {
+    event.preventDefault(); if (busy || unknown) return;
+    setBusy(true); setMessage(''); setPreview(null); setConfirmed(false); setResult(null);
     try {
-      const normalizedSourceId = sourceId.trim();
-      const normalizedTargetId = targetId.trim();
-      if (!isDiscordSnowflake(normalizedSourceId) || !isDiscordSnowflake(normalizedTargetId)) {
-        setStatus({ type: 'error', text: '请输入 17-20 位纯数字 Discord 雪花 ID' });
-        return;
-      }
-
-      const response = await fetch('/api/admin/asset-transfer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sourceDiscordId: normalizedSourceId,
-          targetDiscordId: normalizedTargetId,
-          forceMerge: Boolean(previewTarget?.hasTransferableData && confirmMerge),
-        }),
-      });
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const text = typeof result?.error === 'string' ? result.error : '资产转移失败，请稍后再试';
-        if (result?.requiresForceMerge) {
-          setPreviewSource((result?.source as AccountSummary | undefined) ?? null);
-          setPreviewTarget((result?.target as AccountSummary | undefined) ?? null);
-        }
-        setStatus({ type: 'error', text });
-        return;
-      }
-
-      resetPreview();
-      setStatus({ type: 'success', text: result?.message ?? '资产转移完成' });
-      setTransferred((result?.transferred as TransferResult | undefined) ?? null);
-      setChanged((result?.changed as Record<string, number> | undefined) ?? {});
-      setWarnings(
-        Array.isArray(result?.warnings)
-          ? result.warnings.filter((item: unknown): item is string => typeof item === 'string')
-          : [],
-      );
-    } catch (err) {
-      setStatus({ type: 'error', text: (err as Error).message });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="space-y-8 text-white">
-      <div className="space-y-2">
-        <p className="text-sm uppercase tracking-[0.4em] text-white/50">资产转移</p>
-        <h1 className="text-3xl font-semibold">转移固定资产资料</h1>
-        <p className="text-sm text-white/70">
-          转移余额、累计消费、积分、VIP 结算状态、心动值关系、基础抽成与手动 Buff。若源账号当前是陪玩，会整体迁移陪玩档案（PEIWANID、报价、语音预览、评语、礼物解锁等）到目标账号。不会转移流水明细、未消耗权益、订单历史，也不会转移福星陪玩身份。
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6 rounded-3xl border border-white/10 bg-white/5 p-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-2 text-sm">
-            <span className="text-white/70">源 Discord ID</span>
-            <input
-              type="text"
-              value={sourceId}
-              onChange={(event) => {
-                resetPreview();
-                setSourceId(event.target.value);
-              }}
-              inputMode="numeric"
-              pattern={DISCORD_ID_PATTERN}
-              maxLength={20}
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
-              placeholder="从这个账号转出资产"
-            />
-          </label>
-          <label className="space-y-2 text-sm">
-            <span className="text-white/70">目标 Discord ID</span>
-            <input
-              type="text"
-              value={targetId}
-              onChange={(event) => {
-                resetPreview();
-                setTargetId(event.target.value);
-              }}
-              inputMode="numeric"
-              pattern={DISCORD_ID_PATTERN}
-              maxLength={20}
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
-              placeholder="转入这个账号"
-            />
-          </label>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/65 space-y-1">
-          <p>1. 钱包类资产按源账号全部划转到目标账号，源账号同步清零。</p>
-          <p>2. 如果源账号是陪玩，会整套迁移陪玩身份；目标账号不能已有独立陪玩档案。</p>
-          <p>3. 个人流水会新增“资产转出 / 资产转入”两条余额记录，完整明细写入审计表。</p>
-        </div>
-
-        {previewTarget?.hasTransferableData ? (
-          <div className="space-y-4 rounded-2xl border border-amber-400/35 bg-amber-500/10 p-4 text-sm text-amber-100">
-            <div className="space-y-1">
-              <p className="font-medium text-amber-50">目标账号已经有可转移资产</p>
-              <p className="text-amber-100/80">
-                确认后会合并钱包/累计消费/积分/心动值，并用源账号覆盖目标账号的基础抽成与 VIP 配置；若源账号是陪玩，还会把整套陪玩身份迁过去。
-              </p>
-            </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <SummaryCard title="源账号预览" summary={previewSource} />
-              <SummaryCard title="目标账号预览" summary={previewTarget} />
-            </div>
-            <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 p-3 text-white/90">
-              <input
-                type="checkbox"
-                checked={confirmMerge}
-                onChange={(event) => setConfirmMerge(event.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black/20"
-              />
-              <span>我确认按资产转移规则合并目标账号现有资产，并清空源账号对应资产。</span>
-            </label>
-          </div>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={isDisabled}
-          className="inline-flex items-center justify-center rounded-full bg-white/15 px-6 py-2 text-sm text-white hover:bg-white/25 disabled:opacity-50"
-        >
-          {isSubmitting ? '转移中…' : previewTarget?.hasTransferableData ? '确认合并并转移' : '开始转移'}
-        </button>
-      </form>
-
-      {status ? (
-        <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
-            status.type === 'success'
-              ? 'border-emerald-400/50 text-emerald-300'
-              : 'border-rose-400/50 text-rose-300'
-          }`}
-        >
-          {status.text}
-        </div>
-      ) : null}
-
-      {transferred ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/80 space-y-2">
-          <p className="text-white">本次已转移：</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <p>总余额：{transferred.totalBalance}</p>
-            <p>可提现：{transferred.income}</p>
-            <p>充值池：{transferred.recharge}</p>
-            <p>累计消费：{transferred.totalSpent}</p>
-            <p>积分：{transferred.loyaltyPoints}</p>
-            <p>目标 VIP：{transferred.vipLevelAfter}</p>
-            <p>陪玩身份：{transferred.peiwanTransferred ? `已迁移 #${transferred.peiwanId ?? '—'}` : '未迁移'}</p>
-            <p>陪玩累计流水：{transferred.peiwanTotalEarn ?? '—'}</p>
-          </div>
-        </div>
-      ) : null}
-
-      {warnings.length ? (
-        <div className="rounded-2xl border border-amber-400/35 bg-amber-500/10 p-4 text-sm text-amber-100">
-          <p className="font-medium text-amber-50">注意事项</p>
-          <ul className="mt-2 space-y-1">
-            {warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {Object.keys(changed).length ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/80">
-          <p className="text-white">已变更的记录数：</p>
-          <ul className="mt-2 space-y-1">
-            {Object.entries(changed).map(([key, value]) => (
-              <li key={key}>
-                {key}: {value}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      <Link
-        href="/admin"
-        className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-2 text-sm tracking-[0.2em] text-white hover:bg-white/10"
-      >
-        返回后台首页
-      </Link>
-    </div>
-  );
+      const response = await fetch('/api/admin/asset-transfer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'preview', sourceIdentifier, targetIdentifier }) });
+      const data = await response.json();
+      if (!response.ok || !data.preview) throw new Error(data.error ?? '预览失败');
+      setPreview(data.preview); setRequestId(crypto.randomUUID());
+    } catch (error) { setMessage(error instanceof Error ? error.message : '预览失败'); }
+    finally { setBusy(false); }
+  }
+  async function execute() {
+    if (!preview || !confirmed || busy || unknown) return;
+    setBusy(true); setMessage(''); setLookupId(requestId);
+    try {
+      const response = await fetch('/api/admin/asset-transfer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
+        action: 'execute', sourceIdentifier, targetIdentifier, sourceDlmId: preview.source.dlmId, targetDlmId: preview.target.dlmId,
+        requestId, expectedPreviewHash: preview.previewHash,
+      }) });
+      const data = await response.json();
+      if (response.status >= 500) { setUnknown(true); throw new Error(data.error ?? '结果不明，请查询原编号'); }
+      if (!response.ok || !data.result?.completed) { setPreview(null); setConfirmed(false); throw new Error(data.error ?? '本次未确认完成，请重新预览'); }
+      setResult(data.result); setPreview(null); setConfirmed(false); setUnknown(false);
+    } catch (error) { setMessage(error instanceof Error ? error.message : '结果不明，请查询原编号'); if (!(error instanceof Error) || error instanceof TypeError || error instanceof SyntaxError) setUnknown(true); }
+    finally { setBusy(false); }
+  }
+  async function query() {
+    if (!lookupId.trim() || busy) return;
+    setBusy(true); setMessage('');
+    try {
+      const response = await fetch(`/api/admin/asset-transfer?requestId=${encodeURIComponent(lookupId.trim())}`, { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data.record) throw new Error(data.error ?? '暂时无法核实');
+      setResult({ ...data.record.result, rolesStatus: data.record.rolesStatus });
+      setMessage(data.record.rolesError ? `资金迁移已完成；角色仍待处理：${data.record.rolesError}` : '已查到原迁移结果。本次查询没有转移资金。');
+      if (lookupId.trim() === requestId) { setUnknown(false); setPreview(null); setConfirmed(false); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : '暂时无法核实'); }
+    finally { setBusy(false); }
+  }
+  return <div className="space-y-6 text-white/85">
+    <p>新号保留自己的数据并继承旧号，完成后删除旧账号。兼容资产及历史合并，不兼容活动完整归档后跳过；双方需重新登录。</p>
+    <form onSubmit={previewMerge} className="space-y-3">
+      <label className="block">旧账号 DLM／Discord 编号<input className="mt-1 block w-full rounded border border-white/20 bg-black/30 p-3" value={sourceIdentifier} disabled={busy || unknown} onChange={event => change(setSource, event.target.value)} required /></label>
+      <label className="block">新账号 DLM／Discord 编号<input className="mt-1 block w-full rounded border border-white/20 bg-black/30 p-3" value={targetIdentifier} disabled={busy || unknown} onChange={event => change(setTarget, event.target.value)} required /></label>
+      <button type="submit" disabled={busy || unknown} className="rounded bg-violet-600 px-4 py-2 disabled:opacity-50">{busy ? '处理中…' : '预览合并方案'}</button>
+    </form>
+    {preview && <section className="space-y-4 rounded-xl border border-white/20 p-4">
+      <div className="grid gap-4 md:grid-cols-2">{([['旧号', preview.source], ['新号', preview.target]] as const).map(([label, account]) => <div key={label} className="min-w-0 break-words"><h2 className="font-semibold">{label}：{account.displayName}</h2><p>{account.dlmId} · {account.discordId ?? '未绑定 Discord'}</p>{wallet(account.wallet)}</div>)}</div>
+      <h2 className="font-semibold">合并后的预计资产</h2>{wallet(preview.mergedWallet)}
+      <p>陪玩编号：{preview.peiwanId ?? '无'}；VIP：{preview.vipLevel}。合并跨级不发奖励、不播公告。</p>
+      <p>报价、基础分成及普通偏好新号优先；等级取较高，额度各自到期；旧邀请关系结束。原交易金额、支付编号和已提交提现收款资料保留。</p>
+      {preview.conflicts.length > 0 && <div><h3 className="font-semibold text-amber-300">预计归档跳过</h3><ul className="list-disc pl-5">{preview.conflicts.map((item, i) => <li key={i} className="break-words">{migrationModelLabel(item.model)}：{item.policy}</li>)}</ul></div>}
+      <p className="text-sm text-white/60">{preview.notice}</p>
+      <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} /><span>已核对旧号、新号及合并规则，确认合并后删除旧账号。</span></label>
+      <p className="break-all text-xs text-white/50">本次编号：{requestId}</p>
+      <button type="button" disabled={!confirmed || busy || unknown} onClick={execute} className="rounded bg-violet-600 px-4 py-2 disabled:opacity-50">确认合并</button>
+    </section>}
+    {message && <p role="status" className="rounded border border-amber-400/30 p-3">{message}</p>}
+    {unknown && <p className="text-amber-300">请保留原编号查询。尚未确认结果前，不创建第二笔迁移；断网不代表失败。</p>}
+    <section className="space-y-3 rounded-xl border border-white/20 p-4"><h2 className="font-semibold">查询原迁移结果</h2><input aria-label="原迁移请求编号" value={lookupId} onChange={event => setLookupId(event.target.value)} className="w-full rounded bg-black/30 p-3" placeholder="粘贴原请求编号" /><button type="button" onClick={query} disabled={busy || !lookupId.trim()} className="rounded border border-white/20 px-4 py-2">只读查询</button></section>
+    {result && <section className="space-y-2 rounded-xl border border-emerald-400/30 p-4"><h2 className="font-semibold">账号合并已完成</h2><p className="break-all">编号：{result.requestId}</p>{wallet(result.mergedWallet)}<p>角色处理：{migrationRolesLabel(result.rolesStatus)}。角色失败只续办角色，不重新转移资产。</p>{result.warnings.map((warning, i) => <p key={i}>{warning}</p>)}{result.skipped.length > 0 && <><h3>已归档、未继续使用的内容</h3><ul className="list-disc pl-5">{result.skipped.map((item, i) => <li key={i} className="break-words">{migrationModelLabel(item.model)} · 原始记录已保存</li>)}</ul></>}</section>}
+    <p><Link href="/profile/account-migrations" className="underline">查看账户迁移历史与归档</Link></p>
+  </div>;
 }
+
+export { AssetTransferClient };

@@ -1,4 +1,4 @@
-import { GuildNotificationEvent, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import {
   getStripePaymentIntentId,
   getStripeSecretKey,
@@ -14,7 +14,6 @@ import {
   recordStripePaymentSuccess,
   recordStripeRefund,
 } from '@/lib/stripe-payment';
-import { publishGuildNotification } from '@/lib/notification-center';
 
 export const runtime = 'nodejs';
 
@@ -182,17 +181,7 @@ export async function POST(request: Request) {
       return successResponse();
     }
 
-    if (settlement.kind === 'paid' && stripePayment.dlmId) {
-      await publishGuildNotification({
-        dlmId: stripePayment.dlmId,
-        event: GuildNotificationEvent.BALANCE_ADJUSTED,
-        title: 'Stripe 充值已到账',
-        body: `你的账户已到账 ${new Prisma.Decimal(rechargeAmount).toFixed(2)} 币。`,
-        href: '/console?tab=wallet',
-        dedupeKey: `stripe-recharge:${outTradeNo}`,
-        details: { outTradeNo, paymentIntentId, source: 'stripe' },
-      }).catch((notificationError) => console.error('[stripe.notify] notification center failed', notificationError));
-    }
+    // The credit transaction durably queued its Discord-only notification.
 
     console.log('[stripe.notify] success', { outTradeNo, sessionId: session.id });
     return successResponse();

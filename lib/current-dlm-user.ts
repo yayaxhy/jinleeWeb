@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { generateDlmId } from '@/lib/dlm-id';
 import { getServerSession } from '@/lib/session';
 import { getWechatProgramSessionFromRequest } from '@/lib/wechat-program-session';
+import { syncDiscordCurrentUserTx } from './current-dlm-user-sync';
 
 const dlmUserWithMember = {
   member: true,
@@ -44,7 +45,7 @@ export const getCurrentDlmUser = async (request?: Request): Promise<CurrentDlmUs
       include: dlmUserWithMember,
     });
 
-    if (!dlmUser) {
+    if (!dlmUser || dlmUser.sessionVersion !== (webSession.sessionVersion ?? 1)) {
       return null;
     }
 
@@ -66,65 +67,14 @@ export const getCurrentDlmUser = async (request?: Request): Promise<CurrentDlmUs
   }
 
   const fallbackDiscordAvatar = buildDiscordAvatarUrl(webSession.discordId, webSession.avatar);
-  const member = await prisma.member.findUnique({
-    where: { discordUserId: webSession.discordId },
-    select: {
-      discordUserId: true,
-      serverDisplayName: true,
-      totalBalance: true,
-      income: true,
-      recharge: true,
-      totalSpent: true,
-    },
-  });
-
-  const dlmUser = webSession.dlmId
-    ? await prisma.dlmUser.findUnique({
-        where: { dlmId: webSession.dlmId },
-        include: dlmUserWithMember,
-      })
-    : null;
-
-  if (webSession.dlmId && !dlmUser) {
-    return null;
-  }
-
-  const walletMirrorPatch = member
-    ? {
-        totalBalance: member.totalBalance,
-        income: member.income,
-        recharge: member.recharge,
-        totalSpent: member.totalSpent,
-      }
-    : {};
-
-  const ensured = dlmUser
-    ? await prisma.dlmUser.update({
-        where: { dlmId: dlmUser.dlmId },
-        data: {
-          discordUserId: webSession.discordId,
-          discordDisplayName: member?.serverDisplayName ?? webSession.username,
-          discordAvatarUrl: fallbackDiscordAvatar,
-          ...walletMirrorPatch,
-        },
-        include: dlmUserWithMember,
-      })
-    : await prisma.dlmUser.upsert({
-        where: { discordUserId: webSession.discordId },
-        update: {
-          discordDisplayName: member?.serverDisplayName ?? webSession.username,
-          discordAvatarUrl: fallbackDiscordAvatar,
-          ...walletMirrorPatch,
-        },
-        create: {
-          dlmId: generateDlmId(),
-          discordUserId: webSession.discordId,
-          discordDisplayName: member?.serverDisplayName ?? webSession.username,
-          discordAvatarUrl: fallbackDiscordAvatar,
-          ...walletMirrorPatch,
-        },
-        include: dlmUserWithMember,
-      });
+  const discordId = webSession.discordId;
+  const ensured = await prisma.$transaction((tx) => syncDiscordCurrentUserTx(tx, {
+    dlmId: webSession.dlmId,
+    discordId,
+    username: webSession.username,
+    avatarUrl: fallbackDiscordAvatar,
+  }, generateDlmId));
+  if (!ensured || ensured.sessionVersion !== (webSession.sessionVersion ?? 1)) return null;
 
   return {
     sessionSource: 'web',

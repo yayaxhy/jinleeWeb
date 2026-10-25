@@ -1,3 +1,6 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
+import { getSiteCopy } from "@/lib/site-copy-server";
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getLotteryFusionHistoryPageData } from '@/lib/lottery-fusion-page-data';
@@ -51,6 +54,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function LotteryFusionHistoryPage() {
+  const siteCopy = await getSiteCopy();
   const data = await getLotteryFusionHistoryPageData();
   if (!data) {
     redirect('/');
@@ -61,38 +65,28 @@ export default async function LotteryFusionHistoryPage() {
       <section className="mx-auto max-w-[1280px] space-y-6">
         <div className="flex flex-col gap-4 rounded-[32px] border border-[#f0ddd0] bg-[linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(255,249,245,0.96))] p-6 shadow-[0_18px_46px_rgba(238,221,206,0.36)] md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.36em] text-[#b1917f]">Fusion History</p>
+            <p className="text-xs uppercase tracking-[0.36em] text-[#b1917f]"><SiteText copyKey="site.app.profile.lottery.fusion.history.page.52d3fdaf2ae0" /></p>
             <h1
               className="mt-3 text-[32px] font-semibold text-[#74452f] sm:text-[42px]"
               style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-            >
-              重铸记录
-            </h1>
-            <p className="mt-3 max-w-[720px] text-sm leading-7 text-[#8e6a58] sm:text-[15px]">
-              查看每次重铸消耗了哪些券或奖品、产出了什么结果，以及当前结果的使用状态。
-            </p>
+            ><SiteText copyKey="site.app.profile.lottery.fusion.history.page.4e10cbb0f409" /></h1>
+            <p className="mt-3 max-w-[720px] text-sm leading-7 text-[#8e6a58] sm:text-[15px]"><SiteText copyKey="site.app.profile.lottery.fusion.history.page.54dced0b9ab3" /></p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <Link
               href="/profile/lottery-fusion"
               className="inline-flex items-center justify-center rounded-full border border-[#ead7c8] bg-white px-5 py-3 text-sm font-medium text-[#7b5643] shadow-[0_10px_24px_rgba(232,215,201,0.26)] transition hover:translate-y-[-1px]"
-            >
-              返回重铸页
-            </Link>
+            ><SiteText copyKey="site.app.profile.lottery.fusion.history.page.2a8cefb72a22" /></Link>
             <Link
               href="/profile/bag"
               className="inline-flex items-center justify-center rounded-full border border-[#e2c1a8] bg-[linear-gradient(180deg,_#a95a5c,_#8d444a)] px-5 py-3 text-sm font-medium text-white shadow-[0_12px_28px_rgba(166,92,95,0.26)] transition hover:translate-y-[-1px]"
-            >
-              查看背包
-            </Link>
+            ><SiteText copyKey="site.app.profile.lottery.fusion.history.page.09b16164f72f" /></Link>
           </div>
         </div>
 
         {data.historyEntries.length === 0 ? (
-          <div className="rounded-[32px] border border-[#f0ddd0] bg-white/95 p-10 text-center text-[#a07b68] shadow-[0_18px_46px_rgba(238,221,206,0.36)]">
-            暂无重铸记录。
-          </div>
+          <div className="rounded-[32px] border border-[#f0ddd0] bg-white/95 p-10 text-center text-[#a07b68] shadow-[0_18px_46px_rgba(238,221,206,0.36)]"><SiteText copyKey="site.app.profile.lottery.fusion.history.page.526f21b929a6" /></div>
         ) : (
           <div className="space-y-5">
             {data.historyEntries.map((entry) => {
@@ -110,28 +104,28 @@ export default async function LotteryFusionHistoryPage() {
                           className="text-[28px] font-semibold text-[#74452f]"
                           style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
                         >
-                          {entry.result.prizeName}
+                          <SiteText namespace="site.lib.vouchercatalog" value={entry.result.prizeName} />
                         </h2>
                         <span className="rounded-full border border-[#ead9cb] bg-[#fff7f1] px-3 py-1 text-xs font-semibold text-[#b27b58]">
                           {POOL_LABEL[entry.result.pool] ?? entry.result.pool}
                         </span>
                         <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusMeta.className}`}>
-                          {statusMeta.label}
+                          <SiteText namespace="site.app.profile.lottery.fusion.history.page" value={statusMeta.label} />
                         </span>
                       </div>
 
                       <div className="space-y-1 text-sm text-[#8f6d5a]">
-                        <p>重铸时间：{formatDateTime(entry.createdAt)}</p>
-                        <p>重铸规则：{entry.rule ? `${entry.rule.title} · ${entry.rule.detail}` : `${entry.fusionCount} 个融合`}</p>
-                        <p>结果到期：{formatDateTime(entry.result.expiresAt)}</p>
-                        <p>结果使用：{formatDateTime(entry.result.consumeAt)}</p>
+                        <p><SiteText copyKey="site.app.profile.lottery.fusion.history.page.bcc88d2f7b5c" />{formatDateTime(entry.createdAt)}</p>
+                        <p><SiteText copyKey="site.app.profile.lottery.fusion.history.page.5a4553a581f0" />{entry.rule ? <SiteText copyKey="site.app.profile.lottery.fusion.history.page.d309d7364495" values={{value1: String(entry.rule.title), value2: String(entry.rule.detail)}} /> : <SiteText copyKey="site.app.profile.lottery.fusion.history.page.03ec9b35280d" values={{value1: String(entry.fusionCount)}} />}</p>
+                        <p><SiteText copyKey="site.app.profile.lottery.fusion.history.page.4943e2cd93d0" />{formatDateTime(entry.result.expiresAt)}</p>
+                        <p><SiteText copyKey="site.app.profile.lottery.fusion.history.page.d1b7b4b419e5" />{formatDateTime(entry.result.consumeAt)}</p>
                       </div>
                     </div>
 
                     <div className="rounded-[24px] border border-[#f0ddd0] bg-[#fffaf6] px-5 py-4 text-sm text-[#8d6a59] xl:min-w-[320px]">
-                      <p className="font-semibold text-[#754834]">本次消耗 {entry.sourceItems.length} 个券/奖品</p>
+                      <p className="font-semibold text-[#754834]"><SiteText copyKey="site.app.profile.lottery.fusion.history.page.9484ecc6d2e3" />{entry.sourceItems.length}<SiteText copyKey="site.app.profile.lottery.fusion.history.page.af18bdc690f3" /></p>
                       <p className="mt-2 leading-7">
-                        {entry.rule?.detail ?? '本次记录未匹配到标准的 3 / 4 / 6 档规则，可能是历史数据。'}
+                        {entry.rule?.detail ?? <SiteText copyKey="site.app.profile.lottery.fusion.history.page.128bfe98658c" />}
                       </p>
                     </div>
                   </div>
@@ -151,11 +145,11 @@ export default async function LotteryFusionHistoryPage() {
                         <p
                           className="mt-4 overflow-hidden text-ellipsis whitespace-nowrap text-[18px] font-semibold text-[#73452f]"
                           style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-                          title={item.prizeName}
+                          title={siteCopy.text(item.prizeName, "site.lib.vouchercatalog")}
                         >
-                          {item.prizeName}
+                          <SiteText namespace="site.lib.vouchercatalog" value={item.prizeName} />
                         </p>
-                        <p className="mt-2 text-xs leading-6 text-[#9a7a68]">消耗时间：{formatDateTime(item.consumeAt)}</p>
+                        <p className="mt-2 text-xs leading-6 text-[#9a7a68]"><SiteText copyKey="site.app.profile.lottery.fusion.history.page.d167d79f7774" />{formatDateTime(item.consumeAt)}</p>
                       </div>
                     ))}
                   </div>

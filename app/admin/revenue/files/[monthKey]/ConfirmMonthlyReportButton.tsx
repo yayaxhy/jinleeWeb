@@ -3,12 +3,13 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export default function ConfirmMonthlyReportButton({ monthKey }: { monthKey: string }) {
+export default function ConfirmMonthlyReportButton({ monthKey, incomplete = false }: { monthKey: string; incomplete?: boolean }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
   const confirm = async () => {
+    if (incomplete || saving) return;
     if (!window.confirm(`确认 ${monthKey} 月结？确认后本月数字及 Excel 将固定，后续差额进入当前月份。`)) return;
     setSaving(true);
     setMessage('正在核对并固定月末余额…');
@@ -37,10 +38,10 @@ export default function ConfirmMonthlyReportButton({ monthKey }: { monthKey: str
       <button
         type="button"
         onClick={confirm}
-        disabled={saving}
+        disabled={saving || incomplete}
         className="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-5 py-2 text-sm text-emerald-100 hover:bg-emerald-300/20 disabled:opacity-60"
       >
-        {saving ? '确认中…' : '确认本月数字'}
+        {incomplete ? '凭据不完整，暂不能确认' : saving ? '确认中…' : '确认本月数字'}
       </button>
       {message ? <span className="text-xs text-white/60">{message}</span> : null}
     </div>

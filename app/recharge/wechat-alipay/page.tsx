@@ -1,3 +1,5 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -32,23 +34,17 @@ export default async function WechatAlipayRechargePage() {
         <Link
           href="/recharge"
           className="inline-flex rounded-full border border-black/10 px-5 py-2 text-xs uppercase tracking-[0.32em] transition hover:bg-black/5"
-        >
-          返回充值中心
-        </Link>
+        ><SiteText copyKey="site.app.recharge.wechat.alipay.page.badee45311aa" /></Link>
 
         <header className="mx-auto max-w-3xl space-y-3 text-center">
-          <p className="text-xs font-medium tracking-[0.32em] text-[#2563eb]">手动扫码充值</p>
-          <h1 className="text-3xl font-semibold tracking-wide">微信/支付宝充值</h1>
-          <p className="text-sm leading-7 text-gray-600">
-            微信/支付宝的自动充值还在完善中。如需微信/支付宝充值，可以扫描下方两个二维码；转账成功后，请将转账成功的截图在 DC 私信发送给客服即可，
-            <a
+          <p className="text-xs font-medium tracking-[0.32em] text-[#2563eb]"><SiteText copyKey="site.app.recharge.wechat.alipay.page.b7285cc7bd75" /></p>
+          <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.recharge.wechat.alipay.page.f7276d412b7d" /></h1>
+          <p className="text-sm leading-7 text-gray-600"><SiteText copyKey="site.app.recharge.wechat.alipay.page.35729fd36ec0" /><a
               href={SUPPORT_DISCORD_PROFILE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-[#2563eb] underline decoration-[#2563eb]/40 underline-offset-4 transition hover:text-[#1d4ed8]"
-            >
-              点击这里联系客服
-            </a>
+            ><SiteText copyKey="site.app.recharge.wechat.alipay.page.63a2071c928a" /></a>
             。
           </p>
         </header>

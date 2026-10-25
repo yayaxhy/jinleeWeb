@@ -1,3 +1,4 @@
+import { renderSiteCopy } from '@/lib/site-copy-server';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveFarmSession } from '@/lib/farmDevSession';
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
   const baseSession = await getServerSession().catch(() => null);
   const session = await resolveFarmSession(baseSession, request.headers.get('host'));
   if (!session?.discordId) {
-    return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.farm.route.a323ce0e3b6d") }, { status: 401 });
   }
 
   try {
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
   const baseSession = await getServerSession().catch(() => null);
   const session = await resolveFarmSession(baseSession, request.headers.get('host'));
   if (!session?.discordId) {
-    return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.farm.route.a323ce0e3b6d") }, { status: 401 });
   }
 
   const body = await request.json().catch(() => null);
@@ -115,61 +116,61 @@ export async function POST(request: NextRequest) {
 
   try {
     let dashboard;
-    let message = '操作成功';
+    let message = await renderSiteCopy("site.app.api.farm.route.38de25e52295");
     switch (action) {
       case 'exchange_balance': {
         dashboard = await exchangeBalanceToCoins(session.discordId, body?.amount);
-        message = '已将余额兑换为金币';
+        message = await renderSiteCopy("site.app.api.farm.route.60c5d7cda522");
         break;
       }
       case 'exchange_points': {
         dashboard = await exchangePointsToCoins(session.discordId, body?.amount);
-        message = '已将积分兑换为金币';
+        message = await renderSiteCopy("site.app.api.farm.route.3bd0931f43e4");
         break;
       }
       case 'exchange_coins_to_points': {
         dashboard = await exchangeCoinsToPoints(session.discordId, body?.amount);
-        message = '已将金币兑换为积分';
+        message = await renderSiteCopy("site.app.api.farm.route.21c33813a469");
         break;
       }
       case 'plant': {
         if (!isFarmSeedType(body?.seedType)) {
-          return NextResponse.json({ error: '未知种子' }, { status: 400 });
+          return NextResponse.json({ error: await renderSiteCopy("site.app.api.farm.route.f8934e337ef6") }, { status: 400 });
         }
         dashboard = await plantFarmSeed(session.discordId, Number(body?.plotIndex), body.seedType);
-        message = '种植成功';
+        message = await renderSiteCopy("site.app.api.farm.route.ed30810ab9c9");
         break;
       }
       case 'harvest': {
         const result = await harvestFarmPlot(session.discordId, Number(body?.plotIndex));
         dashboard = result.dashboard;
         message = result.stolenCoins !== '0.00'
-          ? `收获成功，获得 ${result.harvestCoins} 金币（被偷 ${result.stolenCoins}）`
-          : `收获成功，获得 ${result.harvestCoins} 金币`;
+          ? await renderSiteCopy("site.app.api.farm.route.996a77a3615b", { value1: String(result.harvestCoins), value2: String(result.stolenCoins) })
+          : await renderSiteCopy("site.app.api.farm.route.1d1a28f63cbb", { value1: String(result.harvestCoins) });
         return NextResponse.json({ ok: true, message, dashboard, result });
         break;
       }
       case 'expand': {
         dashboard = await expandFarm(session.discordId);
-        message = '扩地成功';
+        message = await renderSiteCopy("site.app.api.farm.route.c3be0dcc4aae");
         break;
       }
       case 'steal': {
         const targetDiscordId = String(body?.targetDiscordId ?? '').trim();
         if (!targetDiscordId) {
-          return NextResponse.json({ error: '缺少目标庄园' }, { status: 400 });
+          return NextResponse.json({ error: await renderSiteCopy("site.app.api.farm.route.c88562b671ff") }, { status: 400 });
         }
         const result = await stealFarmPlot(session.discordId, targetDiscordId, Number(body?.plotIndex));
         return NextResponse.json({
           ok: true,
-          message: `偷菜成功，获得 ${result.stolenCoins} 金币`,
+          message: await renderSiteCopy("site.app.api.farm.route.0e53abdf759b", { value1: String(result.stolenCoins) }),
           dashboard: result.targetDashboard,
           viewerDashboard: result.viewerDashboard,
           result,
         });
       }
       default:
-        return NextResponse.json({ error: '未知操作' }, { status: 400 });
+        return NextResponse.json({ error: await renderSiteCopy("site.app.api.farm.route.fedca63099e7") }, { status: 400 });
     }
 
     return NextResponse.json({ ok: true, message, dashboard });

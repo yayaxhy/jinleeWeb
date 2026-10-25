@@ -1,3 +1,5 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
@@ -55,17 +57,13 @@ export default async function HeartPage() {
         <section className="max-w-4xl mx-auto space-y-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-semibold tracking-wide">心动值总览</h1>
-              <p className="mt-2 text-sm text-gray-500">
-                当前账号：{displayName}。心动值仍基于 Discord 互动统计，绑定 Discord 后这里会自动显示数据。
-              </p>
+              <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.profile.heart.page.f77434297275" /></h1>
+              <p className="mt-2 text-sm text-gray-500"><SiteText copyKey="site.app.profile.heart.page.b80ba41c56ca" />{displayName}<SiteText copyKey="site.app.profile.heart.page.920fbba56a77" /></p>
             </div>
             <Link
               href="/profile"
               className="text-xs uppercase tracking-[0.4em] text-gray-500 hover:text-black transition"
-            >
-              返回个人主页
-            </Link>
+            ><SiteText copyKey="site.app.profile.heart.page.425652af65a9" /></Link>
           </div>
         </section>
       </main>
@@ -136,23 +134,19 @@ export default async function HeartPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.6em] text-gray-400"></p>
-            <h1 className="text-3xl font-semibold tracking-wide">心动值总览</h1>
+            <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.profile.heart.page.f77434297275" /></h1>
           </div>
           <Link
             href="/profile"
             className="text-xs uppercase tracking-[0.4em] text-gray-500 hover:text-black transition"
-          >
-            返回个人主页
-          </Link>
+          ><SiteText copyKey="site.app.profile.heart.page.425652af65a9" /></Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-3xl border border-black/10 bg-gradient-to-br from-[#fdfbff] to-[#f3efff] p-6 space-y-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">我是陪玩</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.profile.heart.page.5d35b0cfd54e" /></p>
             <p className="text-4xl font-semibold text-[#5c43a3]">{formatNumber(receivedTotal)}</p>
-            <p className="text-sm text-gray-500">
-              最高心动值对象
-              {topSender ? `（来自 ${resolveDisplayName(topSender.fromMember ?? { serverDisplayName: null, discordUserId: '未知' })}）` : ''}
+            <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.heart.page.0aa7344f22e7" />{topSender ? <SiteText copyKey="site.app.profile.heart.page.4f0a54554775" values={{value1: String(resolveDisplayName(topSender.fromMember ?? { serverDisplayName: null, discordUserId: '未知' }))}} /> : ''}
             </p>
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-gray-500">
@@ -165,11 +159,9 @@ export default async function HeartPage() {
             </div>
           </div>
           <div className="rounded-3xl border border-black/10 bg-gradient-to-br from-[#fdfbff] to-[#e9f4ff] p-6 space-y-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-gray-500">我是老板</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.app.profile.heart.page.5168676de021" /></p>
             <p className="text-4xl font-semibold text-[#171717]">{formatNumber(givenTotal)}</p>
-            <p className="text-sm text-gray-500">
-              最高心动值对象
-              {topRecipient ? `（送给 ${resolveDisplayName(topRecipient.toMember ?? { serverDisplayName: null, discordUserId: '未知' })}）` : ''}
+            <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.heart.page.0aa7344f22e7" />{topRecipient ? <SiteText copyKey="site.app.profile.heart.page.7b8d3f2d0495" values={{value1: String(resolveDisplayName(topRecipient.toMember ?? { serverDisplayName: null, discordUserId: '未知' }))}} /> : ''}
             </p>
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-gray-500">
@@ -186,8 +178,8 @@ export default async function HeartPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="rounded-3xl border border-black/10 bg-white p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">Top 心动来源</h2>
-              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">我是陪玩</span>
+              <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]"><SiteText copyKey="site.app.profile.heart.page.dc6227864707" /></h2>
+              <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.heart.page.5d35b0cfd54e" /></span>
             </div>
             {topSenders.length > 0 ? (
               <div className="space-y-3">
@@ -200,7 +192,7 @@ export default async function HeartPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-[#171717]">
-                          {item.fromMember ? resolveDisplayName(item.fromMember) : '未知用户'}
+                          {item.fromMember ? resolveDisplayName(item.fromMember) : <SiteText copyKey="site.app.profile.heart.page.410959e6417d" />}
                         </div>
                         <div className="text-sm font-semibold text-[#5c43a3]">{formatNumber(item.total)}</div>
                       </div>
@@ -224,14 +216,14 @@ export default async function HeartPage() {
             })}
           </div>
             ) : (
-              <p className="text-sm text-gray-400">还没有收到心动值，快去和大家互动吧。</p>
+              <p className="text-sm text-gray-400"><SiteText copyKey="site.app.profile.heart.page.89f2022a8cb1" /></p>
             )}
           </div>
 
           <div className="rounded-3xl border border-black/10 bg-white p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]">Top 心动陪玩</h2>
-              <span className="text-xs uppercase tracking-[0.4em] text-gray-400">我是老板</span>
+              <h2 className="text-xl font-semibold tracking-wide text-[#5c43a3]"><SiteText copyKey="site.app.profile.heart.page.078b9010c080" /></h2>
+              <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.heart.page.5168676de021" /></span>
             </div>
             {topRecipients.length > 0 ? (
               <div className="space-y-3">
@@ -244,7 +236,7 @@ export default async function HeartPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-[#171717]">
-                          {item.toMember ? resolveDisplayName(item.toMember) : '未知用户'}
+                          {item.toMember ? resolveDisplayName(item.toMember) : <SiteText copyKey="site.app.profile.heart.page.410959e6417d" />}
                         </div>
                         <div className="text-sm font-semibold text-[#171717]">{formatNumber(item.total)}</div>
                       </div>
@@ -268,7 +260,7 @@ export default async function HeartPage() {
             })}
               </div>
             ) : (
-              <p className="text-sm text-gray-400">你还没有送出心动值。</p>
+              <p className="text-sm text-gray-400"><SiteText copyKey="site.app.profile.heart.page.11c96693e82f" /></p>
             )}
           </div>
         </div>

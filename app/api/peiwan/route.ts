@@ -111,7 +111,7 @@ export async function GET(request: Request) {
     .filter((id) => Number.isInteger(id));
   const deletedSet = new Set(deletedPeiwanIds);
 
-  const where: Prisma.PEIWANWhereInput = {};
+  const where: Prisma.PEIWANWhereInput = { NOT: { discordUserId: { startsWith: 'detached:' } } };
 
   if (BLOCKED_DISCORD_IDS.length > 0) {
     where.discordUserId = { notIn: BLOCKED_DISCORD_IDS };

@@ -1,3 +1,7 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
+import { Prisma } from '@prisma/client';
+import { loadAccountMigrationBenefits, inheritedAutoCommissionExpiry } from '@/lib/account-migration-benefits';
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -13,11 +17,24 @@ import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { getDlmPortalSession } from '@/lib/dlm-portal-session';
 import { isDiscordSnowflake } from '@/lib/discord-id';
 import { formatAmountDown, formatAmountDown2 } from '@/lib/numberFormat';
-import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
+import { formatPeiwanGameProfile, getPeiwanGameLabel, getPeiwanTierLabel, sortPeiwanGameProfiles, type PeiwanGameProfileView } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { formatTransactionType } from '@/lib/transaction-display';
 import { VIP_LEVELS } from '@/lib/vip-levels';
+import { summarizeManualQuota, type ManualQuotaPeriod } from '@/lib/manual-quota-view';
+
+// Keep role-specific labels intact; only localize the known game/tier display names.
+function PeiwanGameProfileLabel({ profile }: { profile: PeiwanGameProfileView }) {
+  const label = formatPeiwanGameProfile(profile);
+  const game = getPeiwanGameLabel(profile.gameCode);
+  const tier = getPeiwanTierLabel(profile.tier);
+  if (label === game) return <SiteText namespace="site.constants.peiwan" value={game} />;
+  if (label === `${game} · ${tier}`) {
+    return <><SiteText namespace="site.constants.peiwan" value={game} /> · <SiteText namespace="site.constants.peiwan" value={tier} /></>;
+  }
+  return label;
+}
 
 const TRANSACTIONS_PER_PAGE = 10;
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -197,6 +214,8 @@ export default async function Profile(props: ProfilePageProps) {
 
   const navLinks = [
     { href: '/profile', label: '个人主页' },
+    { href: '/accounts/discord/change', label: '账号绑定与换号' },
+    { href: '/profile/account-migrations', label: '迁移历史与归档' },
     { href: '/profile/bag', label: '我的背包' },
     { href: '/profile/lottery-fusion', label: '奖品重铸' },
     { href: '/profile/heart', label: '心动值' },
@@ -289,6 +308,12 @@ export default async function Profile(props: ProfilePageProps) {
         where: { userId: discordUserId },
       })
     : Promise.resolve(null);
+  const quotaRestorationsPromise = discordUserId
+    ? prisma.manualQuotaRestoration.findMany({ where: { userId: discordUserId, expiresAt: { gt: now }, remainingExtra: { gt: 0 } } })
+    : Promise.resolve([]);
+  const ordinaryQuotaBatchesPromise = discordUserId
+    ? prisma.manualQuotaBatch.findMany({ where: { userId: discordUserId, expiresAt: { gt: now }, remainingExtra: { gt: 0 } } })
+    : Promise.resolve([]);
   const loyaltyPointPromise = prisma.loyaltyPoint.findFirst({
     where: { dlmId },
   });
@@ -357,6 +382,8 @@ export default async function Profile(props: ProfilePageProps) {
     autoCommissionBuff,
     flowBuff,
     spendBuff,
+    quotaRestorations,
+    ordinaryQuotaBatches,
     loyaltyPoint,
     peiwanReviews,
     authoredPeiwanReviews,
@@ -369,6 +396,8 @@ export default async function Profile(props: ProfilePageProps) {
     autoCommissionBuffPromise,
     flowBuffPromise,
     spendBuffPromise,
+    quotaRestorationsPromise,
+    ordinaryQuotaBatchesPromise,
     loyaltyPointPromise,
     peiwanReviewsPromise,
     authoredPeiwanReviewsPromise,
@@ -410,13 +439,16 @@ export default async function Profile(props: ProfilePageProps) {
     peiwanId: entry.blocked.peiwan?.PEIWANID ?? null,
     createdAtLabel: formatUtcDate(entry.createdAt),
   }));
-  const autoCommissionActiveUntil = autoCommissionBuff?.activeUntil ?? null;
+  const migrationBenefits = await loadAccountMigrationBenefits(prisma, { dlmId }, now);
+  const autoCommissionActiveUntil = inheritedAutoCommissionExpiry(autoCommissionBuff?.activeUntil ?? null, migrationBenefits, now);
+  // An inherited expiry does not extend the target's original qualification window.
+  const ownQualificationActive = !!autoCommissionBuff?.lastQualifiedAt && new Date(autoCommissionBuff.lastQualifiedAt).getTime() + AUTO_COMMISSION_WINDOW_DAYS * 86400000 > now.getTime();
   const autoCommissionActive =
     isPeiwanMember &&
     !!autoCommissionActiveUntil &&
     new Date(autoCommissionActiveUntil).getTime() > now.getTime();
   const { windowStart: autoCommissionWindowStart, windowEnd: autoCommissionWindowEnd } =
-    isPeiwanMember && autoCommissionActive
+    isPeiwanMember && ownQualificationActive
       ? getAutoCommissionRetentionWindow(autoCommissionBuff?.lastQualifiedAt, now)
       : getAutoCommissionWindow(now);
   const autoCommissionIncomeRows = isPeiwanMember
@@ -429,7 +461,7 @@ export default async function Profile(props: ProfilePageProps) {
           },
           typeOfTransaction: { in: [...AUTO_COMMISSION_INCOME_TYPES] },
         },
-        select: { typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
+        select: { transactionId: true, typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
       })
     : [];
   const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
@@ -505,6 +537,7 @@ export default async function Profile(props: ProfilePageProps) {
 
   const autoCommissionCurrentAmount = isPeiwanMember
     ? autoCommissionIncomeRows.reduce((sum, row) => {
+        if (migrationBenefits.excludedIncomeIds.has(row.transactionId)) return sum;
         const rowType = String((row as { typeOfTransaction?: unknown }).typeOfTransaction ?? '');
         const before = parseNumeric(row.balanceBefore) ?? 0;
         const after = parseNumeric(row.balanceAfter) ?? 0;
@@ -524,23 +557,25 @@ export default async function Profile(props: ProfilePageProps) {
   );
   const autoCommissionWindowLabel = `${formatUtcDate(autoCommissionWindowStart)} ~ ${formatUtcDate(autoCommissionWindowEnd)}`;
   const autoCommissionEligibleNow =
-    isPeiwanMember && !autoCommissionActive && autoCommissionCurrentAmount >= AUTO_COMMISSION_THRESHOLD;
+    isPeiwanMember && !ownQualificationActive && autoCommissionCurrentAmount >= AUTO_COMMISSION_THRESHOLD;
   const autoCommissionStatusMeta = autoCommissionEligibleNow
     ? { label: '已达标', badgeClass: 'bg-amber-50 text-amber-600' }
     : getBuffStatusMeta(autoCommissionActiveUntil);
-  const autoCommissionCardTitle = autoCommissionActive ? '点了么福星陪玩保级进度' : '点了么福星陪玩进度';
+  const autoCommissionCardTitle = ownQualificationActive ? '点了么福星陪玩保级进度' : '点了么福星陪玩进度';
   const autoCommissionDeadlineLabel = formatUtcDate(autoCommissionWindowEnd);
   const autoCommissionShortfall = Math.max(0, AUTO_COMMISSION_THRESHOLD - autoCommissionCurrentAmount);
-  const autoCommissionHint = autoCommissionActive
+  const autoCommissionHint = ownQualificationActive
     ? `在 ${autoCommissionDeadlineLabel} 前累计收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，当前还差 ${formatNumber(autoCommissionShortfall)} 完成保级`
     : autoCommissionEligibleNow
       ? `最近30天累计实际收入已达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，福星状态等待同步`
     : `最近30天累计实际收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)} 即可晋升点了么福星陪玩`;
-  const profileCommissionRate =
-    autoCommissionActive && autoCommissionBuff?.targetShare != null
-      ? autoCommissionBuff.targetShare
-      : member?.commissionRate ?? null;
+  const profileCommissionBase = peiwan?.baseCommissionRate ?? member?.baseCommissionRate ?? peiwan?.commissionRate ?? member?.commissionRate ?? 0.75;
+  const profileCommissionRate = autoCommissionActive
+    ? Prisma.Decimal.max(profileCommissionBase, autoCommissionBuff?.targetShare ?? 0.91)
+    : member?.commissionRate ?? null;
 
+  const flowQuota = summarizeManualQuota(flowBuff, quotaRestorations.filter((row) => row.kind === 'flow'), now, ordinaryQuotaBatches.filter(row => row.kind === 'flow'));
+  const spendQuota = summarizeManualQuota(spendBuff, quotaRestorations.filter((row) => row.kind === 'spend'), now, ordinaryQuotaBatches.filter(row => row.kind === 'spend'));
   const buffCards = [
     {
       key: 'commission',
@@ -550,24 +585,27 @@ export default async function Profile(props: ProfilePageProps) {
       value: commissionBuff?.boost ?? null,
       expiresAt: commissionBuff?.expiresAt ?? null,
       createdAt: commissionBuff?.createdAt ?? null,
+      periods: [] as ManualQuotaPeriod[],
     },
     {
       key: 'flow',
       title: '流水 Buff',
       subtitle: '额外流水额度',
-      valueLabel: '剩余额度',
-      value: flowBuff?.remainingExtra ?? null,
-      expiresAt: flowBuff?.expiresAt ?? null,
+      valueLabel: '有效总额度',
+      value: flowBuff || flowQuota.periods.length ? flowQuota.remaining : null,
+      expiresAt: flowQuota.nextExpiresAt ? new Date(flowQuota.nextExpiresAt) : flowBuff?.expiresAt ?? null,
       createdAt: flowBuff?.createdAt ?? null,
+      periods: flowQuota.periods,
     },
     {
       key: 'spend',
       title: '消费 Buff',
       subtitle: '消费额外额度',
-      valueLabel: '剩余额度',
-      value: spendBuff?.remainingExtra ?? null,
-      expiresAt: spendBuff?.expiresAt ?? null,
+      valueLabel: '有效总额度',
+      value: spendBuff || spendQuota.periods.length ? spendQuota.remaining : null,
+      expiresAt: spendQuota.nextExpiresAt ? new Date(spendQuota.nextExpiresAt) : spendBuff?.expiresAt ?? null,
       createdAt: spendBuff?.createdAt ?? null,
+      periods: spendQuota.periods,
     },
   ];
   const hasBuffData = buffCards.some(
@@ -590,20 +628,20 @@ export default async function Profile(props: ProfilePageProps) {
   const transactionHistory = (isPeiwanMember || isLaobanMember) ? (
     <div id="profile-tx" className={cardClass}>
       <div>
-        <h2 className="text-2xl font-semibold tracking-wide text-[#8a6000]">流水记录</h2>
-        <p className="text-sm text-gray-500">与账户关联的收支流水</p>
+        <h2 className="text-2xl font-semibold tracking-wide text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.7ca84917a2e1" /></h2>
+        <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.personalpage.c6cf7722be48" /></p>
       </div>
       {transactions.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-left text-gray-400 uppercase tracking-[0.4em] border-b border-black/5">
-                <th className="py-3 pr-4">时间</th>
-                <th className="py-3 pr-4">类型</th>
-                <th className="py-3 pr-4">变动前余额</th>
-                <th className="py-3 pr-4">金额变动</th>
-                <th className="py-3 pr-4">变动后余额</th>
-                <th className="py-3 pr-4">备注</th>
+                <th className="py-3 pr-4"><SiteText copyKey="site.app.profile.personalpage.89b4aa6364ce" /></th>
+                <th className="py-3 pr-4"><SiteText copyKey="site.app.profile.personalpage.e4e46c7235d1" /></th>
+                <th className="py-3 pr-4"><SiteText copyKey="site.app.profile.personalpage.90e514a4b554" /></th>
+                <th className="py-3 pr-4"><SiteText copyKey="site.app.profile.personalpage.10b10e5e7f6b" /></th>
+                <th className="py-3 pr-4"><SiteText copyKey="site.app.profile.personalpage.1646bf2ec192" /></th>
+                <th className="py-3 pr-4"><SiteText copyKey="site.app.profile.personalpage.e0361480e3a5" /></th>
               </tr>
             </thead>
             <tbody>
@@ -614,7 +652,7 @@ export default async function Profile(props: ProfilePageProps) {
                 return (
                   <tr key={tx.transactionId} className="border-b border-black/5 last:border-0">
                     <td className="py-4 pr-4 font-mono">{formatDate(tx.timeCreatedAt)}</td>
-                    <td className="py-4 pr-4">{formatTransactionType(tx.typeOfTransaction)}</td>
+                    <td className="py-4 pr-4">{tx.typeOfTransaction === 'Stripe充值' || tx.typeOfTransaction === '微信人工充值' ? <SiteText namespace="site.lib.transaction.display" value={formatTransactionType(tx.typeOfTransaction)} /> : formatTransactionType(tx.typeOfTransaction)}</td>
                     <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceBefore, ledgerDigits)}</td>
                     <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
                     <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceAfter, ledgerDigits)}</td>
@@ -627,9 +665,7 @@ export default async function Profile(props: ProfilePageProps) {
             </tbody>
           </table>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 text-sm text-gray-500">
-            <p>
-              第 {Math.min(currentPage, totalPages)} / {totalPages} 页 · 共 {totalTransactions} 条
-            </p>
+            <p><SiteText copyKey="site.app.profile.personalpage.f495347d6acf" />{Math.min(currentPage, totalPages)} / {totalPages}<SiteText copyKey="site.app.profile.personalpage.04a3cbd65606" />{totalTransactions}<SiteText copyKey="site.app.profile.personalpage.bce2ef61514a" /></p>
             <div className="flex gap-2">
               <Link
                 href={`/profile?page=${prevPage}#profile-tx`}
@@ -638,9 +674,7 @@ export default async function Profile(props: ProfilePageProps) {
                   hasPrevPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
                 }`}
                 aria-disabled={!hasPrevPage}
-              >
-                上一页
-              </Link>
+              ><SiteText copyKey="site.app.profile.personalpage.b41561d80765" /></Link>
               <Link
                 href={`/profile?page=${nextPage}#profile-tx`}
                 prefetch={false}
@@ -648,14 +682,12 @@ export default async function Profile(props: ProfilePageProps) {
                   hasNextPage ? 'hover:bg-black/5 border-black/20' : 'border-black/5 text-gray-300 pointer-events-none'
                 }`}
                 aria-disabled={!hasNextPage}
-              >
-                下一页
-              </Link>
+              ><SiteText copyKey="site.app.profile.personalpage.67a246a344ae" /></Link>
             </div>
           </div>
         </div>
       ) : (
-        <p className="text-gray-500">暂时没有流水记录。</p>
+        <p className="text-gray-500"><SiteText copyKey="site.app.profile.personalpage.96aafce775c3" /></p>
       )}
     </div>
   ) : null;
@@ -664,16 +696,14 @@ export default async function Profile(props: ProfilePageProps) {
       key={item.label}
       className="rounded-2xl border border-dashed border-black/10 bg-white/70 p-5 text-center space-y-2"
     >
-      <p className="text-xs tracking-[0.4em] text-gray-500">{item.label}</p>
+      <p className="text-xs tracking-[0.4em] text-gray-500"><SiteText namespace="site.app.profile.personalpage" value={item.label} /></p>
       <p className="text-2xl font-mono">{formatNumber(item.value)}</p>
       {item.label === '可提现余额' && (
         <div className="pt-2">
           <Link
             href="/profile/withdraw"
             className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition inline-flex items-center justify-center hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
-          >
-            去提现
-          </Link>
+          ><SiteText copyKey="site.app.profile.personalpage.3e7beeb7a940" /></Link>
         </div>
       )}
       {item.label === '账户余额' && (
@@ -681,9 +711,7 @@ export default async function Profile(props: ProfilePageProps) {
           <Link
             href="/recharge"
             className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
-          >
-            充值
-          </Link>
+          ><SiteText copyKey="site.app.profile.personalpage.fa03c4625313" /></Link>
         </div>
       )}
       {item.label === '点了么积分' && (
@@ -691,9 +719,7 @@ export default async function Profile(props: ProfilePageProps) {
           <Link
             href="/profile/point-shop"
             className="px-4 py-2 rounded-full border border-black/10 text-xs uppercase tracking-[0.4em] transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
-          >
-            使用积分
-          </Link>
+          ><SiteText copyKey="site.app.profile.personalpage.6d423aa04d58" /></Link>
         </div>
       )}
     </div>
@@ -706,7 +732,7 @@ export default async function Profile(props: ProfilePageProps) {
         <div className="space-y-8">
           <div id="profile-overview" className={`${cardClass} overflow-hidden`}>
           <div className="space-y-4">
-            <p className="text-xs uppercase tracking-[0.6em] text-gray-400">My Profile</p>
+            <p className="text-xs uppercase tracking-[0.6em] text-gray-400"><SiteText copyKey="site.app.profile.personalpage.9ba8d391c59a" /></p>
             <div className="flex items-center gap-4">
               <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-[#d4b24c]/40 bg-gradient-to-br from-[#fff3cf] to-[#ead08a] text-3xl font-semibold text-[#8a6000] flex items-center justify-center">
                 {avatarUrl ? (
@@ -735,22 +761,18 @@ export default async function Profile(props: ProfilePageProps) {
               <Link
                 href="/"
                 className="rounded-full border-2 border-black/15 px-5 py-2 text-xs font-semibold tracking-[0.22em] text-gray-600 transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
-              >
-                返回主页
-              </Link>
+              ><SiteText copyKey="site.app.profile.personalpage.20b6e2fcece9" /></Link>
               <Link
                 href="/recharge"
                 className="rounded-full border-2 border-black/15 px-5 py-2 text-xs font-semibold tracking-[0.22em] text-gray-600 transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
-              >
-                充值中心
-              </Link>
+              ><SiteText copyKey="site.app.profile.personalpage.0a2dde4c65fb" /></Link>
               {quickEntryLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   className="rounded-full border-2 border-black/15 px-5 py-2 text-xs font-semibold tracking-[0.2em] text-gray-600 transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
                 >
-                  {link.label}
+                  <SiteText namespace="site.app.profile.personalpage" value={link.label} />
                 </Link>
               ))}
             </div>
@@ -780,7 +802,7 @@ export default async function Profile(props: ProfilePageProps) {
                         : 'border-black/10 text-gray-600 hover:border-[#f8c84a] hover:text-[#c18400]'
                     }`}
                   >
-                    {tab.label}
+                    <SiteText namespace="site.app.profile.personalpage" value={tab.label} />
                   </Link>
                   );
                 })}
@@ -791,18 +813,17 @@ export default async function Profile(props: ProfilePageProps) {
                 {activeTab === 'profile-level' && (isLaobanMember || isPeiwanMember) && (
                   <div id="profile-level" className="space-y-5">
                     <div>
-                      <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">升级进度</h2>
-                      <p className="text-sm text-gray-500">累计消费越多，等级越高</p>
+                      <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.b6a30c352fcf" /></h2>
+                      <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.personalpage.f787b08b6067" /></p>
                     </div>
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between text-sm text-gray-600 gap-2">
-                        <span>当前等级：{currentBossLevelName}</span>
+                        <span><SiteText copyKey="site.app.profile.personalpage.cc13fb8a957b" />{currentBossLevelName}</span>
                         {nextBossLevel ? (
-                          <span>
-                            距离 VIP {nextBossLevel.vipLevel} · {nextBossLevel.name} 还差 {formatNumber(amountToNextBossLevel)}
+                          <span><SiteText copyKey="site.app.profile.personalpage.667c954567ae" />{nextBossLevel.vipLevel} · {nextBossLevel.name}<SiteText copyKey="site.app.profile.personalpage.9e2f8bf3a735" />{formatNumber(amountToNextBossLevel)}
                           </span>
                         ) : (
-                          <span>已达到最高等级</span>
+                          <span><SiteText copyKey="site.app.profile.personalpage.067503a5bf3e" /></span>
                         )}
                       </div>
                       <div className="h-3 w-full rounded-full bg-gray-200 overflow-hidden">
@@ -813,9 +834,8 @@ export default async function Profile(props: ProfilePageProps) {
                         />
                       </div>
                       <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 gap-2">
-                        <span>累计消费：{formatNumber(totalSpentValue)}</span>
-                        <span>
-                          下一门槛：{formatNumber(nextBossLevel?.threshold ?? currentBossLevel?.threshold ?? totalSpentValue)}
+                        <span><SiteText copyKey="site.app.profile.personalpage.97d9a08ccd40" />{formatNumber(totalSpentValue)}</span>
+                        <span><SiteText copyKey="site.app.profile.personalpage.1c5a3e03faf1" />{formatNumber(nextBossLevel?.threshold ?? currentBossLevel?.threshold ?? totalSpentValue)}
                         </span>
                       </div>
                     </div>
@@ -828,8 +848,7 @@ export default async function Profile(props: ProfilePageProps) {
                             className={`px-3 py-1 rounded-full border ${
                               achieved ? 'border-2 border-[#f5c04d] text-[#d69b00]' : 'border-black/10 text-gray-400'
                             }`}
-                          >
-                            VIP {role.vipLevel} · {role.name} · {formatNumber(role.threshold)}
+                          ><SiteText copyKey="site.app.profile.personalpage.7b703872538d" />{role.vipLevel} · {role.name} · {formatNumber(role.threshold)}
                           </span>
                         );
                       })}
@@ -839,9 +858,9 @@ export default async function Profile(props: ProfilePageProps) {
                         <div className="space-y-1">
                           <p className="text-xs uppercase tracking-[0.4em] text-[#b07d00]">{autoCommissionCardTitle}</p>
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-lg font-semibold text-[#8a6000]">30天累计实际收入</h3>
+                            <h3 className="text-lg font-semibold text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.25083e17b076" /></h3>
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${autoCommissionStatusMeta.badgeClass}`}>
-                              {autoCommissionStatusMeta.label}
+                              <SiteText namespace="site.app.profile.personalpage" value={autoCommissionStatusMeta.label} />
                             </span>
                           </div>
                         </div>
@@ -854,10 +873,9 @@ export default async function Profile(props: ProfilePageProps) {
                         </div>
                         <div className="space-y-1 text-sm text-[#7a5b12]">
                           <p>{autoCommissionHint}</p>
-                          <p>
-                            当前累计：{formatNumber(autoCommissionCurrentAmount)} / {formatNumber(AUTO_COMMISSION_THRESHOLD)}
+                          <p><SiteText copyKey="site.app.profile.personalpage.0f1a2515abc3" />{formatNumber(autoCommissionCurrentAmount)} / {formatNumber(AUTO_COMMISSION_THRESHOLD)}
                           </p>
-                          <p>统计时间：{autoCommissionWindowLabel}</p>
+                          <p><SiteText copyKey="site.app.profile.personalpage.f0da1c7b4ef1" />{autoCommissionWindowLabel}</p>
                         </div>
                       </div>
                     )}
@@ -868,16 +886,14 @@ export default async function Profile(props: ProfilePageProps) {
                   <div id="profile-heart" className="space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">心动值</h2>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.06bbcfc46c2a" /></h2>
                       </div>
                       <div className="flex items-center gap-3">
                         <Link
                           href="/profile/heart"
                           className="px-4 py-2 rounded-full border border-[#d4b24c]/40 text-xs uppercase tracking-[0.4em] text-[#8a6000] hover:bg-[#f8c84a]/12 transition"
-                        >
-                          查看心动值
-                        </Link>
-                        <span className="text-xs uppercase tracking-[0.4em] text-gray-400">点击进入页面</span>
+                        ><SiteText copyKey="site.app.profile.personalpage.b608cf1b2121" /></Link>
+                        <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.personalpage.343ea874e81a" /></span>
                       </div>
                     </div>
                   </div>
@@ -887,43 +903,56 @@ export default async function Profile(props: ProfilePageProps) {
                   <div id="profile-buff" className="space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">Buff 状态</h2>
-                        <p className="text-sm text-gray-500">查看额度与到期时间</p>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.9af2298dbec5" /></h2>
+                        <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.personalpage.78590270ab59" /></p>
                       </div>
-                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">实时同步</span>
+                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.personalpage.b903e2ade79b" /></span>
                     </div>
                     {hasBuffData ? (
                       <div className="space-y-4">
                         {buffCards.map((buff) => {
-                          const statusMeta = getBuffStatusMeta(buff.expiresAt);
-                          const valueDisplay = formatBuffValue(buff.value);
+                          const statusMeta = buff.key === 'commission' ? getBuffStatusMeta(buff.expiresAt)
+                            : buff.periods.length ? { label: '可用', badgeClass: 'bg-emerald-50 text-emerald-600' }
+                            : { label: '暂无有效额度', badgeClass: 'bg-gray-100 text-gray-500' };
+                          const valueDisplay = buff.key === 'commission' ? formatBuffValue(buff.value) : String(buff.value ?? '0');
                           return (
                             <div
                               key={buff.key}
                               className="rounded-2xl border border-[#d4b24c]/25 bg-gradient-to-br from-[#fff9e8] to-[#fff1c6] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
                             >
                               <div className="space-y-1">
-                                <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.subtitle}</p>
+                                <p className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText namespace="site.app.profile.personalpage" value={buff.subtitle} /></p>
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <h3 className="text-lg font-semibold text-[#171717]">{buff.title}</h3>
+                                  <h3 className="text-lg font-semibold text-[#171717]"><SiteText namespace="site.app.profile.personalpage" value={buff.title} /></h3>
                                   <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusMeta.badgeClass}`}>
-                                    {statusMeta.label}
+                                    <SiteText namespace="site.app.profile.personalpage" value={statusMeta.label} />
                                   </span>
                                 </div>
                               </div>
                               <div className="space-y-1 text-sm text-gray-600">
                                 <p className="flex flex-wrap items-center gap-2">
-                                  <span className="text-gray-500">{buff.valueLabel}</span>
+                                  <span className="text-gray-500"><SiteText namespace="site.app.profile.personalpage" value={buff.valueLabel} /></span>
                                   <span className="text-2xl font-semibold text-[#8a6000] leading-none">{valueDisplay}</span>
                                 </p>
-                                <p>到期：{formatDate(buff.expiresAt)}</p>
+                                {buff.key === 'commission' ? <p><SiteText copyKey="site.app.profile.personalpage.3d7c3fd5d46e" />{formatDate(buff.expiresAt)}</p> : buff.periods.length ? (
+                                  <details className="pt-1">
+                                    <summary className="cursor-pointer text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.54bc5b3c8e00" /></summary>
+                                    <ul className="mt-2 space-y-1">
+                                      {buff.periods.map((period, index) => (
+                                        <li key={`${period.expiresAt}:${index}`}>
+                                          {period.restored ? <SiteText copyKey="site.app.profile.personalpage.5973e83a84e4" /> : <SiteText copyKey="site.app.profile.personalpage.d083aba29cec" />} {period.amount}<SiteText copyKey="site.app.profile.personalpage.c09cac686059" />{new Date(period.expiresAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE, timeZoneName: 'short' })}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </details>
+                                ) : <p><SiteText copyKey="site.app.profile.personalpage.af526b515416" /></p>}
                               </div>
                             </div>
                           );
                         })}
                       </div>
                     ) : (
-                      <p className="text-gray-400 text-sm">暂无 Buff 信息。</p>
+                      <p className="text-gray-400 text-sm"><SiteText copyKey="site.app.profile.personalpage.8b72cdeed06b" /></p>
                     )}
                   </div>
                 )}
@@ -932,10 +961,10 @@ export default async function Profile(props: ProfilePageProps) {
                   <div id="profile-personalisation" className="space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">个性化</h2>
-                        <p className="text-sm text-gray-500">个性化展示内容</p>
+                        <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.cd4994e50397" /></h2>
+                        <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.personalpage.41de4204b04a" /></p>
                       </div>
-                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PROFILE</span>
+                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.personalpage.79799fc6ec78" /></span>
                     </div>
                     <div className="grid gap-4 xl:grid-cols-2">
                       <VipRoleSyncPreferenceToggle enabled={vipRoleSyncEnabled} />
@@ -964,16 +993,16 @@ export default async function Profile(props: ProfilePageProps) {
                 {activeTab === 'profile-info' && (
                   <div id="profile-info" className="space-y-6">
                     <div className="flex justify-between items-center">
-                      <h2 className="text-xl font-semibold tracking-wide">个人信息</h2>
+                      <h2 className="text-xl font-semibold tracking-wide"><SiteText copyKey="site.app.profile.personalpage.c241ef1b935c" /></h2>
                     </div>
                     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
                       <div>
-                        <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">陪玩等级</dt>
+                        <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1"><SiteText copyKey="site.app.profile.personalpage.ff65e0488282" /></dt>
                         <dd className="text-lg font-medium">{level}</dd>
                       </div>
                       {!isLaobanMember && (
                         <div>
-                          <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1">抽成比例</dt>
+                          <dt className="text-gray-400 uppercase tracking-[0.4em] mb-1"><SiteText copyKey="site.app.profile.personalpage.1d9a8790ecf5" /></dt>
                         <dd className="text-lg font-medium">{formatCommissionRateDisplay(profileCommissionRate)}</dd>
                         </div>
                       )}
@@ -981,8 +1010,8 @@ export default async function Profile(props: ProfilePageProps) {
                     {isPeiwanMember && peiwan && (
                       <div className="border-t border-dashed border-black/10 pt-5 space-y-3">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-sm uppercase tracking-[0.4em] text-gray-400">游戏档位</h3>
-                          <span className="text-xs uppercase tracking-[0.4em] text-gray-400">PEIWAN</span>
+                          <h3 className="text-sm uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.personalpage.62c9aa371d93" /></h3>
+                          <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.personalpage.11ee30062d3d" /></span>
                         </div>
                         <div className="flex flex-wrap gap-3">
                           {sortPeiwanGameProfiles(peiwan.gameProfiles ?? []).length > 0 ? (
@@ -991,13 +1020,11 @@ export default async function Profile(props: ProfilePageProps) {
                                 key={`${profile.gameCode}-${profile.tier}-${profile.sourceRoleId ?? 'tagless'}`}
                                 className="px-4 py-1 rounded-full border border-[#b07d00] text-[#8a6000] text-sm tracking-wide"
                               >
-                                {formatPeiwanGameProfile(profile)}
+                                <PeiwanGameProfileLabel profile={profile} />
                               </span>
                             ))
                           ) : (
-                            <span className="px-4 py-1 rounded-full border border-black/5 text-sm tracking-wide text-gray-300">
-                              暂无游戏档位
-                            </span>
+                            <span className="px-4 py-1 rounded-full border border-black/5 text-sm tracking-wide text-gray-300"><SiteText copyKey="site.app.profile.personalpage.c3dacb1c2a59" /></span>
                           )}
                         </div>
                       </div>
@@ -1011,10 +1038,10 @@ export default async function Profile(props: ProfilePageProps) {
                       <div className="space-y-4 rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_10px_30px_rgba(17,24,39,0.04)]">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
-                            <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]">收到的评语</h2>
-                            <p className="text-sm text-gray-500">选择是否展示到你的名片中</p>
+                            <h2 className="text-xl font-semibold tracking-wide text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.51abd6d878b8" /></h2>
+                            <p className="text-sm text-gray-500"><SiteText copyKey="site.app.profile.personalpage.aaf9c9ab96b9" /></p>
                           </div>
-                          <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {peiwanReviews.length} 条</span>
+                          <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.personalpage.497064be1f41" />{peiwanReviews.length}<SiteText copyKey="site.app.profile.personalpage.bce2ef61514a" /></span>
                         </div>
                         <PeiwanReviewManager
                           reviews={peiwanReviews.map((review) => ({
@@ -1035,8 +1062,8 @@ export default async function Profile(props: ProfilePageProps) {
                 {activeTab === 'profile-coupon' && (
                   <div id="profile-coupon" className="space-y-6">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-semibold tracking-wide">我的优惠券</h2>
-                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400">共 {coupons.length} 张</span>
+                      <h2 className="text-xl font-semibold tracking-wide"><SiteText copyKey="site.app.profile.personalpage.e4501732e2af" /></h2>
+                      <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.app.profile.personalpage.497064be1f41" />{coupons.length}<SiteText copyKey="site.app.profile.personalpage.9273cc90ea18" /></span>
                     </div>
                     {coupons.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1054,18 +1081,18 @@ export default async function Profile(props: ProfilePageProps) {
                               }`}
                             >
                               <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em]">
-                                <span className={isUsed ? 'text-gray-500' : 'text-[#8a6000]'}>{statusLabel}</span>
+                                <span className={isUsed ? 'text-gray-500' : 'text-[#8a6000]'}><SiteText namespace="site.app.profile.personalpage" value={statusLabel} /></span>
                               </div>
-                              <p className="text-3xl font-semibold text-[#171717]">{typeLabel}</p>
+                              <p className="text-3xl font-semibold text-[#171717]"><SiteText namespace="site.app.profile.personalpage" value={typeLabel} /></p>
                               <div className="text-xs text-gray-500 space-y-1">
-                                <p>有效期至 {formatDate(coupon.expiresAt)}</p>
+                                <p><SiteText copyKey="site.app.profile.personalpage.9dd0d5dcd086" />{formatDate(coupon.expiresAt)}</p>
                               </div>
                             </div>
                           );
                         })}
                       </div>
                     ) : (
-                      <p className="text-gray-400 text-sm">暂无优惠券。</p>
+                      <p className="text-gray-400 text-sm"><SiteText copyKey="site.app.profile.personalpage.154b6700190e" /></p>
                     )}
                   </div>
                 )}

@@ -192,6 +192,50 @@ export default async function AdminHomePage() {
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
+              <p className="text-sm text-white/70">文案管理</p>
+              <p className="text-xs text-white/50">搜索网站与 Discord 提示、预览文案并保存发布</p>
+            </div>
+            <Link href="/admin/copy" className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25">前往管理</Link>
+          </div>
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-white/70">Bot 频道与派单文案</p>
+              <p className="text-xs text-white/50">预览派单文案、发布配置并查看加载状态</p>
+            </div>
+            <Link
+              href="/admin/bot"
+              className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
+            >
+              前往管理
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-white/70">试音结果核实</p>
+              <p className="text-xs text-white/50">按邀请编号只读核对结算与撤销凭证</p>
+            </div>
+            <Link href="/admin/auditions" className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25">前往核实</Link>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-white/70">赠礼请求核实</p>
+              <p className="text-xs text-white/50">按原请求编号核对结果，明确终止尚未完成的请求</p>
+            </div>
+            <Link href="/admin/gift-requests" className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25">前往核实</Link>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
               <p className="text-sm text-white/70">查询流水</p>
               <p className="text-xs text-white/50">默认展示全部流水，可选条件筛选</p>
             </div>
@@ -282,6 +326,7 @@ export default async function AdminHomePage() {
             </Link>
           </div>
         </div>
+
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -377,7 +422,7 @@ export default async function AdminHomePage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm text-white/70">可撤回订单</p>
-              <p className="text-xs text-white/50">查看已结单记录（仅查看，不提供网页撤回）</p>
+              <p className="text-xs text-white/50">查看已结单记录；旧单经人工核实后可进入独立调整</p>
             </div>
             <Link
               href="/admin/refundable-orders"
@@ -385,6 +430,7 @@ export default async function AdminHomePage() {
             >
               前往查看
             </Link>
+            <Link href="/admin/legacy-adjustments" className="text-sm text-cyan-200 hover:underline">旧交易人工退款／调整</Link>
           </div>
         </div>
 

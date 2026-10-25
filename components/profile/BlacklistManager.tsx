@@ -1,4 +1,6 @@
 'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import { useState, useTransition } from 'react';
 import { NoticeBanner } from './NoticeBanner';
@@ -28,6 +30,7 @@ type Notice = {
 };
 
 export function BlacklistManager({ initialEntries }: Props) {
+  const siteCopy = useSiteCopy();
   const [entries, setEntries] = useState(initialEntries);
   const [keyword, setKeyword] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -40,7 +43,7 @@ export function BlacklistManager({ initialEntries }: Props) {
   const handleSearch = async () => {
     const trimmed = keyword.trim();
     if (!trimmed) {
-      setNotice({ level: 'info', text: '请输入 Discord ID、昵称或陪玩 ID 进行搜索。' });
+      setNotice({ level: 'info', text: siteCopy("site.components.profile.blacklistmanager.2647e3137262") });
       setResults([]);
       return;
     }
@@ -51,17 +54,17 @@ export function BlacklistManager({ initialEntries }: Props) {
       const res = await fetch(`/api/profile/member-search?keyword=${encodeURIComponent(trimmed)}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data?.error) {
-        throw new Error(typeof data?.error === 'string' ? data.error : '搜索失败，请稍后重试');
+        throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.blacklistmanager.80f9c9cd1c92"));
       }
       const nextResults = Array.isArray(data?.data) ? (data.data as SearchResult[]) : [];
       setResults(nextResults);
       if (nextResults.length === 0) {
-        setNotice({ level: 'info', text: '没有找到匹配的老板或陪玩。' });
+        setNotice({ level: 'info', text: siteCopy("site.components.profile.blacklistmanager.e33c6cbee834") });
       }
     } catch (error) {
       setNotice({
         level: 'error',
-        text: error instanceof Error ? error.message : '搜索失败，请稍后重试',
+        text: error instanceof Error ? error.message : siteCopy("site.components.profile.blacklistmanager.80f9c9cd1c92"),
       });
     } finally {
       setIsSearching(false);
@@ -79,15 +82,15 @@ export function BlacklistManager({ initialEntries }: Props) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data?.error) {
-          throw new Error(typeof data?.error === 'string' ? data.error : '加入黑名单失败');
+          throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.blacklistmanager.398cc7f9fce5"));
         }
         const entry = data?.entry as BlacklistEntry;
         setEntries((prev) => [entry, ...prev.filter((item) => item.discordUserId !== entry.discordUserId)]);
-        setNotice({ level: 'success', text: `已将 ${target.displayName} 加入黑名单。` });
+        setNotice({ level: 'success', text: siteCopy("site.components.profile.blacklistmanager.53658630ac05", {value1: String(target.displayName)}) });
       } catch (error) {
         setNotice({
           level: 'error',
-          text: error instanceof Error ? error.message : '加入黑名单失败',
+          text: error instanceof Error ? error.message : siteCopy("site.components.profile.blacklistmanager.398cc7f9fce5"),
         });
       }
     });
@@ -104,14 +107,14 @@ export function BlacklistManager({ initialEntries }: Props) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data?.error) {
-          throw new Error(typeof data?.error === 'string' ? data.error : '移出黑名单失败');
+          throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.blacklistmanager.22ee2061c5db"));
         }
         setEntries((prev) => prev.filter((item) => item.discordUserId !== target.discordUserId));
-        setNotice({ level: 'success', text: `已将 ${target.displayName} 移出黑名单。` });
+        setNotice({ level: 'success', text: siteCopy("site.components.profile.blacklistmanager.70e2391c6ca9", {value1: String(target.displayName)}) });
       } catch (error) {
         setNotice({
           level: 'error',
-          text: error instanceof Error ? error.message : '移出黑名单失败',
+          text: error instanceof Error ? error.message : siteCopy("site.components.profile.blacklistmanager.22ee2061c5db"),
         });
       }
     });
@@ -121,18 +124,16 @@ export function BlacklistManager({ initialEntries }: Props) {
     <div className="space-y-4 rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_10px_30px_rgba(17,24,39,0.04)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-xl font-semibold tracking-wide text-[#8a6000]">黑名单</h3>
-          <p className="text-sm text-gray-500">
-            只要任意一方将对方加入黑名单，双方后续派单、抢单、名片发送与点单邀请都会被拦截。
-          </p>
+          <h3 className="text-xl font-semibold tracking-wide text-[#8a6000]"><SiteText copyKey="site.components.profile.blacklistmanager.2faec64b3c56" /></h3>
+          <p className="text-sm text-gray-500"><SiteText copyKey="site.components.profile.blacklistmanager.2fe5a288fafc" /></p>
         </div>
-        <span className="text-xs uppercase tracking-[0.4em] text-gray-400">BLACKLIST</span>
+        <span className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText copyKey="site.components.profile.blacklistmanager.a15a7a8f2c3b" /></span>
       </div>
 
       {notice ? (
         <NoticeBanner
           level={notice.level}
-          message={notice.text}
+          message={siteCopy.text(notice.text, "site.components.profile.blacklistmanager")}
           onDismiss={() => setNotice(null)}
         />
       ) : null}
@@ -143,7 +144,7 @@ export function BlacklistManager({ initialEntries }: Props) {
             type="text"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="输入 Discord ID、昵称或陪玩 ID"
+            placeholder={siteCopy("site.components.profile.blacklistmanager.30b51988117a")}
             className="flex-1 rounded-full border border-black/10 bg-white px-4 py-3 text-sm text-[#171717] outline-none transition focus:border-[#f0c25b] focus:ring-2 focus:ring-[#f0c25b]/25"
           />
           <button
@@ -152,7 +153,7 @@ export function BlacklistManager({ initialEntries }: Props) {
             disabled={isSearching}
             className="rounded-full border border-[#e7c56c] bg-[linear-gradient(180deg,_#fff4cc,_#f8df97)] px-5 py-3 text-sm font-semibold text-[#8a6000] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSearching ? '搜索中…' : '搜索用户'}
+            {isSearching ? <SiteText copyKey="site.components.profile.blacklistmanager.8a88cdc40e68" /> : <SiteText copyKey="site.components.profile.blacklistmanager.d9574e760f94" />}
           </button>
         </div>
 
@@ -171,7 +172,7 @@ export function BlacklistManager({ initialEntries }: Props) {
                       <p className="mt-1 break-all text-xs text-gray-500">{result.discordUserId}</p>
                       <p className="mt-2 text-xs text-gray-500">
                         {result.statusLabel}
-                        {result.peiwanId ? ` · 陪玩ID ${result.peiwanId}` : ''}
+                        {result.peiwanId ? <SiteText copyKey="site.components.profile.blacklistmanager.411646cefff2" values={{value1: String(result.peiwanId)}} /> : ''}
                       </p>
                     </div>
                     <button
@@ -180,7 +181,7 @@ export function BlacklistManager({ initialEntries }: Props) {
                       disabled={alreadyBlocked || isPending}
                       className="shrink-0 rounded-full border border-[#f0c25b]/60 px-4 py-2 text-xs font-semibold text-[#8a6000] transition hover:bg-[#fff6da] disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {alreadyBlocked ? '已拉黑' : '加入黑名单'}
+                      {alreadyBlocked ? <SiteText copyKey="site.components.profile.blacklistmanager.63054d8dc0aa" /> : <SiteText copyKey="site.components.profile.blacklistmanager.093505f06a6e" />}
                     </button>
                   </div>
                 </div>
@@ -192,8 +193,8 @@ export function BlacklistManager({ initialEntries }: Props) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-[#171717]">当前黑名单</p>
-          <span className="text-xs text-gray-400">共 {entries.length} 人</span>
+          <p className="text-sm font-semibold text-[#171717]"><SiteText copyKey="site.components.profile.blacklistmanager.16b2fb2bf390" /></p>
+          <span className="text-xs text-gray-400"><SiteText copyKey="site.components.profile.blacklistmanager.497064be1f41" />{entries.length}<SiteText copyKey="site.components.profile.blacklistmanager.4912771a4216" /></span>
         </div>
         {entries.length > 0 ? (
           <div className="grid gap-3 md:grid-cols-2">
@@ -208,26 +209,22 @@ export function BlacklistManager({ initialEntries }: Props) {
                     <p className="mt-1 break-all text-xs text-gray-500">{entry.discordUserId}</p>
                     <p className="mt-2 text-xs text-gray-500">
                       {entry.statusLabel}
-                      {entry.peiwanId ? ` · 陪玩ID ${entry.peiwanId}` : ''}
+                      {entry.peiwanId ? <SiteText copyKey="site.components.profile.blacklistmanager.411646cefff2" values={{value1: String(entry.peiwanId)}} /> : ''}
                     </p>
-                    <p className="mt-1 text-xs text-gray-400">加入时间：{entry.createdAtLabel}</p>
+                    <p className="mt-1 text-xs text-gray-400"><SiteText copyKey="site.components.profile.blacklistmanager.0fc81626c9ae" />{entry.createdAtLabel}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleRemove(entry)}
                     disabled={isPending}
                     className="shrink-0 rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-gray-600 transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    移出黑名单
-                  </button>
+                  ><SiteText copyKey="site.components.profile.blacklistmanager.04eda59ff628" /></button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-black/10 bg-[#faf7f2] px-4 py-5 text-sm text-gray-500">
-            暂无黑名单记录。
-          </div>
+          <div className="rounded-2xl border border-dashed border-black/10 bg-[#faf7f2] px-4 py-5 text-sm text-gray-500"><SiteText copyKey="site.components.profile.blacklistmanager.8164051805f5" /></div>
         )}
       </div>
     </div>

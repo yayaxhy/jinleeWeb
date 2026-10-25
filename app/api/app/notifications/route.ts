@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { listGuildNotifications, markGuildNotificationsRead } from '@/lib/notification-center';
+import { describeDelivery } from '@/lib/notification-delivery';
 
 export async function GET(request: Request) {
   const currentUser = await getCurrentDlmUser(request);
@@ -20,8 +21,7 @@ export async function GET(request: Request) {
       createdAt: item.createdAt.toISOString(),
       deliveries: item.deliveries.map((delivery) => ({
         channel: delivery.channel,
-        status: delivery.status,
-        error: delivery.error,
+        ...describeDelivery({ ...delivery, notificationCreatedAt: item.createdAt }),
       })),
     })),
   });

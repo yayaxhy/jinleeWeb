@@ -1,4 +1,6 @@
 "use client";
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -29,19 +31,20 @@ const buildFallbackItem = (id: number): PeiwanItem => ({
   gameLabels: [],
 });
 
-const formatPrice = (value: PeiwanItem['price']) => {
-  if (value === null || value === undefined) return '价格待定';
+const formatPrice = (value: PeiwanItem['price'], fallback: string) => {
+  if (value === null || value === undefined) return fallback;
   const formatted = formatAmountDown2(value);
   if (formatted === '—') return String(value);
   return `${formatted} 币/H`;
 };
 
 const CardImage = ({ item, src }: { item: PeiwanItem; src: string }) => {
+  const siteCopy = useSiteCopy();
   return (
     <div className="group relative w-full aspect-[4/5] overflow-hidden bg-[#f6f6f6]">
       <Image
         src={src}
-        alt={item.serverDisplayName ?? `陪玩 #${item.id}`}
+        alt={item.serverDisplayName ?? siteCopy("site.components.home.peiwanrecommendations.1d61b82ec64b", {value1: String(item.id)})}
         fill
         sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
         className="h-full w-full object-contain transition duration-700 ease-out group-hover:scale-[1.02]"
@@ -51,6 +54,7 @@ const CardImage = ({ item, src }: { item: PeiwanItem; src: string }) => {
 };
 
 const RecommendationCard = ({ item, src }: { item: PeiwanItem; src: string }) => {
+  const siteCopy = useSiteCopy();
   const tags = item.gameLabels.slice(0, 2);
 
   return (
@@ -58,12 +62,12 @@ const RecommendationCard = ({ item, src }: { item: PeiwanItem; src: string }) =>
       <CardImage item={item} src={src} />
       <div className="space-y-1">
         <p className="text-[0.7rem] uppercase tracking-[0.28em] text-neutral-500">
-          {item.sex || '推荐'}
+          {item.sex || <SiteText copyKey="site.components.home.peiwanrecommendations.62b46f24ae40" />}
         </p>
         <p className="text-sm font-semibold text-neutral-900">
-          {item.serverDisplayName ?? `陪玩 #${item.id}`}
+          {item.serverDisplayName ?? <SiteText copyKey="site.components.home.peiwanrecommendations.1d61b82ec64b" values={{value1: String(item.id)}} />}
         </p>
-        <p className="text-xs text-neutral-500">{formatPrice(item.price)}</p>
+        <p className="text-xs text-neutral-500">{formatPrice(item.price, siteCopy("site.components.home.peiwanrecommendations.e376565f075f"))}</p>
         {tags.length > 0 && (
           <div className="flex justify-center gap-2 text-[0.68rem] text-neutral-500">
             {tags.map((tag) => (
@@ -77,6 +81,7 @@ const RecommendationCard = ({ item, src }: { item: PeiwanItem; src: string }) =>
 };
 
 export function PeiwanRecommendations() {
+  const siteCopy = useSiteCopy();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [available, setAvailable] = useState<{ item: PeiwanItem; src: string }[]>([]);
@@ -91,7 +96,7 @@ export function PeiwanRecommendations() {
 
       try {
         const imgRes = await fetch('/api/peiwanRecommend', { signal: controller.signal, cache: 'no-store' });
-        if (!imgRes.ok) throw new Error('图片列表加载失败');
+        if (!imgRes.ok) throw new Error(siteCopy("site.components.home.peiwanrecommendations.4c161f59c9c1"));
         const imgJson = (await imgRes.json()) as { data?: ImageEntry[] };
         const imgs = (imgJson.data || []).slice(0, MAX_DISPLAY);
         if (imgs.length === 0) {
@@ -104,7 +109,7 @@ export function PeiwanRecommendations() {
           cache: 'no-store',
         });
         if (!res.ok) {
-          throw new Error('加载失败');
+          throw new Error(siteCopy("site.components.home.peiwanrecommendations.f6b7a41e5600"));
         }
         const json = (await res.json()) as ApiResponse;
         const nextItems = json.data || [];
@@ -146,7 +151,7 @@ export function PeiwanRecommendations() {
         setAvailable(found.slice(0, MAX_DISPLAY));
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError('推荐数据加载失败，稍后再试。');
+        setError(siteCopy("site.components.home.peiwanrecommendations.296b5bc319c9"));
       } finally {
         setLoading(false);
       }
@@ -154,7 +159,7 @@ export function PeiwanRecommendations() {
 
     load();
     return () => controller.abort();
-  }, []);
+  }, [siteCopy]);
 
   useEffect(() => {
     setStart(0);
@@ -180,9 +185,7 @@ export function PeiwanRecommendations() {
   return (
     <section className="w-full h-full text-neutral-900 flex flex-col">
       <div className="w-full flex-1 flex flex-col justify-center gap-8">
-        <div className="text-center text-2xl sm:text-2xl font-semibold tracking-[0.22em] text-neutral-800">
-          陪玩推荐
-        </div>
+        <div className="text-center text-2xl sm:text-2xl font-semibold tracking-[0.22em] text-neutral-800"><SiteText copyKey="site.components.home.peiwanrecommendations.2af62bc22308" /></div>
 
         {loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0">
@@ -195,12 +198,12 @@ export function PeiwanRecommendations() {
           </div>
         )}
 
-        {!loading && error && <p className="text-sm text-rose-500 text-center">{error}</p>}
+        {!loading && error && <p className="text-sm text-rose-500 text-center"><SiteText namespace="site.components.home.peiwanrecommendations" value={error} /></p>}
 
         {!loading && !error && (
           <>
             {available.length === 0 ? (
-              <p className="text-sm text-neutral-700 text-center">暂无推荐，稍后再来看看～</p>
+              <p className="text-sm text-neutral-700 text-center"><SiteText copyKey="site.components.home.peiwanrecommendations.e9b384263250" /></p>
             ) : (
               <div className="relative w-full">
                 {available.length > 4 && (
@@ -209,7 +212,7 @@ export function PeiwanRecommendations() {
                       type="button"
                       onClick={handlePrev}
                       className="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900/80 text-white text-2xl shadow-lg hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-white/70"
-                      aria-label="上一组"
+                      aria-label={siteCopy("site.components.home.peiwanrecommendations.4a19fd384df3")}
                     >
                       ‹
                     </button>
@@ -217,7 +220,7 @@ export function PeiwanRecommendations() {
                       type="button"
                       onClick={handleNext}
                       className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900/80 text-white text-2xl shadow-lg hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-white/70"
-                      aria-label="下一组"
+                      aria-label={siteCopy("site.components.home.peiwanrecommendations.ac0218f209c0")}
                     >
                       ›
                     </button>

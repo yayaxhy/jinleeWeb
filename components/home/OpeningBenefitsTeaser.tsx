@@ -1,3 +1,6 @@
+
+'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -6,6 +9,7 @@ const crownCouponImage = '/brand/dlm-v1/prizes/17-day-crown-75-voucher.png';
 const characterArt = '/brand/dlm-v1/operations/18-thankBoss.gif';
 
 export function OpeningBenefitsTeaser() {
+  const siteCopy = useSiteCopy();
   return (
     <section className="relative mx-auto max-w-7xl px-6 pb-8 pt-2 md:pb-12">
       <div className="relative isolate overflow-hidden rounded-[2.5rem] border border-[#ffb8cc]/70 bg-[#fff6f1] px-6 py-8 text-[#563b4d] shadow-[0_25px_70px_rgba(255,128,159,0.2)] md:px-10 md:py-10">
@@ -16,7 +20,7 @@ export function OpeningBenefitsTeaser() {
         <div className="pointer-events-none absolute -bottom-6 left-[38%] hidden h-28 w-28 -rotate-6 overflow-hidden rounded-[1.6rem] bg-white shadow-[0_12px_14px_rgba(78,72,155,0.2)] md:block">
           <Image
             src={characterArt}
-            alt="抽奖角色插画"
+            alt={siteCopy("site.components.home.openingbenefitsteaser.a731b36ba6d9")}
             fill
             sizes="144px"
             unoptimized
@@ -25,34 +29,18 @@ export function OpeningBenefitsTeaser() {
         </div>
         <div className="relative grid items-center gap-8 md:grid-cols-[1fr_0.92fr]">
           <div className="max-w-xl">
-            <p className="inline-flex rounded-full bg-[#ffcfda] px-3 py-1 text-xs font-black tracking-[0.2em] text-[#9e3b5c]">
-              OPENING PARTY · 限定福利
-            </p>
-            <h2 className="mt-4 text-4xl font-black leading-[1.02] tracking-[-0.055em] text-[#5e3248] md:text-5xl">
-              开业福利，
-              <br />
-              今天也要被宠到。
-            </h2>
-            <p className="mt-4 max-w-lg text-sm leading-7 text-[#896577] md:text-base">
-              每天领券；一周内实际消费累计满 ¥1,000 可领取日冠 75 折券。活动期内任意两笔点单或打赏每笔超过
-              ¥100，还有额外惊喜。可领取资格和券的到期日，都能在福利页与背包里查看。
-            </p>
+            <p className="inline-flex rounded-full bg-[#ffcfda] px-3 py-1 text-xs font-black tracking-[0.2em] text-[#9e3b5c]"><SiteText copyKey="site.components.home.openingbenefitsteaser.c4a918382441" /></p>
+            <h2 className="mt-4 text-4xl font-black leading-[1.02] tracking-[-0.055em] text-[#5e3248] md:text-5xl"><SiteText copyKey="site.components.home.openingbenefitsteaser.618e96722ab5" /><br /><SiteText copyKey="site.components.home.openingbenefitsteaser.7dff645627da" /></h2>
+            <p className="mt-4 max-w-lg text-sm leading-7 text-[#896577] md:text-base"><SiteText copyKey="site.components.home.openingbenefitsteaser.1dd02c54a3ac" /></p>
             <div className="mt-6 flex flex-wrap gap-2 text-xs font-bold text-[#86445e]">
-              <span className="rounded-full bg-white px-3 py-2 shadow-sm">
-                每日特殊 9 折券
-              </span>
-              <span className="rounded-full bg-white px-3 py-2 shadow-sm">
-                一周内满 ¥1,000 领日冠 75 折
-              </span>
-              <span className="rounded-full bg-white px-3 py-2 shadow-sm">
-                两笔消费超 ¥100 加赠
-              </span>
+              <span className="rounded-full bg-white px-3 py-2 shadow-sm"><SiteText copyKey="site.components.home.openingbenefitsteaser.4e2ce784baf9" /></span>
+              <span className="rounded-full bg-white px-3 py-2 shadow-sm"><SiteText copyKey="site.components.home.openingbenefitsteaser.f5ef9f8ff130" /></span>
+              <span className="rounded-full bg-white px-3 py-2 shadow-sm"><SiteText copyKey="site.components.home.openingbenefitsteaser.930781c2d461" /></span>
             </div>
             <Link
               href="/opening-benefits"
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#e95d86] px-6 py-3 text-sm font-black text-white shadow-[0_10px_0_#bc4166,0_18px_26px_rgba(196,65,101,0.25)] transition hover:-translate-y-0.5 hover:bg-[#f06a91] active:translate-y-1 active:shadow-[0_5px_0_#bc4166]"
-            >
-              去领取我的福利 <span aria-hidden>→</span>
+            ><SiteText copyKey="site.components.home.openingbenefitsteaser.b8cf3a97df57" /><span aria-hidden>→</span>
             </Link>
           </div>
 
@@ -60,14 +48,14 @@ export function OpeningBenefitsTeaser() {
             <div className="absolute inset-x-8 bottom-3 top-3 rounded-[2rem] bg-[#ffe0a7]/70" />
             <Image
               src={couponImage}
-              alt="特殊九折券"
+              alt={siteCopy("site.components.home.openingbenefitsteaser.8fd8b9c4ee21")}
               width={650}
               height={433}
               className="absolute left-0 top-3 w-[78%] -rotate-6 drop-shadow-[0_20px_17px_rgba(173,62,97,0.24)] transition duration-300 hover:-rotate-3 hover:scale-[1.02]"
             />
             <Image
               src={crownCouponImage}
-              alt="日冠七五折券"
+              alt={siteCopy("site.components.home.openingbenefitsteaser.f602e55b23ce")}
               width={650}
               height={433}
               className="absolute bottom-0 right-0 w-[68%] rotate-6 drop-shadow-[0_20px_17px_rgba(173,62,97,0.2)] transition duration-300 hover:rotate-3 hover:scale-[1.02]"

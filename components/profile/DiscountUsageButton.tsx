@@ -1,4 +1,6 @@
 'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -32,6 +34,7 @@ const formatDateOnly = (value?: Date | string | null) => {
 };
 
 export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, couponId }: Props) {
+  const siteCopy = useSiteCopy();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [orders, setOrders] = useState<DiscountableOrder[]>([]);
@@ -46,7 +49,7 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, 
       const res = await fetch('/api/orders/discountable');
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(typeof data?.error === 'string' ? data.error : '加载订单失败');
+        throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.discountusagebutton.ee1007d862d0"));
       }
       setOrders(Array.isArray(data?.orders) ? data.orders : []);
     } catch (error) {
@@ -74,10 +77,10 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, 
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(typeof data?.error === 'string' ? data.error : '使用失败');
+        throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.discountusagebutton.d5f9ad7f1e7e"));
       }
       const amountText = typeof data?.amount === 'string' ? data.amount : '';
-      setMessage({ type: 'success', text: `已优惠 ${amountText} 元，返还至余额` });
+      setMessage({ type: 'success', text: siteCopy("site.components.profile.discountusagebutton.04501864a9f0", {value1: String(amountText)}) });
       setOpen(false);
       router.refresh();
     } catch (error) {
@@ -110,16 +113,14 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, 
           <div className="w-full max-w-xl rounded-xl bg-white p-4 shadow-lg space-y-3 max-h-[70vh] overflow-hidden">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">选择订单</p>
-                <h3 className="text-xl font-semibold text-[#171717]">请选择要使用优惠的订单</h3>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.components.profile.discountusagebutton.dfa98e0d9550" /></p>
+                <h3 className="text-xl font-semibold text-[#171717]"><SiteText copyKey="site.components.profile.discountusagebutton.78faaba28e37" /></h3>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 className="text-sm font-semibold text-gray-600 hover:text-black"
-              >
-                关闭
-              </button>
+              ><SiteText copyKey="site.components.profile.discountusagebutton.6c14bd7f6f9e" /></button>
             </div>
 
             <div className="max-h-[55vh] overflow-y-auto space-y-3 pr-1">
@@ -134,9 +135,9 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, 
               ) : null}
 
               {loading ? (
-                <p className="text-sm text-gray-500">加载中…</p>
+                <p className="text-sm text-gray-500"><SiteText copyKey="site.components.profile.discountusagebutton.300ee3dee4dc" /></p>
               ) : orders.length === 0 ? (
-                <p className="text-sm text-gray-500">没有可用的已结单订单。</p>
+                <p className="text-sm text-gray-500"><SiteText copyKey="site.components.profile.discountusagebutton.660de67d6e75" /></p>
               ) : (
                 <div className="grid gap-2">
                   {orders.map((order) => (
@@ -145,13 +146,11 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, 
                       className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-black/10 bg-gray-50 px-3 py-2"
                     >
                       <div className="space-y-1">
-                        <p className="text-sm font-semibold text-[#171717]">
-                          订单 #{order.displayNo ?? order.id}
+                        <p className="text-sm font-semibold text-[#171717]"><SiteText copyKey="site.components.profile.discountusagebutton.17bb9d37b41d" />{order.displayNo ?? order.id}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          时长：{order.totalMinutes ?? '—'} 分 · 金额：{order.totalAmount ?? '—'}
+                        <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.discountusagebutton.70c5b46f5522" />{order.totalMinutes ?? '—'}<SiteText copyKey="site.components.profile.discountusagebutton.b59d2d5a815f" />{order.totalAmount ?? '—'}
                         </p>
-                        <p className="text-xs text-gray-500">结单：{formatDateOnly(order.endedAt)}</p>
+                        <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.discountusagebutton.54b36e7d4693" />{formatDateOnly(order.endedAt)}</p>
                       </div>
                       <button
                         type="button"
@@ -159,7 +158,7 @@ export function DiscountUsageButton({ kind, triggerLabel = '使用', lotteryId, 
                         disabled={!!submittingId}
                         className="rounded-full bg-[#f4c542] px-4 py-2 text-xs font-semibold text-[#3d2c00] hover:bg-[#ffd45b] disabled:opacity-50 transition-colors"
                       >
-                        {submittingId === order.id ? '提交中…' : '用在此单'}
+                        {submittingId === order.id ? <SiteText copyKey="site.components.profile.discountusagebutton.17e519c5a6bd" /> : <SiteText copyKey="site.components.profile.discountusagebutton.c11fbf173961" />}
                       </button>
                     </div>
                   ))}

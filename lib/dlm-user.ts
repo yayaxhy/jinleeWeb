@@ -1,3 +1,4 @@
+import { ensureWechatIdentityTx } from './wechat-identity-transaction';
 import { AccountProvider, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { generateDlmId } from '@/lib/dlm-id';
@@ -119,162 +120,45 @@ export const summarizeDlmUser = (user: DlmUserWithMember) => {
   };
 };
 
-export const ensureDlmUserForDiscordMember = async ({
-  discordUserId,
-  displayName,
-  avatarUrl,
-  profile,
-}: EnsureDiscordDlmUserInput): Promise<DlmUserWithMember> => {
-  return prisma.$transaction(async (tx) => {
-    const existingBinding = await tx.accountBinding.findUnique({
-      where: {
-        provider_providerUserId: {
-          provider: AccountProvider.DISCORD,
-          providerUserId: discordUserId,
-        },
-      },
-      include: {
-        dlmUser: {
-          include: dlmUserWithMember,
-        },
-      },
-    });
+export async function ensureDlmUserForDiscordMemberTx(tx: Prisma.TransactionClient, input: EnsureDiscordDlmUserInput, verifiedRegistration = false): Promise<DlmUserWithMember> {
+  const { discordUserId, displayName, avatarUrl, profile } = input;
+  if (!/^\d{15,22}$/.test(discordUserId)) throw new Error('discord_identity_not_loginable');
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'discord-identity:' + discordUserId}, 0))`;
+  const where = { provider_providerUserId: { provider: AccountProvider.DISCORD, providerUserId: discordUserId } };
+  const before = await tx.accountBinding.findUnique({ where });
+  let existingUser = before ? await tx.dlmUser.findUnique({ where: { dlmId: before.dlmId } }) : await tx.dlmUser.findUnique({ where: { discordUserId } });
+  if (existingUser) {
+    await tx.$queryRaw`SELECT "dlmId" FROM "DlmUser" WHERE "dlmId" = ${existingUser.dlmId} FOR UPDATE`;
+    const current = await tx.dlmUser.findUnique({ where: { dlmId: existingUser.dlmId } });
+    const binding = await tx.accountBinding.findUnique({ where });
+    if (!current || current.discordUserId !== discordUserId || (before && (binding?.id !== before.id || binding.dlmId !== current.dlmId))) throw new Error('discord_binding_changed');
+    existingUser = current;
+  }
+  if (verifiedRegistration) {
+    await tx.$executeRaw`SELECT set_config('app.allow_retired_discord_registration', 'on', true)`;
+    await tx.member.upsert({ where: { discordUserId }, create: { discordUserId, serverDisplayName: displayName ?? null, ...(existingUser ? { totalBalance: existingUser.totalBalance, income: existingUser.income, recharge: existingUser.recharge, totalSpent: existingUser.totalSpent } : {}) }, update: { ...(displayName !== undefined ? { serverDisplayName: displayName } : {}) } });
+  }
+  await tx.$queryRaw`SELECT "discordUserId" FROM "Member" WHERE "discordUserId" = ${discordUserId} FOR UPDATE`;
+  const member = await tx.member.findUnique({ where: { discordUserId } });
+  if (!member) throw new Error('discord_member_missing');
+  const point = await tx.loyaltyPoint.findUnique({ where: { discordUserId }, select: { points: true } });
+  const wallet = { totalBalance: member.totalBalance, income: member.income, recharge: member.recharge, totalSpent: member.totalSpent,
+    ...(point ? { loyaltyPoints: point.points } : {}) };
+  const dlmUser = existingUser ? await tx.dlmUser.update({ where: { dlmId: existingUser.dlmId }, data: { ...buildDiscordProfilePatch(displayName, avatarUrl), ...wallet }, include: dlmUserWithMember })
+    : await tx.dlmUser.create({ data: { dlmId: generateDlmId(), discordUserId, ...buildDiscordProfilePatch(displayName, avatarUrl), ...wallet }, include: dlmUserWithMember });
+  if (before) await tx.accountBinding.update({ where: { id: before.id }, data: buildBindingPatch(profile) });
+  else await tx.accountBinding.create({ data: { dlmId: dlmUser.dlmId, provider: AccountProvider.DISCORD, providerUserId: discordUserId, lastLoginAt: new Date(), ...(profile !== undefined ? { profile } : {}) } });
+  return dlmUser;
+}
 
-    if (existingBinding) {
-      await tx.accountBinding.update({
-        where: { id: existingBinding.id },
-        data: buildBindingPatch(profile),
-      });
+export const ensureDlmUserForDiscordMember = (input: EnsureDiscordDlmUserInput): Promise<DlmUserWithMember> =>
+  prisma.$transaction(tx => ensureDlmUserForDiscordMemberTx(tx, input));
 
-      return tx.dlmUser.update({
-        where: { dlmId: existingBinding.dlmId },
-        data: {
-          ...buildDiscordProfilePatch(displayName, avatarUrl),
-          discordUserId: existingBinding.dlmUser.discordUserId ?? discordUserId,
-        },
-        include: dlmUserWithMember,
-      });
-    }
+/** Only call after Discord OAuth has verified this identity. Never use for cookie restoration. */
+export const ensureVerifiedDiscordLogin = (input: EnsureDiscordDlmUserInput): Promise<DlmUserWithMember> =>
+  prisma.$transaction(tx => ensureDlmUserForDiscordMemberTx(tx, input, true));
 
-    const reusableUser = await tx.dlmUser.findUnique({
-      where: { discordUserId },
-      include: dlmUserWithMember,
-    });
-
-    const dlmUser = reusableUser
-      ? await tx.dlmUser.update({
-          where: { dlmId: reusableUser.dlmId },
-          data: {
-            ...buildDiscordProfilePatch(displayName, avatarUrl),
-            discordUserId,
-          },
-          include: dlmUserWithMember,
-        })
-      : await tx.dlmUser.create({
-          data: {
-            dlmId: generateDlmId(),
-            discordUserId,
-            ...buildDiscordProfilePatch(displayName, avatarUrl),
-          },
-          include: dlmUserWithMember,
-        });
-
-    await tx.accountBinding.create({
-      data: {
-        dlmId: dlmUser.dlmId,
-        provider: AccountProvider.DISCORD,
-        providerUserId: discordUserId,
-        lastLoginAt: new Date(),
-        ...(profile !== undefined ? { profile } : {}),
-      },
-    });
-
-    return dlmUser;
-  });
-};
-
-export const ensureDlmUserForWechatProgram = async ({
-  openId,
-  unionId,
-  displayName,
-  avatarUrl,
-  profile,
-}: EnsureWechatProgramDlmUserInput): Promise<{ dlmUser: DlmUserWithMember; bindingId: string }> => {
-  return prisma.$transaction(async (tx) => {
-    const existingBinding = await tx.accountBinding.findUnique({
-      where: {
-        provider_providerUserId: {
-          provider: AccountProvider.WECHAT_MINIPROGRAM,
-          providerUserId: openId,
-        },
-      },
-      include: {
-        dlmUser: {
-          include: dlmUserWithMember,
-        },
-      },
-    });
-
-    if (existingBinding) {
-      await tx.accountBinding.update({
-        where: { id: existingBinding.id },
-        data: buildBindingPatch(profile, unionId),
-      });
-
-      const dlmUser = await tx.dlmUser.update({
-        where: { dlmId: existingBinding.dlmId },
-        data: buildWechatProfilePatch(displayName, avatarUrl),
-        include: dlmUserWithMember,
-      });
-
-      return { dlmUser, bindingId: existingBinding.id };
-    }
-
-    const reusableBinding =
-      unionId != null
-        ? await tx.accountBinding.findFirst({
-            where: {
-              provider: {
-                in: [AccountProvider.WECHAT_MINIPROGRAM, AccountProvider.WECHAT_WEB],
-              },
-              unionId,
-            },
-            include: {
-              dlmUser: {
-                include: dlmUserWithMember,
-              },
-            },
-          })
-        : null;
-
-    const dlmUser = reusableBinding
-      ? await tx.dlmUser.update({
-          where: { dlmId: reusableBinding.dlmId },
-          data: buildWechatProfilePatch(displayName, avatarUrl),
-          include: dlmUserWithMember,
-        })
-      : await tx.dlmUser.create({
-          data: {
-            dlmId: generateDlmId(),
-            ...buildWechatProfilePatch(displayName, avatarUrl),
-          },
-          include: dlmUserWithMember,
-        });
-
-    const binding = await tx.accountBinding.create({
-      data: {
-        dlmId: dlmUser.dlmId,
-        provider: AccountProvider.WECHAT_MINIPROGRAM,
-        providerUserId: openId,
-        unionId: unionId ?? null,
-        lastLoginAt: new Date(),
-        ...(profile !== undefined ? { profile } : {}),
-      },
-    });
-
-    return { dlmUser, bindingId: binding.id };
-  });
-};
+export const ensureDlmUserForWechatProgram = (input: EnsureWechatProgramDlmUserInput): Promise<{ dlmUser: DlmUserWithMember; bindingId: string }> => prisma.$transaction(tx => ensureWechatIdentityTx(tx, { ...input, provider: AccountProvider.WECHAT_MINIPROGRAM }, generateDlmId));
 
 /**
  * Connect a WeChat Open Platform website login to the same DLM account as the
@@ -282,91 +166,4 @@ export const ensureDlmUserForWechatProgram = async ({
  * callers must require it before creating a first binding. An existing website
  * binding can still log in if WeChat temporarily omits profile fields.
  */
-export const ensureDlmUserForWechatWeb = async ({
-  openId,
-  unionId,
-  displayName,
-  avatarUrl,
-  profile,
-}: EnsureWechatWebDlmUserInput): Promise<{ dlmUser: DlmUserWithMember; bindingId: string }> => {
-  return prisma.$transaction(async (tx) => {
-    const existingBinding = await tx.accountBinding.findUnique({
-      where: {
-        provider_providerUserId: {
-          provider: AccountProvider.WECHAT_WEB,
-          providerUserId: openId,
-        },
-      },
-      include: {
-        dlmUser: {
-          include: dlmUserWithMember,
-        },
-      },
-    });
-
-    if (existingBinding) {
-      if (unionId && existingBinding.unionId && existingBinding.unionId !== unionId) {
-        throw new Error('WECHAT_WEB_ACCOUNT_MISMATCH');
-      }
-
-      await tx.accountBinding.update({
-        where: { id: existingBinding.id },
-        data: buildBindingPatch(profile, unionId),
-      });
-
-      const dlmUser = await tx.dlmUser.update({
-        where: { dlmId: existingBinding.dlmId },
-        data: buildWechatProfilePatch(displayName, avatarUrl),
-        include: dlmUserWithMember,
-      });
-
-      return { dlmUser, bindingId: existingBinding.id };
-    }
-
-    if (!unionId) {
-      throw new Error('WECHAT_WEB_UNIONID_REQUIRED');
-    }
-
-    const reusableBinding = await tx.accountBinding.findFirst({
-      where: {
-        provider: {
-          in: [AccountProvider.WECHAT_MINIPROGRAM, AccountProvider.WECHAT_WEB],
-        },
-        unionId,
-      },
-      include: {
-        dlmUser: {
-          include: dlmUserWithMember,
-        },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    const dlmUser = reusableBinding
-      ? await tx.dlmUser.update({
-          where: { dlmId: reusableBinding.dlmId },
-          data: buildWechatProfilePatch(displayName, avatarUrl),
-          include: dlmUserWithMember,
-        })
-      : await tx.dlmUser.create({
-          data: {
-            dlmId: generateDlmId(),
-            ...buildWechatProfilePatch(displayName, avatarUrl),
-          },
-          include: dlmUserWithMember,
-        });
-
-    const binding = await tx.accountBinding.create({
-      data: {
-        dlmId: dlmUser.dlmId,
-        provider: AccountProvider.WECHAT_WEB,
-        providerUserId: openId,
-        unionId,
-        lastLoginAt: new Date(),
-        ...(profile !== undefined ? { profile } : {}),
-      },
-    });
-
-    return { dlmUser, bindingId: binding.id };
-  });
-};
+export const ensureDlmUserForWechatWeb = (input: EnsureWechatWebDlmUserInput): Promise<{ dlmUser: DlmUserWithMember; bindingId: string }> => prisma.$transaction(tx => ensureWechatIdentityTx(tx, { ...input, provider: AccountProvider.WECHAT_WEB }, generateDlmId));

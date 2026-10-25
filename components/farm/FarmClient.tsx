@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SiteText, useSiteCopy } from '@/components/SiteCopyProvider';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MAX_PLOTS, getFarmSeedDurationLabel, type FarmSeedTypeValue } from '@/lib/farmConfig';
@@ -29,15 +30,6 @@ const actionLabelMap: Record<string, string> = {
 const formatAmount = (value: string | number) =>
   new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value));
 
-const formatRemaining = (remainingSeconds: number) => {
-  if (remainingSeconds <= 0) return '已成熟';
-  const hours = Math.floor(remainingSeconds / 3600);
-  const minutes = Math.floor((remainingSeconds % 3600) / 60);
-  const seconds = remainingSeconds % 60;
-  if (hours > 0) return `${hours}小时 ${minutes}分`;
-  if (minutes > 0) return `${minutes}分 ${seconds}秒`;
-  return `${seconds}秒`;
-};
 
 const formatVisitTime = (value: string) =>
   new Date(value).toLocaleString('zh-CN', {
@@ -405,7 +397,7 @@ function OverlayDrawer({ title, open, onClose, children }: { title: string; open
       <aside className={`absolute inset-y-0 right-0 flex w-full max-w-[460px] flex-col border-l-[4px] border-[#714615] bg-[#f8efcf] shadow-[0_0_0_4px_rgba(255,241,194,0.45)_inset,0_24px_60px_rgba(32,18,6,0.26)] transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex items-center justify-between border-b-[4px] border-[#d0a25e] bg-[#f5ddab] px-5 py-4">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[#a17615]">Koi Manor</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[#a17615]"><SiteText copyKey="site.components.farm.farmclient.a7c74fc65d8c" /></p>
             <h2 className="mt-1 text-2xl font-black tracking-[0.03em] text-[#35210a]">{title}</h2>
           </div>
           <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-[8px] border-[3px] border-[#7a4c18] bg-[#fff5d7] text-xl text-[#734d17] shadow-[0_3px_0_#c18b39] transition hover:brightness-105">×</button>
@@ -417,6 +409,18 @@ function OverlayDrawer({ title, open, onClose, children }: { title: string; open
 }
 
 export function FarmClient({ initialDashboard }: Props) {
+  const siteCopy = useSiteCopy();
+  const formatRemaining = useCallback((remainingSeconds: number) => {
+    if (remainingSeconds <= 0) return siteCopy("site.components.farm.farmclient.44d5383c87ee");
+    const hours = Math.floor(remainingSeconds / 3600);
+    const minutes = Math.floor((remainingSeconds % 3600) / 60);
+    const seconds = remainingSeconds % 60;
+    if (hours > 0) return siteCopy("site.components.farm.farmclient.bd3695c3d771", { value1: String(hours), value2: String(minutes) });
+    if (minutes > 0) return siteCopy("site.components.farm.farmclient.37a09dac9269", { value1: String(minutes), value2: String(seconds) });
+    return siteCopy("site.components.farm.farmclient.f1530240cab6", { value1: String(seconds) });
+  }, [siteCopy]);
+
+
   const [homeDashboard, setHomeDashboard] = useState(initialDashboard);
   const [viewDashboard, setViewDashboard] = useState(initialDashboard);
   const [selectedSeed, setSelectedSeed] = useState<FarmSeedTypeValue | null>(initialDashboard.seeds.find((seed) => seed.unlocked)?.code ?? null);
@@ -553,7 +557,7 @@ export function FarmClient({ initialDashboard }: Props) {
       try {
         const res = await fetch('/api/farm?companions=1');
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '好友列表加载失败');
+        if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.farm.farmclient.d28a36b20aa8"));
         if (!cancelled) {
           setCompanions(
             data?.data && typeof data.data === 'object'
@@ -575,7 +579,7 @@ export function FarmClient({ initialDashboard }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [friendModalOpen]);
+  }, [friendModalOpen, siteCopy]);
 
   useEffect(() => {
     if (!friendModalOpen || companionTab !== 'search') {
@@ -591,7 +595,7 @@ export function FarmClient({ initialDashboard }: Props) {
       try {
         const res = await fetch(`/api/farm?search=${encodeURIComponent(keyword)}`);
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '查询失败');
+        if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.farm.farmclient.bf4cedf76a4e"));
         setSearchResults(Array.isArray(data?.data) ? (data.data as FarmSearchResult[]) : []);
       } catch {
         setSearchResults([]);
@@ -600,7 +604,7 @@ export function FarmClient({ initialDashboard }: Props) {
       }
     }, 260);
     return () => window.clearTimeout(timer);
-  }, [farmSearch, friendModalOpen, companionTab]);
+  }, [farmSearch, friendModalOpen, companionTab, siteCopy]);
 
   const plotsByIndex = useMemo(() => {
     const map = new Map(viewDashboard.plots.map((plot) => [plot.plotIndex, plot]));
@@ -614,35 +618,35 @@ export function FarmClient({ initialDashboard }: Props) {
     return plotsByIndex.map(({ plotIndex, unlocked, plot }) => {
       const status: PlotStatus = unlocked ? plot?.status ?? 'EMPTY' : 'LOCKED';
       const seedMeta = plot?.seedType ? viewDashboard.seeds.find((seed) => seed.code === plot.seedType) ?? null : null;
-      const title = !unlocked ? '待解锁地块' : status === 'EMPTY' ? '空地' : seedMeta?.name ?? '作物';
+      const title = !unlocked ? siteCopy("site.components.farm.farmclient.33d2b3e5ecd1") : status === 'EMPTY' ? siteCopy("site.components.farm.farmclient.cb557c76d00d") : siteCopy.text(seedMeta?.name, "site.lib.farmconfig") ?? siteCopy("site.components.farm.farmclient.1cfaa4c6ddcf");
       const subtitle = !unlocked
-        ? '点击查看扩地'
+        ? siteCopy("site.components.farm.farmclient.f24746b0a4d7")
         : status === 'EMPTY'
           ? viewDashboard.owner.isSelf
             ? currentSeed
-              ? `准备播种 ${currentSeed.name}`
-              : '先选一个种子'
-            : '访客视角 · 这块地目前空着'
+              ? siteCopy("site.components.farm.farmclient.83923844cdae", { value1: String(siteCopy.text(currentSeed.name, "site.lib.farmconfig")) })
+              : siteCopy("site.components.farm.farmclient.db9561acbb35")
+            : siteCopy("site.components.farm.farmclient.52844c319230")
           : status === 'READY'
             ? viewDashboard.owner.isSelf
-              ? '成熟完成，点击收获'
+              ? siteCopy("site.components.farm.farmclient.7c030da282cd")
               : plot?.canSteal
-                ? '访客视角 · 成熟完成，可偷菜'
-                : '访客视角 · 本轮已被偷过'
+                ? siteCopy("site.components.farm.farmclient.8eadeb65cbd5")
+                : siteCopy("site.components.farm.farmclient.d373a894e6b4")
             : viewDashboard.owner.isSelf
-              ? `${stageLabelMap[plot?.growthStage ?? 'SPROUT']} · ${formatRemaining(plot?.remainingSeconds ?? 0)}`
-              : `访客视角 · ${stageLabelMap[plot?.growthStage ?? 'SPROUT']} · ${formatRemaining(plot?.remainingSeconds ?? 0)}`;
+              ? `${siteCopy.text(stageLabelMap[plot?.growthStage ?? 'SPROUT'], "site.components.farm.farmclient")} · ${formatRemaining(plot?.remainingSeconds ?? 0)}`
+              : siteCopy("site.components.farm.farmclient.f195da5bd283", { value1: String(siteCopy.text(stageLabelMap[plot?.growthStage ?? 'SPROUT'], "site.components.farm.farmclient")), value2: String(formatRemaining(plot?.remainingSeconds ?? 0)) });
       const tooltipLines = !unlocked
-        ? ['庄园仍可继续扩地。', homeDashboard.summary.nextPlotCost ? `下一块地：${formatAmount(homeDashboard.summary.nextPlotCost)} 金币` : '已达到最大地块']
+        ? [siteCopy("site.components.farm.farmclient.e0c1a2f2fba3"), homeDashboard.summary.nextPlotCost ? siteCopy("site.components.farm.farmclient.53dfb6af4e44", { value1: String(formatAmount(homeDashboard.summary.nextPlotCost)) }) : siteCopy("site.components.farm.farmclient.07bd6ba6b527")]
         : status === 'EMPTY'
-          ? [viewDashboard.owner.isSelf ? `当前种子：${currentSeed?.name ?? '未选择'}` : '访客视角下，这块地目前没有作物。', viewDashboard.owner.isSelf ? '点击地块直接播种。' : '空地没有可以偷的东西。']
+          ? [viewDashboard.owner.isSelf ? siteCopy("site.components.farm.farmclient.3d8c023c951c", { value1: String(siteCopy.text(currentSeed?.name, "site.lib.farmconfig") ?? siteCopy("site.components.farm.farmclient.53e2db70167f")) }) : siteCopy("site.components.farm.farmclient.c457f0c3833c"), viewDashboard.owner.isSelf ? siteCopy("site.components.farm.farmclient.54c22e9bed51") : siteCopy("site.components.farm.farmclient.4b4f3e601cf3")]
           : status === 'READY'
-            ? [viewDashboard.owner.isSelf ? '作物已经成熟，点击收获。' : plot?.canSteal ? '访客视角：这一轮可以偷菜。' : '访客视角：这一轮已经被偷过。', seedMeta ? `预计产出：${formatAmount(seedMeta.minYieldCoins)} ~ ${formatAmount(seedMeta.maxYieldCoins)} 金币` : '等待结算产出。']
-            : [viewDashboard.owner.isSelf ? `剩余时间：${formatRemaining(plot?.remainingSeconds ?? 0)}` : `访客观察：${formatRemaining(plot?.remainingSeconds ?? 0)} 后成熟`, `成长进度：${Math.round((plot?.progressRatio ?? 0) * 100)}%`];
+            ? [viewDashboard.owner.isSelf ? siteCopy("site.components.farm.farmclient.d81ff9aa3579") : plot?.canSteal ? siteCopy("site.components.farm.farmclient.48e5deb1198b") : siteCopy("site.components.farm.farmclient.c54caff2a1cb"), seedMeta ? siteCopy("site.components.farm.farmclient.fb4ff3c1cb3c", { value1: String(formatAmount(seedMeta.minYieldCoins)), value2: String(formatAmount(seedMeta.maxYieldCoins)) }) : siteCopy("site.components.farm.farmclient.522264e4b202")]
+            : [viewDashboard.owner.isSelf ? siteCopy("site.components.farm.farmclient.03901da73215", { value1: String(formatRemaining(plot?.remainingSeconds ?? 0)) }) : siteCopy("site.components.farm.farmclient.3d195ae77c8e", { value1: String(formatRemaining(plot?.remainingSeconds ?? 0)) }), siteCopy("site.components.farm.farmclient.b0529a50f8d4", { value1: String(Math.round((plot?.progressRatio ?? 0) * 100)) })];
       const highlight = !unlocked ? 'locked' : status === 'EMPTY' ? 'idle' : status === 'READY' ? 'ready' : 'growing';
       return { plotIndex, unlocked, plot, status, seedMeta, title, subtitle, tooltipLines, highlight };
     });
-  }, [plotsByIndex, viewDashboard.seeds, viewDashboard.owner.isSelf, currentSeed, homeDashboard.summary.nextPlotCost]);
+  }, [plotsByIndex, viewDashboard.seeds, viewDashboard.owner.isSelf, currentSeed, homeDashboard.summary.nextPlotCost, siteCopy, formatRemaining]);
 
   const activePlot = plotCards.find((entry) => entry.plotIndex === activePlotIndex) ?? null;
   const plotPolygons = useMemo(
@@ -677,7 +681,7 @@ export function FarmClient({ initialDashboard }: Props) {
       activeDebugPoint.overlayY != null ? `overlayY=${activeDebugPoint.overlayY.toFixed(1)}` : 'overlayY=outside',
     ].join(', ');
     await navigator.clipboard.writeText(payload);
-    setDebugCopied('坐标已复制');
+    setDebugCopied(siteCopy("site.components.farm.farmclient.c514939265ad"));
     window.setTimeout(() => setDebugCopied(null), 1200);
   };
   const pushFloatingReward = (text: string, variant: FloatingReward['variant']) => {
@@ -727,7 +731,7 @@ export function FarmClient({ initialDashboard }: Props) {
       const url = targetDiscordId ? `/api/farm?targetDiscordId=${encodeURIComponent(targetDiscordId)}` : '/api/farm';
       const res = await fetch(url);
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '庄园加载失败');
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.farm.farmclient.ee7d8654d583"));
       const dashboard = data.dashboard as FarmDashboard;
       setViewDashboard(dashboard);
       setActivePlotIndex(null);
@@ -757,7 +761,7 @@ export function FarmClient({ initialDashboard }: Props) {
         body: JSON.stringify({ action, ...payload }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : '操作失败');
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.farm.farmclient.0c3b4cf7aa25"));
       if (data?.viewerDashboard) setHomeDashboard(data.viewerDashboard as FarmDashboard);
       if (data?.dashboard) {
         const dashboard = data.dashboard as FarmDashboard;
@@ -767,58 +771,58 @@ export function FarmClient({ initialDashboard }: Props) {
         }
       }
       if (action === 'plant' && options?.seed && typeof payload.plotIndex === 'number') {
-        pushFloatingReward(`已播种 ${options.seed.name}`, 'plant');
+        pushFloatingReward(siteCopy("site.components.farm.farmclient.8d8003194f1c", { value1: String(siteCopy.text(options.seed.name, "site.lib.farmconfig")) }), 'plant');
         pushSceneBurst(payload.plotIndex, 'plant');
         pushPlantTransition(payload.plotIndex, FARM_CROP_ASSETS[options.seed.code].SPROUT);
         setActionResult({
-          title: '播种完成',
-          description: `${options.seed.name} 已种进 ${payload.plotIndex} 号地块。`,
+          title: siteCopy("site.components.farm.farmclient.9d225164488a"),
+          description: siteCopy("site.components.farm.farmclient.e0432599cddf", { value1: String(siteCopy.text(options.seed.name, "site.lib.farmconfig")), value2: String(payload.plotIndex) }),
           accent: 'green',
           asset: FARM_CROP_ASSETS[options.seed.code].SPROUT,
-          badge: '播种成功',
+          badge: siteCopy("site.components.farm.farmclient.dace736c32a6"),
           detailLines: [
-            `成熟时间：${getFarmSeedDurationLabel(options.seed.durationMinutes)}`,
-            `预计收益：${formatAmount(options.seed.minYieldCoins)} ~ ${formatAmount(options.seed.maxYieldCoins)} 金币`,
-            `成长奖励：+${options.seed.experience} EXP`,
+            siteCopy("site.components.farm.farmclient.a5f6cfa0ac78", { value1: String(getFarmSeedDurationLabel(options.seed.durationMinutes)) }),
+            siteCopy("site.components.farm.farmclient.9aaf756a4877", { value1: String(formatAmount(options.seed.minYieldCoins)), value2: String(formatAmount(options.seed.maxYieldCoins)) }),
+            siteCopy("site.components.farm.farmclient.77f2b583d06d", { value1: String(options.seed.experience) }),
           ],
         });
       }
       if (action === 'harvest' && data?.result?.harvestCoins) {
-        pushFloatingReward(`+${formatAmount(data.result.harvestCoins)} 金币`, 'gold');
+        pushFloatingReward(siteCopy("site.components.farm.farmclient.448e59ddc1c1", { value1: String(formatAmount(data.result.harvestCoins)) }), 'gold');
         if (options?.entry) pushHarvestTransition(options.entry);
         if (typeof payload.plotIndex === 'number') pushSceneBurst(payload.plotIndex, 'harvest');
         setActionResult({
-          title: '收获完成',
+          title: siteCopy("site.components.farm.farmclient.d6378176866f"),
           description: data.result.stolenCoins !== '0.00'
-            ? `本轮净收 ${formatAmount(data.result.harvestCoins)} 金币，被偷走 ${formatAmount(data.result.stolenCoins)}。`
-            : `本轮收获 ${formatAmount(data.result.harvestCoins)} 金币。`,
+            ? siteCopy("site.components.farm.farmclient.ad45be38b867", { value1: String(formatAmount(data.result.harvestCoins)), value2: String(formatAmount(data.result.stolenCoins)) })
+            : siteCopy("site.components.farm.farmclient.0bc0491c5f46", { value1: String(formatAmount(data.result.harvestCoins)) }),
           accent: 'gold',
           asset: options?.entry?.seedMeta ? FARM_CROP_ASSETS[options.entry.seedMeta.code].READY : FARM_SCENE_ASSETS.plotHarvested,
-          badge: '收获结算',
+          badge: siteCopy("site.components.farm.farmclient.6bd35afb2dba"),
           detailLines: [
-            `地块：${payload.plotIndex} 号`,
-            data.result.stolenCoins !== '0.00' ? `被偷：${formatAmount(data.result.stolenCoins)} 金币` : '本轮未被偷菜',
-            `当前金币：${formatAmount((data?.viewerDashboard ?? data?.dashboard)?.summary?.coins ?? homeDashboard.summary.coins)}`,
+            siteCopy("site.components.farm.farmclient.46fe7dbb8310", { value1: String(payload.plotIndex) }),
+            data.result.stolenCoins !== '0.00' ? siteCopy("site.components.farm.farmclient.cdee3186c79e", { value1: String(formatAmount(data.result.stolenCoins)) }) : siteCopy("site.components.farm.farmclient.bd544217e69e"),
+            siteCopy("site.components.farm.farmclient.916d679426b5", { value1: String(formatAmount((data?.viewerDashboard ?? data?.dashboard)?.summary?.coins ?? homeDashboard.summary.coins)) }),
           ],
         });
       }
       if (action === 'steal' && data?.result?.stolenCoins) {
-        pushFloatingReward(`偷到 +${formatAmount(data.result.stolenCoins)} 金币`, 'steal');
+        pushFloatingReward(siteCopy("site.components.farm.farmclient.0ac5cd88ba6f", { value1: String(formatAmount(data.result.stolenCoins)) }), 'steal');
         if (typeof payload.plotIndex === 'number') pushSceneBurst(payload.plotIndex, 'steal');
         setActionResult({
-          title: '偷菜成功',
-          description: `你从 ${viewDashboard.owner.displayName} 的 ${payload.plotIndex} 号地块带走了 ${formatAmount(data.result.stolenCoins)} 金币。`,
+          title: siteCopy("site.components.farm.farmclient.b4e7731fac19"),
+          description: siteCopy("site.components.farm.farmclient.af827eed9db0", { value1: String(viewDashboard.owner.displayName), value2: String(payload.plotIndex), value3: String(formatAmount(data.result.stolenCoins)) }),
           accent: 'orange',
           asset: options?.entry?.seedMeta ? FARM_CROP_ASSETS[options.entry.seedMeta.code].READY : FARM_SCENE_ASSETS.plotHarvested,
-          badge: '拜访战利品',
+          badge: siteCopy("site.components.farm.farmclient.e241b20dffbd"),
           detailLines: [
-            `目标地块：${payload.plotIndex} 号`,
-            `到手金币：${formatAmount(data.result.stolenCoins)}`,
-            `你的金币：${formatAmount(data?.viewerDashboard?.summary?.coins ?? homeDashboard.summary.coins)}`,
+            siteCopy("site.components.farm.farmclient.5cc5397bedf2", { value1: String(payload.plotIndex) }),
+            siteCopy("site.components.farm.farmclient.7c7926aedff0", { value1: String(formatAmount(data.result.stolenCoins)) }),
+            siteCopy("site.components.farm.farmclient.ff89b1cda6fc", { value1: String(formatAmount(data?.viewerDashboard?.summary?.coins ?? homeDashboard.summary.coins)) }),
           ],
         });
       }
-      setMessage(typeof data?.message === 'string' ? data.message : '操作成功');
+      setMessage(typeof data?.message === 'string' ? data.message : siteCopy("site.components.farm.farmclient.38de25e52295"));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -827,11 +831,11 @@ export function FarmClient({ initialDashboard }: Props) {
   };
 
   const plotActionLabel = (entry: PlotCard) => {
-    if (!entry.unlocked) return homeDashboard.summary.nextPlotCost ? `解锁下一块地 · ${formatAmount(homeDashboard.summary.nextPlotCost)} 金币` : '已达到地块上限';
-    if (entry.status === 'EMPTY') return currentSeed?.name ? `播种 ${currentSeed.name}` : '请选择种子';
-    if (entry.status === 'READY' && viewDashboard.owner.isSelf) return '立即收获';
-    if (entry.status === 'READY' && !viewDashboard.owner.isSelf) return entry.plot?.canSteal ? '偷这一块地' : '这一轮已经被偷过';
-    return entry.plot ? `等待成熟 · ${formatRemaining(entry.plot.remainingSeconds)}` : '当前不可操作';
+    if (!entry.unlocked) return homeDashboard.summary.nextPlotCost ? siteCopy("site.components.farm.farmclient.8c576c5c2576", { value1: String(formatAmount(homeDashboard.summary.nextPlotCost)) }) : siteCopy("site.components.farm.farmclient.9254338c3bf9");
+    if (entry.status === 'EMPTY') return currentSeed?.name ? siteCopy("site.components.farm.farmclient.08c20fd0c7e1", { value1: String(siteCopy.text(currentSeed.name, "site.lib.farmconfig")) }) : siteCopy("site.components.farm.farmclient.4fb6d3456a9b");
+    if (entry.status === 'READY' && viewDashboard.owner.isSelf) return siteCopy("site.components.farm.farmclient.347a21d50ad9");
+    if (entry.status === 'READY' && !viewDashboard.owner.isSelf) return entry.plot?.canSteal ? siteCopy("site.components.farm.farmclient.b949dd7ad210") : siteCopy("site.components.farm.farmclient.9d70d449dde0");
+    return entry.plot ? siteCopy("site.components.farm.farmclient.44ee810161fa", { value1: String(formatRemaining(entry.plot.remainingSeconds)) }) : siteCopy("site.components.farm.farmclient.935eb4251ab9");
   };
 
   const performPlotAction = (entry: PlotCard) => {
@@ -854,7 +858,7 @@ export function FarmClient({ initialDashboard }: Props) {
 
   const renderCompanionCards = (items: FarmCompanionEntry[], emptyMessage: string) => {
     if (companionsLoading) {
-      return <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">加载中…</p>;
+      return <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]"><SiteText copyKey="site.components.farm.farmclient.4927a53bcc88" /></p>;
     }
     if (items.length === 0) {
       return <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">{emptyMessage}</p>;
@@ -879,21 +883,21 @@ export function FarmClient({ initialDashboard }: Props) {
               <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(131,33,22,0.02),_rgba(59,20,13,0.66))]" />
               <div className="absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,_rgba(255,243,202,0.55),_transparent)]" />
               <div className="absolute left-4 top-4 flex h-12 w-12 items-center justify-center rounded-full border border-white/40 bg-[linear-gradient(180deg,_rgba(255,248,228,0.92),_rgba(248,224,161,0.9))] text-lg font-semibold text-[#7d5716] shadow-[0_10px_18px_rgba(31,17,5,0.16)]">
-                {item.displayName.trim().charAt(0) || '庄'}
+                {item.displayName.trim().charAt(0) || siteCopy("site.components.farm.farmclient.cf662fc92a5b")}
               </div>
               <span className="absolute right-4 top-4 rounded-full border border-white/36 bg-[rgba(86,21,13,0.62)] px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-[#ffe3a6]">
-                {item.peiwanId ? `#${item.peiwanId}` : '庄园'}
+                {item.peiwanId ? `#${item.peiwanId}` : siteCopy("site.components.farm.farmclient.bfb8273f7ab9")}
               </span>
               <div className="absolute bottom-3 left-4 flex flex-wrap gap-2">
                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getCompanionStatusTone(item.isOnline)}`}>
-                  {item.isOnline ? '在线' : '离线'}
+                  {item.isOnline ? siteCopy("site.components.farm.farmclient.0373ff923114") : siteCopy("site.components.farm.farmclient.211357d22f4d")}
                 </span>
                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
                   item.stealablePlots > 0
                     ? 'border-amber-200/70 bg-amber-50/95 text-amber-700'
                     : 'border-stone-300/70 bg-stone-100/95 text-stone-500'
                 }`}>
-                  {item.stealablePlots > 0 ? `可偷 ${item.stealablePlots}` : '不可偷'}
+                  {item.stealablePlots > 0 ? siteCopy("site.components.farm.farmclient.ad8921f86dd3", { value1: String(item.stealablePlots) }) : siteCopy("site.components.farm.farmclient.051a4eebc81a")}
                 </span>
               </div>
             </div>
@@ -903,10 +907,10 @@ export function FarmClient({ initialDashboard }: Props) {
                 <p className="mt-1 truncate text-xs text-[#8b6a2c]">{item.discordUserId}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#7e6134]">
                   <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-2 py-1 tracking-[0.14em]">{item.label}</span>
-                  <span>最近：{formatVisitTime(item.lastTouchedAt)}</span>
+                  <span><SiteText copyKey="site.components.farm.farmclient.736cfd4510ba" />{formatVisitTime(item.lastTouchedAt)}</span>
                 </div>
               </div>
-              <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
+              <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]"><SiteText copyKey="site.components.farm.farmclient.e44ddb6f2014" /></span>
             </div>
           </button>
         ))}
@@ -914,7 +918,7 @@ export function FarmClient({ initialDashboard }: Props) {
     );
   };
 
-  const drawerTitle = activeDrawer === 'none' ? '' : drawerMeta[activeDrawer].label;
+  const drawerTitle = activeDrawer === 'none' ? '' : siteCopy.text(drawerMeta[activeDrawer].label, "site.components.farm.farmclient");
 
   const handleScenePointerMove = (event: React.PointerEvent<HTMLElement>) => {
     if (!debugEnabled) return;
@@ -1036,7 +1040,7 @@ export function FarmClient({ initialDashboard }: Props) {
           <div className="pointer-events-none absolute inset-[8px] rounded-[10px] border-[2px] border-[#ffeeb7]/42" />
           <div className="pointer-events-none absolute -left-[8%] top-[16%] h-[62%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(130,41,28,0.18),_rgba(130,41,28,0.02)_68%,_transparent_74%)] blur-2xl" />
           <div className="pointer-events-none absolute -right-[8%] top-[18%] h-[60%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(220,181,92,0.2),_rgba(220,181,92,0.02)_68%,_transparent_74%)] blur-2xl" />
-          <Image src={FARM_SCENE_ASSETS.manorBase} alt="庄园底图" fill priority unoptimized className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+          <Image src={FARM_SCENE_ASSETS.manorBase} alt={siteCopy("site.components.farm.farmclient.22a03b9975b6")} fill priority unoptimized className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(127,20,17,0.38),_rgba(127,20,17,0.06),_transparent)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[44%] bg-[radial-gradient(circle_at_50%_8%,_rgba(255,248,224,0.88),_rgba(255,248,224,0.12)_46%,_transparent_62%)]" />
           <div className="pointer-events-none absolute inset-x-[12%] bottom-[5%] h-[26%] rounded-[50%] bg-[radial-gradient(circle,_rgba(245,223,159,0.14),_rgba(245,223,159,0.01)_72%,_transparent_76%)]" />
@@ -1055,40 +1059,40 @@ export function FarmClient({ initialDashboard }: Props) {
 
           <div className="relative z-10 h-full">
             <div className="absolute left-[24px] top-[20px] z-20 w-[252px] rounded-[10px] border-[4px] border-[#7a4a18] bg-[#fff4d0] px-4 py-4 text-[#6d4d1a] shadow-[0_6px_0_#c8943f,0_16px_28px_rgba(116,80,21,0.16)]">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-[#aa7d1e]">Jinli Manor</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#aa7d1e]"><SiteText copyKey="site.components.farm.farmclient.87eecd840bdb" /></p>
               <div className="mt-2 flex items-center gap-2">
-                <h1 className="text-[30px] font-black tracking-[0.03em] text-[#7a4117]">点了么庄园</h1>
+                <h1 className="text-[30px] font-black tracking-[0.03em] text-[#7a4117]"><SiteText copyKey="site.components.farm.farmclient.8de7bf03ae7c" /></h1>
                 <span className="rounded-[8px] border-[2px] border-[#d7a85f] bg-[#fff8e1] px-3 py-1 text-[10px] font-black tracking-[0.06em] text-[#9a6d16]">
-                  {isVisiting ? `拜访 ${viewDashboard.owner.displayName}` : '我的庄园'}
+                  {isVisiting ? siteCopy("site.components.farm.farmclient.bf51c580bd87", { value1: String(viewDashboard.owner.displayName) }) : siteCopy("site.components.farm.farmclient.da6aedb67f6e")}
                 </span>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2">
-                <MetricChip label="等级" value={`Lv.${homeDashboard.summary.level}`} icon="⭐" />
-                <MetricChip label="金币" value={formatAmount(homeDashboard.summary.coins)} icon="🪙" />
-                <MetricChip label="积分" value={formatAmount(homeDashboard.summary.loyaltyPoints)} icon="🎟️" />
-                <MetricChip label="余额" value={`¥ ${formatAmount(homeDashboard.summary.totalBalance)}`} icon="💰" />
+                <MetricChip label={siteCopy("site.components.farm.farmclient.337717173807")} value={`Lv.${homeDashboard.summary.level}`} icon="⭐" />
+                <MetricChip label={siteCopy("site.components.farm.farmclient.61f608b0d90e")} value={formatAmount(homeDashboard.summary.coins)} icon="🪙" />
+                <MetricChip label={siteCopy("site.components.farm.farmclient.b3e2659e5f12")} value={formatAmount(homeDashboard.summary.loyaltyPoints)} icon="🎟️" />
+                <MetricChip label={siteCopy("site.components.farm.farmclient.51cc55073eb6")} value={`¥ ${formatAmount(homeDashboard.summary.totalBalance)}`} icon="💰" />
               </div>
               <div className="mt-3 rounded-[8px] border-[3px] border-[#d4a25e] bg-[#fff8de] px-3 py-3 shadow-[inset_0_2px_0_rgba(255,255,255,0.78)]">
                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.1em] text-[#9d7521]">
-                  <span>农地进度</span>
+                  <span><SiteText copyKey="site.components.farm.farmclient.ecc6d0173601" /></span>
                   <span>{viewDashboard.summary.unlockedPlots}/{MAX_PLOTS}</span>
                 </div>
                 <div className="mt-2 h-3 overflow-hidden rounded-[4px] border border-[#8b5c1f] bg-[#d6b56b] p-[1px]">
                   <div className="h-full rounded-[2px] bg-[linear-gradient(90deg,_#ca8618,_#ffe06f)] transition-all duration-500" style={{ width: `${nextLevelProgress}%` }} />
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs text-[#79551f]">
-                  <span>{currentSeed ? `已选：${currentSeed.name}` : '暂未选种'}</span>
-                  <span>{homeDashboard.summary.nextPlotCost ? `下块 ¥${formatAmount(homeDashboard.summary.nextPlotCost)}` : '地块已全开'}</span>
+                  <span>{currentSeed ? siteCopy("site.components.farm.farmclient.a69c11e6f9c8", { value1: String(siteCopy.text(currentSeed.name, "site.lib.farmconfig")) }) : siteCopy("site.components.farm.farmclient.2ac3e9a135a7")}</span>
+                  <span>{homeDashboard.summary.nextPlotCost ? siteCopy("site.components.farm.farmclient.b9f28dbbc9c9", { value1: String(formatAmount(homeDashboard.summary.nextPlotCost)) }) : siteCopy("site.components.farm.farmclient.e16545b22687")}</span>
                 </div>
               </div>
             </div>
 
             <div className="absolute left-1/2 top-[18px] z-20 -translate-x-1/2">
               <div className="flex items-start gap-3 rounded-[10px] border-[4px] border-[#7a4d1a] bg-[#fff0c7] px-4 py-3 shadow-[0_5px_0_#ca9a47,0_16px_28px_rgba(111,76,20,0.16)]">
-                <TopStripButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
-                <TopStripButton icon="🌱" label="种子袋" active={bottomDockOpen && bagDrawerOpen} onClick={toggleSeedTray} muted={isVisiting} />
-                <TopStripButton icon="💰" label="兑换所" active={activeDrawer === 'exchange'} onClick={() => setActiveDrawer((current) => (current === 'exchange' ? 'none' : 'exchange'))} muted={isVisiting} />
-                <TopStripButton icon="📜" label="庄园日志" active={activeDrawer === 'logs'} onClick={() => setActiveDrawer((current) => (current === 'logs' ? 'none' : 'logs'))} muted={isVisiting} />
+                <TopStripButton icon="🧭" label={siteCopy("site.components.farm.farmclient.dd9beca883d7")} active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
+                <TopStripButton icon="🌱" label={siteCopy("site.components.farm.farmclient.07bcbf7b987f")} active={bottomDockOpen && bagDrawerOpen} onClick={toggleSeedTray} muted={isVisiting} />
+                <TopStripButton icon="💰" label={siteCopy("site.components.farm.farmclient.d2f864b529ff")} active={activeDrawer === 'exchange'} onClick={() => setActiveDrawer((current) => (current === 'exchange' ? 'none' : 'exchange'))} muted={isVisiting} />
+                <TopStripButton icon="📜" label={siteCopy("site.components.farm.farmclient.6593f7a1d5b7")} active={activeDrawer === 'logs'} onClick={() => setActiveDrawer((current) => (current === 'logs' ? 'none' : 'logs'))} muted={isVisiting} />
               </div>
             </div>
 
@@ -1100,7 +1104,7 @@ export function FarmClient({ initialDashboard }: Props) {
                   onClick={() => loadTargetFarm()}
                   className="rounded-[8px] border-[3px] border-[#7b4d18] bg-[#fff2cc] px-5 py-3 text-xs font-black tracking-[0.08em] text-[#7b5a20] shadow-[0_4px_0_#c7943c,0_14px_24px_rgba(110,78,24,0.14)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loadingKey === 'visit-home' ? '返回中…' : '回到我的庄园'}
+                  {loadingKey === 'visit-home' ? siteCopy("site.components.farm.farmclient.3e5529ca2856") : siteCopy("site.components.farm.farmclient.e4cdfb4318f9")}
                 </button>
               ) : null}
               <Link href="/profile" className="rounded-[8px] border-[3px] border-[#7b4d18] bg-[#fff2cc] px-5 py-3 text-xs font-black tracking-[0.08em] text-[#7b5a20] shadow-[0_4px_0_#c7943c,0_14px_24px_rgba(110,78,24,0.14)] transition hover:-translate-y-0.5 hover:brightness-105">
@@ -1110,8 +1114,8 @@ export function FarmClient({ initialDashboard }: Props) {
 
             {isVisiting ? (
               <div className="absolute left-1/2 top-[120px] z-20 w-[360px] -translate-x-1/2 rounded-[10px] border-[4px] border-[#7b4c19] bg-[#fff0c8] px-5 py-3 text-center text-[#7d5c22] shadow-[0_4px_0_#c8953d,0_14px_28px_rgba(111,76,20,0.14)]">
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[#a67a1d]">Visitor Mode</p>
-                <p className="mt-1 text-sm font-black tracking-[0.04em]">正在拜访 {viewDashboard.owner.displayName}</p>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[#a67a1d]"><SiteText copyKey="site.components.farm.farmclient.d7a336bc9e27" /></p>
+                <p className="mt-1 text-sm font-black tracking-[0.04em]"><SiteText copyKey="site.components.farm.farmclient.b57626eaf117" />{viewDashboard.owner.displayName}</p>
               </div>
             ) : null}
 
@@ -1124,8 +1128,8 @@ export function FarmClient({ initialDashboard }: Props) {
                 <div className="absolute left-[34px] top-[244px] z-30 w-[320px] rounded-[24px] border border-[#f0d39a]/45 bg-[linear-gradient(180deg,_rgba(57,31,11,0.94),_rgba(30,17,7,0.94))] px-4 py-4 text-[#ffe7b2] shadow-[0_16px_34px_rgba(14,8,3,0.28)] backdrop-blur-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-[#f0ce84]">Farm Debug</p>
-                      <h3 className="mt-1 text-base font-semibold tracking-[0.08em] text-[#fff1cb]">场景坐标</h3>
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-[#f0ce84]"><SiteText copyKey="site.components.farm.farmclient.8285054bf7b3" /></p>
+                      <h3 className="mt-1 text-base font-semibold tracking-[0.08em] text-[#fff1cb]"><SiteText copyKey="site.components.farm.farmclient.4244bfce7a80" /></h3>
                     </div>
                     <button
                       type="button"
@@ -1136,9 +1140,9 @@ export function FarmClient({ initialDashboard }: Props) {
                     </button>
                   </div>
                   <div className="mt-3 space-y-2 text-sm leading-6">
-                    <p>实时 scene：{activeDebugPoint ? `${activeDebugPoint.sceneX.toFixed(1)}, ${activeDebugPoint.sceneY.toFixed(1)}` : '移动鼠标查看'}</p>
-                    <p>辅助线 overlay：{activeDebugPoint?.overlayX != null && activeDebugPoint?.overlayY != null ? `${activeDebugPoint.overlayX.toFixed(1)}, ${activeDebugPoint.overlayY.toFixed(1)}` : '当前不在辅助线区域内'}</p>
-                    <p className="text-xs text-[#eed9ab]/78">提示：按住 Shift 再点击场景，可以锁定当前位置参数。</p>
+                    <p><SiteText copyKey="site.components.farm.farmclient.a7a5f6f554c2" />{activeDebugPoint ? `${activeDebugPoint.sceneX.toFixed(1)}, ${activeDebugPoint.sceneY.toFixed(1)}` : siteCopy("site.components.farm.farmclient.4f6e6aff80ca")}</p>
+                    <p><SiteText copyKey="site.components.farm.farmclient.7d47e19e0d47" />{activeDebugPoint?.overlayX != null && activeDebugPoint?.overlayY != null ? `${activeDebugPoint.overlayX.toFixed(1)}, ${activeDebugPoint.overlayY.toFixed(1)}` : siteCopy("site.components.farm.farmclient.415511d04c15")}</p>
+                    <p className="text-xs text-[#eed9ab]/78"><SiteText copyKey="site.components.farm.farmclient.56e52cf18551" /></p>
                   </div>
                   <div className="mt-4 flex items-center gap-2">
                     <button
@@ -1326,8 +1330,8 @@ export function FarmClient({ initialDashboard }: Props) {
                               </div>
                             </div>
                           ) : null}
-                          {entry.status === 'READY' ? <span className="absolute right-0 top-0 rounded-full border border-[#ffe8b6]/38 bg-[linear-gradient(180deg,_rgba(255,227,153,0.94),_rgba(243,186,62,0.94))] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#684108]">READY</span> : null}
-                          {entry.status === 'READY' && !viewDashboard.owner.isSelf && !entry.plot?.canSteal ? <span className="absolute left-1/2 top-0 -translate-x-1/2 rounded-full border border-[#ffd9b3]/32 bg-[linear-gradient(180deg,_rgba(131,63,23,0.94),_rgba(89,38,12,0.94))] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#ffe6c9]">已偷</span> : null}
+                          {entry.status === 'READY' ? <span className="absolute right-0 top-0 rounded-full border border-[#ffe8b6]/38 bg-[linear-gradient(180deg,_rgba(255,227,153,0.94),_rgba(243,186,62,0.94))] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#684108]"><SiteText copyKey="site.components.farm.farmclient.c2e3ac47f4a3" /></span> : null}
+                          {entry.status === 'READY' && !viewDashboard.owner.isSelf && !entry.plot?.canSteal ? <span className="absolute left-1/2 top-0 -translate-x-1/2 rounded-full border border-[#ffd9b3]/32 bg-[linear-gradient(180deg,_rgba(131,63,23,0.94),_rgba(89,38,12,0.94))] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#ffe6c9]"><SiteText copyKey="site.components.farm.farmclient.746dd89a5c4e" /></span> : null}
                           <div className="relative flex h-[58px] w-[58px] items-end justify-center sm:h-[64px] sm:w-[64px]">
                             {entry.status === 'READY' ? <div className={`absolute inset-1 rounded-full ${viewDashboard.owner.isSelf ? 'bg-[radial-gradient(circle,_rgba(255,224,138,0.56),_rgba(255,224,138,0.06)_70%)]' : 'bg-[radial-gradient(circle,_rgba(255,174,120,0.42),_rgba(255,174,120,0.05)_70%)]'} animate-pulse`} /> : null}
                             {harvestTransition ? (
@@ -1358,11 +1362,11 @@ export function FarmClient({ initialDashboard }: Props) {
                           </div>
                         </button>
                         <div className={`pointer-events-none absolute bottom-[calc(100%+14px)] left-1/2 w-52 -translate-x-1/2 rounded-[20px] border border-[#e4ca8f]/40 bg-[linear-gradient(180deg,_rgba(52,29,9,0.94),_rgba(31,16,6,0.94))] px-4 py-3 text-left text-[#fff3d1] shadow-[0_18px_36px_rgba(17,9,3,0.28)] transition ${tooltipVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}>
-                          <p className="text-xs uppercase tracking-[0.28em] text-[#f0ce84]">地块 {entry.plotIndex}</p>
+                          <p className="text-xs uppercase tracking-[0.28em] text-[#f0ce84]"><SiteText copyKey="site.components.farm.farmclient.5e16b35d3051" />{entry.plotIndex}</p>
                           <p className="mt-2 text-base font-semibold tracking-[0.04em]">{entry.title}</p>
                           <p className="mt-1 text-sm text-[#ffe6b0]">{entry.subtitle}</p>
                           <div className="mt-3 space-y-1 text-xs leading-5 text-[#edd8aa]">{entry.tooltipLines.map((line) => <p key={line}>{line}</p>)}</div>
-                          <div className="mt-3 rounded-full border border-white/12 bg-white/6 px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-[#f4d17b]">{loading ? '处理中…' : plotActionLabel(entry)}</div>
+                          <div className="mt-3 rounded-full border border-white/12 bg-white/6 px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-[#f4d17b]">{loading ? siteCopy("site.components.farm.farmclient.d3d21191f32e") : plotActionLabel(entry)}</div>
                         </div>
                       </div>
                     </div>
@@ -1406,8 +1410,8 @@ export function FarmClient({ initialDashboard }: Props) {
               <div className="absolute left-1/2 bottom-[148px] z-20 w-[612px] -translate-x-1/2 rounded-[10px] border-[4px] border-[#7a4b18] bg-[#fff2ce] px-5 py-4 shadow-[0_5px_0_#cb9a48,0_22px_40px_rgba(105,74,22,0.18)]">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#a9791b]">种子背包</p>
-                    <p className="mt-1 text-sm text-[#73511b]">选择当前种子后，再点击农田格进行播种。</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-[#a9791b]"><SiteText copyKey="site.components.farm.farmclient.bae7ed8c1fa6" /></p>
+                    <p className="mt-1 text-sm text-[#73511b]"><SiteText copyKey="site.components.farm.farmclient.064663ba9124" /></p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button type="button" disabled={visibleSeedPage === 0} onClick={() => setSeedPage((current) => Math.max(0, current - 1))} className="rounded-[8px] border-[3px] border-[#7b4b18] bg-[#fff8df] px-3 py-2 text-xs font-black tracking-[0.08em] text-[#8d6713] shadow-[0_3px_0_#d0a057] transition hover:brightness-105 disabled:opacity-40">‹</button>
@@ -1420,12 +1424,12 @@ export function FarmClient({ initialDashboard }: Props) {
                     const rarity = getSeedRarity(seed);
                     const selected = seed.code === selectedSeed;
                     return (
-                      <button key={seed.code} type="button" disabled={!seed.unlocked} title={seed.name} aria-label={seed.name} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[96px] w-[96px] items-center justify-center rounded-[10px] border-[3px] transition ${selected ? 'border-[#7a3f15] bg-[#ffd86d] shadow-[0_4px_0_#b87521,0_18px_28px_rgba(105,74,22,0.18)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-[#fff7dc] hover:border-[#efca78]/70 shadow-[0_4px_0_#d8b06d]` : 'border-dashed border-[#e2c48d]/35 bg-white/20 opacity-45'}`}>
+                      <button key={seed.code} type="button" disabled={!seed.unlocked} title={siteCopy.text(seed.name, "site.lib.farmconfig")} aria-label={siteCopy.text(seed.name, "site.lib.farmconfig")} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[96px] w-[96px] items-center justify-center rounded-[10px] border-[3px] transition ${selected ? 'border-[#7a3f15] bg-[#ffd86d] shadow-[0_4px_0_#b87521,0_18px_28px_rgba(105,74,22,0.18)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-[#fff7dc] hover:border-[#efca78]/70 shadow-[0_4px_0_#d8b06d]` : 'border-dashed border-[#e2c48d]/35 bg-white/20 opacity-45'}`}>
                         <span className="absolute inset-[5px] rounded-[6px] border border-[#fff7dc]/75" />
-                        {seed.unlocked ? <span className={`absolute right-2 top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.14em] ${rarity.badge}`}>{rarity.label}</span> : null}
-                        <div className="relative h-12 w-12"><Image src={FARM_CROP_ASSETS[seed.code].READY} alt={seed.name} fill className="object-contain" /></div>
-                        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.16em] text-[#775722]">{seed.name}</span>
-                        {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[26px] bg-[rgba(92,66,26,0.26)] text-xs font-semibold text-[#7c5b24]">Lv.{seed.unlockLevel}</span> : null}
+                        {seed.unlocked ? <span className={`absolute right-2 top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.14em] ${rarity.badge}`}>{siteCopy.text(rarity.label, "site.components.farm.farmclient")}</span> : null}
+                        <div className="relative h-12 w-12"><Image src={FARM_CROP_ASSETS[seed.code].READY} alt={siteCopy.text(seed.name, "site.lib.farmconfig")} fill className="object-contain" /></div>
+                        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.16em] text-[#775722]">{siteCopy.text(seed.name, "site.lib.farmconfig")}</span>
+                        {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[26px] bg-[rgba(92,66,26,0.26)] text-xs font-semibold text-[#7c5b24]"><SiteText copyKey="site.components.farm.farmclient.99f42451a1ce" />{seed.unlockLevel}</span> : null}
                         {selected ? <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-[#fff0a4] shadow-[0_0_12px_rgba(255,240,164,0.9)]" /> : null}
                       </button>
                     );
@@ -1440,20 +1444,20 @@ export function FarmClient({ initialDashboard }: Props) {
                   <div className="flex items-end gap-4 rounded-[12px] border-[4px] border-[#6e4316] bg-[#8f5a22] px-6 py-4 shadow-[0_6px_0_#56300d,0_22px_40px_rgba(43,24,7,0.28)]">
                     <div className="flex min-w-[196px] items-center gap-3 rounded-[10px] border-[3px] border-[#e2c27f]/45 bg-[#6d4317] px-4 py-3 text-[#fff2cb]">
                       <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[8px] border-[3px] border-[#7b4c18] bg-[#fff4d2] shadow-[0_3px_0_#c8943f]">
-                        {currentSeed ? <Image src={FARM_CROP_ASSETS[currentSeed.code].READY} alt={currentSeed.name} fill className="object-contain p-2" /> : <span className="text-2xl">🌱</span>}
+                        {currentSeed ? <Image src={FARM_CROP_ASSETS[currentSeed.code].READY} alt={siteCopy.text(currentSeed.name, "site.lib.farmconfig")} fill className="object-contain p-2" /> : <span className="text-2xl">🌱</span>}
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase tracking-[0.12em] text-[#f4d38a]">当前作物</p>
-                        <p className="mt-1 text-sm font-black tracking-[0.04em]">{currentSeed ? currentSeed.name : '未选择'}</p>
-                        <p className="mt-1 text-[11px] text-[#f7e6bb]/78">{isVisiting ? '访客模式仅可观察与偷菜' : '点击种子袋切换当前播种作物'}</p>
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-[#f4d38a]"><SiteText copyKey="site.components.farm.farmclient.f85473d9f29d" /></p>
+                        <p className="mt-1 text-sm font-black tracking-[0.04em]">{currentSeed ? siteCopy.text(currentSeed.name, "site.lib.farmconfig") : siteCopy("site.components.farm.farmclient.53e2db70167f")}</p>
+                        <p className="mt-1 text-[11px] text-[#f7e6bb]/78">{isVisiting ? siteCopy("site.components.farm.farmclient.1a427f0ea798") : siteCopy("site.components.farm.farmclient.a1b9c609eedf")}</p>
                       </div>
                     </div>
 
                     <div className="flex items-end gap-3">
-                      <ToolButton icon="🌱" label="种子袋" active={bagDrawerOpen} onClick={toggleSeedTray} muted={isVisiting} />
-                      <ToolButton icon="💰" label="兑换所" active={activeDrawer === 'exchange'} onClick={() => !isVisiting && setActiveDrawer((current) => (current === 'exchange' ? 'none' : 'exchange'))} muted={isVisiting} />
-                      <ToolButton icon="📜" label="日志" active={activeDrawer === 'logs'} onClick={() => !isVisiting && setActiveDrawer((current) => (current === 'logs' ? 'none' : 'logs'))} muted={isVisiting} />
-                      <ToolButton icon="🧭" label="好友庄园" active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
+                      <ToolButton icon="🌱" label={siteCopy("site.components.farm.farmclient.07bcbf7b987f")} active={bagDrawerOpen} onClick={toggleSeedTray} muted={isVisiting} />
+                      <ToolButton icon="💰" label={siteCopy("site.components.farm.farmclient.d2f864b529ff")} active={activeDrawer === 'exchange'} onClick={() => !isVisiting && setActiveDrawer((current) => (current === 'exchange' ? 'none' : 'exchange'))} muted={isVisiting} />
+                      <ToolButton icon="📜" label={siteCopy("site.components.farm.farmclient.4de50894b8c1")} active={activeDrawer === 'logs'} onClick={() => !isVisiting && setActiveDrawer((current) => (current === 'logs' ? 'none' : 'logs'))} muted={isVisiting} />
+                      <ToolButton icon="🧭" label={siteCopy("site.components.farm.farmclient.dd9beca883d7")} active={friendModalOpen} onClick={() => setFriendModalOpen(true)} />
                       {isVisiting ? (
                         <button
                           type="button"
@@ -1462,13 +1466,13 @@ export function FarmClient({ initialDashboard }: Props) {
                         >
                           <span className="absolute inset-[5px] rounded-[6px] border border-[#fff7db]/70" />
                           <span className="flex h-11 w-11 items-center justify-center rounded-[8px] border-[2px] border-[#8a5818] bg-[#fff8df] text-[24px] shadow-[inset_0_2px_0_rgba(255,255,255,0.75)]">🏡</span>
-                          <span className="text-[11px] font-black tracking-[0.06em]">回庄园</span>
+                          <span className="text-[11px] font-black tracking-[0.06em]"><SiteText copyKey="site.components.farm.farmclient.09b0def32249" /></span>
                         </button>
                       ) : (
                         <Link href="/profile" className="group relative flex h-[88px] w-[92px] flex-col items-center justify-center gap-1 rounded-[10px] border-[3px] border-[#7a4f1c] bg-[#fff1c7] px-2 py-3 text-[#7a5c23] shadow-[0_4px_0_#c48e39] transition hover:-translate-y-0.5 hover:border-[#efcc77]/80 hover:brightness-105">
                           <span className="absolute inset-[5px] rounded-[6px] border border-[#fff7db]/70" />
                           <span className="flex h-11 w-11 items-center justify-center rounded-[8px] border-[2px] border-[#8a5818] bg-[#fff8df] text-[24px] shadow-[inset_0_2px_0_rgba(255,255,255,0.75)]">👤</span>
-                          <span className="text-[11px] font-black tracking-[0.06em]">个人页</span>
+                          <span className="text-[11px] font-black tracking-[0.06em]"><SiteText copyKey="site.components.farm.farmclient.091197e51660" /></span>
                         </Link>
                       )}
                     </div>
@@ -1480,7 +1484,7 @@ export function FarmClient({ initialDashboard }: Props) {
                   onClick={toggleBottomDock}
                   className="group rounded-[10px] border-[4px] border-[#6e4316] bg-[#8f5a22] px-6 py-2.5 text-[11px] font-black tracking-[0.08em] text-[#f6e3b2] shadow-[0_5px_0_#56300d,0_14px_24px_rgba(43,24,7,0.24)] transition hover:-translate-y-0.5 hover:brightness-105"
                 >
-                  {bottomDockOpen ? '收起工具栏' : '展开工具栏'}
+                  {bottomDockOpen ? siteCopy("site.components.farm.farmclient.2ef750e5d8bb") : siteCopy("site.components.farm.farmclient.08f5ae4059ca")}
                 </button>
               </div>
             </div>
@@ -1497,17 +1501,17 @@ export function FarmClient({ initialDashboard }: Props) {
           <div className="space-y-4">
             {currentSeed ? (
               <div className="rounded-[26px] border border-[#d8bf87]/38 bg-[linear-gradient(145deg,_rgba(255,250,236,0.95),_rgba(252,235,194,0.95))] p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">当前选中</p>
+                <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]"><SiteText copyKey="site.components.farm.farmclient.7b5be6952c7e" /></p>
                 <div className="mt-3 flex items-start gap-4">
-                  <div className="relative h-20 w-20 shrink-0"><Image src={FARM_CROP_ASSETS[currentSeed.code].READY} alt={currentSeed.name} fill className="object-contain" /></div>
+                  <div className="relative h-20 w-20 shrink-0"><Image src={FARM_CROP_ASSETS[currentSeed.code].READY} alt={siteCopy.text(currentSeed.name, "site.lib.farmconfig")} fill className="object-contain" /></div>
                   <div>
-                    <h3 className="text-2xl font-semibold tracking-[0.05em] text-[#35210a]">{currentSeed.name}</h3>
+                    <h3 className="text-2xl font-semibold tracking-[0.05em] text-[#35210a]">{siteCopy.text(currentSeed.name, "site.lib.farmconfig")}</h3>
                     <p className="mt-2 text-sm leading-7 text-[#705529]">{currentSeed.description}</p>
                     <div className="mt-3 grid gap-2 text-sm text-[#60461b] sm:grid-cols-2">
-                      <span>成本：{formatAmount(currentSeed.costCoins)} 金币</span>
-                      <span>成熟：{getFarmSeedDurationLabel(currentSeed.durationMinutes)}</span>
-                      <span>收益：{formatAmount(currentSeed.minYieldCoins)} ~ {formatAmount(currentSeed.maxYieldCoins)}</span>
-                      <span>经验：+{currentSeed.experience}</span>
+                      <span><SiteText copyKey="site.components.farm.farmclient.f07bae0884a7" />{formatAmount(currentSeed.costCoins)}<SiteText copyKey="site.components.farm.farmclient.044ad9e1ca97" /></span>
+                      <span><SiteText copyKey="site.components.farm.farmclient.cf7b9e6cbd7d" />{getFarmSeedDurationLabel(currentSeed.durationMinutes)}</span>
+                      <span><SiteText copyKey="site.components.farm.farmclient.a5e29a76057a" />{formatAmount(currentSeed.minYieldCoins)} ~ {formatAmount(currentSeed.maxYieldCoins)}</span>
+                      <span><SiteText copyKey="site.components.farm.farmclient.d7bbb35fc66e" />{currentSeed.experience}</span>
                     </div>
                   </div>
                 </div>
@@ -1516,13 +1520,13 @@ export function FarmClient({ initialDashboard }: Props) {
             <div className="rounded-[26px] border border-[#d8bf87]/38 bg-[linear-gradient(145deg,_rgba(255,250,236,0.95),_rgba(252,235,194,0.95))] p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">种子分页背包</p>
-                  <p className="mt-1 text-sm text-[#705529]">每页展示 2 个物品格，边框颜色表示稀有度。</p>
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]"><SiteText copyKey="site.components.farm.farmclient.fe70876382b5" /></p>
+                  <p className="mt-1 text-sm text-[#705529]"><SiteText copyKey="site.components.farm.farmclient.fed92d874d54" /></p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button" disabled={visibleSeedPage === 0} onClick={() => setSeedPage((current) => Math.max(0, current - 1))} className="rounded-full border border-[#d5b778]/45 bg-white/70 px-3 py-2 text-xs font-semibold tracking-[0.18em] text-[#8e670f] transition hover:bg-white disabled:opacity-40">上一页</button>
+                  <button type="button" disabled={visibleSeedPage === 0} onClick={() => setSeedPage((current) => Math.max(0, current - 1))} className="rounded-full border border-[#d5b778]/45 bg-white/70 px-3 py-2 text-xs font-semibold tracking-[0.18em] text-[#8e670f] transition hover:bg-white disabled:opacity-40"><SiteText copyKey="site.components.farm.farmclient.c9b9ae7a6144" /></button>
                   <span className="text-xs font-semibold tracking-[0.22em] text-[#8f6806]">{visibleSeedPage + 1}/{totalSeedPages}</span>
-                  <button type="button" disabled={visibleSeedPage >= totalSeedPages - 1} onClick={() => setSeedPage((current) => Math.min(totalSeedPages - 1, current + 1))} className="rounded-full border border-[#d5b778]/45 bg-white/70 px-3 py-2 text-xs font-semibold tracking-[0.18em] text-[#8e670f] transition hover:bg-white disabled:opacity-40">下一页</button>
+                  <button type="button" disabled={visibleSeedPage >= totalSeedPages - 1} onClick={() => setSeedPage((current) => Math.min(totalSeedPages - 1, current + 1))} className="rounded-full border border-[#d5b778]/45 bg-white/70 px-3 py-2 text-xs font-semibold tracking-[0.18em] text-[#8e670f] transition hover:bg-white disabled:opacity-40"><SiteText copyKey="site.components.farm.farmclient.8a8542f69648" /></button>
                 </div>
               </div>
               <div className="mt-4 space-y-3">
@@ -1533,22 +1537,22 @@ export function FarmClient({ initialDashboard }: Props) {
                   <button key={seed.code} type="button" disabled={!seed.unlocked} onClick={() => setSelectedSeed(seed.code)} className={`w-full rounded-[26px] border p-4 text-left transition ${selected ? 'border-[#d39916] bg-[linear-gradient(145deg,_#fff3c7,_#ffe19a)] shadow-[0_16px_32px_rgba(211,153,22,0.12)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-white/72 hover:border-[#d39916]/50 hover:bg-[#fff8e7]` : 'border-dashed border-[#cbb68d]/35 bg-[#efe8d7] text-[#9d8e71]'}`}>
                     <div className="flex items-start gap-4">
                       <div className="relative h-16 w-16 shrink-0 rounded-[20px] border border-white/40 bg-[linear-gradient(180deg,_rgba(255,248,234,0.95),_rgba(249,233,194,0.95))] p-2">
-                        <Image src={FARM_CROP_ASSETS[seed.code].READY} alt={seed.name} fill className="object-contain p-2" />
+                        <Image src={FARM_CROP_ASSETS[seed.code].READY} alt={siteCopy.text(seed.name, "site.lib.farmconfig")} fill className="object-contain p-2" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-3">
-                          <p className="text-lg font-semibold tracking-[0.04em]">{seed.name}</p>
+                          <p className="text-lg font-semibold tracking-[0.04em]">{siteCopy.text(seed.name, "site.lib.farmconfig")}</p>
                           <div className="flex items-center gap-2">
-                            <span className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.24em] ${rarity.badge}`}>{rarity.label}</span>
-                            <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">Lv.{seed.unlockLevel}</span>
+                            <span className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.24em] ${rarity.badge}`}>{siteCopy.text(rarity.label, "site.components.farm.farmclient")}</span>
+                            <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]"><SiteText copyKey="site.components.farm.farmclient.99f42451a1ce" />{seed.unlockLevel}</span>
                           </div>
                         </div>
-                        <p className="mt-1 text-sm text-[#6f5428]">{seed.description}</p>
+                        <p className="mt-1 text-sm text-[#6f5428]">{siteCopy.text(seed.description, "site.lib.farmconfig")}</p>
                         <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-[#654a1c]">
-                          <span>成本：{formatAmount(seed.costCoins)} 金币</span>
-                          <span>成熟：{getFarmSeedDurationLabel(seed.durationMinutes)}</span>
-                          <span>收益：{formatAmount(seed.minYieldCoins)} ~ {formatAmount(seed.maxYieldCoins)}</span>
-                          <span>经验：+{seed.experience}</span>
+                          <span><SiteText copyKey="site.components.farm.farmclient.f07bae0884a7" />{formatAmount(seed.costCoins)}<SiteText copyKey="site.components.farm.farmclient.044ad9e1ca97" /></span>
+                          <span><SiteText copyKey="site.components.farm.farmclient.cf7b9e6cbd7d" />{getFarmSeedDurationLabel(seed.durationMinutes)}</span>
+                          <span><SiteText copyKey="site.components.farm.farmclient.a5e29a76057a" />{formatAmount(seed.minYieldCoins)} ~ {formatAmount(seed.maxYieldCoins)}</span>
+                          <span><SiteText copyKey="site.components.farm.farmclient.d7bbb35fc66e" />{seed.experience}</span>
                         </div>
                       </div>
                     </div>
@@ -1563,15 +1567,15 @@ export function FarmClient({ initialDashboard }: Props) {
         {activeDrawer === 'exchange' ? (
           <div className="space-y-4">
             {[
-              { title: '余额 → 金币', hint: '把 totalBalance 直接投进庄园。', value: balanceAmount, onChange: setBalanceAmount, action: () => runAction('exchange_balance', { amount: balanceAmount }, 'exchange_balance'), loading: 'exchange_balance', button: '兑换金币' },
-              { title: '积分 → 金币', hint: '已有积分也能转成庄园货币。', value: pointAmount, onChange: setPointAmount, action: () => runAction('exchange_points', { amount: pointAmount }, 'exchange_points'), loading: 'exchange_points', button: '转成金币' },
-              { title: '金币 → 积分', hint: '收菜后的金币也能换回点了么积分。', value: coinAmount, onChange: setCoinAmount, action: () => runAction('exchange_coins_to_points', { amount: coinAmount }, 'exchange_coins_to_points'), loading: 'exchange_coins_to_points', button: '兑换积分' },
+              { title: siteCopy("site.components.farm.farmclient.e51cce800cf2"), hint: siteCopy("site.components.farm.farmclient.bff7904be8e6"), value: balanceAmount, onChange: setBalanceAmount, action: () => runAction('exchange_balance', { amount: balanceAmount }, 'exchange_balance'), loading: 'exchange_balance', button: siteCopy("site.components.farm.farmclient.1f56bd992b74") },
+              { title: siteCopy("site.components.farm.farmclient.f27299e70090"), hint: siteCopy("site.components.farm.farmclient.861f53f379cf"), value: pointAmount, onChange: setPointAmount, action: () => runAction('exchange_points', { amount: pointAmount }, 'exchange_points'), loading: 'exchange_points', button: siteCopy("site.components.farm.farmclient.4e2fe50f7fd4") },
+              { title: siteCopy("site.components.farm.farmclient.f7569b5652d6"), hint: siteCopy("site.components.farm.farmclient.bba05bc59b0c"), value: coinAmount, onChange: setCoinAmount, action: () => runAction('exchange_coins_to_points', { amount: coinAmount }, 'exchange_coins_to_points'), loading: 'exchange_coins_to_points', button: siteCopy("site.components.farm.farmclient.42a6bb595ff0") },
             ].map((item) => (
               <div key={item.title} className="rounded-[24px] border border-[#d7bc83]/35 bg-white/72 p-4">
                 <div className="flex flex-col gap-1"><p className="text-base font-semibold tracking-[0.04em] text-[#38240d]">{item.title}</p><p className="text-sm text-[#7b6131]">{item.hint}</p></div>
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                  <input value={item.value} onChange={(event) => item.onChange(event.target.value)} className="flex-1 rounded-full border border-[#d9bf88]/40 bg-[#fffdf7] px-4 py-3 text-sm text-[#38240d] outline-none transition focus:border-[#c98b12]" placeholder="输入数量" />
-                  <button type="button" disabled={loadingKey === item.loading} onClick={item.action} className="rounded-full bg-[linear-gradient(90deg,_#8d5b11,_#bf8113)] px-5 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === item.loading ? '处理中…' : item.button}</button>
+                  <input value={item.value} onChange={(event) => item.onChange(event.target.value)} className="flex-1 rounded-full border border-[#d9bf88]/40 bg-[#fffdf7] px-4 py-3 text-sm text-[#38240d] outline-none transition focus:border-[#c98b12]" placeholder={siteCopy("site.components.farm.farmclient.def780a96f1b")} />
+                  <button type="button" disabled={loadingKey === item.loading} onClick={item.action} className="rounded-full bg-[linear-gradient(90deg,_#8d5b11,_#bf8113)] px-5 py-3 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === item.loading ? siteCopy("site.components.farm.farmclient.d3d21191f32e") : item.button}</button>
                 </div>
               </div>
             ))}
@@ -1582,11 +1586,11 @@ export function FarmClient({ initialDashboard }: Props) {
           <div className="space-y-3">
             {viewDashboard.recentLogs.length > 0 ? viewDashboard.recentLogs.map((log) => (
               <div key={log.id} className="rounded-[22px] border border-[#d8bf87]/28 bg-[linear-gradient(180deg,_rgba(255,252,245,0.94),_rgba(249,239,214,0.94))] p-4 text-sm text-[#6b4f21]">
-                <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold tracking-[0.04em] text-[#31200d]">{actionLabelMap[log.actionType] ?? log.actionType}</p><span className="text-xs text-[#98731a]">{new Date(log.createdAt).toLocaleString('zh-CN')}</span></div>
-                <div className="mt-3 flex flex-wrap gap-4 text-xs"><span>金币 {formatAmount(log.coinDelta)}</span><span>积分 {formatAmount(log.pointDelta)}</span><span>余额 {formatAmount(log.balanceDelta)}</span><span>经验 +{log.expDelta}</span>{log.plotIndex ? <span>地块 {log.plotIndex}</span> : null}</div>
+                <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold tracking-[0.04em] text-[#31200d]">{siteCopy.text(actionLabelMap[log.actionType], "site.components.farm.farmclient") ?? log.actionType}</p><span className="text-xs text-[#98731a]">{new Date(log.createdAt).toLocaleString('zh-CN')}</span></div>
+                <div className="mt-3 flex flex-wrap gap-4 text-xs"><span><SiteText copyKey="site.components.farm.farmclient.f34e4daa0ccb" />{formatAmount(log.coinDelta)}</span><span><SiteText copyKey="site.components.farm.farmclient.6da6f86775c0" />{formatAmount(log.pointDelta)}</span><span><SiteText copyKey="site.components.farm.farmclient.1f8064f240f3" />{formatAmount(log.balanceDelta)}</span><span><SiteText copyKey="site.components.farm.farmclient.4952bcad62f5" />{log.expDelta}</span>{log.plotIndex ? <span><SiteText copyKey="site.components.farm.farmclient.5e16b35d3051" />{log.plotIndex}</span> : null}</div>
                 {log.note ? <p className="mt-2 text-xs text-[#8b6a2c]">{log.note}</p> : null}
               </div>
-            )) : <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">暂时还没有庄园记录。</p>}
+            )) : <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]"><SiteText copyKey="site.components.farm.farmclient.f525bf813588" /></p>}
           </div>
         ) : null}
       </OverlayDrawer>
@@ -1600,17 +1604,17 @@ export function FarmClient({ initialDashboard }: Props) {
             <button type="button" onClick={() => setFriendModalOpen(false)} className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-[#d8bc83]/45 bg-white/55 text-xl text-[#734d17] transition hover:bg-white/75">×</button>
             <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[260px_1fr]">
               <div className="rounded-[30px] border border-[#efcf88]/38 bg-[linear-gradient(180deg,_rgba(122,24,20,0.96),_rgba(74,17,14,0.95))] p-5 text-[#fff5da] shadow-[0_18px_40px_rgba(69,18,15,0.24)]">
-                <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]">Koi Manor</p>
-                <h2 className="mt-2 text-3xl font-semibold tracking-[0.06em]">好友庄园</h2>
-                <p className="mt-3 text-sm leading-7 text-[#fcebc2]/86">好友、常访和搜索都收进独立拜访台，强调暖红色和鎏金木牌风格，不再像普通后台列表。</p>
+                <p className="text-[11px] uppercase tracking-[0.34em] text-[#f4d38a]"><SiteText copyKey="site.components.farm.farmclient.a7c74fc65d8c" /></p>
+                <h2 className="mt-2 text-3xl font-semibold tracking-[0.06em]"><SiteText copyKey="site.components.farm.farmclient.dd9beca883d7" /></h2>
+                <p className="mt-3 text-sm leading-7 text-[#fcebc2]/86"><SiteText copyKey="site.components.farm.farmclient.11ef9f7c4e9b" /></p>
                 <div className="mt-5 space-y-2">
-                  <button type="button" onClick={() => setCompanionTab('friends')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'friends' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>我的好友</button>
-                  <button type="button" onClick={() => setCompanionTab('frequent')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'frequent' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>常访名单</button>
-                  <button type="button" onClick={() => setCompanionTab('search')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'search' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}>搜索庄园</button>
+                  <button type="button" onClick={() => setCompanionTab('friends')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'friends' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}><SiteText copyKey="site.components.farm.farmclient.0f1afd780afe" /></button>
+                  <button type="button" onClick={() => setCompanionTab('frequent')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'frequent' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}><SiteText copyKey="site.components.farm.farmclient.c3b9aae76aba" /></button>
+                  <button type="button" onClick={() => setCompanionTab('search')} className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm font-semibold tracking-[0.12em] transition ${companionTab === 'search' ? 'border-[#f6cf77]/65 bg-[linear-gradient(90deg,_rgba(246,207,119,0.26),_rgba(255,244,195,0.18))] text-white' : 'border-white/12 bg-white/6 text-[#ffeab7] hover:bg-white/10'}`}><SiteText copyKey="site.components.farm.farmclient.c19aeac2f428" /></button>
                 </div>
                 {isVisiting ? (
                   <button type="button" disabled={loadingKey === 'visit-home'} onClick={() => loadTargetFarm()} className="mt-6 w-full rounded-full border border-[#f5d8a0]/35 bg-white/10 px-4 py-3 text-sm font-semibold tracking-[0.12em] text-[#ffe3a4] transition hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-50">
-                    {loadingKey === 'visit-home' ? '返回中…' : '回到我的庄园'}
+                    {loadingKey === 'visit-home' ? siteCopy("site.components.farm.farmclient.3e5529ca2856") : siteCopy("site.components.farm.farmclient.e4cdfb4318f9")}
                   </button>
                 ) : null}
               </div>
@@ -1619,13 +1623,13 @@ export function FarmClient({ initialDashboard }: Props) {
                   <div className="rounded-[28px] border border-[#d7bc83]/35 bg-white/72 p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">真实好友</p>
-                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]">我的好友</h3>
-                        <p className="mt-1 text-sm text-[#7b6131]">根据真实订单和打赏互动生成，可直接拜访对方庄园。</p>
+                        <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]"><SiteText copyKey="site.components.farm.farmclient.463ec16b909b" /></p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]"><SiteText copyKey="site.components.farm.farmclient.0f1afd780afe" /></h3>
+                        <p className="mt-1 text-sm text-[#7b6131]"><SiteText copyKey="site.components.farm.farmclient.5f7835978051" /></p>
                       </div>
-                      <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{companions.friends.length} 位好友</span>
+                      <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{companions.friends.length}<SiteText copyKey="site.components.farm.farmclient.dfdbc1605e63" /></span>
                     </div>
-                    <div className="mt-4">{renderCompanionCards(companions.friends, '还没有形成好友庄园名单。先和陪玩互动几次，再回来这里。')}</div>
+                    <div className="mt-4">{renderCompanionCards(companions.friends, siteCopy("site.components.farm.farmclient.cb078581b60f"))}</div>
                   </div>
                 ) : null}
 
@@ -1633,17 +1637,17 @@ export function FarmClient({ initialDashboard }: Props) {
                   <div className="rounded-[28px] border border-[#d7bc83]/35 bg-white/72 p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">访问记录</p>
-                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]">常访名单</h3>
-                        <p className="mt-1 text-sm text-[#7b6131]">改成服务器真实拜访记录，不再依赖本地缓存。</p>
+                        <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]"><SiteText copyKey="site.components.farm.farmclient.261d0e20de88" /></p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]"><SiteText copyKey="site.components.farm.farmclient.c3b9aae76aba" /></h3>
+                        <p className="mt-1 text-sm text-[#7b6131]"><SiteText copyKey="site.components.farm.farmclient.0096113d559f" /></p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setFrequentVisitSort('count')} className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${frequentVisitSort === 'count' ? 'border-[#d39a24]/45 bg-[#fff0c8] text-[#8f6806]' : 'border-[#dfc48b]/45 bg-[#fff6e2] text-[#8f6806]'}`}>按次数</button>
-                        <button type="button" onClick={() => setFrequentVisitSort('recent')} className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${frequentVisitSort === 'recent' ? 'border-[#d39a24]/45 bg-[#fff0c8] text-[#8f6806]' : 'border-[#dfc48b]/45 bg-[#fff6e2] text-[#8f6806]'}`}>按最近</button>
-                        <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{companions.frequentVisits.length} 个庄园</span>
+                        <button type="button" onClick={() => setFrequentVisitSort('count')} className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${frequentVisitSort === 'count' ? 'border-[#d39a24]/45 bg-[#fff0c8] text-[#8f6806]' : 'border-[#dfc48b]/45 bg-[#fff6e2] text-[#8f6806]'}`}><SiteText copyKey="site.components.farm.farmclient.f8cb1e3b586d" /></button>
+                        <button type="button" onClick={() => setFrequentVisitSort('recent')} className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${frequentVisitSort === 'recent' ? 'border-[#d39a24]/45 bg-[#fff0c8] text-[#8f6806]' : 'border-[#dfc48b]/45 bg-[#fff6e2] text-[#8f6806]'}`}><SiteText copyKey="site.components.farm.farmclient.64af5a6f4026" /></button>
+                        <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">{companions.frequentVisits.length}<SiteText copyKey="site.components.farm.farmclient.92b758824fed" /></span>
                       </div>
                     </div>
-                    <div className="mt-4">{renderCompanionCards(sortedFrequentVisits, '还没有常访庄园。先拜访一次别人的庄园，记录就会出现在这里。')}</div>
+                    <div className="mt-4">{renderCompanionCards(sortedFrequentVisits, siteCopy("site.components.farm.farmclient.dbc04130d07a"))}</div>
                   </div>
                 ) : null}
 
@@ -1651,18 +1655,18 @@ export function FarmClient({ initialDashboard }: Props) {
                   <div className="rounded-[28px] border border-[#d7bc83]/35 bg-white/72 p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]">地图册</p>
-                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]">搜索庄园</h3>
-                        <p className="mt-1 text-sm text-[#7b6131]">输入陪玩 ID、Discord ID 或展示名，找到后直接进入对方庄园。</p>
+                        <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]"><SiteText copyKey="site.components.farm.farmclient.c28b8fbdaafd" /></p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-[0.04em] text-[#38240d]"><SiteText copyKey="site.components.farm.farmclient.c19aeac2f428" /></h3>
+                        <p className="mt-1 text-sm text-[#7b6131]"><SiteText copyKey="site.components.farm.farmclient.fe2fecf83991" /></p>
                       </div>
-                      <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]">拜访模式</span>
+                      <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8f6806]"><SiteText copyKey="site.components.farm.farmclient.a59a5d81f920" /></span>
                     </div>
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                      <input value={farmSearch} onChange={(event) => setFarmSearch(event.target.value)} className="flex-1 rounded-full border border-[#d9bf88]/40 bg-[#fffdf7] px-4 py-3 text-sm text-[#38240d] outline-none transition focus:border-[#c98b12]" placeholder="搜索陪玩 ID / Discord ID / 名字" />
+                      <input value={farmSearch} onChange={(event) => setFarmSearch(event.target.value)} className="flex-1 rounded-full border border-[#d9bf88]/40 bg-[#fffdf7] px-4 py-3 text-sm text-[#38240d] outline-none transition focus:border-[#c98b12]" placeholder={siteCopy("site.components.farm.farmclient.9b49cca3c40d")} />
                     </div>
                     <div className="mt-4 space-y-3">
-                      {searching ? <p className="text-sm text-[#7b6131]">搜索中…</p> : null}
-                      {!searching && farmSearch.trim() && searchResults.length === 0 ? <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]">没有找到可访问的庄园。</p> : null}
+                      {searching ? <p className="text-sm text-[#7b6131]"><SiteText copyKey="site.components.farm.farmclient.cc50237edca2" /></p> : null}
+                      {!searching && farmSearch.trim() && searchResults.length === 0 ? <p className="rounded-2xl border border-dashed border-[#d7bc83]/40 bg-[#fff8e8] p-4 text-sm text-[#816032]"><SiteText copyKey="site.components.farm.farmclient.3853bd5c971a" /></p> : null}
                       <div className="grid gap-3 sm:grid-cols-2">
                         {searchResults.map((result) => (
                           <button key={result.id} type="button" disabled={loadingKey === 'visit-farm'} onClick={() => loadTargetFarm(result.discordUserId)} className="group overflow-hidden rounded-[26px] border border-[#d8bf87]/35 bg-[linear-gradient(180deg,_rgba(255,252,245,0.98),_rgba(249,239,214,0.98))] text-left transition hover:-translate-y-0.5 hover:border-[#d39a24]/50 hover:shadow-[0_18px_34px_rgba(101,66,20,0.14)] disabled:cursor-not-allowed disabled:opacity-60">
@@ -1674,19 +1678,19 @@ export function FarmClient({ initialDashboard }: Props) {
                               )}
                               <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(131,33,22,0.02),_rgba(59,20,13,0.66))]" />
                               <div className="absolute left-4 top-4 flex h-12 w-12 items-center justify-center rounded-full border border-white/40 bg-[linear-gradient(180deg,_rgba(255,248,228,0.92),_rgba(248,224,161,0.9))] text-lg font-semibold text-[#7d5716] shadow-[0_10px_18px_rgba(31,17,5,0.16)]">
-                                {result.serverDisplayName.trim().charAt(0) || '庄'}
+                                {result.serverDisplayName.trim().charAt(0) || siteCopy("site.components.farm.farmclient.cf662fc92a5b")}
                               </div>
                               <span className="absolute right-4 top-4 rounded-full border border-white/36 bg-[rgba(86,21,13,0.62)] px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-[#ffe3a6]">#{result.peiwanId}</span>
                               <div className="absolute bottom-3 left-4 flex flex-wrap gap-2">
                                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getCompanionStatusTone(result.isOnline)}`}>
-                                  {result.isOnline ? '在线' : '离线'}
+                                  {result.isOnline ? siteCopy("site.components.farm.farmclient.0373ff923114") : siteCopy("site.components.farm.farmclient.211357d22f4d")}
                                 </span>
                                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
                                   result.stealablePlots > 0
                                     ? 'border-amber-200/70 bg-amber-50/95 text-amber-700'
                                     : 'border-stone-300/70 bg-stone-100/95 text-stone-500'
                                 }`}>
-                                  {result.stealablePlots > 0 ? `可偷 ${result.stealablePlots}` : '不可偷'}
+                                  {result.stealablePlots > 0 ? siteCopy("site.components.farm.farmclient.ad8921f86dd3", { value1: String(result.stealablePlots) }) : siteCopy("site.components.farm.farmclient.051a4eebc81a")}
                                 </span>
                               </div>
                             </div>
@@ -1695,11 +1699,11 @@ export function FarmClient({ initialDashboard }: Props) {
                                 <p className="truncate text-base font-semibold tracking-[0.04em] text-[#35210a]">{result.serverDisplayName}</p>
                                 <p className="mt-1 truncate text-xs text-[#8b6a2c]">{result.discordUserId}</p>
                                 <div className="mt-2 flex items-center gap-2 text-[11px] text-[#7e6134]">
-                                  <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-2 py-1 tracking-[0.14em]">搜索结果</span>
-                                  <span>直接进入对方庄园</span>
+                                  <span className="rounded-full border border-[#dfc48b]/45 bg-[#fff6e2] px-2 py-1 tracking-[0.14em]"><SiteText copyKey="site.components.farm.farmclient.88d72ece7cf7" /></span>
+                                  <span><SiteText copyKey="site.components.farm.farmclient.0935d340f6ba" /></span>
                                 </div>
                               </div>
-                              <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]">拜访</span>
+                              <span className="rounded-full border border-[#d2ad54]/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-[#8f6806]"><SiteText copyKey="site.components.farm.farmclient.e44ddb6f2014" /></span>
                             </div>
                           </button>
                         ))}
@@ -1719,23 +1723,23 @@ export function FarmClient({ initialDashboard }: Props) {
             <button type="button" onClick={() => setActivePlotIndex(null)} className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-[#d8bc83]/45 bg-white/55 text-xl text-[#734d17] transition hover:bg-white/75">×</button>
             <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[0.9fr_1.1fr]">
               <div className={`relative overflow-hidden rounded-[30px] border p-5 ${activePlot.highlight === 'ready' ? 'border-[#efc861]/65 bg-[linear-gradient(180deg,_rgba(255,241,190,0.96),_rgba(224,179,70,0.94))]' : activePlot.highlight === 'growing' ? 'border-[#d4b06b]/55 bg-[linear-gradient(180deg,_rgba(255,244,215,0.96),_rgba(232,205,138,0.94))]' : activePlot.highlight === 'idle' ? 'border-[#d4b06b]/42 bg-[linear-gradient(180deg,_rgba(255,250,237,0.96),_rgba(245,231,194,0.94))]' : 'border-[#cdb486]/36 bg-[linear-gradient(180deg,_rgba(234,223,197,0.96),_rgba(208,188,145,0.94))]'}`}>
-                <div className="absolute left-5 top-5 rounded-full border border-white/32 bg-white/18 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-[#8d6509] shadow-[0_10px_18px_rgba(0,0,0,0.08)]">庄园操作台</div>
+                <div className="absolute left-5 top-5 rounded-full border border-white/32 bg-white/18 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-[#8d6509] shadow-[0_10px_18px_rgba(0,0,0,0.08)]"><SiteText copyKey="site.components.farm.farmclient.9b7652cc1d0b" /></div>
                 <div className="absolute inset-x-10 bottom-5 h-8 rounded-[50%] bg-[radial-gradient(circle,_rgba(75,48,14,0.36),_rgba(75,48,14,0.05)_72%)] blur-sm" />
                 <div className="relative flex h-full min-h-[300px] flex-col items-center justify-center text-center">
-                  <div className="rounded-full border border-white/35 bg-white/18 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8d6509]">地块 {activePlot.plotIndex}</div>
+                  <div className="rounded-full border border-white/35 bg-white/18 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8d6509]"><SiteText copyKey="site.components.farm.farmclient.5e16b35d3051" />{activePlot.plotIndex}</div>
                   <div className="relative mt-5 flex h-56 w-56 items-center justify-center">
                     {activePlotBase ? <Image src={activePlotBase.asset} alt="" fill className={activePlotBase.className} /> : null}
                     {activePlotPreview?.asset ? <Image src={activePlotPreview.asset} alt={activePlot.title} fill className={`object-contain ${activePlotPreview.className}`} /> : null}
                   </div>
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                    <span className="rounded-full border border-white/38 bg-white/24 px-4 py-2 text-sm font-semibold tracking-[0.16em] text-[#5f3b0d]">{activePlot.status === 'READY' ? '成熟完成' : activePlot.status === 'GROWING' && activePlot.plot ? stageLabelMap[activePlot.plot.growthStage] : activePlot.status === 'EMPTY' ? '等待播种' : '待解锁'}</span>
-                    {activePlot.seedMeta ? <span className="rounded-full border border-white/34 bg-white/18 px-4 py-2 text-sm font-semibold tracking-[0.12em] text-[#6d4a16]">经验 +{activePlot.seedMeta.experience}</span> : null}
+                    <span className="rounded-full border border-white/38 bg-white/24 px-4 py-2 text-sm font-semibold tracking-[0.16em] text-[#5f3b0d]">{activePlot.status === 'READY' ? siteCopy("site.components.farm.farmclient.b897b00b4b40") : activePlot.status === 'GROWING' && activePlot.plot ? siteCopy.text(stageLabelMap[activePlot.plot.growthStage], "site.components.farm.farmclient") : activePlot.status === 'EMPTY' ? siteCopy("site.components.farm.farmclient.c1e5d4469f0e") : siteCopy("site.components.farm.farmclient.2f0baebfe7ca")}</span>
+                    {activePlot.seedMeta ? <span className="rounded-full border border-white/34 bg-white/18 px-4 py-2 text-sm font-semibold tracking-[0.12em] text-[#6d4a16]"><SiteText copyKey="site.components.farm.farmclient.4952bcad62f5" />{activePlot.seedMeta.experience}</span> : null}
                   </div>
                 </div>
               </div>
               <div className="flex flex-col justify-between gap-5">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.34em] text-[#a17615]">Plot Detail</p>
+                  <p className="text-[11px] uppercase tracking-[0.34em] text-[#a17615]"><SiteText copyKey="site.components.farm.farmclient.08be14df26b5" /></p>
                   <h2 className="mt-2 text-3xl font-semibold tracking-[0.05em] text-[#38230b]">{activePlot.title}</h2>
                   <p className="mt-3 text-sm leading-7 text-[#6d5122]">{activePlot.subtitle}</p>
                   <div className="mt-5 rounded-[26px] border border-[#d7bc83]/35 bg-white/62 p-4 text-sm text-[#6b4f21]">
@@ -1745,23 +1749,23 @@ export function FarmClient({ initialDashboard }: Props) {
                     </div>
                     <div className="space-y-2">
                     {activePlot.tooltipLines.map((line) => <p key={line}>{line}</p>)}
-                    {activePlot.plot?.status === 'GROWING' ? (<div className="pt-2"><div className="h-3 overflow-hidden rounded-full bg-[#ebdfbe] p-[2px]"><div className="h-full rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)]" style={{ width: `${Math.round((activePlot.plot.progressRatio ?? 0) * 100)}%` }} /></div><p className="mt-2 text-xs text-[#8b6a2c]">成长进度 {Math.round((activePlot.plot.progressRatio ?? 0) * 100)}%</p></div>) : null}
-                    {activePlot.plot?.status === 'READY' && activePlot.plot.stolenCoins !== '0.00' ? <p>本轮已被偷：{formatAmount(activePlot.plot.stolenCoins)} 金币</p> : null}
+                    {activePlot.plot?.status === 'GROWING' ? (<div className="pt-2"><div className="h-3 overflow-hidden rounded-full bg-[#ebdfbe] p-[2px]"><div className="h-full rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)]" style={{ width: `${Math.round((activePlot.plot.progressRatio ?? 0) * 100)}%` }} /></div><p className="mt-2 text-xs text-[#8b6a2c]"><SiteText copyKey="site.components.farm.farmclient.7c2e3edd7bab" />{Math.round((activePlot.plot.progressRatio ?? 0) * 100)}%</p></div>) : null}
+                    {activePlot.plot?.status === 'READY' && activePlot.plot.stolenCoins !== '0.00' ? <p><SiteText copyKey="site.components.farm.farmclient.12d308ec75a7" />{formatAmount(activePlot.plot.stolenCoins)}<SiteText copyKey="site.components.farm.farmclient.044ad9e1ca97" /></p> : null}
                     </div>
                   </div>
                   {activePlot.seedMeta ? (
                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-2xl border border-[#d7bc83]/30 bg-white/58 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.24em] text-[#9d7518]">成熟时间</p><p className="mt-2 text-lg font-semibold text-[#34210b]">{getFarmSeedDurationLabel(activePlot.seedMeta.durationMinutes)}</p></div>
-                      <div className="rounded-2xl border border-[#d7bc83]/30 bg-white/58 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.24em] text-[#9d7518]">收益区间</p><p className="mt-2 text-lg font-semibold text-[#34210b]">{formatAmount(activePlot.seedMeta.minYieldCoins)} ~ {formatAmount(activePlot.seedMeta.maxYieldCoins)}</p></div>
-                      <div className="rounded-2xl border border-[#d7bc83]/30 bg-white/58 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.24em] text-[#9d7518]">成长奖励</p><p className="mt-2 text-lg font-semibold text-[#34210b]">+{activePlot.seedMeta.experience} EXP</p></div>
+                      <div className="rounded-2xl border border-[#d7bc83]/30 bg-white/58 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.24em] text-[#9d7518]"><SiteText copyKey="site.components.farm.farmclient.1a60e3d50126" /></p><p className="mt-2 text-lg font-semibold text-[#34210b]">{getFarmSeedDurationLabel(activePlot.seedMeta.durationMinutes)}</p></div>
+                      <div className="rounded-2xl border border-[#d7bc83]/30 bg-white/58 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.24em] text-[#9d7518]"><SiteText copyKey="site.components.farm.farmclient.e56bf735319a" /></p><p className="mt-2 text-lg font-semibold text-[#34210b]">{formatAmount(activePlot.seedMeta.minYieldCoins)} ~ {formatAmount(activePlot.seedMeta.maxYieldCoins)}</p></div>
+                      <div className="rounded-2xl border border-[#d7bc83]/30 bg-white/58 p-4 text-sm text-[#6a4c1d]"><p className="text-xs uppercase tracking-[0.24em] text-[#9d7518]"><SiteText copyKey="site.components.farm.farmclient.1decad6eb821" /></p><p className="mt-2 text-lg font-semibold text-[#34210b]">+{activePlot.seedMeta.experience}<SiteText copyKey="site.components.farm.farmclient.9f9cb8049dd9" /></p></div>
                     </div>
                   ) : null}
                 </div>
                 <div className="space-y-3">
-                  {activePlot.status === 'EMPTY' && viewDashboard.owner.isSelf && currentSeed ? <button type="button" disabled={loadingKey === `plant:${activePlot.plotIndex}`} onClick={() => performPlotAction(activePlot)} className="w-full rounded-full bg-[linear-gradient(90deg,_#8e5c11,_#bb7d10)] px-4 py-4 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === `plant:${activePlot.plotIndex}` ? '种植中…' : plotActionLabel(activePlot)}</button> : null}
-                  {activePlot.status === 'READY' ? <button type="button" disabled={(viewDashboard.owner.isSelf && loadingKey === `harvest:${activePlot.plotIndex}`) || (!viewDashboard.owner.isSelf && (!activePlot.plot?.canSteal || loadingKey === `steal:${activePlot.plotIndex}`))} onClick={() => performPlotAction(activePlot)} className="w-full rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] px-4 py-4 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{viewDashboard.owner.isSelf ? loadingKey === `harvest:${activePlot.plotIndex}` ? '收获中…' : plotActionLabel(activePlot) : loadingKey === `steal:${activePlot.plotIndex}` ? '偷菜中…' : plotActionLabel(activePlot)}</button> : null}
-                  {!activePlot.unlocked && viewDashboard.owner.isSelf && homeDashboard.summary.nextPlotCost ? <button type="button" disabled={loadingKey === 'expand'} onClick={() => performPlotAction(activePlot)} className="w-full rounded-full bg-[linear-gradient(90deg,_#503015,_#8d5b11,_#c78a18)] px-4 py-4 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === 'expand' ? '扩地中…' : plotActionLabel(activePlot)}</button> : null}
-                  {activePlot.status === 'EMPTY' && viewDashboard.owner.isSelf && !currentSeed ? <button type="button" onClick={() => { setActivePlotIndex(null); setActiveDrawer('seeds'); }} className="w-full rounded-full border border-[#d7bc83]/45 bg-white/75 px-4 py-4 text-sm font-semibold tracking-[0.14em] text-[#835e19] transition hover:bg-white">打开种子袋选择种子</button> : null}
+                  {activePlot.status === 'EMPTY' && viewDashboard.owner.isSelf && currentSeed ? <button type="button" disabled={loadingKey === `plant:${activePlot.plotIndex}`} onClick={() => performPlotAction(activePlot)} className="w-full rounded-full bg-[linear-gradient(90deg,_#8e5c11,_#bb7d10)] px-4 py-4 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === `plant:${activePlot.plotIndex}` ? siteCopy("site.components.farm.farmclient.6994b3e078d8") : plotActionLabel(activePlot)}</button> : null}
+                  {activePlot.status === 'READY' ? <button type="button" disabled={(viewDashboard.owner.isSelf && loadingKey === `harvest:${activePlot.plotIndex}`) || (!viewDashboard.owner.isSelf && (!activePlot.plot?.canSteal || loadingKey === `steal:${activePlot.plotIndex}`))} onClick={() => performPlotAction(activePlot)} className="w-full rounded-full bg-[linear-gradient(90deg,_#c98b13,_#f0bd40)] px-4 py-4 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{viewDashboard.owner.isSelf ? loadingKey === `harvest:${activePlot.plotIndex}` ? siteCopy("site.components.farm.farmclient.1bc81989de8f") : plotActionLabel(activePlot) : loadingKey === `steal:${activePlot.plotIndex}` ? siteCopy("site.components.farm.farmclient.b8467d5d40f6") : plotActionLabel(activePlot)}</button> : null}
+                  {!activePlot.unlocked && viewDashboard.owner.isSelf && homeDashboard.summary.nextPlotCost ? <button type="button" disabled={loadingKey === 'expand'} onClick={() => performPlotAction(activePlot)} className="w-full rounded-full bg-[linear-gradient(90deg,_#503015,_#8d5b11,_#c78a18)] px-4 py-4 text-sm font-semibold tracking-[0.14em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">{loadingKey === 'expand' ? siteCopy("site.components.farm.farmclient.486f7fad70b8") : plotActionLabel(activePlot)}</button> : null}
+                  {activePlot.status === 'EMPTY' && viewDashboard.owner.isSelf && !currentSeed ? <button type="button" onClick={() => { setActivePlotIndex(null); setActiveDrawer('seeds'); }} className="w-full rounded-full border border-[#d7bc83]/45 bg-white/75 px-4 py-4 text-sm font-semibold tracking-[0.14em] text-[#835e19] transition hover:bg-white"><SiteText copyKey="site.components.farm.farmclient.d932305085f7" /></button> : null}
                 </div>
               </div>
             </div>
@@ -1784,7 +1788,7 @@ export function FarmClient({ initialDashboard }: Props) {
             <button type="button" onClick={() => setActionResult(null)} className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-white/55 text-xl text-[#734d17] transition hover:bg-white/80">×</button>
             <div className="rounded-[26px] border border-white/28 px-4 py-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[11px] uppercase tracking-[0.34em] text-[#996d11]">Koi Manor</p>
+                <p className="text-[11px] uppercase tracking-[0.34em] text-[#996d11]"><SiteText copyKey="site.components.farm.farmclient.a7c74fc65d8c" /></p>
                 <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
                   actionResult.accent === 'gold'
                     ? 'border-[#e9ca6a]/42 bg-[#fff4c9] text-[#8b6408]'

@@ -1,3 +1,4 @@
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
@@ -158,7 +159,7 @@ export async function POST(request: Request) {
           {
             ok: false,
             error: 'stripe_amount_too_small',
-            message: 'Stripe 最低付款金额约为 50 美分，当前金额无法创建支付页面。请改用更高测试金额。',
+            message: await renderSiteCopy("site.app.api.stripe.recharge.order.route.92b2703596e5"),
           },
           { status: 400 },
         );

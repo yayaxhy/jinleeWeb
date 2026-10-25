@@ -1,3 +1,4 @@
+import { completeDiscordChangeOAuth } from '@/lib/discord-change-callback';
 import { NextResponse } from 'next/server';
 import {
   attachSessionToResponse,
@@ -7,7 +8,7 @@ import {
   getLoginStateCookie,
   normalizeRedirectTarget,
 } from '@/lib/session';
-import { ensureDlmUserForDiscordMember } from '@/lib/dlm-user';
+import { ensureVerifiedDiscordLogin } from '@/lib/dlm-user';
 import { exchangeCodeForTokens, fetchDiscordUser, fetchGuildMember } from '@/lib/discord';
 import { resolveDiscordLoginDisplayName } from '@/lib/discord-login-display-name';
 import { prisma } from '@/lib/prisma';
@@ -63,16 +64,16 @@ export async function GET(request: Request) {
 
   const state = parseStateParam(url.searchParams.get('state'));
   const expectedState = await getLoginStateCookie();
-  if (expectedState) {
-    if (!state.csrf || state.csrf !== expectedState) {
-      return buildErrorRedirect(origin, 'invalid_state');
-    }
+  if (!expectedState || !state.csrf || state.csrf !== expectedState) {
+    return buildErrorRedirect(origin, 'invalid_state');
   }
 
   try {
     const redirectUri = `${origin}/api/auth/callback/discord`;
     const tokens = await exchangeCodeForTokens(code, redirectUri);
     const discordUser = await fetchDiscordUser(tokens.access_token, tokens.token_type);
+    const changeResponse = await completeDiscordChangeOAuth(origin, state.csrf, discordUser);
+    if (changeResponse) return changeResponse;
     let guildMember = null;
     const grantedScopes = new Set(tokens.scope.split(/\s+/).filter(Boolean));
     if (guildId && grantedScopes.has('guilds.members.read')) {
@@ -111,16 +112,6 @@ export async function GET(request: Request) {
         }`
       : null;
 
-    await prisma.member.upsert({
-      where: { discordUserId: discordUser.id },
-      update: { serverDisplayName, discordUsername: discordUser.username },
-      create: {
-        discordUserId: discordUser.id,
-        serverDisplayName,
-        discordUsername: discordUser.username,
-      },
-    });
-
     // If this member has a PEIWAN row, sync serverDisplayName onto it as展示字段。 Not fatal if not found.
     if (serverDisplayName) {
       await prisma.pEIWAN
@@ -131,7 +122,7 @@ export async function GET(request: Request) {
         .catch(() => {});
     }
 
-    const dlmUser = await ensureDlmUserForDiscordMember({
+    const dlmUser = await ensureVerifiedDiscordLogin({
       discordUserId: discordUser.id,
       displayName: serverDisplayName,
       avatarUrl,

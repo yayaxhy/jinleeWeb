@@ -1,3 +1,4 @@
+import { getSiteCopy } from "./site-copy-server";
 import { MiniAvailabilityStatus, OrderStatus, PeiwanStatus, Prisma } from '@prisma/client';
 import type { CurrentDlmUser } from '@/lib/current-dlm-user';
 import { postInternalBot } from '@/lib/internal-bot';
@@ -233,34 +234,10 @@ export async function listMiniTransactions(currentUser: CurrentDlmUser) {
   }));
 }
 
+/** Effective settings only: stored choices remain intact while external subscriptions are disabled. */
 export function getMiniNotificationSettings(currentUser: CurrentDlmUser) {
-  return {
-    critical: currentUser.dlmUser.miniCriticalNotifications,
-    messages: currentUser.dlmUser.miniMessageNotifications,
-    dispatches: currentUser.dlmUser.miniDispatchNotifications,
-  };
-}
-
-export async function setMiniNotificationSettings(currentUser: CurrentDlmUser, payload: Record<string, unknown>) {
-  const updated = await prisma.dlmUser.update({
-    where: { dlmId: currentUser.dlmId },
-    data: {
-      miniCriticalNotifications: payload.critical === true,
-      miniMessageNotifications: payload.messages === true,
-      miniDispatchNotifications: payload.dispatches === true,
-    },
-    select: {
-      miniCriticalNotifications: true,
-      miniMessageNotifications: true,
-      miniDispatchNotifications: true,
-    },
-  });
-
-  return {
-    critical: updated.miniCriticalNotifications,
-    messages: updated.miniMessageNotifications,
-    dispatches: updated.miniDispatchNotifications,
-  };
+  void currentUser;
+  return { critical: false, messages: false, dispatches: false };
 }
 
 export async function getOwnPeiwanCard(currentUser: CurrentDlmUser) {
@@ -292,6 +269,7 @@ export async function getOwnPeiwanCard(currentUser: CurrentDlmUser) {
 }
 
 export async function getHomePendingTask(currentUser: CurrentDlmUser) {
+  const copy = await getSiteCopy();
   if (currentUser.discordUserId) {
     const pendingWorkerOrder = await prisma.order.findFirst({
       where: { workerId: currentUser.discordUserId, status: OrderStatus.PENDING, createdAt: newEntityOnlyTime() },
@@ -301,8 +279,8 @@ export async function getHomePendingTask(currentUser: CurrentDlmUser) {
     if (pendingWorkerOrder) {
       return {
         type: 'ORDER_CONFIRMATION',
-        title: `订单 #${pendingWorkerOrder.displayNo} 等待你确认`,
-        body: '老板已经选择你，请确认接单或拒绝。',
+        title: copy("site.lib.mini.program.account.2976c8101251", {value1: String(pendingWorkerOrder.displayNo)}),
+        body: copy("site.lib.mini.program.account.352879e3aadc"),
         action: '立即处理',
         target: '/pages/my-orders/index',
       };
@@ -324,8 +302,8 @@ export async function getHomePendingTask(currentUser: CurrentDlmUser) {
   if (runningOrder) {
     return {
       type: 'RUNNING_ORDER',
-      title: `订单 #${runningOrder.displayNo} 正在进行`,
-      body: '订单正在计时，完成后由老板或陪玩手动结束。',
+      title: copy("site.lib.mini.program.account.75cf4e020143", {value1: String(runningOrder.displayNo)}),
+      body: copy("site.lib.mini.program.account.ff8e77d2f0c6"),
       action: '查看订单',
       target: '/pages/my-orders/index',
     };
@@ -344,7 +322,7 @@ export async function getHomePendingTask(currentUser: CurrentDlmUser) {
   if (dispatch) {
     return {
       type: 'DISPATCH_CANDIDATES',
-      title: `${dispatch._count.candidates} 位陪玩已抢单`,
+      title: copy("site.lib.mini.program.account.c09f04a55ddc", {value1: String(dispatch._count.candidates)}),
       body: dispatch.requirement,
       action: '选择陪玩',
       target: '/pages/orders/index',

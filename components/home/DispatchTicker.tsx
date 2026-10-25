@@ -1,4 +1,6 @@
 'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import type { CSSProperties } from 'react';
 
@@ -30,13 +32,20 @@ function DispatchCard({ item }: { item: RecentDispatchItem }) {
 }
 
 export function DispatchTicker({ dispatches }: { dispatches: RecentDispatchItem[] }) {
-  const items = dispatches.length > 0 ? dispatches : fallbackItems;
+  const siteCopy = useSiteCopy();
+  const items = dispatches.length > 0 ? dispatches : fallbackItems.map((item) => ({
+    ...item,
+    title: siteCopy.text(item.title, "site.components.home.dispatchticker"),
+    detail: siteCopy.text(item.detail, "site.components.home.dispatchticker"),
+    timeLabel: siteCopy.text(item.timeLabel, "site.components.home.dispatchticker"),
+    statusLabel: siteCopy.text(item.statusLabel, "site.components.home.dispatchticker"),
+  }));
   const animationSeconds = Math.max(20, items.length * 8);
 
   return (
-    <section aria-label="点了么娱乐公会实时动态" className="mx-auto mt-7 max-w-4xl overflow-hidden">
+    <section aria-label={siteCopy("site.components.home.dispatchticker.b884228408e5")} className="mx-auto mt-7 max-w-4xl overflow-hidden">
       <div className="mb-3 flex items-center gap-3 px-1">
-        <p className="text-xs font-semibold tracking-[0.36em] text-orange-200/70">公会实时动态</p>
+        <p className="text-xs font-semibold tracking-[0.36em] text-orange-200/70"><SiteText copyKey="site.components.home.dispatchticker.c4a6a054f962" /></p>
         <span className="h-px flex-1 bg-white/10" />
       </div>
 

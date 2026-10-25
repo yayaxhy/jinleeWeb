@@ -1,3 +1,5 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { isAdminDiscordId } from '@/lib/admin';
@@ -20,17 +22,13 @@ export default async function StripeRechargePage() {
           <Link
             href="/recharge"
             className="rounded-full border border-black/10 px-5 py-2 text-xs uppercase tracking-[0.4em] hover:bg-black/5 transition"
-          >
-            返回普通充值
-          </Link>
+          ><SiteText copyKey="site.app.recharge.stripe.page.dc3634c638e4" /></Link>
         </div>
 
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-wide">Stripe 充值测试</h1>
-            <p className="text-sm text-gray-500">
-              当前页面仅用于测试信用卡/银行卡支付与自动到账流程。
-            </p>
+            <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.recharge.stripe.page.c71ae604521f" /></h1>
+            <p className="text-sm text-gray-500"><SiteText copyKey="site.app.recharge.stripe.page.24ac067bb7eb" /></p>
           </div>
         </div>
 

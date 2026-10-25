@@ -1,6 +1,11 @@
+import { giftWallTransferHasEvidenceConflict } from './gift-wall-transfer-guard';
 import { MemberStatus, OrderStatus, PeiwanStatus, Prisma, type PrismaClient } from '@prisma/client';
 import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
 import { getHighestVipLevelByTotalSpent } from '@/lib/vip-levels';
+import { DlmWalletIdentityChangedError, lockDlmWalletsTx } from '@/lib/dlm-wallet-lock';
+import { syncAssetTransferBuffsTx } from '@/lib/admin-asset-transfer-buffs';
+import { summarizeManualQuota, type ManualQuotaPeriod } from '@/lib/manual-quota-view';
+import { lockManualQuotaOwnersTx, moveManualQuotaBatchesTx, moveManualQuotaRestorationsTx } from '@/lib/manual-quota-transfer';
 
 const DEC = (value: Prisma.Decimal | number | string | null | undefined) =>
   value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value ?? 0);
@@ -50,8 +55,10 @@ type BuffSummary = {
   commissionBoostExpiresAt: string | null;
   flowRemaining: string;
   flowExpiresAt: string | null;
+  flowPeriods: ManualQuotaPeriod[];
   spendRemaining: string;
   spendExpiresAt: string | null;
+  spendPeriods: ManualQuotaPeriod[];
   autoCommissionActiveUntil: string | null;
 };
 
@@ -96,13 +103,22 @@ export type AssetTransferExecutionResult = {
   warnings: string[];
 };
 
+export class AssetTransferValidationError extends Error {
+  constructor(
+    message: string,
+    readonly status: 400 | 404 | 409 = 400,
+    readonly forceMergeSummaries?: { source: AssetAccountSummary; target: AssetAccountSummary },
+  ) {
+    super(message);
+    this.name = 'AssetTransferValidationError';
+  }
+}
+
 const hasNonDefaultVipState = (summary: AssetAccountSummary['vip']) =>
   summary.lastSettledLevel > 0 ||
   summary.roleOptOut ||
   !summary.announcementEnabled ||
   summary.hasDispatchImage;
-
-const hasActiveDate = (value: Date | null | undefined) => Boolean(value && value > new Date());
 
 const serializeWallet = (
   totalBalance: Prisma.Decimal | number | string | null | undefined,
@@ -132,6 +148,8 @@ export const loadAssetAccountSummary = async (
     commissionBuff,
     flowBuff,
     spendBuff,
+    quotaRestorations,
+    ordinaryQuotaBatches,
     autoCommissionBuff,
     peiwan,
     outgoingPairs,
@@ -195,6 +213,8 @@ export const loadAssetAccountSummary = async (
         where: { userId: discordId },
         select: { remainingExtra: true, expiresAt: true },
       }),
+      client.manualQuotaRestoration.findMany({ where: { userId: discordId } }),
+      client.manualQuotaBatch.findMany({ where: { userId: discordId } }),
       client.autoCommissionBuff.findUnique({
         where: { userId: discordId },
         select: { activeUntil: true },
@@ -271,14 +291,16 @@ export const loadAssetAccountSummary = async (
     gameProfileCount: peiwan?._count.gameProfiles ?? 0,
   } satisfies PeiwanSummary;
 
+  const flowQuota = summarizeManualQuota(flowBuff, quotaRestorations.filter((row) => row.kind === 'flow'), now, ordinaryQuotaBatches.filter(row => row.kind === 'flow'));
+  const spendQuota = summarizeManualQuota(spendBuff, quotaRestorations.filter((row) => row.kind === 'spend'), now, ordinaryQuotaBatches.filter(row => row.kind === 'spend'));
   const buffs = {
     commissionBoostExpiresAt: commissionBuff?.expiresAt && commissionBuff.expiresAt > now ? commissionBuff.expiresAt.toISOString() : null,
-    flowRemaining:
-      flowBuff?.expiresAt && flowBuff.expiresAt > now ? DEC(flowBuff.remainingExtra).toString() : '0',
-    flowExpiresAt: flowBuff?.expiresAt && flowBuff.expiresAt > now ? flowBuff.expiresAt.toISOString() : null,
-    spendRemaining:
-      spendBuff?.expiresAt && spendBuff.expiresAt > now ? DEC(spendBuff.remainingExtra).toString() : '0',
-    spendExpiresAt: spendBuff?.expiresAt && spendBuff.expiresAt > now ? spendBuff.expiresAt.toISOString() : null,
+    flowRemaining: flowQuota.remaining,
+    flowExpiresAt: flowQuota.nextExpiresAt,
+    flowPeriods: flowQuota.periods,
+    spendRemaining: spendQuota.remaining,
+    spendExpiresAt: spendQuota.nextExpiresAt,
+    spendPeriods: spendQuota.periods,
     autoCommissionActiveUntil:
       autoCommissionBuff?.activeUntil && autoCommissionBuff.activeUntil > now
         ? autoCommissionBuff.activeUntil.toISOString()
@@ -481,21 +503,26 @@ const transferPeiwanIdentityTx = async (
   const [sourceUnlocks, targetUnlocks, sourceRewardClaims, targetRewardClaims] = await Promise.all([
     tx.peiwanGiftUnlock.findMany({
       where: { discordUserId: sourceDiscordId },
-      select: { id: true, giftName: true },
+      select: { id: true, giftName: true, ownerDlmIdSnapshot: true, peiwanIdSnapshot: true, giftAuditIdSnapshot: true },
     }),
     tx.peiwanGiftUnlock.findMany({
       where: { discordUserId: targetDiscordId },
-      select: { giftName: true },
+      select: { giftName: true, ownerDlmIdSnapshot: true, peiwanIdSnapshot: true, giftAuditIdSnapshot: true },
     }),
     tx.peiwanGiftRewardClaim.findMany({
       where: { discordUserId: sourceDiscordId },
-      select: { id: true, rewardKey: true },
+      select: { id: true, rewardKey: true, ownerDlmIdSnapshot: true, peiwanIdSnapshot: true, giftAuditIdSnapshot: true, couponIds: true, rewardSnapshot: true },
     }),
     tx.peiwanGiftRewardClaim.findMany({
       where: { discordUserId: targetDiscordId },
-      select: { rewardKey: true },
+      select: { rewardKey: true, ownerDlmIdSnapshot: true, peiwanIdSnapshot: true, giftAuditIdSnapshot: true, couponIds: true, rewardSnapshot: true },
     }),
   ]);
+
+  if (giftWallTransferHasEvidenceConflict(sourceUnlocks, targetUnlocks, 'giftName') ||
+      giftWallTransferHasEvidenceConflict(sourceRewardClaims, targetRewardClaims, 'rewardKey')) {
+    throw new AssetTransferValidationError('礼物墙存在带原始归属或奖励凭证的重复记录，需要先核实，不能自动删除合并。', 409);
+  }
 
   const unlockMoveSummary = await movePeiwanUniqueRowsTx(
     sourceUnlocks,
@@ -573,125 +600,6 @@ const transferPeiwanIdentityTx = async (
     reviewsReassigned: reviews.count,
     deletionRecordsReassigned: deletions.count,
   };
-};
-
-const syncManualBuffsTx = async (
-  tx: Prisma.TransactionClient,
-  sourceDiscordId: string,
-  targetDiscordId: string,
-  warnings: string[],
-) => {
-  const now = new Date();
-  const [sourceCommissionBuff, targetCommissionBuff, sourceFlowBuff, targetFlowBuff, sourceSpendBuff, targetSpendBuff, sourceAutoCommissionBuff, targetAutoCommissionBuff] =
-    await Promise.all([
-      tx.commissionBuff.findUnique({ where: { userId: sourceDiscordId } }),
-      tx.commissionBuff.findUnique({ where: { userId: targetDiscordId } }),
-      tx.flowBuff.findUnique({ where: { userId: sourceDiscordId } }),
-      tx.flowBuff.findUnique({ where: { userId: targetDiscordId } }),
-      tx.spendBuff.findUnique({ where: { userId: sourceDiscordId } }),
-      tx.spendBuff.findUnique({ where: { userId: targetDiscordId } }),
-      tx.autoCommissionBuff.findUnique({ where: { userId: sourceDiscordId }, select: { activeUntil: true } }),
-      tx.autoCommissionBuff.findUnique({ where: { userId: targetDiscordId }, select: { activeUntil: true } }),
-    ]);
-
-  const changed = {
-    commissionBuffTransferred: 0,
-    commissionBuffCleared: 0,
-    flowBuffTransferred: 0,
-    flowBuffCleared: 0,
-    spendBuffTransferred: 0,
-    spendBuffCleared: 0,
-  };
-
-  const sourceCommissionActive = Boolean(sourceCommissionBuff?.expiresAt && sourceCommissionBuff.expiresAt > now);
-  const targetCommissionActive = Boolean(targetCommissionBuff?.expiresAt && targetCommissionBuff.expiresAt > now);
-  if (sourceCommissionActive && sourceCommissionBuff) {
-    const expiresAt =
-      targetCommissionActive && targetCommissionBuff && targetCommissionBuff.expiresAt > sourceCommissionBuff.expiresAt
-        ? targetCommissionBuff.expiresAt
-        : sourceCommissionBuff.expiresAt;
-    await tx.commissionBuff.upsert({
-      where: { userId: targetDiscordId },
-      create: {
-        userId: targetDiscordId,
-        boost: sourceCommissionBuff.boost,
-        expiresAt,
-      },
-      update: {
-        boost: sourceCommissionBuff.boost,
-        expiresAt,
-      },
-    });
-    changed.commissionBuffTransferred = 1;
-  }
-  if (sourceCommissionBuff) {
-    await tx.commissionBuff.delete({ where: { userId: sourceDiscordId } }).catch(() => {});
-    changed.commissionBuffCleared = 1;
-  }
-
-  const sourceFlowActive =
-    Boolean(sourceFlowBuff?.expiresAt && sourceFlowBuff.expiresAt > now) && DEC(sourceFlowBuff?.remainingExtra).gt(0);
-  const targetFlowActive =
-    Boolean(targetFlowBuff?.expiresAt && targetFlowBuff.expiresAt > now) && DEC(targetFlowBuff?.remainingExtra).gt(0);
-  if (sourceFlowActive && sourceFlowBuff) {
-    const expiresAt =
-      targetFlowActive && targetFlowBuff && targetFlowBuff.expiresAt > sourceFlowBuff.expiresAt
-        ? targetFlowBuff.expiresAt
-        : sourceFlowBuff.expiresAt;
-    const remainingExtra = DEC(targetFlowActive ? targetFlowBuff?.remainingExtra : 0).add(sourceFlowBuff.remainingExtra);
-    await tx.flowBuff.upsert({
-      where: { userId: targetDiscordId },
-      create: {
-        userId: targetDiscordId,
-        remainingExtra,
-        expiresAt,
-      },
-      update: {
-        remainingExtra,
-        expiresAt,
-      },
-    });
-    changed.flowBuffTransferred = 1;
-  }
-  if (sourceFlowBuff) {
-    await tx.flowBuff.delete({ where: { userId: sourceDiscordId } }).catch(() => {});
-    changed.flowBuffCleared = 1;
-  }
-
-  const sourceSpendActive =
-    Boolean(sourceSpendBuff?.expiresAt && sourceSpendBuff.expiresAt > now) && DEC(sourceSpendBuff?.remainingExtra).gt(0);
-  const targetSpendActive =
-    Boolean(targetSpendBuff?.expiresAt && targetSpendBuff.expiresAt > now) && DEC(targetSpendBuff?.remainingExtra).gt(0);
-  if (sourceSpendActive && sourceSpendBuff) {
-    const expiresAt =
-      targetSpendActive && targetSpendBuff && targetSpendBuff.expiresAt > sourceSpendBuff.expiresAt
-        ? targetSpendBuff.expiresAt
-        : sourceSpendBuff.expiresAt;
-    const remainingExtra = DEC(targetSpendActive ? targetSpendBuff?.remainingExtra : 0).add(sourceSpendBuff.remainingExtra);
-    await tx.spendBuff.upsert({
-      where: { userId: targetDiscordId },
-      create: {
-        userId: targetDiscordId,
-        remainingExtra,
-        expiresAt,
-      },
-      update: {
-        remainingExtra,
-        expiresAt,
-      },
-    });
-    changed.spendBuffTransferred = 1;
-  }
-  if (sourceSpendBuff) {
-    await tx.spendBuff.delete({ where: { userId: sourceDiscordId } }).catch(() => {});
-    changed.spendBuffCleared = 1;
-  }
-
-  if (hasActiveDate(sourceAutoCommissionBuff?.activeUntil) || hasActiveDate(targetAutoCommissionBuff?.activeUntil)) {
-    warnings.push('自动 91% 抽成未参与资产转移，仍按各账号自身历史收入窗口重算。');
-  }
-
-  return changed;
 };
 
 const syncCommissionConfigTx = async (
@@ -794,12 +702,26 @@ export const executeAssetTransfer = async (
 ): Promise<AssetTransferExecutionResult> => {
   const warnings: string[] = [];
 
-  await tx.$queryRaw`
-    SELECT 1
-    FROM "Member"
-    WHERE "discordUserId" IN (${params.sourceDiscordId}, ${params.targetDiscordId})
-    FOR UPDATE
-  `;
+  if (params.sourceDiscordId === params.targetDiscordId) {
+    throw new AssetTransferValidationError('源账号和目标账号不能相同');
+  }
+  // Only discover identities before locks. Preview summaries from the route
+  // cannot authorize a later transfer or provide its wallet before-values.
+  const [sourceIdentity, targetIdentity] = await Promise.all([
+    tx.dlmUser.findUnique({ where: { discordUserId: params.sourceDiscordId }, select: { dlmId: true, discordUserId: true } }),
+    tx.dlmUser.findUnique({ where: { discordUserId: params.targetDiscordId }, select: { dlmId: true, discordUserId: true } }),
+  ]);
+  if (!sourceIdentity) throw new AssetTransferValidationError('源账号不存在，或尚未建立 DLMClub 身份', 404);
+  if (!targetIdentity) throw new AssetTransferValidationError('目标账号不存在，或尚未建立 DLMClub 身份', 404);
+  try {
+    await lockDlmWalletsTx(tx, [sourceIdentity, targetIdentity]);
+  } catch (error) {
+    if (error instanceof DlmWalletIdentityChangedError) {
+      throw new AssetTransferValidationError('账号绑定状态已变化，请刷新并重新核实后再转移资产。', 409);
+    }
+    throw error;
+  }
+  const quotaLocks = await lockManualQuotaOwnersTx(tx, [params.sourceDiscordId, params.targetDiscordId]);
 
   const [sourceSummaryBefore, targetSummaryBefore, sourceDlmUser, targetDlmUser, sourceVipProfile, targetVipProfile, sourceLoyaltyPoint] =
     await Promise.all([
@@ -826,10 +748,26 @@ export const executeAssetTransfer = async (
     ]);
 
   if (!sourceSummaryBefore.memberExists || !sourceDlmUser?.dlmId) {
-    throw new Error('源账号不存在，或尚未建立 DLMClub 身份');
+    throw new AssetTransferValidationError('源账号不存在，或尚未建立 DLMClub 身份', 404);
   }
   if (!targetSummaryBefore.memberExists || !targetDlmUser?.dlmId) {
-    throw new Error('目标账号不存在，或尚未建立 DLMClub 身份');
+    throw new AssetTransferValidationError('目标账号不存在，或尚未建立 DLMClub 身份', 404);
+  }
+  if (sourceDlmUser.dlmId !== sourceIdentity.dlmId || targetDlmUser.dlmId !== targetIdentity.dlmId) {
+    throw new AssetTransferValidationError('账号绑定状态已变化，请刷新并重新核实后再转移资产。', 409);
+  }
+  if (sourceSummaryBefore.peiwan.exists && targetSummaryBefore.peiwan.exists) {
+    throw new AssetTransferValidationError('源账号和目标账号都存在独立陪玩档案，当前不支持自动合并两套陪玩身份。');
+  }
+  if (!sourceSummaryBefore.hasTransferableData) {
+    throw new AssetTransferValidationError('源账号当前没有可转移的资产');
+  }
+  if (targetSummaryBefore.hasTransferableData && !params.forceMerge) {
+    throw new AssetTransferValidationError(
+      '目标账号已经有可转移资产。确认后会按规则合并钱包/消费额/积分，并覆盖基础抽成与 VIP 配置。',
+      409,
+      { source: sourceSummaryBefore, target: targetSummaryBefore },
+    );
   }
 
   const sourceWalletBefore = await getDlmWalletSnapshotTx(tx, {
@@ -959,12 +897,14 @@ export const executeAssetTransfer = async (
     params.targetDiscordId,
     warnings,
   );
-  const buffChanged = await syncManualBuffsTx(
+  const buffChanged = await syncAssetTransferBuffsTx(
     tx,
     params.sourceDiscordId,
     params.targetDiscordId,
     warnings,
   );
+  const ordinaryChanged = await moveManualQuotaBatchesTx(tx, params.sourceDiscordId, params.targetDiscordId, quotaLocks);
+  const restorationChanged = await moveManualQuotaRestorationsTx(tx, params.sourceDiscordId, params.targetDiscordId, quotaLocks);
 
   const sourceSummaryAfter = await loadAssetAccountSummary(tx, params.sourceDiscordId);
   const targetSummaryAfter = await loadAssetAccountSummary(tx, params.targetDiscordId);
@@ -991,6 +931,8 @@ export const executeAssetTransfer = async (
     heartSelfLoopsDropped: heartChanged.selfLoopsDropped,
     ...commissionChanged,
     ...buffChanged,
+    ...ordinaryChanged,
+    ...restorationChanged,
   } satisfies Record<string, number>;
 
   const audit = await tx.assetTransferAudit.create({

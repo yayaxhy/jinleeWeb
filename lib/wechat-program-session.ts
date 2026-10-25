@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { hasCurrentWechatProgramBinding } from './session-validation';
 
 const WECHAT_PROGRAM_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 
@@ -87,7 +88,7 @@ export const getWechatProgramSessionFromRequest = async (
     return null;
   }
 
-  if (session.expiresAt.getTime() <= Date.now()) {
+  if (session.expiresAt.getTime() <= Date.now() || !hasCurrentWechatProgramBinding(session)) {
     await prisma.wechatProgramSession.delete({ where: { id: session.id } }).catch(() => {});
     return null;
   }

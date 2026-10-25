@@ -1,0 +1,8 @@
+# Secrets and local runtime/build state must not enter the image context.
+.env*
+.git
+.next
+node_modules
+*.tsbuildinfo
+.playwright-cli
+output

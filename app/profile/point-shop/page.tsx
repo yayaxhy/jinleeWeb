@@ -1,3 +1,5 @@
+
+import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PointShopClient } from '@/components/profile/PointShopClient';
@@ -60,9 +62,7 @@ export default async function PointShopPage() {
           <Link
             href="/profile"
             className="rounded-full border border-black/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-500 hover:bg-black/5"
-          >
-            返回个人主页
-          </Link>
+          ><SiteText copyKey="site.app.profile.point.shop.page.425652af65a9" /></Link>
         </div>
         <PointShopClient initialData={initialData} />
       </section>

@@ -1,4 +1,8 @@
 'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
+
+import { PublicMessageError, publicMessage } from '@/lib/public-error-messages';
 
 /* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
@@ -161,10 +165,10 @@ const POOL_WEIGHT: Record<string, number> = {
   SPECIAL: 4,
 };
 
-const formatDateOnly = (value?: string | null) => {
-  if (!value) return '长期有效';
+const formatDateOnly = (value: string | null | undefined, longTermLabel: string) => {
+  if (!value) return longTermLabel;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '长期有效';
+  if (Number.isNaN(date.getTime())) return longTermLabel;
   return date.toLocaleDateString('en-CA', { timeZone: ROME_TIMEZONE });
 };
 
@@ -239,6 +243,7 @@ export function LotteryFusionClient({
   membership,
   embeddedInProfile = false,
 }: LotteryFusionClientProps) {
+  const siteCopy = useSiteCopy();
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [selectedIds, setSelectedIds] = useState<string[]>(
@@ -338,7 +343,7 @@ export function LotteryFusionClient({
       if (current.length >= targetFusionCount) {
         setNotice({
           level: 'error',
-          text: `当前档位最多选择 ${targetFusionCount} 个券或奖品`,
+          text: siteCopy("site.components.profile.lotteryfusionclient.0472ccdc11cd", {value1: String(targetFusionCount)}),
         });
         return current;
       }
@@ -355,7 +360,7 @@ export function LotteryFusionClient({
       if (current.length <= count) return current;
       setNotice({
         level: 'error',
-        text: `已切换到 ${count} 个融合，超出的券或奖品已取消选择`,
+        text: siteCopy("site.components.profile.lotteryfusionclient.099043819504", {value1: String(count)}),
       });
       return current.slice(0, count);
     });
@@ -365,7 +370,7 @@ export function LotteryFusionClient({
     if (!canFuse) {
       setNotice({
         level: 'error',
-        text: `请先选择 ${targetFusionCount} 个券或奖品`,
+        text: siteCopy("site.components.profile.lotteryfusionclient.d89e904b6259", {value1: String(targetFusionCount)}),
       });
       return;
     }
@@ -383,15 +388,15 @@ export function LotteryFusionClient({
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         const errorCode = typeof data?.code === 'string' ? data.code : '';
-        const errorMessage = typeof data?.error === 'string' ? data.error : '重铸失败';
+        const errorMessage = typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.lotteryfusionclient.caf8b74906d6");
 
         if (errorCode === 'SOURCE_ITEM_UNAVAILABLE' || errorCode === 'NO_SOURCE_ITEM') {
           setSelectedIds([]);
           setAnimationState(null);
           setNotice(null);
           setBlockingDialog({
-            title: '提示',
-            text: '所选券或奖品状态已变化，列表已自动刷新，请重新选择',
+            title: siteCopy("site.components.profile.lotteryfusionclient.ab3656a956f5"),
+            text: siteCopy("site.components.profile.lotteryfusionclient.a3e889e5beed"),
           });
           startTransition(() => {
             router.refresh();
@@ -399,12 +404,12 @@ export function LotteryFusionClient({
           return;
         }
 
-        throw new Error(errorMessage);
+        throw new PublicMessageError(errorMessage);
       }
 
       const fusionResult = data?.result as FusionResultView | undefined;
       if (!fusionResult?.drawId || !fusionResult?.prizeName) {
-        throw new Error('重铸结果异常，请稍后再试');
+        throw new PublicMessageError('暂时无法确认重铸结果，请先查看背包，勿重复提交。');
       }
 
       startAnimation({
@@ -414,7 +419,7 @@ export function LotteryFusionClient({
     } catch (error) {
       setNotice({
         level: 'error',
-        text: error instanceof Error ? error.message : '重铸失败',
+        text: publicMessage(error, '暂时无法确认重铸结果，请先查看背包，勿重复提交。'),
       });
     } finally {
       setLoading(false);
@@ -450,7 +455,7 @@ export function LotteryFusionClient({
       ? '重铸进行中'
       : `已选券/奖品 ${selectedCount}/${targetFusionCount}`;
   const selectedPanelDescription = completedResult
-    ? `恭喜🎉抽到了${completedResult.prizeName}`
+    ? siteCopy("site.components.profile.lotteryfusionclient.bec831985c3c", { value1: siteCopy.text(completedResult.prizeName, "site.lib.vouchercatalog") })
     : isAnimating
       ? '新的奖品正在生成中'
       : '确认无误后将消耗这些券或奖品';
@@ -499,7 +504,7 @@ export function LotteryFusionClient({
               <div className="flex justify-center lg:justify-center">
                 <img
                   src="/DLMLOGO.png"
-                  alt="DLMClub"
+                  alt={siteCopy("site.components.profile.lotteryfusionclient.0b3df39130a2")}
                   className="h-[72px] w-auto object-contain lg:h-[108px]"
                 />
               </div>
@@ -518,7 +523,7 @@ export function LotteryFusionClient({
                       }`}
                     >
                       <Icon className="h-5 w-5 shrink-0" />
-                      <span className="whitespace-nowrap">{item.label}</span>
+                      <span className="whitespace-nowrap"><SiteText namespace="site.components.profile.lotteryfusionclient" value={item.label} /></span>
                     </Link>
                   );
                 })}
@@ -529,7 +534,7 @@ export function LotteryFusionClient({
                   className="flex w-full items-center gap-3 rounded-[18px] px-3 py-3 text-[14px] text-[#8b8179] transition hover:bg-white/70 hover:text-[#a56345] lg:px-4 lg:text-[15px]"
                 >
                   <ArrowRightOnRectangleIcon className="h-5 w-5 shrink-0" />
-                  <span className="whitespace-nowrap">{loggingOut ? '退出中...' : '登出'}</span>
+                  <span className="whitespace-nowrap">{loggingOut ? <SiteText copyKey="site.components.profile.lotteryfusionclient.49ca8ad23148" /> : <SiteText copyKey="site.components.profile.lotteryfusionclient.b7fd2c1683eb" />}</span>
                 </button>
               </nav>
             </div>
@@ -540,15 +545,14 @@ export function LotteryFusionClient({
                   <SparklesIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-[12px] uppercase tracking-[0.24em] text-[#9e8c7f]">DLMClub</p>
-                  <p className="text-[15px] font-semibold tracking-[0.14em] text-[#7f5b49]">DIAMOND</p>
+                  <p className="text-[12px] uppercase tracking-[0.24em] text-[#9e8c7f]"><SiteText copyKey="site.components.profile.lotteryfusionclient.0b3df39130a2" /></p>
+                  <p className="text-[15px] font-semibold tracking-[0.14em] text-[#7f5b49]"><SiteText copyKey="site.components.profile.lotteryfusionclient.50e122e52a58" /></p>
                 </div>
               </div>
 
               <div className="mt-5 space-y-2">
-                <p className="text-xs text-[#b3a093]">会员等级</p>
-                <p className="text-[34px] font-semibold leading-none text-[#85533f]" style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}>
-                  Lv. {membership.level}
+                <p className="text-xs text-[#b3a093]"><SiteText copyKey="site.components.profile.lotteryfusionclient.9fe41e4033a7" /></p>
+                <p className="text-[34px] font-semibold leading-none text-[#85533f]" style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}><SiteText copyKey="site.components.profile.lotteryfusionclient.f60a5bd08ff6" />{membership.level}
                 </p>
               </div>
 
@@ -575,15 +579,11 @@ export function LotteryFusionClient({
                 <Link
                   href="/profile"
                   className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-600 transition hover:bg-black/5"
-                >
-                  返回个人主页
-                </Link>
+                ><SiteText copyKey="site.components.profile.lotteryfusionclient.425652af65a9" /></Link>
                 <Link
                   href="/profile/bag"
                   className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-600 transition hover:bg-black/5"
-                >
-                  我的背包
-                </Link>
+                ><SiteText copyKey="site.components.profile.lotteryfusionclient.afc3a43e5b41" /></Link>
               </div>
             </div>
           ) : null}
@@ -594,14 +594,10 @@ export function LotteryFusionClient({
                 <h1
                   className="text-[34px] font-semibold leading-none tracking-[0.03em] text-[#73452f] sm:text-[44px] lg:text-[56px]"
                   style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-                >
-                  奖品重铸
-                </h1>
+                ><SiteText copyKey="site.components.profile.lotteryfusionclient.3d2b0543df8f" /></h1>
                 <QuestionMarkCircleIcon className="h-5 w-5 text-[#d7af8f] lg:h-6 lg:w-6" />
               </div>
-              <p className="mt-3 max-w-[680px] text-[14px] text-[#8c6a59] sm:mt-4 sm:text-[16px] lg:mt-5 lg:text-[17px]">
-                消耗背包中可重铸的未使用券或奖品，随机获得一个新的抽奖奖品
-              </p>
+              <p className="mt-3 max-w-[680px] text-[14px] text-[#8c6a59] sm:mt-4 sm:text-[16px] lg:mt-5 lg:text-[17px]"><SiteText copyKey="site.components.profile.lotteryfusionclient.001acffee723" /></p>
             </div>
 
             <Link
@@ -609,7 +605,7 @@ export function LotteryFusionClient({
               className="inline-flex w-fit items-center gap-2 self-start rounded-full border border-[#efdbc9] bg-white/92 px-4 py-2.5 text-[15px] font-medium text-[#7d5745] shadow-[0_12px_24px_rgba(234,214,196,0.36)] transition hover:translate-y-[-1px] sm:px-5 sm:py-3 sm:text-[18px]"
             >
               <ClockIcon className="h-5 w-5" />
-              <span>重铸记录</span>
+              <span><SiteText copyKey="site.components.profile.lotteryfusionclient.4e10cbb0f409" /></span>
             </Link>
           </div>
 
@@ -621,12 +617,8 @@ export function LotteryFusionClient({
                     <h2
                       className="text-[28px] font-semibold text-[#74452f] lg:text-[36px]"
                       style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-                    >
-                      选择重铸数量
-                    </h2>
-                    <p className="mt-3 max-w-[280px] text-[14px] leading-7 text-[#9d7967] lg:mt-5 lg:max-w-[220px] lg:text-[15px] lg:leading-8">
-                      投入的券或奖品越多，越有机会获得更稀有的结果
-                    </p>
+                    ><SiteText copyKey="site.components.profile.lotteryfusionclient.a3acacef5672" /></h2>
+                    <p className="mt-3 max-w-[280px] text-[14px] leading-7 text-[#9d7967] lg:mt-5 lg:max-w-[220px] lg:text-[15px] lg:leading-8"><SiteText copyKey="site.components.profile.lotteryfusionclient.5fdd45cb3116" /></p>
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-3 lg:gap-4">
@@ -638,7 +630,7 @@ export function LotteryFusionClient({
                           type="button"
                           onClick={() => handleFusionRuleChange(option.count)}
                           aria-pressed={active}
-                          aria-label={`切换到 ${option.count} 个融合`}
+                          aria-label={siteCopy("site.components.profile.lotteryfusionclient.e5d8b5592a45", {value1: String(option.count)})}
                           className={`rounded-[22px] border px-4 py-5 text-center transition sm:px-6 sm:py-7 lg:rounded-[28px] ${
                             active
                               ? 'border-[#d7a18c] bg-[linear-gradient(180deg,_#a95a5c,_#8b444a)] text-white shadow-[0_20px_34px_rgba(166,92,95,0.32)]'
@@ -649,9 +641,9 @@ export function LotteryFusionClient({
                             className={`text-[26px] font-semibold sm:text-[32px] lg:text-[36px] ${active ? 'text-white' : 'text-[#a2613f]'}`}
                             style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
                           >
-                            {option.title}
+                            <SiteText namespace="site.components.profile.lotteryfusionclient" value={option.title} />
                           </p>
-                          <p className={`mt-5 text-sm ${active ? 'text-[#f8ddcf]' : 'text-[#9f7c69]'}`}>最高可出</p>
+                          <p className={`mt-5 text-sm ${active ? 'text-[#f8ddcf]' : 'text-[#9f7c69]'}`}><SiteText copyKey="site.components.profile.lotteryfusionclient.041e224fbf48" /></p>
                           <p className={`mt-2 text-[20px] font-medium ${active ? 'text-white' : 'text-[#70472f]'}`}>
                             {option.resultLabel}
                           </p>
@@ -696,7 +688,7 @@ export function LotteryFusionClient({
                               <button
                                 type="button"
                                 onClick={() => toggleSelection(item.id)}
-                                aria-label={`移除 ${item.prizeName}`}
+                                aria-label={siteCopy("site.components.profile.lotteryfusionclient.77b6df93283d", {value1: String(siteCopy.text(item.prizeName, "site.lib.vouchercatalog"))})}
                                 className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-[#e3b48b] bg-[rgba(220,173,120,0.88)] text-white shadow-[0_8px_18px_rgba(170,118,69,0.34)]"
                               >
                                 <XMarkIcon className="h-4 w-4" />
@@ -706,17 +698,15 @@ export function LotteryFusionClient({
                             <div className="flex min-h-[170px] flex-col items-center justify-between sm:min-h-[220px]">
                               <div className="w-full">
                                 <div className="inline-flex rounded-full border border-[#efdbc9] bg-[#fff7f1] px-3 py-1 text-[11px] font-semibold text-[#b27b58]">
-                                  {item ? SOURCE_KIND_LABEL[item.sourceKind ?? 'lottery'] : '待选'}
+                                  {item ? SOURCE_KIND_LABEL[item.sourceKind ?? 'lottery'] : <SiteText copyKey="site.components.profile.lotteryfusionclient.e42bf97d82df" />}
                                 </div>
                               </div>
 
                               <div className="flex min-h-[76px] items-center justify-center sm:min-h-[110px]">
                                 {art ? (
-                                  <img src={art} alt={item?.prizeName ?? '奖品'} className="max-h-[88px] object-contain sm:max-h-[116px]" />
+                                  <img src={art} alt={item?.prizeName != null ? siteCopy.text(item.prizeName, "site.lib.vouchercatalog") : siteCopy("site.components.profile.lotteryfusionclient.aa0466ef50f9")} className="max-h-[88px] object-contain sm:max-h-[116px]" />
                                 ) : (
-                                  <div className="flex h-[84px] w-[84px] items-center justify-center rounded-full border border-dashed border-[#efcfb7] bg-[#fff8f3] text-xs text-[#c39d83] sm:h-[108px] sm:w-[108px] sm:text-sm">
-                                    等待选择
-                                  </div>
+                                  <div className="flex h-[84px] w-[84px] items-center justify-center rounded-full border border-dashed border-[#efcfb7] bg-[#fff8f3] text-xs text-[#c39d83] sm:h-[108px] sm:w-[108px] sm:text-sm"><SiteText copyKey="site.components.profile.lotteryfusionclient.e5795f608caf" /></div>
                                 )}
                               </div>
 
@@ -725,19 +715,18 @@ export function LotteryFusionClient({
                                   <p
                                     className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-semibold leading-[1.3] text-[#73452f] sm:text-[18px]"
                                     style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-                                    title={item.prizeName}
+                                    title={siteCopy.text(item.prizeName, "site.lib.vouchercatalog")}
                                   >
-                                    {item.prizeName}
+                                    <SiteText namespace="site.lib.vouchercatalog" value={item.prizeName} />
                                   </p>
                                   <p className="mt-1 text-xs text-[#aa826e] sm:mt-2 sm:text-sm">{getPoolText(item.pool)}</p>
-                                  <p className="mt-1 text-[11px] text-[#9f8a7c] sm:text-sm">到期：{formatDateOnly(item.expiresAt)}</p>
+                                  <p className="mt-1 text-[11px] text-[#9f8a7c] sm:text-sm"><SiteText copyKey="site.components.profile.lotteryfusionclient.3d7c3fd5d46e" />{formatDateOnly(item.expiresAt, siteCopy("site.components.profile.lotteryfusionclient.9554d6fb4a68"))}</p>
                                 </div>
                               ) : (
                                 <div className="mt-3 text-center">
-                                  <p className="text-[16px] font-semibold text-[#c3a391] sm:text-[22px]" style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}>
-                                    空位 {index + 1}
+                                  <p className="text-[16px] font-semibold text-[#c3a391] sm:text-[22px]" style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}><SiteText copyKey="site.components.profile.lotteryfusionclient.d03e6b53479a" />{index + 1}
                                   </p>
-                                  <p className="mt-1 text-[11px] text-[#cfb7a9] sm:mt-2 sm:text-sm">从下方选择一个券或奖品</p>
+                                  <p className="mt-1 text-[11px] text-[#cfb7a9] sm:mt-2 sm:text-sm"><SiteText copyKey="site.components.profile.lotteryfusionclient.5b16dc1fb156" /></p>
                                 </div>
                               )}
                             </div>
@@ -760,7 +749,7 @@ export function LotteryFusionClient({
                                   {getPrizeArt(completedResult) ? (
                                     <img
                                       src={getPrizeArt(completedResult) ?? undefined}
-                                      alt={completedResult.prizeName}
+                                      alt={siteCopy.text(completedResult.prizeName, "site.lib.vouchercatalog")}
                                       className="max-h-[94px] object-contain drop-shadow-[0_0_20px_rgba(255,226,186,0.46)] sm:max-h-[122px]"
                                     />
                                   ) : null}
@@ -772,10 +761,10 @@ export function LotteryFusionClient({
                                   className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[16px] font-semibold leading-[1.18] text-white sm:text-[20px]"
                                   style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
                                 >
-                                  {completedResult.prizeName}
+                                  <SiteText namespace="site.lib.vouchercatalog" value={completedResult.prizeName} />
                                 </p>
                                 <p className="mt-2 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[11px] leading-none tracking-[0.02em] text-[#ffdcbf] sm:text-[12px]">
-                                  {getResultPoolText(completedResult.pool)} · 有效期到 {formatDateOnly(completedResult.expiresAt)}
+                                  {getResultPoolText(completedResult.pool)}<SiteText copyKey="site.components.profile.lotteryfusionclient.99686de130d2" />{formatDateOnly(completedResult.expiresAt, siteCopy("site.components.profile.lotteryfusionclient.9554d6fb4a68"))}
                                 </p>
                               </div>
                             </div>
@@ -789,9 +778,7 @@ export function LotteryFusionClient({
                               <div className="relative h-8 w-8 rounded-full bg-[radial-gradient(circle,_rgba(216,146,84,0.92),_rgba(188,108,55,0.52))]" />
                             </div>
 
-                            <p className="mx-auto mt-4 max-w-[320px] text-[14px] leading-6 text-[#ffe3d0] sm:mt-5 sm:text-[15px] sm:leading-7">
-                              重新抽奖中...
-                            </p>
+                            <p className="mx-auto mt-4 max-w-[320px] text-[14px] leading-6 text-[#ffe3d0] sm:mt-5 sm:text-[15px] sm:leading-7"><SiteText copyKey="site.components.profile.lotteryfusionclient.3d481d51133d" /></p>
                           </div>
                         )}
                       </div>
@@ -806,18 +793,16 @@ export function LotteryFusionClient({
                         disabled={isAnimating ? false : !canFuse || loading}
                         className={`${primaryActionButtonClassName} max-w-[420px] ${!isAnimating && (!canFuse || loading) ? 'cursor-not-allowed opacity-55' : ''}`}
                       >
-                        {isAnimating ? '跳过动画' : loading ? '正在生成...' : '开始重铸'}
+                        {isAnimating ? <SiteText copyKey="site.components.profile.lotteryfusionclient.c22ce40a5c6a" /> : loading ? <SiteText copyKey="site.components.profile.lotteryfusionclient.627a813b1c48" /> : <SiteText copyKey="site.components.profile.lotteryfusionclient.10a20215af49" />}
                       </button>
                     ) : null}
 
                     {completedResult ? (
                       <div className="flex w-full max-w-[640px] flex-col gap-3">
-                        <button type="button" onClick={resetPrepareCard} className={secondaryActionButtonClassName}>
-                          再来一次
-                        </button>
+                        <button type="button" onClick={resetPrepareCard} className={secondaryActionButtonClassName}><SiteText copyKey="site.components.profile.lotteryfusionclient.93c38ed2cb21" /></button>
                       </div>
                     ) : !showFusionStage ? (
-                      <p className="text-sm text-[#ffd7c3]">重铸后，原券或奖品将被消耗</p>
+                      <p className="text-sm text-[#ffd7c3]"><SiteText copyKey="site.components.profile.lotteryfusionclient.03d091908fbe" /></p>
                     ) : null}
                   </div>
                 </div>
@@ -830,9 +815,7 @@ export function LotteryFusionClient({
                       <h2
                         className="text-[28px] font-semibold text-[#74452f] lg:text-[38px]"
                         style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-                      >
-                        可选择的未使用券/奖品
-                      </h2>
+                      ><SiteText copyKey="site.components.profile.lotteryfusionclient.d7a6cb439351" /></h2>
                       <span className="rounded-full bg-[#fff1e5] px-3 py-1 text-sm font-semibold text-[#c07d55]">
                         {items.length}
                       </span>
@@ -847,14 +830,14 @@ export function LotteryFusionClient({
                             type="button"
                             onClick={() => setFilterPool(option.value)}
                             aria-pressed={active}
-                            aria-label={`筛选 ${option.label}`}
+                            aria-label={siteCopy("site.components.profile.lotteryfusionclient.0fd839bd5bcc", {value1: String(option.label)})}
                             className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
                               active
                                 ? 'border-[#d89c79] bg-[linear-gradient(180deg,_#fff8f1,_#fff0e1)] text-[#b56d49] shadow-[0_10px_18px_rgba(231,195,161,0.24)]'
                                 : 'border-[#efe0d2] bg-white text-[#9d7a68] hover:border-[#e5c5b1]'
                             }`}
                           >
-                            {option.label}
+                            <SiteText namespace="site.components.profile.lotteryfusionclient" value={option.label} />
                           </button>
                         );
                       })}
@@ -863,16 +846,16 @@ export function LotteryFusionClient({
 
                   <div className="flex flex-wrap items-center gap-3">
                     <label className="relative">
-                      <span className="sr-only">排序方式</span>
+                      <span className="sr-only"><SiteText copyKey="site.components.profile.lotteryfusionclient.3bf3689a6916" /></span>
                       <select
                         value={sortKey}
                         onChange={(event) => setSortKey(event.target.value as SortKey)}
                         className="rounded-[16px] border border-[#efddd0] bg-white px-4 py-3 text-sm text-[#8b6857] shadow-[0_10px_18px_rgba(238,221,206,0.22)] outline-none"
                       >
-                        <option value="created-asc">最早获得</option>
-                        <option value="created-desc">最新获得</option>
-                        <option value="expires-asc">最早到期</option>
-                        <option value="pool-asc">等级从低到高</option>
+                        <option value="created-asc"><SiteText copyKey="site.components.profile.lotteryfusionclient.47c8f4df281a" /></option>
+                        <option value="created-desc"><SiteText copyKey="site.components.profile.lotteryfusionclient.74b36e267daf" /></option>
+                        <option value="expires-asc"><SiteText copyKey="site.components.profile.lotteryfusionclient.36e43da00108" /></option>
+                        <option value="pool-asc"><SiteText copyKey="site.components.profile.lotteryfusionclient.32c9cc909c16" /></option>
                       </select>
                     </label>
 
@@ -880,7 +863,7 @@ export function LotteryFusionClient({
                       <button
                         type="button"
                         onClick={() => setInventoryView('grid')}
-                        aria-label="网格视图"
+                        aria-label={siteCopy("site.components.profile.lotteryfusionclient.63a3454ede3c")}
                         aria-pressed={inventoryView === 'grid'}
                         className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
                           inventoryView === 'grid'
@@ -898,7 +881,7 @@ export function LotteryFusionClient({
                       <button
                         type="button"
                         onClick={() => setInventoryView('compact')}
-                        aria-label="列表视图"
+                        aria-label={siteCopy("site.components.profile.lotteryfusionclient.1fd2104d08a1")}
                         aria-pressed={inventoryView === 'compact'}
                         className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
                           inventoryView === 'compact'
@@ -928,7 +911,7 @@ export function LotteryFusionClient({
                           type="button"
                           onClick={() => toggleSelection(item.id)}
                           disabled={interactionLocked}
-                          aria-label={selected ? `取消选择 ${item.prizeName}` : `选择 ${item.prizeName}`}
+                          aria-label={selected ? siteCopy("site.components.profile.lotteryfusionclient.e4cfc067df6c", {value1: String(siteCopy.text(item.prizeName, "site.lib.vouchercatalog"))}) : siteCopy("site.components.profile.lotteryfusionclient.121e8e48e72f", {value1: String(siteCopy.text(item.prizeName, "site.lib.vouchercatalog"))})}
                           className={`flex w-full items-center gap-4 rounded-[24px] border p-4 text-left transition ${
                             selected
                               ? 'border-[#d49773] bg-[linear-gradient(180deg,_#fff6f0,_#fff0e7)] shadow-[0_18px_36px_rgba(230,193,161,0.26)]'
@@ -936,7 +919,7 @@ export function LotteryFusionClient({
                           } ${interactionLocked ? 'cursor-not-allowed opacity-75' : ''}`}
                         >
                           <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[18px] border border-[#efddd0] bg-[#fff9f4]">
-                            {art ? <img src={art} alt={item.prizeName} className="max-h-[68px] object-contain" /> : null}
+                            {art ? <img src={art} alt={siteCopy.text(item.prizeName, "site.lib.vouchercatalog")} className="max-h-[68px] object-contain" /> : null}
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap gap-2">
@@ -947,11 +930,11 @@ export function LotteryFusionClient({
                             <p
                               className="mt-3 overflow-hidden text-ellipsis whitespace-nowrap text-[16px] font-semibold leading-[1.35] text-[#73452f] sm:text-[18px]"
                               style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-                              title={item.prizeName}
+                              title={siteCopy.text(item.prizeName, "site.lib.vouchercatalog")}
                             >
-                              {item.prizeName}
+                              <SiteText namespace="site.lib.vouchercatalog" value={item.prizeName} />
                             </p>
-                            <p className="mt-2 text-sm text-[#9d7a68]">到期：{formatDateOnly(item.expiresAt)}</p>
+                            <p className="mt-2 text-sm text-[#9d7a68]"><SiteText copyKey="site.components.profile.lotteryfusionclient.3d7c3fd5d46e" />{formatDateOnly(item.expiresAt, siteCopy("site.components.profile.lotteryfusionclient.9554d6fb4a68"))}</p>
                           </div>
                           <div
                             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
@@ -972,7 +955,7 @@ export function LotteryFusionClient({
                         type="button"
                         onClick={() => toggleSelection(item.id)}
                         disabled={interactionLocked}
-                        aria-label={selected ? `取消选择 ${item.prizeName}` : `选择 ${item.prizeName}`}
+                        aria-label={selected ? siteCopy("site.components.profile.lotteryfusionclient.e4cfc067df6c", {value1: String(siteCopy.text(item.prizeName, "site.lib.vouchercatalog"))}) : siteCopy("site.components.profile.lotteryfusionclient.121e8e48e72f", {value1: String(siteCopy.text(item.prizeName, "site.lib.vouchercatalog"))})}
                         className={`rounded-[26px] border p-3 text-left transition ${
                           selected
                             ? 'border-[#d49773] bg-[linear-gradient(180deg,_#fff6f0,_#fff0e7)] shadow-[0_18px_36px_rgba(230,193,161,0.26)]'
@@ -995,26 +978,26 @@ export function LotteryFusionClient({
                         </div>
 
                         <div className="mt-4 flex h-[104px] items-center justify-center rounded-[18px] border border-[#efddd0] bg-[linear-gradient(180deg,_#fffdfb,_#fff7f1)] sm:h-[136px] sm:rounded-[22px]">
-                          {art ? <img src={art} alt={item.prizeName} className="max-h-[82px] object-contain sm:max-h-[118px]" /> : null}
+                          {art ? <img src={art} alt={siteCopy.text(item.prizeName, "site.lib.vouchercatalog")} className="max-h-[82px] object-contain sm:max-h-[118px]" /> : null}
                         </div>
 
                         <div className="mt-4 text-center">
                           <p
                             className="overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-semibold leading-[1.35] text-[#73452f] sm:text-[18px]"
                             style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-                            title={item.prizeName}
+                            title={siteCopy.text(item.prizeName, "site.lib.vouchercatalog")}
                           >
-                            {item.prizeName}
+                            <SiteText namespace="site.lib.vouchercatalog" value={item.prizeName} />
                           </p>
                           <p className="mt-1 text-xs text-[#b49380] sm:mt-2 sm:text-sm">{getPoolText(item.pool)}</p>
-                          <p className="mt-1 text-[11px] text-[#9d7a68] sm:mt-2 sm:text-sm">到期：{formatDateOnly(item.expiresAt)}</p>
+                          <p className="mt-1 text-[11px] text-[#9d7a68] sm:mt-2 sm:text-sm"><SiteText copyKey="site.components.profile.lotteryfusionclient.3d7c3fd5d46e" />{formatDateOnly(item.expiresAt, siteCopy("site.components.profile.lotteryfusionclient.9554d6fb4a68"))}</p>
                         </div>
                       </button>
                     );
                   })}
                 </div>
 
-                <p className="mt-5 text-center text-sm text-[#b09484]">只显示当前可重铸的未使用券与奖品</p>
+                <p className="mt-5 text-center text-sm text-[#b09484]"><SiteText copyKey="site.components.profile.lotteryfusionclient.0e843e7c6e14" /></p>
               </div>
             </section>
 
@@ -1024,50 +1007,44 @@ export function LotteryFusionClient({
                   <h2
                     className="text-[28px] font-semibold text-[#74452f] lg:text-[36px]"
                     style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-                  >
-                    重铸概览
-                  </h2>
+                  ><SiteText copyKey="site.components.profile.lotteryfusionclient.d9bae57cbcbc" /></h2>
                   <SparklesIcon className="h-5 w-5 text-[#e1b38d]" />
                 </div>
 
                 <div className="mt-5 space-y-4 text-[18px] text-[#7b5a49]">
                   <div className="flex items-center justify-between">
-                    <span>可重铸资产：</span>
-                    <strong className="text-[#6f4430]">{items.length} 个</strong>
+                    <span><SiteText copyKey="site.components.profile.lotteryfusionclient.504d28b30217" /></span>
+                    <strong className="text-[#6f4430]">{items.length}<SiteText copyKey="site.components.profile.lotteryfusionclient.f7b2a6ee68ec" /></strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>当前已选：</span>
-                    <strong className="text-[#6f4430]">{selectedCount} 个</strong>
+                    <span><SiteText copyKey="site.components.profile.lotteryfusionclient.83a55081f1e0" /></span>
+                    <strong className="text-[#6f4430]">{selectedCount}<SiteText copyKey="site.components.profile.lotteryfusionclient.f7b2a6ee68ec" /></strong>
                   </div>
                   <p className={`pt-1 text-[20px] font-semibold ${selectedCount === targetFusionCount ? 'text-[#b87150]' : 'text-[#cf6f63]'}`}>
                     {overviewMessage}
                   </p>
                 </div>
 
-                <div className="mt-6 rounded-[20px] border border-[#f0ddd0] bg-[#fffaf6] px-4 py-3 text-sm text-[#a27d68]">
-                  仅可选择未使用、未过期且支持重铸的券或奖品
-                </div>
+                <div className="mt-6 rounded-[20px] border border-[#f0ddd0] bg-[#fffaf6] px-4 py-3 text-sm text-[#a27d68]"><SiteText copyKey="site.components.profile.lotteryfusionclient.25c593a622ee" /></div>
               </div>
 
               <div className="relative overflow-hidden rounded-[28px] border border-[#f0ddd0] bg-[linear-gradient(180deg,_rgba(255,255,255,0.96),_rgba(255,249,245,0.96))] p-5 shadow-[0_18px_46px_rgba(238,221,206,0.44)] lg:rounded-[32px] lg:p-6">
                 <h2
                   className="text-[28px] font-semibold text-[#74452f] lg:text-[36px]"
                   style={{ fontFamily: 'Noto Serif SC, Songti SC, serif' }}
-                >
-                  重铸说明
-                </h2>
+                ><SiteText copyKey="site.components.profile.lotteryfusionclient.888de91779c6" /></h2>
 
                 <ul className="mt-5 space-y-4 pb-16 text-[14px] leading-7 text-[#9d7967] sm:pb-20 sm:text-[15px]">
-                  <li>• 当前页面会展示可重铸的未使用券与奖品</li>
-                  <li>• 3 个融合：结果只会出银色或金色，最高金色</li>
-                  <li>• 4 个融合：结果只会出银色、金色或高级，最高高级</li>
-                  <li>• 6 个融合：结果只会出金色、高级或特殊，不会出银色</li>
-                  <li>• 重铸后原券/奖品会被消耗，不会返还，请谨慎选择</li>
+                  <li><SiteText copyKey="site.components.profile.lotteryfusionclient.781597d6ba67" /></li>
+                  <li><SiteText copyKey="site.components.profile.lotteryfusionclient.924028972b76" /></li>
+                  <li><SiteText copyKey="site.components.profile.lotteryfusionclient.073e659273cf" /></li>
+                  <li><SiteText copyKey="site.components.profile.lotteryfusionclient.e12e1eba0171" /></li>
+                  <li><SiteText copyKey="site.components.profile.lotteryfusionclient.146bbc1f9d17" /></li>
                 </ul>
 
                 <img
                   src="/lottery-fusion/reference/fusion-rose-corner.png"
-                  alt=""
+                  alt={""}
                   aria-hidden="true"
                   className="pointer-events-none absolute bottom-0 right-0 w-[112px] sm:w-[168px]"
                 />
@@ -1096,14 +1073,10 @@ export function LotteryFusionClient({
         <div className="mx-auto flex max-w-[720px] items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] uppercase tracking-[0.18em] text-[#b09180]">
-              {completedResult ? '重铸结果' : `已选 ${selectedCount}/${targetFusionCount}`}
+              {completedResult ? <SiteText copyKey="site.components.profile.lotteryfusionclient.bdeae4c05248" /> : <SiteText copyKey="site.components.profile.lotteryfusionclient.a300c044528c" values={{value1: String(selectedCount), value2: String(targetFusionCount)}} />}
             </p>
             <p className="mt-1 truncate text-sm font-medium text-[#7b5140]">
-              {completedResult
-                ? `恭喜🎉抽到了${completedResult.prizeName}`
-                : canFuse
-                  ? `已满足 ${targetFusionCount} 个融合条件`
-                  : `还需选择 ${targetFusionCount - selectedCount} 个券或奖品`}
+              {completedResult ? <SiteText copyKey="site.components.profile.lotteryfusionclient.bec831985c3c" values={{value1: String(siteCopy.text(completedResult.prizeName, "site.lib.vouchercatalog"))}} /> : canFuse ? <SiteText copyKey="site.components.profile.lotteryfusionclient.23223abd8b31" values={{value1: String(targetFusionCount)}} /> : <SiteText copyKey="site.components.profile.lotteryfusionclient.d560c8f9773d" values={{value1: String(targetFusionCount - selectedCount)}} />}
             </p>
           </div>
 
@@ -1146,9 +1119,7 @@ export function LotteryFusionClient({
               type="button"
               onClick={() => setBlockingDialog(null)}
               className="mt-6 inline-flex min-w-[168px] items-center justify-center rounded-[999px] border border-[#f0d3b7] bg-[linear-gradient(180deg,_#fffdfb,_#fdf0e3)] px-6 py-3 text-[17px] font-semibold text-[#8c5140] shadow-[0_18px_30px_rgba(83,32,26,0.14)] transition hover:translate-y-[-1px]"
-            >
-              确认
-            </button>
+            ><SiteText copyKey="site.components.profile.lotteryfusionclient.b56d9ac6c5a0" /></button>
           </div>
         </div>
       ) : null}

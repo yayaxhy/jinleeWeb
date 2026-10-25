@@ -9,6 +9,7 @@ import { isNewEntityReportMonth } from '@/lib/operating-entity-cutover';
 import MonthlyExpenseManager from './MonthlyExpenseManager';
 import ConfirmMonthlyReportButton from './ConfirmMonthlyReportButton';
 import MonthlyDividendManager from './MonthlyDividendManager';
+import { ReportCompletenessNotice, ManualRevenueAdjustmentSummary } from '@/components/admin/ReportCompletenessNotice';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,14 +103,17 @@ export default async function MonthlyRevenueFilePage({ params }: PageProps) {
         </div>
       </div>
 
+      <ReportCompletenessNotice completeness={preview.completeness} historical={Boolean(preview.confirmedAt)} />
+      <ManualRevenueAdjustmentSummary adjustments={preview.manualAdjustments} />
+
       {!preview.confirmedAt && parseMonthlyReportMonthKey(preview.monthKey)!.end <= new Date() ? (
-        <ConfirmMonthlyReportButton monthKey={preview.monthKey} />
+        <ConfirmMonthlyReportButton monthKey={preview.monthKey} incomplete={preview.completeness?.complete === false} />
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5"><p className="text-sm text-white/60">收入合计</p><p className="mt-2 text-2xl font-semibold">{formatMoney(preview.incomeTotal)}</p></div>
-        <div className="rounded-3xl border border-amber-200/20 bg-amber-100/5 p-5"><p className="text-sm text-white/60">支出合计</p><p className="mt-2 text-2xl font-semibold">{formatMoney(preview.expenseTotal)}</p></div>
-        <div className="rounded-3xl border border-emerald-200/20 bg-emerald-100/5 p-5"><p className="text-sm text-white/60">净利润</p><p className="mt-2 text-2xl font-semibold">{formatMoney(preview.netProfit)}</p></div>
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5"><p className="text-sm text-white/60">{preview.completeness?.complete === false ? '已核实收入部分' : '收入合计'}</p><p className="mt-2 text-2xl font-semibold">{formatMoney(preview.incomeTotal)}</p></div>
+        <div className="rounded-3xl border border-amber-200/20 bg-amber-100/5 p-5"><p className="text-sm text-white/60">{preview.completeness?.complete === false ? '已核实支出部分' : '支出合计'}</p><p className="mt-2 text-2xl font-semibold">{formatMoney(preview.expenseTotal)}</p></div>
+        <div className="rounded-3xl border border-emerald-200/20 bg-emerald-100/5 p-5"><p className="text-sm text-white/60">{preview.completeness?.complete === false ? '已核实部分净额' : '净利润'}</p><p className="mt-2 text-2xl font-semibold">{formatMoney(preview.netProfit)}</p></div>
       </div>
 
       <section className="space-y-3 rounded-3xl border border-sky-200/20 bg-sky-100/5 p-5">

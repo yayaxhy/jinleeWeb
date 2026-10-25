@@ -1,13 +1,13 @@
+import { getSiteCopy } from "@/lib/site-copy-server";
+import { wechatBindErrorMessage } from '@/lib/public-error-messages';
 import QRCode from 'qrcode';
 import { AccountProvider } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { prisma } from '@/lib/prisma';
-import { createWechatBindSceneCode } from '@/lib/wechat-bind-scene';
 import { createWechatBindToken } from '@/lib/wechat-bind-token';
 import {
   WeChatMiniProgramAuthError,
-  generateMiniProgramCodeDataUrl,
   generateMiniProgramUrlLink,
 } from '@/lib/wechat';
 
@@ -16,14 +16,8 @@ const resolveWechatBindingStatus = async (dlmId: string) => {
     where: { dlmId },
     select: {
       wechatDisplayName: true,
-      accountBindings: {
-        where: {
-          provider: AccountProvider.WECHAT_MINIPROGRAM,
-        },
-        select: {
-          providerUserId: true,
-        },
-      },
+      discordUserId: true,
+      accountBindings: { select: { provider: true, providerUserId: true } },
     },
   });
 
@@ -31,11 +25,10 @@ const resolveWechatBindingStatus = async (dlmId: string) => {
     return null;
   }
 
-  return {
-    bound: dlmUser.accountBindings.length > 0,
-    wechatDisplayName: dlmUser.wechatDisplayName ?? null,
-    canUnbind: dlmUser.accountBindings.length > 0,
-  };
+  const bound = dlmUser.accountBindings.some(binding => binding.provider === AccountProvider.WECHAT_MINIPROGRAM || binding.provider === AccountProvider.WECHAT_WEB);
+  const hasDiscordLogin = !!dlmUser.discordUserId && dlmUser.accountBindings.some(binding =>
+    binding.provider === AccountProvider.DISCORD && binding.providerUserId === dlmUser.discordUserId);
+  return { bound, wechatDisplayName: dlmUser.wechatDisplayName ?? null, canUnbind: bound && hasDiscordLogin };
 };
 
 const buildUnsupportedResponse = () =>
@@ -46,13 +39,15 @@ const isSchemePermissionError = (error: unknown) =>
   error.code === 'wechat_generate_urllink_failed' &&
   error.message.toLowerCase().includes('no scheme permission');
 
-const buildBindErrorResponse = (error: unknown) => {
+const buildBindErrorResponse = async (error: unknown) => {
+  const copy = await getSiteCopy();
+  console.error('[wechat.bind] failed', error);
   if (error instanceof WeChatMiniProgramAuthError) {
     return NextResponse.json(
       {
         ok: false,
         error: error.code,
-        message: error.message,
+        message: copy.text(wechatBindErrorMessage(error.code), "site.lib.public.error.messages"),
       },
       { status: error.status },
     );
@@ -63,13 +58,12 @@ const buildBindErrorResponse = (error: unknown) => {
       {
         ok: false,
         error: 'bind_token_secret_missing',
-        message: error.message,
+        message: copy.text(wechatBindErrorMessage('bind_token_secret_missing'), "site.lib.public.error.messages"),
       },
       { status: 500 },
     );
   }
 
-  console.error('[wechat.bind] failed', error);
   return NextResponse.json({ ok: false, error: 'bind_failed' }, { status: 500 });
 };
 
@@ -117,7 +111,7 @@ export async function POST() {
   }
 
   try {
-    const { token, expiresAt } = createWechatBindToken(currentUser.dlmId);
+    const { token, expiresAt } = createWechatBindToken(currentUser.dlmId, currentUser.dlmUser.sessionVersion);
     try {
       const urlLink = await generateMiniProgramUrlLink({
         path: 'pages/wechat-bind/index',
@@ -142,28 +136,6 @@ export async function POST() {
       });
     } catch (error) {
       if (isSchemePermissionError(error)) {
-        try {
-          const scene = createWechatBindSceneCode(currentUser.discordUserId ?? '');
-          const qrCodeDataUrl = await generateMiniProgramCodeDataUrl({
-            page: 'pages/wechat-bind/index',
-            scene: scene.code,
-            width: 360,
-          });
-
-          return NextResponse.json({
-            ok: true,
-            bound: false,
-            canUnbind: false,
-            wechatDisplayName: null,
-            fallbackMode: 'mini_program_code',
-            qrCodeDataUrl,
-            expiresAt: scene.expiresAt.toISOString(),
-            generatedAt: new Date().toISOString(),
-          });
-        } catch (codeError) {
-          console.error('[wechat.bind] mini program code fallback failed', codeError);
-        }
-
         return NextResponse.json({
           ok: true,
           bound: false,

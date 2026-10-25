@@ -1,4 +1,6 @@
 'use client';
+import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,6 +23,7 @@ type WithdrawAccountsManagerProps = {
 };
 
 export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsManagerProps) {
+  const siteCopy = useSiteCopy();
   const router = useRouter();
   const [accounts, setAccounts] = useState<AccountMap>(initialAccounts);
   const [editing, setEditing] = useState<Record<SlotKey, { method: string; detail: string }>>({
@@ -51,15 +54,15 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
     const parsedUrl = parseHttpUrl(trimmed);
 
     if (!trimmed) {
-      setNotice({ level: 'error', text: getWithdrawErrorMessage('detail_required'), slot });
+      setNotice({ level: 'error', text: getWithdrawErrorMessage('detail_required', siteCopy), slot });
       return;
     }
     if (shouldValidateWithdrawImageLink(method, trimmed) && !parsedUrl) {
-      setNotice({ level: 'error', text: getWithdrawErrorMessage('wechat_detail_invalid_url'), slot });
+      setNotice({ level: 'error', text: getWithdrawErrorMessage('wechat_detail_invalid_url', siteCopy), slot });
       return;
     }
     if (shouldValidateWithdrawImageLink(method, trimmed) && parsedUrl && !isDiscordCdnHost(parsedUrl)) {
-      setNotice({ level: 'error', text: getWithdrawErrorMessage('wechat_detail_invalid_host'), slot });
+      setNotice({ level: 'error', text: getWithdrawErrorMessage('wechat_detail_invalid_host', siteCopy), slot });
       return;
     }
 
@@ -73,18 +76,18 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data?.error) {
-          throw new Error(getWithdrawErrorMessage(data?.error));
+          throw new Error(getWithdrawErrorMessage(data?.error, siteCopy));
         }
         setAccounts((prev) => ({
           ...prev,
           [`account${slot}`]: `${method}:${trimmed}`,
         }));
-        setNotice({ level: 'success', text: `提现方式${slot} 已保存`, slot });
+        setNotice({ level: 'success', text: siteCopy("site.components.profile.withdrawaccountsmanager.9adf13a65508", {value1: String(slot)}), slot });
         router.refresh();
       } catch (error) {
         setNotice({
           level: 'error',
-          text: error instanceof Error ? error.message : '保存失败，请稍后重试',
+          text: error instanceof Error ? error.message : siteCopy("site.components.profile.withdrawaccountsmanager.b285807f8f65"),
           slot,
         });
       }
@@ -94,14 +97,14 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[#5c43a3]">预存提现方式</h3>
+        <h3 className="text-lg font-semibold text-[#5c43a3]"><SiteText copyKey="site.components.profile.withdrawaccountsmanager.2bdeb9172608" /></h3>
       </div>
       {notice ? (
         <div ref={noticeRef}>
           <NoticeBanner
             level={notice.level}
-            title={notice.level === 'error' ? '保存失败，请检查输入内容' : undefined}
-            message={notice.text}
+            title={notice.level === 'error' ? siteCopy("site.components.profile.withdrawaccountsmanager.a549196c96ed") : undefined}
+            message={siteCopy.text(notice.text, "site.components.profile.withdrawaccountsmanager")}
             onDismiss={() => setNotice(null)}
           />
         </div>
@@ -124,14 +127,14 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
               }`}
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-[#171717]">提现方式{slot}</p>
-                {slotError ? <span className="text-xs font-semibold text-red-700">需要处理</span> : null}
-                {slotSuccess ? <span className="text-xs font-semibold text-emerald-700">已保存</span> : null}
+                <p className="text-sm font-semibold text-[#171717]"><SiteText copyKey="site.components.profile.withdrawaccountsmanager.9f9ca5203d0b" />{slot}</p>
+                {slotError ? <span className="text-xs font-semibold text-red-700"><SiteText copyKey="site.components.profile.withdrawaccountsmanager.8036f192eea7" /></span> : null}
+                {slotSuccess ? <span className="text-xs font-semibold text-emerald-700"><SiteText copyKey="site.components.profile.withdrawaccountsmanager.cdfab96f757f" /></span> : null}
               </div>
               {parsed ? (
                 <div className="text-sm text-gray-600">
-                  <p>提现方式：{parsed.method}</p>
-                  <p className="mt-1">账户信息：</p>
+                  <p><SiteText copyKey="site.components.profile.withdrawaccountsmanager.51315db2050e" />{parsed.method}</p>
+                  <p className="mt-1"><SiteText copyKey="site.components.profile.withdrawaccountsmanager.9aa848d21a24" /></p>
                   <p
                     className="mt-1 overflow-hidden text-xs leading-5 text-gray-500"
                     style={{
@@ -146,10 +149,10 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">未设置</p>
+                <p className="text-sm text-gray-400"><SiteText copyKey="site.components.profile.withdrawaccountsmanager.55a04b58cd2c" /></p>
               )}
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-[0.4em] text-gray-500">方式</label>
+                <label className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.components.profile.withdrawaccountsmanager.af90809619ca" /></label>
                 <select
                   value={editing[slot as SlotKey].method}
                   onChange={(event) =>
@@ -173,7 +176,7 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-[0.4em] text-gray-500">账户信息</label>
+                <label className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.components.profile.withdrawaccountsmanager.bd9157656f72" /></label>
                 <input
                   type="text"
                   value={editing[slot as SlotKey].detail}
@@ -190,11 +193,7 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                   className={`w-full rounded-2xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5c43a3] ${
                     slotError ? 'border-red-300 bg-white text-red-900 placeholder:text-red-300' : 'border-black/10'
                   }`}
-                  placeholder={
-                    editing[slot as SlotKey].method === '微信'
-                      ? '请输入 cdn.discordapp.com 图片链接'
-                      : '请输入账号'
-                  }
+                  placeholder={editing[slot as SlotKey].method === '微信' ? siteCopy("site.components.profile.withdrawaccountsmanager.b56f436052ca") : siteCopy("site.components.profile.withdrawaccountsmanager.dfcc84468b6e")}
                 />
                 {slotError ? (
                   <p className="text-xs font-medium text-red-700">{slotNotice?.text}</p>
@@ -206,18 +205,12 @@ export function WithdrawAccountsManager({ initialAccounts }: WithdrawAccountsMan
                 disabled={isPending}
                 className="w-full rounded-full bg-[#5c43a3] text-white text-xs uppercase tracking-[0.3em] py-2 hover:bg-[#4a3388] disabled:opacity-60"
               >
-                {isPending ? '保存中…' : '保存'}
+                {isPending ? <SiteText copyKey="site.components.profile.withdrawaccountsmanager.6644f06197a4" /> : <SiteText copyKey="site.components.profile.withdrawaccountsmanager.fadf24dbc5a9" />}
               </button>
-              <p className="text-xs text-gray-500">
-                例子：<br />
-                支付宝：18888888 真实姓名<br />
-                <br />
-                微信：https://cdn.discordapp.com/...<br />
-                <br />
-                Paypal: xxx@gmail.com +名字<br />
-                <br />
-                如果填写的是链接而不是纯文本账号，也必须使用 `cdn.discordapp.com` 图片链接
-              </p>
+              <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.withdrawaccountsmanager.1c98854287d8" /><br /><SiteText copyKey="site.components.profile.withdrawaccountsmanager.1d7815e22bb4" /><br />
+                <br /><SiteText copyKey="site.components.profile.withdrawaccountsmanager.547702bf834b" /><br />
+                <br /><SiteText copyKey="site.components.profile.withdrawaccountsmanager.03c588cf9eed" /><br />
+                <br /><SiteText copyKey="site.components.profile.withdrawaccountsmanager.36d90adb3caa" /></p>
             </div>
           );
         })}

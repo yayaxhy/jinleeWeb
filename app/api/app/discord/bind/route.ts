@@ -12,15 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'unsupported_session_source' }, { status: 400 });
   }
 
-  if (currentUser.discordUserId) {
-    return NextResponse.json({
-      ok: true,
-      alreadyBound: true,
-      discordUserId: currentUser.discordUserId,
-    });
-  }
-
-  const { token, expiresAt } = createDiscordBindToken(currentUser.dlmId);
+  const { token, expiresAt } = createDiscordBindToken(currentUser.dlmId, currentUser.dlmUser.sessionVersion);
   const origin = process.env.NEXTAUTH_URL ?? new URL(request.url).origin;
   const bindUrl = new URL('/accounts/discord/bind', origin);
   bindUrl.searchParams.set('bindToken', token);
@@ -28,6 +20,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     bindUrl: bindUrl.toString(),
+    sourceDlmId: currentUser.dlmId,
+    sourceDiscordId: currentUser.discordUserId,
     expiresAt: expiresAt.toISOString(),
   });
 }

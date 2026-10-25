@@ -5,6 +5,7 @@ import { canViewKefuWorkspace } from '@/lib/admin';
 import { notifyMiniProgramUser } from '@/lib/mini-program-subscribe';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
+import { readAdminJsonWrite } from '@/lib/admin-write-request';
 
 type Params = { conversationId: string };
 
@@ -48,7 +49,9 @@ export async function GET(_request: Request, context: { params: Promise<Params> 
 
 export async function POST(request: Request, context: { params: Promise<Params> }) {
   if (!await authorize()) return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
-  const body = await request.json().catch(() => null) as { text?: unknown } | null;
+  const parsed = await readAdminJsonWrite(request);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
   const text = typeof body?.text === 'string' ? body.text.trim().slice(0, 1000) : '';
   if (!text) return NextResponse.json({ ok: false, error: 'message_required' }, { status: 400 });
   const { conversationId } = await context.params;

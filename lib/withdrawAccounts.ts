@@ -1,3 +1,4 @@
+import type { SiteCopyRenderer } from "./site-copy";
 export const WITHDRAW_METHOD_OPTIONS = ['微信', '支付宝', 'Paypal'] as const;
 export type WithdrawMethodOption = (typeof WITHDRAW_METHOD_OPTIONS)[number];
 
@@ -76,39 +77,39 @@ export const getWithdrawAccountDetailSummary = (detail: string, maxLength = 40) 
   return truncateMiddle(normalizedDetail, maxLength);
 };
 
-export const getWithdrawErrorMessage = (error?: string | null) => {
+export const getWithdrawErrorMessage = (error?: string | null, copy?: SiteCopyRenderer) => {
   switch (error) {
     case 'unauthorized':
-      return '请先登录 Discord 账号';
+      return copy?.text('请先登录 Discord 账号', 'site.lib.withdrawaccounts') ?? '请先登录 Discord 账号';
     case 'invalid_json':
-      return '请求格式不正确，请稍后重试';
+      return copy?.text('请求格式不正确，请稍后重试', 'site.lib.withdrawaccounts') ?? '请求格式不正确，请稍后重试';
     case 'slot_invalid':
-      return '提现方式槽位无效，请刷新后重试';
+      return copy?.text('提现方式槽位无效，请刷新后重试', 'site.lib.withdrawaccounts') ?? '提现方式槽位无效，请刷新后重试';
     case 'method_invalid':
-      return '请选择有效的提现方式';
+      return copy?.text('请选择有效的提现方式', 'site.lib.withdrawaccounts') ?? '请选择有效的提现方式';
     case 'detail_required':
-      return '请输入提现账号信息';
+      return copy?.text('请输入提现账号信息', 'site.lib.withdrawaccounts') ?? '请输入提现账号信息';
     case 'wechat_detail_invalid_url':
-      return '收款码图片链接必须填写完整的 http/https 链接';
+      return copy?.text('收款码图片链接必须填写完整的 http/https 链接', 'site.lib.withdrawaccounts') ?? '收款码图片链接必须填写完整的 http/https 链接';
     case 'wechat_detail_invalid_host':
-      return `使用图片链接时，必须使用 ${WECHAT_WITHDRAW_HOST} 链接`;
+      return copy ? copy('site.lib.withdrawaccounts.invalid.host', { value1: WECHAT_WITHDRAW_HOST }) : `使用图片链接时，必须使用 ${WECHAT_WITHDRAW_HOST} 链接`;
     case 'wechat_detail_unreachable':
-      return '收款码图片链接无法访问，请检查后重试';
+      return copy?.text('收款码图片链接无法访问，请检查后重试', 'site.lib.withdrawaccounts') ?? '收款码图片链接无法访问，请检查后重试';
     case 'wechat_detail_not_image':
-      return '收款码图片链接不是图片，请重新上传后保存';
+      return copy?.text('收款码图片链接不是图片，请重新上传后保存', 'site.lib.withdrawaccounts') ?? '收款码图片链接不是图片，请重新上传后保存';
     case 'invalid_amount':
-      return '提现金额无效';
+      return copy?.text('提现金额无效', 'site.lib.withdrawaccounts') ?? '提现金额无效';
     case 'withdraw_cooldown':
-      return '提现冷却中，请稍后再试';
+      return copy?.text('提现冷却中，请稍后再试', 'site.lib.withdrawaccounts') ?? '提现冷却中，请稍后再试';
     case 'member_not_found':
-      return '未找到账号信息，请联系客服处理';
+      return copy?.text('未找到账号信息，请联系客服处理', 'site.lib.withdrawaccounts') ?? '未找到账号信息，请联系客服处理';
     case 'insufficient_balance':
-      return '可提现余额不足';
+      return copy?.text('可提现余额不足', 'site.lib.withdrawaccounts') ?? '可提现余额不足';
     case 'method_not_saved':
-      return '请选择已保存的提现方式';
+      return copy?.text('请选择已保存的提现方式', 'site.lib.withdrawaccounts') ?? '请选择已保存的提现方式';
     case 'internal_error':
-      return '服务器繁忙，请稍后再试';
+      return copy?.text('服务器繁忙，请稍后再试', 'site.lib.withdrawaccounts') ?? '服务器繁忙，请稍后再试';
     default:
-      return error || '操作失败，请稍后重试';
+      return error || (copy?.text('操作失败，请稍后重试', 'site.lib.withdrawaccounts') ?? '操作失败，请稍后重试');
   }
 };

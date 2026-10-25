@@ -1,4 +1,9 @@
+import { localizeSiteMetadata } from "@/lib/site-copy-metadata";
+import { getSiteCopy } from "@/lib/site-copy-server";
+
 import type { Metadata, Viewport } from "next";
+import { SiteCopyProvider } from "@/components/SiteCopyProvider";
+import { getSiteCopySnapshot } from "@/lib/site-copy-server";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -24,7 +29,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
+const defaultMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   applicationName: SITE_NAME,
   title: SITE_NAME,
@@ -64,6 +69,11 @@ export const metadata: Metadata = {
   },
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  return localizeSiteMetadata(defaultMetadata, await getSiteCopy(), "site.app.layout");
+}
+
+
 export const viewport: Viewport = {
   // Force desktop viewport width on mobile so the layout follows the desktop format
   width: "1280",
@@ -77,15 +87,17 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession();
+  const [session, copySnapshot] = await Promise.all([getServerSession(), getSiteCopySnapshot()]);
   return (
     <html lang="zh-CN">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <SiteCopyProvider initialSnapshot={copySnapshot}>
         <Providers initialSession={session}>
           <PageViewTracker />
           <SiteAnnouncement />
           {children}
         </Providers>
+        </SiteCopyProvider>
       </body>
     </html>
   );
