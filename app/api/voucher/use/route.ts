@@ -224,6 +224,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
+    if (prizeName === '一日冠75折券') {
+      const balance = await prisma.dlmUser.findUnique({
+        where: { dlmId: currentUser.dlmId },
+        select: { totalBalance: true },
+      });
+      if (!balance || balance.totalBalance.lt(888)) {
+        return NextResponse.json({ error: '余额不足888，请联系客服充值哦～' }, { status: 400 });
+      }
+    }
+
     if (special.kind === 'simple') {
       if (!currentUser.discordUserId) {
         return NextResponse.json({ error: '该功能需要先绑定 Discord 账号' }, { status: 400 });
