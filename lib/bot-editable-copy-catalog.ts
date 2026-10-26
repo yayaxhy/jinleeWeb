@@ -3795,55 +3795,17 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.gifting.a372f08e3",
     "group": "赠礼与撤销",
-    "label": "{value}{qtyText} x {giftName}, 总价值：{grossText}{value2}",
-    "defaultText": "{value}{qtyText} x {giftName}, 总价值：{grossText}{value2}",
+    "label": "打赏成功！{qtyText} x {giftName}, 总价值：{grossText}",
+    "defaultText": "打赏成功！{qtyText} x {giftName}, 总价值：{grossText}",
     "variables": [
-      "value",
       "qtyText",
       "giftName",
-      "grossText",
-      "value2"
+      "grossText"
     ],
     "requiredVariables": [
-      "value",
       "qtyText",
       "giftName",
-      "grossText",
-      "value2"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/gifting.ts:326"
-  },
-  {
-    "key": "bot.commands.gifting.e6e99f577",
-    "group": "赠礼与撤销",
-    "label": "该次打赏此前已完成，本次未重复扣款。",
-    "defaultText": "该次打赏此前已完成，本次未重复扣款。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/gifting.ts:326"
-  },
-  {
-    "key": "bot.commands.gifting.4f38b187d",
-    "group": "赠礼与撤销",
-    "label": "打赏成功！",
-    "defaultText": "打赏成功！",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/gifting.ts:326"
-  },
-  {
-    "key": "bot.commands.gifting.ad43f7d6f",
-    "group": "赠礼与撤销",
-    "label": " 请求编号：{requestId}",
-    "defaultText": "\n请求编号：{requestId}",
-    "variables": [
-      "requestId"
-    ],
-    "requiredVariables": [
-      "requestId"
+      "grossText"
     ],
     "maxLength": 2000,
     "source": "src/commands/gifting.ts:326"
@@ -4130,34 +4092,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     }
   },
   {
-    "key": "bot.services.giftExecutionResult.cf83206ec",
-    "group": "赠礼与撤销",
-    "label": "赠礼结果需要核实，请按原请求编号查询，勿重新赠礼。{value}",
-    "defaultText": "赠礼结果需要核实，请按原请求编号查询，勿重新赠礼。{value}",
-    "variables": [
-      "value"
-    ],
-    "requiredVariables": [
-      "value"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/giftExecutionResult.ts:33"
-  },
-  {
-    "key": "bot.services.giftExecutionResult.bca00eac4",
-    "group": "赠礼与撤销",
-    "label": " 请求编号：{requestId}",
-    "defaultText": "\n请求编号：{requestId}",
-    "variables": [
-      "requestId"
-    ],
-    "requiredVariables": [
-      "requestId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/giftExecutionResult.ts:33"
-  },
-  {
     "key": "bot.assistant.orderActions.782169a27",
     "group": "智能助手与百科",
     "label": "已识别到你要点单，请选择价格后继续：",
@@ -4373,22 +4307,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 2000,
     "source": "src/assistant/confirmButtons.ts:237"
-  },
-  {
-    "key": "bot.assistant.confirmButtons.fcd5397cc",
-    "group": "智能助手与百科",
-    "label": "{baseContent} 赠礼请求编号：{giftRequestId}",
-    "defaultText": "{baseContent}\n赠礼请求编号：{giftRequestId}",
-    "variables": [
-      "baseContent",
-      "giftRequestId"
-    ],
-    "requiredVariables": [
-      "baseContent",
-      "giftRequestId"
-    ],
-    "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:229"
   },
   {
     "key": "bot.assistant.confirmButtons.f4e249b39",
@@ -4855,42 +4773,18 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.assistant.executor.9f5af0d77",
     "group": "智能助手与百科",
-    "label": "{value} {quantity} 个 {giftName}，总价 ¥{gross}。 请求编号：{requestId}",
-    "defaultText": "{value} {quantity} 个 {giftName}，总价 ¥{gross}。\n请求编号：{requestId}",
+    "label": "已为你匿名打赏 {quantity} 个 {giftName}，总价 ¥{gross}。",
+    "defaultText": "已为你匿名打赏 {quantity} 个 {giftName}，总价 ¥{gross}。",
     "variables": [
-      "value",
       "quantity",
       "giftName",
-      "gross",
-      "requestId"
+      "gross"
     ],
     "requiredVariables": [
-      "value",
       "quantity",
       "giftName",
-      "gross",
-      "requestId"
+      "gross"
     ],
-    "maxLength": 2000,
-    "source": "src/assistant/executor.ts:121"
-  },
-  {
-    "key": "bot.assistant.executor.fbebe1e67",
-    "group": "智能助手与百科",
-    "label": "该次赠礼此前已完成，本次未重复扣款。",
-    "defaultText": "该次赠礼此前已完成，本次未重复扣款。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/executor.ts:121"
-  },
-  {
-    "key": "bot.assistant.executor.3ae8da0e9",
-    "group": "智能助手与百科",
-    "label": "已为你匿名打赏",
-    "defaultText": "已为你匿名打赏",
-    "variables": [],
-    "requiredVariables": [],
     "maxLength": 2000,
     "source": "src/assistant/executor.ts:121"
   },
@@ -10188,8 +10082,8 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.giftPostCommitMessages.535dabc79",
     "group": "赠礼与撤销",
-    "label": "{value}感谢{value2}送给陪玩 {value3} \"{giftName}\", 感谢老板对陪陪的喜爱",
-    "defaultText": "{value}感谢{value2}送给陪玩 {value3} \"{giftName}\", 感谢老板对陪陪的喜爱",
+    "label": "{value}感谢{value2} 老板送给陪玩 {value3} \"{giftName}\", 感谢老板对陪陪的喜爱",
+    "defaultText": "{value}感谢{value2} 老板送给陪玩 {value3} \"{giftName}\", 感谢老板对陪陪的喜爱",
     "variables": [
       "value",
       "value2",
@@ -10252,16 +10146,14 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.giftPostCommitMessages.8b9027851",
     "group": "赠礼与撤销",
-    "label": "你收到了{value}通过客服代打赏的 {quantity} 个 {giftName}，总价 ¥{value2}。",
-    "defaultText": "你收到了{value}通过客服代打赏的 {quantity} 个 {giftName}，总价 ¥{value2}。",
+    "label": "你收到了客服代打赏的 {quantity} 个 {giftName}，总价 ¥{value2}。",
+    "defaultText": "你收到了客服代打赏的 {quantity} 个 {giftName}，总价 ¥{value2}。",
     "variables": [
-      "value",
       "quantity",
       "giftName",
       "value2"
     ],
     "requiredVariables": [
-      "value",
       "quantity",
       "giftName",
       "value2"
@@ -11299,7 +11191,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "key": "bot.features.giftFeedHelper.feedThanks",
     "group": "赠礼与打赏",
     "label": "赠礼频道感谢文案",
-    "defaultText": "感谢{giverLabel}送给陪玩 {receiver} \"{giftName}\", 感谢老板对陪陪的喜爱",
+    "defaultText": "感谢{giverLabel} 老板送给陪玩 {receiver} \"{giftName}\", 感谢老板对陪陪的喜爱",
     "variables": [
       "giverLabel",
       "receiver",
@@ -11609,5 +11501,15 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 150,
     "source": "src/services/spentRoleService.ts"
+  },
+  {
+    "key": "bot.features.giftFeedHelper.anonymousGiver",
+    "group": "赠礼与打赏",
+    "label": "匿名",
+    "defaultText": "匿名",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 80,
+    "source": "src/features/giftFeedHelper.ts; src/services/giftPostCommitMessages.ts"
   }
 ];
