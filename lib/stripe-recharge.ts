@@ -10,17 +10,17 @@ const STRIPE_CHECKOUT_SESSIONS_URL = 'https://api.stripe.com/v1/checkout/session
 const STRIPE_PAYMENT_INTENTS_URL = 'https://api.stripe.com/v1/payment_intents';
 const STRIPE_PRICES_URL = 'https://api.stripe.com/v1/prices';
 const STRIPE_THREE_D_SECURE_VALUES = new Set(['automatic', 'any', 'challenge']);
-const DEFAULT_STRIPE_RECHARGE_PRICES = [
-  { amount: '500', priceId: 'price_1U1knZFvZwyimnyiJOGnUvhh' },
-  { amount: '1000', priceId: 'price_1U1knZFvZwyimnyiuNLpYHJ6' },
-  { amount: '2000', priceId: 'price_1U1knZFvZwyimnyiA2lAZJeE' },
-  { amount: '5000', priceId: 'price_1U1knZFvZwyimnyiwKY9nm2G' },
+const STRIPE_RECHARGE_PRICE_LOOKUPS = [
+  { amount: '500', lookupKey: 'recharge_500' },
+  { amount: '1000', lookupKey: 'recharge_1000' },
+  { amount: '2000', lookupKey: 'recharge_2000' },
+  { amount: '5000', lookupKey: 'recharge_5000' },
 ] as const;
 
 export type StripeRechargePrice = {
   amount: Prisma.Decimal;
   amountText: string;
-  priceId: string;
+  lookupKey: string;
 };
 
 type StripeCheckoutSessionPayload = {
@@ -34,9 +34,23 @@ type StripeCheckoutSessionPayload = {
   };
 };
 
-type StripePricePayload = {
-  id?: string;
-  currency_options?: Record<string, { unit_amount?: unknown }> | null;
+type StripeCurrencyPricePayload = {
+  unit_amount?: unknown;
+  unit_amount_decimal?: unknown;
+};
+
+type StripePricePayload = StripeCurrencyPricePayload & {
+  id: string;
+  lookup_key: string | null;
+  active: boolean;
+  type: 'one_time' | 'recurring';
+  currency?: string;
+  currency_options?: Record<string, StripeCurrencyPricePayload> | null;
+};
+
+type StripePriceListPayload = {
+  data?: StripePricePayload[];
+  has_more?: boolean;
   error?: {
     message?: string;
   };
@@ -135,53 +149,85 @@ export const getStripeWebhookSecret = () => {
 };
 
 export const getStripeRechargePrices = (): StripeRechargePrice[] =>
-  DEFAULT_STRIPE_RECHARGE_PRICES.map((price) => {
-    const envOverride = process.env[`STRIPE_RECHARGE_PRICE_${price.amount}`]?.trim();
-    return {
-      amount: new Prisma.Decimal(price.amount).toDecimalPlaces(2),
-      amountText: new Prisma.Decimal(price.amount).toDecimalPlaces(2).toFixed(2),
-      priceId: envOverride || price.priceId,
-    };
-  });
+  STRIPE_RECHARGE_PRICE_LOOKUPS.map((price) => ({
+    amount: new Prisma.Decimal(price.amount).toDecimalPlaces(2),
+    amountText: new Prisma.Decimal(price.amount).toDecimalPlaces(2).toFixed(2),
+    lookupKey: price.lookupKey,
+  }));
 
 export const findStripeRechargePrice = (amount: Prisma.Decimal | number | string) => {
   const normalizedAmount = new Prisma.Decimal(amount).toDecimalPlaces(2);
   return getStripeRechargePrices().find((price) => price.amount.equals(normalizedAmount)) ?? null;
 };
 
+const fetchStripePricesByLookupKeys = async (secretKey: string, lookupKeys: readonly string[]) => {
+  const params = new URLSearchParams({ active: 'true', type: 'one_time', limit: String(lookupKeys.length) });
+  for (const lookupKey of lookupKeys) params.append('lookup_keys[]', lookupKey);
+  params.append('expand[]', 'data.currency_options');
+
+  const response = await fetch(`${STRIPE_PRICES_URL}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${secretKey}` },
+    cache: 'no-store',
+    signal: AbortSignal.timeout(8_000),
+  });
+  const payload = (await response.json()) as StripePriceListPayload;
+  const fetchedPrices = payload.data;
+  if (!response.ok || !Array.isArray(fetchedPrices) || payload.has_more) {
+    throw new Error(payload.error?.message || `stripe_price_retrieve_failed:${lookupKeys.join(',')}`);
+  }
+
+  return lookupKeys.map((lookupKey) => {
+    const matches = fetchedPrices.filter((price) => price.lookup_key === lookupKey);
+    const price = matches[0];
+    if (matches.length !== 1 || typeof price?.id !== 'string' || !price.id || price.active !== true || price.type !== 'one_time') {
+      throw new Error(`stripe_price_retrieve_failed:${lookupKey}`);
+    }
+    return price;
+  });
+};
+
+export const fetchStripeRechargePriceId = async (secretKey: string, lookupKey: string): Promise<string> => {
+  const [price] = await fetchStripePricesByLookupKeys(secretKey, [lookupKey]);
+  return price.id;
+};
+
+const parseStripeCurrencyAmount = (price: StripeCurrencyPricePayload | undefined): number | null => {
+  const rawAmount = price?.unit_amount ?? price?.unit_amount_decimal;
+  if (typeof rawAmount !== 'number' && typeof rawAmount !== 'string') return null;
+  try {
+    const unitAmount = new Prisma.Decimal(rawAmount);
+    if (!unitAmount.isFinite() || unitAmount.lt(0)) return null;
+    // Checkout uses quantity 1; round fractional minor units as Stripe does for a line item.
+    return unitAmount.toDecimalPlaces(0, Prisma.Decimal.ROUND_HALF_UP).div(100).toNumber();
+  } catch {
+    return null;
+  }
+};
+
 export const fetchStripeRechargePresetPrices = async (secretKey: string): Promise<StripePricingPreset[]> => {
   const rechargePrices = getStripeRechargePrices();
-  return Promise.all(
-    rechargePrices.map(async (rechargePrice) => {
-      const response = await fetch(
-        `${STRIPE_PRICES_URL}/${encodeURIComponent(rechargePrice.priceId)}?expand[]=currency_options`,
-        {
-          headers: { Authorization: `Bearer ${secretKey}` },
-          cache: 'no-store',
-          signal: AbortSignal.timeout(8_000),
-        },
-      );
-      const payload = (await response.json()) as StripePricePayload;
-      if (!response.ok || payload.id !== rechargePrice.priceId || !payload.currency_options) {
-        throw new Error(payload.error?.message || `stripe_price_retrieve_failed:${rechargePrice.priceId}`);
-      }
+  const stripePrices = await fetchStripePricesByLookupKeys(secretKey, rechargePrices.map((price) => price.lookupKey));
 
-      const prices = {} as Record<StripePricingCurrency, number>;
-      for (const currency of STRIPE_PRICING_CURRENCIES) {
-        const unitAmount = payload.currency_options[currency.toLowerCase()]?.unit_amount;
-        if (typeof unitAmount !== 'number' || !Number.isFinite(unitAmount) || unitAmount < 0) {
-          throw new Error(`stripe_price_currency_missing:${rechargePrice.priceId}:${currency}`);
-        }
-        prices[currency] = unitAmount / 100;
+  return rechargePrices.map((rechargePrice, index) => {
+    const stripePrice = stripePrices[index];
+    const prices = {} as Record<StripePricingCurrency, number>;
+    for (const currency of STRIPE_PRICING_CURRENCIES) {
+      const currencyCode = currency.toLowerCase();
+      const currencyPrice = stripePrice.currency_options?.[currencyCode] ??
+        (stripePrice.currency === currencyCode ? stripePrice : undefined);
+      const amount = parseStripeCurrencyAmount(currencyPrice);
+      if (amount === null) {
+        throw new Error(`stripe_price_currency_missing:${stripePrice.id}:${currency}`);
       }
+      prices[currency] = amount;
+    }
 
-      return {
-        rmbAmount: Number(rechargePrice.amount.toFixed(2)),
-        priceId: rechargePrice.priceId,
-        prices,
-      };
-    }),
-  );
+    return {
+      rmbAmount: Number(rechargePrice.amount.toFixed(2)),
+      priceId: stripePrice.id,
+      prices,
+    };
+  });
 };
 
 export const getStripeFirstRechargeAmount = () =>

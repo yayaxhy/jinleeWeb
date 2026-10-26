@@ -8,6 +8,7 @@ import {
   createStripeCheckoutSession,
   getStripeFirstRechargeAmount,
   findStripeRechargePrice,
+  fetchStripeRechargePriceId,
   getStripeSecretKey,
   isStripeRechargeAmountAllowed,
   StripeCheckoutSessionError,
@@ -90,17 +91,6 @@ export async function POST(request: Request) {
 
   const outTradeNo = buildStripeOutTradeNo(currentUser.dlmId);
 
-  await prisma.stripePayment.create({
-    data: {
-      outTradeNo,
-      discordUserId: currentUser.discordUserId,
-      dlmId: currentUser.dlmId,
-      rechargeAmount: price.amount,
-      priceId: price.priceId,
-      selectedCurrency: currency,
-    },
-  });
-
   const origin = resolveOrigin(request);
   const successUrlBase = new URL('/recharge/result', origin);
   successUrlBase.searchParams.set('order', outTradeNo);
@@ -109,9 +99,22 @@ export async function POST(request: Request) {
   cancelUrl.searchParams.set('stripe_cancelled', '1');
 
   try {
+    const secretKey = getStripeSecretKey();
+    const priceId = await fetchStripeRechargePriceId(secretKey, price.lookupKey);
+    await prisma.stripePayment.create({
+      data: {
+        outTradeNo,
+        discordUserId: currentUser.discordUserId,
+        dlmId: currentUser.dlmId,
+        rechargeAmount: price.amount,
+        priceId,
+        selectedCurrency: currency,
+      },
+    });
+
     const session = await createStripeCheckoutSession({
-      secretKey: getStripeSecretKey(),
-      priceId: price.priceId,
+      secretKey,
+      priceId,
       currency,
       outTradeNo,
       dlmId: currentUser.dlmId,
