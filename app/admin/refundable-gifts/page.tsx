@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-import { canViewRefundableGifts, isAdminDiscordId } from '@/lib/admin';
+import { canViewRefundableGifts, isAdminDiscordId, canManageGuildOperations } from '@/lib/admin';
 import { Prisma } from '@prisma/client';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
@@ -253,7 +253,7 @@ export default async function RefundableGiftsPage(props: PageProps) {
                       {record.individualTransactionId}
                       {isAdminDiscordId(session?.discordId) && <Link className="mt-2 block text-cyan-200 hover:underline" href={`/admin/gift-audit-review?transactionId=${encodeURIComponent(record.individualTransactionId)}`}>核实凭证</Link>}
                       {manualByOriginal.has(record.individualTransactionId) && <p className="mt-2 text-amber-200">已人工处置，不能再次自动撤销</p>}
-                      {isAdminDiscordId(session?.discordId) && <Link className="mt-2 block text-cyan-200 hover:underline" href={manualByOriginal.has(record.individualTransactionId) ? `/admin/legacy-adjustments?requestId=${encodeURIComponent(manualByOriginal.get(record.individualTransactionId)!)}` : `/admin/legacy-adjustments?kind=GIFT&id=${encodeURIComponent(record.individualTransactionId)}`}>{manualByOriginal.has(record.individualTransactionId) ? '查看人工处置回执' : '人工核实后调整'}</Link>}
+                      {canManageGuildOperations(session?.discordId) && <Link className="mt-2 block text-cyan-200 hover:underline" href={manualByOriginal.has(record.individualTransactionId) ? `/admin/legacy-adjustments?requestId=${encodeURIComponent(manualByOriginal.get(record.individualTransactionId)!)}` : `/admin/legacy-adjustments?kind=GIFT&id=${encodeURIComponent(record.individualTransactionId)}`}>{manualByOriginal.has(record.individualTransactionId) ? '查看人工处置回执' : '人工核实后调整'}</Link>}
                     </td>
                     <td className="px-3 py-3 text-white/70 whitespace-normal break-words">{formatDate(record.createdAt)}</td>
                     <td className="px-3 py-3 whitespace-normal break-words">

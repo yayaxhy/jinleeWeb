@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/session';
-import { canViewRefundableGifts, isAdminDiscordId } from '@/lib/admin';
+import { canViewRefundableGifts, canManageGuildOperations } from '@/lib/admin';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -281,7 +281,7 @@ export default async function RefundableOrdersPage(props: PageProps) {
                         <div>orderId: {record.orderId}</div>
                         <div className="text-white/50">auditId: {record.id}</div>
                       {manualByOriginal.has(`ORDER:${record.orderId}`) && <p className="mt-2 text-amber-200">已人工处置，不能再次自动撤销</p>}
-                      {isAdminDiscordId(session?.discordId) && <Link className="mt-2 block text-cyan-200 hover:underline" href={manualByOriginal.has(`ORDER:${record.orderId}`) ? `/admin/legacy-adjustments?requestId=${encodeURIComponent(manualByOriginal.get(`ORDER:${record.orderId}`)!)}` : `/admin/legacy-adjustments?kind=ORDER&id=${encodeURIComponent(record.orderId)}`}>{manualByOriginal.has(`ORDER:${record.orderId}`) ? '查看人工处置回执' : '人工核实后调整'}</Link>}
+                      {canManageGuildOperations(session?.discordId) && <Link className="mt-2 block text-cyan-200 hover:underline" href={manualByOriginal.has(`ORDER:${record.orderId}`) ? `/admin/legacy-adjustments?requestId=${encodeURIComponent(manualByOriginal.get(`ORDER:${record.orderId}`)!)}` : `/admin/legacy-adjustments?kind=ORDER&id=${encodeURIComponent(record.orderId)}`}>{manualByOriginal.has(`ORDER:${record.orderId}`) ? '查看人工处置回执' : '人工核实后调整'}</Link>}
                       </td>
                       <td className="whitespace-normal break-words px-3 py-3 text-white/70">
                         <div>{formatDate(record.createdAt)}</div>

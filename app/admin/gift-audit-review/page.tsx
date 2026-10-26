@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { isAdminDiscordId } from '@/lib/admin';
+import { isAdminDiscordId, canManageGuildOperations } from '@/lib/admin';
 import { getServerSession } from '@/lib/session';
 import { GiftAuditReviewManager } from '@/components/admin/GiftAuditReviewManager';
 
@@ -8,5 +8,5 @@ export default async function GiftAuditReviewPage({ searchParams }: { searchPara
   const session = await getServerSession();
   if (!session?.discordId || !isAdminDiscordId(session.discordId)) redirect('/');
   const query = await searchParams;
-  return <GiftAuditReviewManager initialTransactionId={typeof query.transactionId === 'string' ? query.transactionId : ''} />;
+  return <GiftAuditReviewManager canAdjust={canManageGuildOperations(session.discordId)} initialTransactionId={typeof query.transactionId === 'string' ? query.transactionId : ''} />;
 }

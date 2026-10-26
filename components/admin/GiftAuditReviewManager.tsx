@@ -44,7 +44,7 @@ async function request(path: string, init?: RequestInit) {
   return result;
 }
 
-export function GiftAuditReviewManager({ initialTransactionId = '' }: { initialTransactionId?: string }) {
+export function GiftAuditReviewManager({ initialTransactionId = '', canAdjust = false }: { initialTransactionId?: string; canAdjust?: boolean }) {
   const [transactionId, setTransactionId] = useState(initialTransactionId);
   const [state, setState] = useState<GiftReviewState | null>(null);
   const [note, setNote] = useState('');
@@ -119,7 +119,7 @@ export function GiftAuditReviewManager({ initialTransactionId = '' }: { initialT
     {state && <>
       <section className="space-y-3 rounded-2xl border border-amber-200/25 bg-amber-200/5 p-4">
         <h3 className="font-semibold">核实范围 · {state.transactionId}</h3>
-        <Link className="block text-sm text-cyan-200 hover:underline" href={`/admin/legacy-adjustments?kind=GIFT&id=${encodeURIComponent(state.transactionId)}`}>核实完成后，进入独立人工退款／调整</Link>
+        {canAdjust && <Link className="block text-sm text-cyan-200 hover:underline" href={`/admin/legacy-adjustments?kind=GIFT&id=${encodeURIComponent(state.transactionId)}`}>核实完成后，进入独立人工退款／调整</Link>}
         <ul className="list-disc space-y-2 pl-5 text-sm text-white/75">{state.concerns.map((concern) => <li key={concern}>{concern}</li>)}</ul>
         <p className="text-sm text-white/65">逐项核对付款来源、收款拆分、累计流水、积分、增益、券、心动值及返佣。当前余额无法证明历史实际入账；下方金额保留原精度。</p>
         <button type="button" className={buttonStyle} disabled={busy} onClick={() => void load(state.transactionId)}>刷新原交易与记录</button>

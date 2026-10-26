@@ -5,7 +5,7 @@ import { DeletePeiwanCard } from '@/components/admin/DeletePeiwanCard';
 import { SyncDlmPeiwanCardsCard } from '@/components/admin/SyncDlmPeiwanCardsCard';
 import { SyncAllPeiwanTagsCard } from '@/components/admin/SyncAllPeiwanTagsCard';
 import { getServerSession } from '@/lib/session';
-import { canViewAdminHome, canViewStripePricing, canViewTraffic, isAdminDiscordId } from '@/lib/admin';
+import { canViewAdminHome, canViewStripePricing, canViewTraffic, isAdminDiscordId, canManageGuildOperations } from '@/lib/admin';
 import { getSettlementOperableOwnerIds } from '@/lib/settlement-reconciliation';
 
 export default async function AdminHomePage() {
@@ -430,7 +430,7 @@ export default async function AdminHomePage() {
             >
               前往查看
             </Link>
-            <Link href="/admin/legacy-adjustments" className="text-sm text-cyan-200 hover:underline">旧交易人工退款／调整</Link>
+            {canManageGuildOperations(session.discordId) && <Link href="/admin/legacy-adjustments" className="text-sm text-cyan-200 hover:underline">旧交易人工退款／调整</Link>}
           </div>
         </div>
 
