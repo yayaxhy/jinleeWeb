@@ -9,6 +9,6 @@ export default async function DiscordLoginPage({ searchParams }: DiscordLoginPag
   const rawCallback = resolvedSearchParams.callbackUrl;
   const callbackUrl = Array.isArray(rawCallback) ? rawCallback[0] : rawCallback;
 
-  return <DiscordLoginClient callbackUrl={typeof callbackUrl === 'string' ? callbackUrl : undefined} />;
+  return <DiscordLoginClient callbackUrl={typeof callbackUrl === 'string' ? callbackUrl : undefined} hasError={resolvedSearchParams.error !== undefined} />;
 }
 

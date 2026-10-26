@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef } from 'react';
 
 type DiscordLoginClientProps = {
   callbackUrl?: string;
+  hasError?: boolean;
 };
 
 const DEFAULT_CALLBACK = '/profile';
@@ -37,15 +38,15 @@ const buildLoginUrl = (callbackUrl?: string) => {
   return target.toString();
 };
 
-export default function DiscordLoginClient({ callbackUrl: raw }: DiscordLoginClientProps) {
+export default function DiscordLoginClient({ callbackUrl: raw, hasError = false }: DiscordLoginClientProps) {
   const callbackUrl = useMemo(() => resolveCallbackUrl(raw), [raw]);
   const triggeredRef = useRef(false);
 
   useEffect(() => {
-    if (triggeredRef.current) return;
+    if (hasError || triggeredRef.current) return;
     triggeredRef.current = true;
     window.location.href = buildLoginUrl(callbackUrl);
-  }, [callbackUrl]);
+  }, [callbackUrl, hasError]);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-black text-white space-y-6 text-center px-6">
