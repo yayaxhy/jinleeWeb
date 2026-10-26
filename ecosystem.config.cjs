@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'jinlee-notification-retry',
-      cwd: '/www/wwwroot/jinleeWeb',
+      cwd: __dirname,
       script: 'scripts/notification-retry-scheduler.mjs',
       instances: 1,
       exec_mode: 'fork',
@@ -17,7 +17,7 @@ module.exports = {
     },
     {
       name: 'jinlee-web',
-      cwd: '/www/wwwroot/jinleeWeb',
+      cwd: __dirname,
       script: 'npm',
       args: 'start -- --hostname 127.0.0.1 --port 3000',
       instances: 1,
@@ -32,7 +32,7 @@ module.exports = {
     },
     {
       name: 'jinlee-monthly-financial-reports',
-      cwd: '/www/wwwroot/jinleeWeb',
+      cwd: __dirname,
       script: 'scripts/monthly-financial-report-scheduler.mjs',
       instances: 1,
       exec_mode: 'fork',
@@ -47,7 +47,7 @@ module.exports = {
     },
     {
       name: 'jinlee-wechat-native-reconcile',
-      cwd: '/www/wwwroot/jinleeWeb',
+      cwd: __dirname,
       script: 'scripts/wechat-native-reconcile-scheduler.mjs',
       instances: 1,
       exec_mode: 'fork',
@@ -62,7 +62,7 @@ module.exports = {
     },
     {
       name: 'jinlee-auth-login-audit-retention',
-      cwd: '/www/wwwroot/jinleeWeb',
+      cwd: __dirname,
       script: 'scripts/auth-login-audit-retention-scheduler.mjs',
       instances: 1,
       exec_mode: 'fork',
