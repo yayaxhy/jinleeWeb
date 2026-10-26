@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { loadRevenueFacts } from '@/lib/admin/revenue-facts';
-import { ReportCompletenessNotice, ManualRevenueAdjustmentSummary } from '@/components/admin/ReportCompletenessNotice';
+import { ReportCompletenessNotice } from '@/components/admin/ReportCompletenessNotice';
 import { getServerSession } from '@/lib/session';
 import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
@@ -615,7 +615,6 @@ export default async function AdminRevenuePage(props: PageProps) {
       </div>
 
       <ReportCompletenessNotice completeness={facts.completeness} />
-      <ManualRevenueAdjustmentSummary adjustments={facts.manualAdjustments} />
 
       <form className="grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 md:grid-cols-2" method="get">
         <label className="space-y-2 text-sm">

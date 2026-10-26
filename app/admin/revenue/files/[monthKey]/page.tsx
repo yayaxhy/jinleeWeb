@@ -9,7 +9,7 @@ import { isNewEntityReportMonth } from '@/lib/operating-entity-cutover';
 import MonthlyExpenseManager from './MonthlyExpenseManager';
 import ConfirmMonthlyReportButton from './ConfirmMonthlyReportButton';
 import MonthlyDividendManager from './MonthlyDividendManager';
-import { ReportCompletenessNotice, ManualRevenueAdjustmentSummary } from '@/components/admin/ReportCompletenessNotice';
+import { ReportCompletenessNotice } from '@/components/admin/ReportCompletenessNotice';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,7 +104,6 @@ export default async function MonthlyRevenueFilePage({ params }: PageProps) {
       </div>
 
       <ReportCompletenessNotice completeness={preview.completeness} historical={Boolean(preview.confirmedAt)} />
-      <ManualRevenueAdjustmentSummary adjustments={preview.manualAdjustments} />
 
       {!preview.confirmedAt && parseMonthlyReportMonthKey(preview.monthKey)!.end <= new Date() ? (
         <ConfirmMonthlyReportButton monthKey={preview.monthKey} incomplete={preview.completeness?.complete === false} />
