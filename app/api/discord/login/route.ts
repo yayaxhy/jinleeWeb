@@ -7,10 +7,9 @@ import {
 } from '@/lib/session';
 
 const DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
-// Login only needs the authenticated Discord identity. Guild member details
-// are optional display-name enrichment, and must not make sign-in depend on
-// the Bot's currently quarantined guild capabilities.
-const DISCORD_SCOPE = 'identify';
+// Request the user's identity, guild list, and guild member details.
+// The callback uses member details to resolve the guild nickname when available.
+const DISCORD_SCOPE = 'identify guilds guilds.members.read';
 
 const requireClientId = () => {
   const value = process.env.DISCORD_CLIENT_ID;
