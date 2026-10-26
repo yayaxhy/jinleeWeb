@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { NotificationDeliveryMonitor } from "@/components/admin/NotificationDeliveryMonitor";
 import { SupportInbox } from "@/components/admin/SupportInbox";
-import { canViewKefuWorkspace } from "@/lib/admin";
+import { canViewKefuWorkspace, canManageGuildOperations } from "@/lib/admin";
 import { getServerSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ export default async function SupportPage() {
         </Link>
       </div>
       <NotificationDeliveryMonitor />
-      <NotificationDeliveryMonitor source="outbox" />
+      {canManageGuildOperations(session.discordId) && <NotificationDeliveryMonitor source="outbox" />}
       <SupportInbox />
     </main>
   );

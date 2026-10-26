@@ -84,6 +84,24 @@ async function validSession(db: GiftExecutionReadDb, session: SessionSnapshot) {
   return !!current && current.sessionVersion === (session.sessionVersion ?? 1) && current.discordUserId === (session.discordId ?? null) &&
     (current.discordUserId === null || current.member?.discordUserId === current.discordUserId);
 }
+/** Staff recovery is limited to requests they actually registered or operated.
+ * A browser-supplied intent never establishes delegated ownership. */
+async function ownsDelegatedRequest(db: GiftExecutionReadDb, session: SessionSnapshot,
+  row: { kind: string; intent: Prisma.JsonValue; intentHash: string; recoveryOwnerDlmId: string | null; recoveryOwnerDiscordId: string | null },
+  intent: GiftExecutionIntent, canReviewOwnDelegated: boolean) {
+  if (!canReviewOwnDelegated || !session.dlmId || !session.discordId || row.kind !== 'DELEGATED_GIFT' ||
+      intent.kind !== 'DELEGATED_GIFT' || !intent.operatorDiscordId || row.intentHash !== giftExecutionIntentHash(intent) ||
+      stableGiftExecutionJson(row.intent) !== stableGiftExecutionJson(intent)) return false;
+  if (row.recoveryOwnerDlmId != null || row.recoveryOwnerDiscordId != null) {
+    if (!row.recoveryOwnerDlmId || row.recoveryOwnerDiscordId !== intent.operatorDiscordId) return false;
+    return giftHistoryActorMatches(db,
+      { dlmId: row.recoveryOwnerDlmId, discordId: row.recoveryOwnerDiscordId },
+      { dlmId: session.dlmId, discordId: session.discordId });
+  }
+  // Legacy Bot registrations predate recovery owners but retain their original
+  // operator in the server's immutable intent. Require the same current staff ID.
+  return intent.operatorDiscordId === session.discordId;
+}
 type Audit = Prisma.GiftAuditGetPayload<{ select: typeof auditSelect }>;
 /** Same immutable voucher lifecycle evidence as the Bot writer/reader, without
  * reading current voucher rows that may already have been restored or reused. */
@@ -136,17 +154,18 @@ function verifyVouchers(audit: Audit, intent: GiftExecutionIntent) {
 
 /** SELECT-only reader. Approved ownership mapping grants historical read access;
  * it never changes the captured intent or authorizes another execution. */
-export async function loadGiftExecutionReview(db: GiftExecutionReadDb, session: SessionSnapshot, isAdmin: boolean, requestId: string): Promise<GiftExecutionReview | null> {
+export async function loadGiftExecutionReview(db: GiftExecutionReadDb, session: SessionSnapshot, isAdmin: boolean, requestId: string, canReviewOwnDelegated = false): Promise<GiftExecutionReview | null> {
   if (!validGiftExecutionLookupId(requestId) || !await validSession(db, session)) return null;
   requestId = normalizeGiftExecutionId(requestId);
   const row = await db.giftExecutionRequest.findUnique({ where: { requestId }, select: {
     requestId: true, kind: true, intent: true, intentHash: true, status: true, giftAuditId: true, result: true,
+    recoveryOwnerDlmId: true, recoveryOwnerDiscordId: true,
   } });
   if (!row) return null;
   let intent: GiftExecutionIntent;
   try { intent = parseGiftExecutionIntent(row.intent); } catch { return null; }
   let authorizedAudit: Audit | null = null;
-  if (!isAdmin) {
+  if (!isAdmin && !await ownsDelegatedRequest(db, session, row, intent, canReviewOwnDelegated)) {
     if (!session.dlmId) return null;
     const current = { dlmId: session.dlmId, discordId: session.discordId ?? null };
     if (intent.payerDlmId !== null && !await giftHistoryActorMatches(db,
@@ -226,12 +245,12 @@ export class GiftExecutionReviewConflict extends Error {
 }
 /** Existing requests always use their stored intent. A missing v1 Web request
  * needs the complete locally persisted intent; an ID alone cannot prove it. */
-export async function prepareGiftExecutionAbandon(db: GiftExecutionReadDb, session: SessionSnapshot, isAdmin: boolean, requestId: string, rawIntent?: unknown) {
+export async function prepareGiftExecutionAbandon(db: GiftExecutionReadDb, session: SessionSnapshot, isAdmin: boolean, requestId: string, rawIntent?: unknown, canReviewOwnDelegated = false) {
   if (!validGiftExecutionLookupId(requestId) || !await validSession(db, session)) return null;
   requestId = normalizeGiftExecutionId(requestId);
   const existing = await db.giftExecutionRequest.findUnique({ where: { requestId }, select: { requestId: true } });
   if (existing) {
-    const review = await loadGiftExecutionReview(db, session, isAdmin, requestId);
+    const review = await loadGiftExecutionReview(db, session, isAdmin, requestId, canReviewOwnDelegated);
     if (!review) return null;
     // The verified current owner may cancel an inherited pending request using
     // its original intent. Bot locks and checks execution evidence before canceling;

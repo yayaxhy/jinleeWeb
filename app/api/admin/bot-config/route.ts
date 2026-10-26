@@ -1,4 +1,4 @@
-import { isAdminDiscordId } from '@/lib/admin';
+import { canManageGuildOperations } from '@/lib/admin';
 import { handleBotConfigRequest } from '@/lib/bot-config-proxy';
 import { getInternalBot, postInternalBot } from '@/lib/internal-bot';
 import { getServerSession } from '@/lib/session';
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 const dependencies = {
   session: getServerSession,
-  isAdmin: isAdminDiscordId,
+  isAdmin: canManageGuildOperations,
   get: getInternalBot,
   post: postInternalBot,
 };
