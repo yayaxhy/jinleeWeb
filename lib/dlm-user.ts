@@ -123,7 +123,8 @@ export const summarizeDlmUser = (user: DlmUserWithMember) => {
 export async function ensureDlmUserForDiscordMemberTx(tx: Prisma.TransactionClient, input: EnsureDiscordDlmUserInput, verifiedRegistration = false): Promise<DlmUserWithMember> {
   const { discordUserId, displayName, avatarUrl, profile } = input;
   if (!/^\d{15,22}$/.test(discordUserId)) throw new Error('discord_identity_not_loginable');
-  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'discord-identity:' + discordUserId}, 0))`;
+  // The lock returns PostgreSQL void; execute it without deserializing a result row.
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'discord-identity:' + discordUserId}, 0))`;
   const where = { provider_providerUserId: { provider: AccountProvider.DISCORD, providerUserId: discordUserId } };
   const before = await tx.accountBinding.findUnique({ where });
   let existingUser = before ? await tx.dlmUser.findUnique({ where: { dlmId: before.dlmId } }) : await tx.dlmUser.findUnique({ where: { discordUserId } });
