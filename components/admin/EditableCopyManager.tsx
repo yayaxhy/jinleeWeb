@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { COPY_CATEGORIES, classifyCopyEntry, type CopyCategoryId } from './editable-copy-categories';
+import { CopyUnitEditor } from './CopyUnitEditor';
+import { filterCopyUnits, getCopyUnits, type CopyUnit } from '@/lib/editable-copy-units';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { renderCopyTemplate, validateCopyOverrides, type EditableCopyEntry } from '@/lib/editable-copy-contract';
+import { validateCopyOverrides } from '@/lib/editable-copy-contract';
 import {
-  appendCopyHistory, changedCopyKeys, copyPreviewVariables, createCopyEditor, filterCopyEntries,
+  appendCopyHistory, changedCopyKeys, createCopyEditor,
   refreshCopyEditor, resolveCopyConflict, updateCopyDraft,
   type CopyEditor, type CopyScope, type CopyState, type CopyVersion,
 } from './editable-copy-editor';
@@ -45,61 +47,16 @@ async function requestCopy(scope: CopyScope, init?: RequestInit, beforeVersion?:
 function errorText(error: unknown) { return error instanceof Error ? error.message : '请求失败，请稍后重试。'; }
 function versionLabel(version: number) { return version ? `v${version}` : '默认文案'; }
 
-function CopyEntryEditor({ entry, editor, disabled, onEdit, onResolve }: {
-  entry: EditableCopyEntry;
-  editor: CopyEditor;
-  disabled: boolean;
-  onEdit: (entry: EditableCopyEntry, value: string) => void;
-  onResolve: (key: string, use: 'mine' | 'published') => void;
-}) {
-  const template = editor.draft[entry.key] ?? entry.defaultText;
-  const customized = Object.prototype.hasOwnProperty.call(editor.draft, entry.key);
-  const unsaved = changedCopyKeys(editor.server.overrides, editor.draft).includes(entry.key);
-  const conflict = editor.conflicts.includes(entry.key);
-  let validationError = '';
-  try { validateCopyOverrides([entry], customized ? { [entry.key]: template } : {}); }
-  catch (error) { validationError = errorText(error); }
-  let preview = '';
-  try { preview = validationError ? '模板尚未通过校验，修正后显示预览。' : renderCopyTemplate(entry, template, copyPreviewVariables(entry)); }
-  catch { preview = '模板尚未通过校验，修正后显示预览。'; }
-  const id = `copy-${entry.key}`;
-  return <article className={`rounded-2xl border p-4 sm:p-5 ${conflict ? 'border-amber-300/50 bg-amber-300/5' : 'border-white/10 bg-white/5'}`}>
-    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-      <div className="min-w-0">
-        <p className="text-xs text-white/45">{categoryLabels[classifyCopyEntry(entry)]}</p>
-        <label htmlFor={id} className="mt-1 block break-words font-medium">{entry.label}</label>
-        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-          {customized && <span className="rounded bg-cyan-300/10 px-2 py-1 text-cyan-200">自定义</span>}
-          {unsaved && <span className="rounded bg-amber-300/10 px-2 py-1 text-amber-200">待发布</span>}
-        </div>
-      </div>
-      <button type="button" className={buttonClass} disabled={disabled || !customized} onClick={() => onEdit(entry, entry.defaultText)}>恢复默认</button>
-    </div>
-    <div className="grid gap-4 lg:grid-cols-2">
-      <div className="space-y-3">
-        <div className="rounded-xl bg-black/20 p-3"><p className="mb-2 text-xs text-white/45">默认原文</p><p className="whitespace-pre-wrap break-words text-sm text-white/70">{entry.defaultText || '（空）'}</p></div>
-        <div>
-          <p className="mb-2 text-xs text-white/45">编辑文案{entry.singleLine ? ' · 单行' : ''}</p>
-          <textarea id={id} value={template} disabled={disabled} rows={entry.singleLine ? 2 : Math.min(8, Math.max(3, template.split('\n').length + 1))}
-            className={`${inputClass} resize-y leading-6`} onChange={(event) => onEdit(entry, event.target.value)}
-            aria-invalid={Boolean(validationError)} aria-describedby={`${id}-help`} />
-          <div id={`${id}-help`} className="mt-1 flex justify-between gap-2 text-xs text-white/45"><span>{validationError}</span><span className={template.length > entry.maxLength ? 'text-rose-300' : 'shrink-0'}>{template.length} / {entry.maxLength}</span></div>
-        </div>
-      </div>
-      <div className="space-y-3">
-        <div className="rounded-xl border border-white/10 p-3">
-          <p className="mb-2 text-xs text-white/45">可用变量</p>
-          {entry.variables.length ? <><div className="flex flex-wrap gap-2">{entry.variables.map((variable) => <code key={variable} className="rounded bg-white/10 px-2 py-1 text-xs text-cyan-100">{`{${variable}}`}{(entry.requiredVariables ?? entry.variables).includes(variable) ? ' · 必须保留' : ''}</code>)}</div></> : <p className="text-xs text-white/60">这项文案没有可用变量。</p>}
-        </div>
-        <div className="rounded-xl border-l-2 border-cyan-300/50 bg-black/20 p-3"><p className="mb-2 text-xs text-white/45">文字预览 · 不发送消息</p><p className="whitespace-pre-wrap break-words text-sm leading-6 text-white/85">{preview || '（空）'}</p></div>
-      </div>
-    </div>
-    {conflict && <div className="mt-4 space-y-3 rounded-xl border border-amber-300/20 p-3">
-      <p className="text-sm text-amber-200">这项文案也被其他管理员修改，请选择本次保留哪一份。</p>
-      <div><p className="text-xs text-white/45">最新已发布内容</p><p className="mt-1 whitespace-pre-wrap break-words text-sm">{editor.server.overrides[entry.key] ?? entry.defaultText}</p></div>
-      <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={disabled} onClick={() => onResolve(entry.key, 'mine')}>保留我的文案</button><button type="button" className={buttonClass} disabled={disabled} onClick={() => onResolve(entry.key, 'published')}>采用已发布文案</button></div>
-    </div>}
-  </article>;
+function unitCategory(unit: CopyUnit) {
+  return classifyCopyEntry(unit.entries.find(entry => entry.key === unit.titleKey) ?? unit.entries[0]);
+}
+
+function unitSummary(unit: CopyUnit) {
+  const entries = new Map(unit.entries.map(entry => [entry.key, entry]));
+  return unit.parts.filter(part => part.key !== unit.titleKey && part.role !== 'attribute').map(part => {
+    const template = part.key ? entries.get(part.key)?.defaultText ?? '' : part.text ?? '';
+    return template.replace(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g, (match, variable: string) => String(part.examples?.[variable] ?? match));
+  }).join(' ');
 }
 
 export function EditableCopyManager() {
@@ -112,6 +69,7 @@ export function EditableCopyManager() {
   const [modifiedOnly, setModifiedOnly] = useState(false);
   const [conflictsOnly, setConflictsOnly] = useState(false);
   const [page, setPage] = useState(0);
+  const [selectedUnitId, setSelectedUnitId] = useState('');
   const [reasons, setReasons] = useState<Partial<Record<CopyScope, string>>>({});
   const [rollbackTarget, setRollbackTarget] = useState<{ scope: CopyScope; value: CopyVersion } | null>(null);
   const [rollbackReason, setRollbackReason] = useState('');
@@ -152,25 +110,29 @@ export function EditableCopyManager() {
     return () => window.removeEventListener('beforeunload', warn);
   }, [editors]);
 
-  const matchingEntries = useMemo(() => {
-    if (!editor) return [];
-    const entries = filterCopyEntries(editor.server.catalog, { query, group: '', modifiedOnly, overrides: editor.draft });
-    return conflictsOnly ? entries.filter((entry) => editor.conflicts.includes(entry.key)) : entries;
-  }, [editor, query, modifiedOnly, conflictsOnly]);
+  const catalog = editor?.server.catalog;
+  const units = useMemo(() => catalog ? getCopyUnits(scope, catalog) : [], [scope, catalog]);
+  const matchingUnits = useMemo(() => editor ? filterCopyUnits(units, {
+    query, modifiedOnly, conflictsOnly, overrides: editor.draft, conflicts: editor.conflicts,
+  }) : [], [units, editor, query, modifiedOnly, conflictsOnly]);
   const categoryCounts = useMemo(() => {
-    const counts: Partial<Record<CopyCategoryId | 'all', number>> = { all: matchingEntries.length };
-    for (const entry of matchingEntries) {
-      const id = classifyCopyEntry(entry);
+    const counts: Partial<Record<CopyCategoryId | 'all', number>> = { all: matchingUnits.length };
+    for (const unit of matchingUnits) {
+      const id = unitCategory(unit);
       counts[id] = (counts[id] ?? 0) + 1;
     }
     return counts;
-  }, [matchingEntries]);
-  const filtered = useMemo(() => category === 'all' ? matchingEntries
-    : matchingEntries.filter((entry) => classifyCopyEntry(entry) === category), [matchingEntries, category]);
+  }, [matchingUnits]);
+  const filtered = useMemo(() => category === 'all' ? matchingUnits
+    : matchingUnits.filter(unit => unitCategory(unit) === category), [matchingUnits, category]);
   const categoryLabel = category === 'all' ? '全部文案' : categoryLabels[category];
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pages - 1);
   const visible = filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+  const selectedUnit = visible.find(unit => `${scope}:${unit.id}` === selectedUnitId) ?? visible[0];
+  const dirty = new Set(dirtyKeys);
+  const dirtyUnitCount = units.filter(unit => unit.keys.some(key => dirty.has(key))).length;
+  const customizedUnitCount = editor ? units.filter(unit => unit.keys.some(key => Object.hasOwn(editor.draft, key))).length : 0;
   const validation = useMemo(() => {
     if (!editor) return { error: '', overrides: null };
     try { return { error: '', overrides: validateCopyOverrides(editor.server.catalog, editor.draft) }; }
@@ -215,7 +177,7 @@ export function EditableCopyManager() {
     finally { setBusy((current) => ({ ...current, [target]: undefined })); }
   };
 
-  return <div className="mx-auto max-w-6xl space-y-6 text-white" aria-busy={Boolean(operation)}>
+  return <div className="mx-auto max-w-7xl space-y-6 text-white" aria-busy={Boolean(operation)}>
     <header className="space-y-3"><Link href="/admin" className="text-sm text-white/55 hover:text-white">← 返回管理后台</Link><h1 className="text-2xl font-semibold">文案管理</h1>
       <nav aria-label="其他内容编辑入口" className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-cyan-200"><Link href="/admin/gifts" className="hover:underline">礼物名称与分类 ↗</Link></nav>
     </header>
@@ -244,7 +206,7 @@ export function EditableCopyManager() {
           </button>)}
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 text-sm"><label className="flex items-center gap-2 text-white/70"><input type="checkbox" checked={modifiedOnly} onChange={(event) => { setModifiedOnly(event.target.checked); setPage(0); }} />只看自定义文案</label><p className="text-white/45">{editor ? `${editor.server.catalog.length} 项文案 · ${Object.keys(editor.draft).length} 项自定义 · 当前 ${versionLabel(editor.server.activeVersion)}` : '等待加载文案…'}</p></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm"><label className="flex items-center gap-2 text-white/70"><input type="checkbox" checked={modifiedOnly} onChange={(event) => { setModifiedOnly(event.target.checked); setPage(0); }} />只看自定义文案</label><p className="text-white/45">{editor ? `${units.length} 项文案 · ${customizedUnitCount} 项自定义 · 当前 ${versionLabel(editor.server.activeVersion)}` : '等待加载文案…'}</p></div>
     </section>
     {message && <p role={message.failed ? 'alert' : 'status'} className={`rounded-xl border p-3 text-sm leading-6 ${message.failed ? 'border-rose-300/25 bg-rose-300/5 text-rose-200' : 'border-cyan-300/20 bg-cyan-300/5 text-cyan-100'}`}>{message.text}</p>}
     {editor && !editor.server.enabled && <p role="status" className="rounded-xl border border-amber-300/25 bg-amber-300/5 p-3 text-sm text-amber-100">文案配置尚未启用。可以搜索、编辑和预览，启用后才能保存并发布。</p>}
@@ -253,12 +215,27 @@ export function EditableCopyManager() {
     {validation.error && <p role="alert" className="text-sm text-rose-200">尚不能发布：{validation.error}</p>}
     <section role="tabpanel" id={`copy-category-panel-${scope}`} aria-labelledby={`copy-category-${scope}-${category}`} tabIndex={0} className="space-y-4 outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/60">
       <div className="flex items-center justify-between gap-3"><h2 className="font-medium">{categoryLabel}</h2><p role="status" className="text-sm text-white/45">{editor ? `${filtered.length} 项文案` : '正在加载…'}</p></div>
-      {editor && visible.map((entry) => <CopyEntryEditor key={`${scope}:${entry.key}`} entry={entry} editor={editor} disabled={Boolean(operation)} onEdit={(item, value) => updateEditor(scope, (current) => updateCopyDraft(current, item, value))} onResolve={(key, use) => updateEditor(scope, (current) => resolveCopyConflict(current, key, use))} />)}
+      {editor && selectedUnit && <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[230px_minmax(0,1fr)]">
+        <nav aria-label={categoryLabel} className="flex max-h-[70vh] gap-2 overflow-auto rounded-2xl border border-white/10 bg-white/[0.025] p-2 lg:flex-col">
+          {visible.map(unit => <button type="button" key={`${scope}:${unit.id}`} aria-pressed={unit.id === selectedUnit.id}
+            className={`w-52 shrink-0 rounded-xl border p-3 text-left transition-colors lg:w-auto ${unit.id === selectedUnit.id ? 'border-cyan-300/50 bg-cyan-300/10 text-cyan-50' : 'border-transparent text-white/70 hover:bg-white/5'}`}
+            onClick={() => setSelectedUnitId(`${scope}:${unit.id}`)}>
+            <span className="block text-xs text-white/40">{categoryLabels[unitCategory(unit)]}</span>
+            <span className="mt-1 line-clamp-3 break-words text-sm leading-6">{unit.title}</span>
+            <span className="mt-1 line-clamp-2 break-words text-xs leading-5 text-white/40">{unitSummary(unit)}</span>
+            {unit.keys.some(key => dirty.has(key)) && <span className="mt-2 inline-block text-xs text-amber-200">待发布</span>}
+          </button>)}
+        </nav>
+        <CopyUnitEditor key={`${scope}:${selectedUnit.id}`} unit={selectedUnit} editor={editor} categoryLabel={categoryLabels[unitCategory(selectedUnit)]}
+          disabled={Boolean(operation)} onEdit={(item, value) => updateEditor(scope, current => updateCopyDraft(current, item, value))}
+          onReset={() => updateEditor(scope, current => selectedUnit.entries.reduce((next, entry) => updateCopyDraft(next, entry, entry.defaultText), current))}
+          onResolve={use => updateEditor(scope, current => selectedUnit.keys.filter(key => current.conflicts.includes(key)).reduce((next, key) => resolveCopyConflict(next, key, use), current))} />
+      </div>}
       {editor && !filtered.length && <p className="rounded-xl border border-dashed border-white/20 p-8 text-center text-sm text-white/50">{editor.server.catalog.length ? '没有匹配的文案，请调整搜索或筛选。' : '当前范围暂无可编辑文案。'}</p>}
     </section>
     {filtered.length > PAGE_SIZE && <nav aria-label="文案分页" className="flex items-center justify-center gap-4"><button type="button" className={buttonClass} disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>上一页</button><span className="text-sm text-white/60">{currentPage + 1} / {pages} · {filtered.length} 项</span><button type="button" className={buttonClass} disabled={currentPage === pages - 1} onClick={() => setPage(currentPage + 1)}>下一页</button></nav>}
     <section className="sticky bottom-3 z-10 space-y-3 rounded-2xl border border-white/20 bg-slate-950/95 p-4 shadow-xl backdrop-blur" aria-label="发布文案">
-      <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm">{scopeLabels[scope]} · {dirtyKeys.length ? `${dirtyKeys.length} 项修改待发布` : '没有待发布修改'}</p><div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={!editor || Boolean(operation) || !dirtyKeys.length || editor.needsRefresh} onClick={() => { if (editor) { setEditors((current) => ({ ...current, [scope]: createCopyEditor(editor.server) })); setRollbackTarget(null); } }}>放弃修改，载入已发布文案</button><button type="button" disabled={!canPublish} onClick={() => void mutate('publish')} className="rounded-full bg-cyan-200 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-40">{operation === 'publish' ? '正在发布…' : '保存并发布'}</button></div></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm">{scopeLabels[scope]} · {dirtyKeys.length ? `${dirtyUnitCount} 项修改待发布` : '没有待发布修改'}</p><div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={!editor || Boolean(operation) || !dirtyKeys.length || editor.needsRefresh} onClick={() => { if (editor) { setEditors((current) => ({ ...current, [scope]: createCopyEditor(editor.server) })); setRollbackTarget(null); } }}>放弃修改，载入已发布文案</button><button type="button" disabled={!canPublish} onClick={() => void mutate('publish')} className="rounded-full bg-cyan-200 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-40">{operation === 'publish' ? '正在发布…' : '保存并发布'}</button></div></div>
       <label className="flex flex-col gap-2 sm:flex-row sm:items-center"><span className="shrink-0 text-xs text-white/50">修改原因（选填）</span><input value={reason} maxLength={300} disabled={Boolean(operation)} className={inputClass} placeholder="例如：更新活动欢迎语" onChange={(event) => setReasons((current) => ({ ...current, [scope]: event.target.value }))} /></label>
     </section>
     <section className="space-y-4 rounded-2xl border border-white/10 p-4 sm:p-5" aria-label="文案历史版本"><div><h2 className="font-semibold">{scopeLabels[scope]}历史版本</h2></div>
