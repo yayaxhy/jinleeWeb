@@ -55,3 +55,11 @@
 ## User Rule
 - Without explicit user permission, treat database access as read-only
 - Do not run migrations, seed scripts, mutation scripts, or bot startup paths that create or alter database objects without explicit user permission
+
+## 用户文案审批规则
+
+- 所有面向用户的文案展示，包括网页、Discord 消息、私信、按钮、标题、提示和错误信息，在新增、修改、删除或改变展示条件前，必须先向用户提供具体文案及展示场景，并取得用户明确同意。
+- 用户在当前任务中明确指定或已经确认的具体文案，视为已获同意；严格按确认内容执行，无需重复询问，不得自行扩展或改写。
+- 功能开发、问题修复、测试或推送授权，不等于文案修改授权。未获同意时保留原有文案，不得自行增加“演示”“测试”“仅展示”等提示或其他说明。
+- 恢复旧文案时，只恢复明确对应的原文，不自行创作替代内容。新增功能没有原文或旧文案与已确认规则冲突时，先列出具体内容交由用户决定。
+- 陪玩资料更新私信保留用户已确认的粗体标题“陪玩资料已更新”、标题后的空行及原正文。

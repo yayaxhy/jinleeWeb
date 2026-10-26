@@ -17,7 +17,7 @@ const labels: Record<string, string> = {
   spendBonusExtra: '消费增益', flowBonusExtra: '流水增益', balanceBefore: '交易前余额', balanceAfter: '交易后余额',
   spendQuotaUsage: '消费额度与原到期时间', flowQuotaUsage: '流水额度与原到期时间',
   referralLedgerFacts: '返佣原流水编号', boss: '老板邀请人凭证', worker: '陪玩邀请人凭证',
-  voucherConsumption: '原赠礼用券与有效期凭证',
+  voucherConsumption: '原打赏用券与有效期凭证',
   amountChange: '变动金额', individualTransactionId: '个人流水编号', paymentTransactionId: '付款流水编号',
 };
 const inputStyle = 'w-full rounded-xl border border-white/20 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-300';
@@ -109,7 +109,7 @@ export function GiftAuditReviewManager({ initialTransactionId = '', canAdjust = 
     <header className="space-y-2">
       <Link href="/admin/refundable-gifts" className="text-sm text-cyan-200 hover:underline">← 返回礼物流水</Link>
       <h2 className="text-2xl font-semibold">礼物凭证核实</h2>
-      <p className="text-sm leading-6 text-white/65">查询原审计和流水，记录凭证与待核实问题。记录只能追加；补充凭证不代表批准退款，旧版礼物仍需完成独立的账务核实处理。</p>
+
     </header>
     <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); if (!busy && !uncertain) { setState(null); setNote(''); setReferences(''); void load(transactionId.trim()); } }}>
       <label className="flex-1 space-y-2 text-sm">个人流水编号<input className={inputStyle} value={transactionId} maxLength={100} disabled={busy || uncertain} onChange={(event) => setTransactionId(event.target.value)} placeholder="IT12345" /></label>
@@ -121,7 +121,7 @@ export function GiftAuditReviewManager({ initialTransactionId = '', canAdjust = 
         <h3 className="font-semibold">核实范围 · {state.transactionId}</h3>
         {canAdjust && <Link className="block text-sm text-cyan-200 hover:underline" href={`/admin/legacy-adjustments?kind=GIFT&id=${encodeURIComponent(state.transactionId)}`}>核实完成后，进入独立人工退款／调整</Link>}
         <ul className="list-disc space-y-2 pl-5 text-sm text-white/75">{state.concerns.map((concern) => <li key={concern}>{concern}</li>)}</ul>
-        <p className="text-sm text-white/65">逐项核对付款来源、收款拆分、累计流水、积分、增益、券、心动值及返佣。当前余额无法证明历史实际入账；下方金额保留原精度。</p>
+
         <button type="button" className={buttonStyle} disabled={busy} onClick={() => void load(state.transactionId)}>刷新原交易与记录</button>
       </section>
       <Sources sources={state.sources} />
@@ -132,7 +132,7 @@ export function GiftAuditReviewManager({ initialTransactionId = '', canAdjust = 
         </select></label>
         <label className="block space-y-2 text-sm">核实说明<textarea className={inputStyle} rows={5} maxLength={2000} disabled={busy || uncertain} value={note} onChange={(event) => setNote(event.target.value)} placeholder="说明已核对的事实、凭证对应关系和仍不确定的项目。至少 10 字。" /></label>
         <label className="block space-y-2 text-sm">凭证引用<textarea className={inputStyle} rows={3} disabled={busy || uncertain} value={references} onChange={(event) => setReferences(event.target.value)} placeholder="每行一条：工单号、受控文件位置或 Discord 消息链接。最多 8 条，每条 300 字。" /></label>
-        <p className="text-xs text-white/55">只保存引用和说明，不上传或自动读取外部文件。请勿填写密码、令牌或银行卡完整信息。</p>
+
         <button className={`${buttonStyle} bg-cyan-200/10`} disabled={busy}>{uncertain ? '用原请求编号重试' : '保存核实记录'}</button>
         {uncertain && <p className="text-sm text-amber-100">上次提交结果待确认。请先刷新记录；重试只会提交原来的内容。</p>}
       </form>

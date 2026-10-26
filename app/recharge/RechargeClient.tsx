@@ -196,7 +196,7 @@ export default function RechargeClient({
           throw new PublicMessageError(`首次信用卡/银行卡充值仅支持 ¥${Number(payload.allowedAmount ?? 500).toFixed(0)}。`);
         }
         if (payload?.error === 'stripe_amount_too_small') {
-          throw new PublicMessageError(rechargeErrorMessage('stripe_amount_too_small'));
+          throw new PublicMessageError(payload?.message ?? rechargeErrorMessage('stripe_amount_too_small'));
         }
         if (payload?.error === 'unsupported_stripe_currency') {
           throw new PublicMessageError(rechargeErrorMessage('unsupported_stripe_currency'));

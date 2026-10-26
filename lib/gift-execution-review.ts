@@ -184,7 +184,7 @@ export async function loadGiftExecutionReview(db: GiftExecutionReadDb, session: 
   }
   const base: GiftExecutionReview = { requestId, status: 'REQUIRES_REVIEW', verified: false, intent, giftAuditId: row.giftAuditId,
     transactionId: null, individualTransactionId: null, giftName: intent.giftName, quantity: intent.quantity, gross: null, payable: null,
-    reverted: false, reverts: [], message: '赠礼结果仍需核实，请联系客服，勿重复赠礼。' };
+    reverted: false, reverts: [], message: '打赏结果仍需核实，请联系客服，勿重复打赏。' };
   try {
     const discordId = requestId.startsWith('discord:gift:');
     if (row.requestId !== requestId || row.kind !== intent.kind || row.intentHash !== giftExecutionIntentHash(intent) ||
@@ -196,7 +196,7 @@ export async function loadGiftExecutionReview(db: GiftExecutionReadDb, session: 
     if (row.status === 'PENDING' || row.status === 'ABANDONED') {
       if (row.giftAuditId !== null || row.result !== null || operation) return base;
       return { ...base, giftAuditId: null, status: row.status, verified: row.status === 'ABANDONED',
-        message: row.status === 'ABANDONED' ? '这笔赠礼已取消。本次操作不退款；如需再次赠礼，请重新确认。' : '赠礼结果尚未确认，暂时无法确定是否已扣款。请查询进度或联系客服，勿重复赠礼。' };
+        message: row.status === 'ABANDONED' ? '这笔打赏已取消。本次操作不退款；如需再次打赏，请重新确认。' : '打赏结果尚未确认，暂时无法确定是否已扣款。请查询进度或联系客服，勿重复打赏。' };
     }
     if (row.status !== 'COMPLETED' || !row.giftAuditId || row.result === null) return base;
     const result = resultSnapshot(row.result);
@@ -236,12 +236,12 @@ export async function loadGiftExecutionReview(db: GiftExecutionReadDb, session: 
     return { ...base, status: 'COMPLETED', verified: true, transactionId: result.txId, individualTransactionId: audit.individualTransactionId,
       gross: result.gross, payable: result.payable, reverted: reverts.some(revert => revert.status === 'SUCCESS'),
       reverts: reverts.map(revert => ({ id: revert.id, status: revert.status, createdAt: revert.createdAt.toISOString() })),
-      message: '这笔赠礼已完成，本次查询不会重复扣款。如需确认退款或通知情况，请查看记录或联系客服。' };
+      message: '这笔打赏已完成，本次查询不会重复扣款。如需确认退款或通知情况，请查看记录或联系客服。' };
   } catch { return base; }
 }
 
 export class GiftExecutionReviewConflict extends Error {
-  constructor() { super('暂时无法取消这笔赠礼，请保留编号并联系客服核实。'); }
+  constructor() { super('暂时无法取消这笔打赏，请保留编号并联系客服核实。'); }
 }
 /** Existing requests always use their stored intent. A missing v1 Web request
  * needs the complete locally persisted intent; an ID alone cannot prove it. */

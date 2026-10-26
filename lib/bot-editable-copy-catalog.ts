@@ -335,23 +335,19 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.autoCommissionBuffService.185bad761",
     "group": "积分、券与权益",
-    "label": "您的点了么福星陪玩福利结束时间为：{endDate}，到期后基础获得比例为 {baseLabel}。高于 91% 的长期基础比例不受福星到期影响。",
-    "defaultText": "您的点了么福星陪玩福利结束时间为：{endDate}，到期后基础获得比例为 {baseLabel}。高于 {fixed3} 的长期基础比例不受福星到期影响。",
+    "label": "您的点了么福星陪玩福利结束时间为：{endDate}，到期后基础获得比例为 {baseLabel}。",
+    "defaultText": "您的点了么福星陪玩福利结束时间为：{endDate}，到期后基础获得比例为 {baseLabel}。",
     "variables": [
       "endDate",
-      "baseLabel",
-      "fixed3"
+      "baseLabel"
     ],
     "requiredVariables": [
       "endDate",
-      "baseLabel",
-      "fixed3"
+      "baseLabel"
     ],
     "maxLength": 4096,
     "source": "src/services/autoCommissionBuffService.ts:149",
-    "examples": {
-      "fixed3": "91%"
-    }
+    "examples": {}
   },
   {
     "key": "bot.services.autoCommissionBuffService.bb319725b",
@@ -611,8 +607,8 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.auditionService.984e7a2cf",
     "group": "真人试音",
-    "label": "试音厅创建失败，邀请已取消",
-    "defaultText": "试音厅创建失败，邀请已取消",
+    "label": "试音厅创建失败",
+    "defaultText": "试音厅创建失败",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 80,
@@ -655,17 +651,13 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.auditionService.1ed343e2e",
     "group": "真人试音",
-    "label": "已向{peiwanText}发送真人试音邀请，等待对方确认。本次报价 {value} 点点券。{value2}",
-    "defaultText": "已向{peiwanText}发送真人试音邀请，等待对方确认。本次报价 {value} 点点券。{value2}",
+    "label": "已向{peiwanText}发送真人试音邀请，等待对方确认。该邀请两分钟内有效。",
+    "defaultText": "已向{peiwanText}发送真人试音邀请，等待对方确认。该邀请两分钟内有效。",
     "variables": [
-      "peiwanText",
-      "value",
-      "value2"
+      "peiwanText"
     ],
     "requiredVariables": [
-      "peiwanText",
-      "value",
-      "value2"
+      "peiwanText"
     ],
     "maxLength": 4096,
     "source": "src/services/auditionService.ts:118"
@@ -693,20 +685,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 4096,
     "source": "src/services/auditionService.ts:98"
-  },
-  {
-    "key": "bot.services.auditionService.3176ab463",
-    "group": "真人试音",
-    "label": "有效期至 <t:{value}:F>。",
-    "defaultText": "有效期至 <t:{value}:F>。",
-    "variables": [
-      "value"
-    ],
-    "requiredVariables": [
-      "value"
-    ],
-    "maxLength": 4096,
-    "source": "src/services/auditionService.ts:118"
   },
   {
     "key": "bot.services.auditionService.db9b4d810",
@@ -815,44 +793,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/auditionService.ts:225"
   },
   {
-    "key": "bot.services.auditionService.348235c00",
-    "group": "真人试音",
-    "label": "邀请编号：{value}",
-    "defaultText": "邀请编号：{value}",
-    "variables": [
-      "value"
-    ],
-    "requiredVariables": [
-      "value"
-    ],
-    "maxLength": 2048,
-    "source": "src/services/auditionService.ts:119"
-  },
-  {
-    "key": "bot.services.auditionService.71006e103",
-    "group": "真人试音",
-    "label": "未记录",
-    "defaultText": "未记录",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2048,
-    "source": "src/services/auditionService.ts:119"
-  },
-  {
-    "key": "bot.services.auditionService.51e7030c9",
-    "group": "真人试音",
-    "label": "邀请编号：{inviteId}",
-    "defaultText": "邀请编号：{inviteId}",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2048,
-    "source": "src/services/auditionService.ts:140"
-  },
-  {
     "key": "bot.services.auditionService.5fbc7dd65",
     "group": "真人试音",
     "label": "{value} 老板邀请你进行真人试音",
@@ -893,14 +833,10 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.auditionService.3fca989f6",
     "group": "真人试音",
-    "label": "有效期至 <t:{value}:F>",
-    "defaultText": "有效期至 <t:{value}:F>",
-    "variables": [
-      "value"
-    ],
-    "requiredVariables": [
-      "value"
-    ],
+    "label": "该邀请两分钟内有效",
+    "defaultText": "该邀请两分钟内有效",
+    "variables": [],
+    "requiredVariables": [],
     "maxLength": 4096,
     "source": "src/services/auditionService.ts:138"
   },
@@ -1073,14 +1009,10 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.auditionService.2ca36b17d",
     "group": "真人试音",
-    "label": "试音厅创建失败，待接受邀请已取消。邀请编号：{inviteId}",
-    "defaultText": "试音厅创建失败，待接受邀请已取消。邀请编号：{inviteId}",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
+    "label": "试音厅创建失败，本次真人试音邀请未能生效，请稍后重试。",
+    "defaultText": "试音厅创建失败，本次真人试音邀请未能生效，请稍后重试。",
+    "variables": [],
+    "requiredVariables": [],
     "maxLength": 2000,
     "source": "src/services/auditionService.ts:935"
   },
@@ -1147,8 +1079,8 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.auditionService.c02422096",
     "group": "真人试音",
-    "label": "该试音名片或报价已更新，请让陪玩重新抢单后使用新名片。",
-    "defaultText": "该试音名片或报价已更新，请让陪玩重新抢单后使用新名片。",
+    "label": "未能识别真人试音参数，请稍后重试。",
+    "defaultText": "未能识别真人试音参数，请稍后重试。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
@@ -1259,14 +1191,10 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.auditionService.77c66aebd",
     "group": "真人试音",
-    "label": "未能确认私信送达，待接受邀请已取消。邀请编号：{id}",
-    "defaultText": "未能确认私信送达，待接受邀请已取消。邀请编号：{id}",
-    "variables": [
-      "id"
-    ],
-    "requiredVariables": [
-      "id"
-    ],
+    "label": "未能向该陪玩发送真人试音私信，本次邀请未生效。",
+    "defaultText": "未能向该陪玩发送真人试音私信，本次邀请未生效。",
+    "variables": [],
+    "requiredVariables": [],
     "maxLength": 2000,
     "source": "src/services/auditionService.ts:873"
   },
@@ -1333,20 +1261,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/auditionService.ts:907"
   },
   {
-    "key": "bot.services.auditionService.a6ea591fe",
-    "group": "真人试音",
-    "label": "未找到邀请 {inviteId}，这不能证明之前没有扣费，请管理员核实。",
-    "defaultText": "未找到邀请 {inviteId}，这不能证明之前没有扣费，请管理员核实。",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:908"
-  },
-  {
     "key": "bot.services.auditionService.bf0bb6834",
     "group": "真人试音",
     "label": "邀请身份或原报价需要核实，已停止处理。邀请编号：{inviteId}",
@@ -1361,36 +1275,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/auditionService.ts:909"
   },
   {
-    "key": "bot.services.auditionService.7cd08b830",
-    "group": "真人试音",
-    "label": "邀请已过期。邀请编号：{inviteId}",
-    "defaultText": "邀请已过期。邀请编号：{inviteId}",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:914"
-  },
-  {
-    "key": "bot.services.auditionService.a60cc4ae5",
-    "group": "真人试音",
-    "label": "该邀请已接受，有效期保持不变。频道：{value} 邀请编号：{inviteId}",
-    "defaultText": "该邀请已接受，有效期保持不变。频道：{value}\n邀请编号：{inviteId}",
-    "variables": [
-      "value",
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "value",
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:917"
-  },
-  {
     "key": "bot.services.auditionService.f68d5e85e",
     "group": "真人试音",
     "label": "邀请身份或记录已变化，需管理员核实。邀请编号：{inviteId}",
@@ -1403,22 +1287,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 2000,
     "source": "src/services/auditionService.ts:952"
-  },
-  {
-    "key": "bot.services.auditionService.f907b592f",
-    "group": "真人试音",
-    "label": "该邀请已接受，有效期保持不变。频道：{roomUrl} 邀请编号：{inviteId}",
-    "defaultText": "该邀请已接受，有效期保持不变。频道：{roomUrl}\n邀请编号：{inviteId}",
-    "variables": [
-      "roomUrl",
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "roomUrl",
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:962"
   },
   {
     "key": "bot.services.auditionService.c0c2b56a0",
@@ -1539,22 +1407,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 2000,
     "source": "src/services/auditionService.ts:1142"
-  },
-  {
-    "key": "bot.services.auditionService.6b9960c34",
-    "group": "真人试音",
-    "label": "{value} 邀请编号：{id}",
-    "defaultText": "{value}\n邀请编号：{id}",
-    "variables": [
-      "value",
-      "id"
-    ],
-    "requiredVariables": [
-      "value",
-      "id"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:851"
   },
   {
     "key": "bot.services.auditionService.2bcfb45f5",
@@ -2993,16 +2845,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/publicErrorMessages.ts:22"
   },
   {
-    "key": "bot.services.publicErrorMessages.4b4a5bf09",
-    "group": "操作失败提示",
-    "label": "暂时无法确认红包发送结果，请先查看余额和红包记录，勿重复发送；如有疑问请联系客服。",
-    "defaultText": "暂时无法确认红包发送结果，请先查看余额和红包记录，勿重复发送；如有疑问请联系客服。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/publicErrorMessages.ts:31"
-  },
-  {
     "key": "bot.services.lotteryService.f8f0eba2a",
     "group": "抽奖、刮卡与积木",
     "label": "[lottery][stock] 特级奖品「{name}」仅剩 1 个库存",
@@ -3582,7 +3424,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.features.giftFeedHelper.e93ac9b76",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "数量：**{quantity}**",
     "defaultText": "数量：**{quantity}**",
     "variables": [
@@ -3596,7 +3438,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.features.giftFeedHelper.e4f3ebb98",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "总金额：**{totalAmount}**",
     "defaultText": "总金额：**{totalAmount}**",
     "variables": [
@@ -3610,7 +3452,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.features.giftFeedHelper.3c1cdcb6c",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "!打赏 {quantity}/{giftName} {value}",
     "defaultText": "{fixed4} {quantity}/{giftName} {value}",
     "variables": [
@@ -3633,7 +3475,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.features.giftFeedHelper.2974fb660",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "打赏成功！{quantity} x {giftName}, 总价值：{totalAmount}",
     "defaultText": "打赏成功！{quantity} x {giftName}, 总价值：{totalAmount}",
     "variables": [
@@ -3662,31 +3504,28 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.cash.70b8329a1",
     "group": "充值、余额与提现",
-    "label": "用法：`!cash +金额 @用户` 或 `!cash -金额 @用户`（正数，最多 4 位小数）。",
-    "defaultText": "用法：{fixed1} 或 {fixed2}（正数，最多 {fixed3} 位小数）。",
+    "label": "用法：`!cash +金额 @用户` 或 `!cash -金额 @用户`",
+    "defaultText": "用法：{fixed1} 或 {fixed2}",
     "variables": [
       "fixed1",
-      "fixed2",
-      "fixed3"
+      "fixed2"
     ],
     "requiredVariables": [
       "fixed1",
-      "fixed2",
-      "fixed3"
+      "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/cash.ts:51",
+    "source": "src/commands/cash.ts",
     "examples": {
       "fixed1": "`!cash +金额 @用户`",
-      "fixed2": "`!cash -金额 @用户`",
-      "fixed3": "4"
+      "fixed2": "`!cash -金额 @用户`"
     }
   },
   {
     "key": "bot.commands.cash.826b5d432",
     "group": "充值、余额与提现",
-    "label": "原请求（{id}）已处理，本次未再次入账或扣款。请核对原流水。",
-    "defaultText": "原请求（{id}）已处理，本次未再次入账或扣款。请核对原流水。",
+    "label": "原请求（{id}）已处理，本次未再次入账或扣款。",
+    "defaultText": "原请求（{id}）已处理，本次未再次入账或扣款。",
     "variables": [
       "id"
     ],
@@ -3699,24 +3538,22 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.cash.e461f6706",
     "group": "充值、余额与提现",
-    "label": "已为 <@{targetId}> {value}余额 **{value2}**。当前余额：**{balance}**（请求 {id}）",
-    "defaultText": "已为 <@{targetId}> {value}余额 **{value2}**。当前余额：**{balance}**（请求 {id}）",
+    "label": "已为 <@{targetId}> {value}余额 **{value2}**。当前余额：**{balance}**",
+    "defaultText": "已为 <@{targetId}> {value}余额 **{value2}**。当前余额：**{balance}**",
     "variables": [
       "targetId",
       "value",
       "value2",
-      "balance",
-      "id"
+      "balance"
     ],
     "requiredVariables": [
       "targetId",
       "value",
       "value2",
-      "balance",
-      "id"
+      "balance"
     ],
     "maxLength": 2000,
-    "source": "src/commands/cash.ts:68"
+    "source": "src/commands/cash.ts"
   },
   {
     "key": "bot.commands.cash.d1c9fbd60",
@@ -3741,22 +3578,22 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.cash.853f0bffd",
     "group": "充值、余额与提现",
-    "label": "❌ 扣减失败：余额不足。",
-    "defaultText": "❌ 扣减失败：余额不足。",
+    "label": "❌ 扣减失败。原因：余额不足，无法扣除。",
+    "defaultText": "❌ 扣减失败。原因：余额不足，无法扣除。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/cash.ts:74"
+    "source": "src/commands/cash.ts"
   },
   {
     "key": "bot.commands.cash.037cba099",
     "group": "充值、余额与提现",
-    "label": "❌ 用户不存在。",
-    "defaultText": "❌ 用户不存在。",
+    "label": "❌ 操作失败：TARGET_NOT_FOUND",
+    "defaultText": "❌ 操作失败：TARGET_NOT_FOUND",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/cash.ts:75"
+    "source": "src/commands/cash.ts"
   },
   {
     "key": "bot.commands.cash.2fe18a2c7",
@@ -3794,7 +3631,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.a372f08e3",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "打赏成功！{qtyText} x {giftName}, 总价值：{grossText}",
     "defaultText": "打赏成功！{qtyText} x {giftName}, 总价值：{grossText}",
     "variables": [
@@ -3812,7 +3649,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.b79f7ee3c",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "打赏失败：请联系客服进行解决哦～",
     "defaultText": "打赏失败：请联系客服进行解决哦～",
     "variables": [],
@@ -3832,7 +3669,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.95dc2f9c2",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "打赏失败：余额不足，请联系 {staffPing} 进行充值后再试。",
     "defaultText": "打赏失败：余额不足，请联系 {staffPing} 进行充值后再试。",
     "variables": [
@@ -3846,7 +3683,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.7df5b73cf",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "客服",
     "defaultText": "客服",
     "variables": [],
@@ -3856,7 +3693,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.a13e30e3b",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "匿名打赏请私信机器人使用 `!匿名打赏 数量/礼物名 PEIWANID`。",
     "defaultText": "匿名打赏请私信机器人使用 {fixed1}。",
     "variables": [
@@ -3873,7 +3710,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.ee83c161b",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "用法：`!匿名打赏 数量/礼物名 PEIWANID`，例如：`!匿名打赏 1/甜甜圈 1101`。",
     "defaultText": "用法：{fixed1}，例如：{fixed2}。",
     "variables": [
@@ -3893,7 +3730,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.e2bd8b39a",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "陪玩编号无效，请输入正确的数字。",
     "defaultText": "陪玩编号无效，请输入正确的数字。",
     "variables": [],
@@ -3903,7 +3740,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.ca5d3d053",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "礼物格式无效，请使用 `数量/礼物名`。",
     "defaultText": "礼物格式无效，请使用 {fixed1}。",
     "variables": [
@@ -3920,7 +3757,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.c8e679cd1",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "数量必须为正整数。",
     "defaultText": "数量必须为正整数。",
     "variables": [],
@@ -3930,7 +3767,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.7bd601d56",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "未找到编号为 {peiwanId} 的陪玩。",
     "defaultText": "未找到编号为 {peiwanId} 的陪玩。",
     "variables": [
@@ -3944,7 +3781,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.ac6fd2703",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "不能给自己打赏哦。",
     "defaultText": "不能给自己打赏哦。",
     "variables": [],
@@ -3954,7 +3791,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.8fa0025e3",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "❌ 你没有权限使用该命令。",
     "defaultText": "❌ 你没有权限使用该命令。",
     "variables": [],
@@ -3964,7 +3801,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.d45a673aa",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "请在服务器频道内使用该命令。",
     "defaultText": "请在服务器频道内使用该命令。",
     "variables": [],
@@ -3974,7 +3811,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.97fcc3e6e",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "用法：`!代打赏 数量/礼物名 @老板 @陪玩A @陪玩B`",
     "defaultText": "用法：{fixed1}",
     "variables": [
@@ -3991,7 +3828,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.36a293791",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "需要至少一个陪玩作为收礼人。",
     "defaultText": "需要至少一个陪玩作为收礼人。",
     "variables": [],
@@ -4001,7 +3838,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.54e0549c3",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "礼物不存在：{giftName}。{hint}",
     "defaultText": "礼物不存在：{giftName}。{hint}",
     "variables": [
@@ -4017,7 +3854,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.fcd86e119",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "（没有相近名称）",
     "defaultText": "（没有相近名称）",
     "variables": [],
@@ -4027,7 +3864,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.bb7ef1c24",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "（相近礼物名称：{GiftName}，价格为{value}点点券 ）",
     "defaultText": "（相近礼物名称：{GiftName}，价格为{value}点点券 ）",
     "variables": [
@@ -4043,7 +3880,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.a0c9b2e92",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "该礼物已经下架。",
     "defaultText": "该礼物已经下架。",
     "variables": [],
@@ -4053,7 +3890,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.7674891f1",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "如需匿名打赏请复制如下口令重新发送：!匿名打赏 数量/礼物 5xxxx",
     "defaultText": "如需匿名打赏请复制如下口令重新发送：{fixed1} 数量/礼物 {fixed2}xxxx",
     "variables": [
@@ -4073,7 +3910,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.gifting.1c0e73eb8",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "用法：`!打赏 数量/礼物名 @对方(可多个)` 例如：`!打赏 3/甜甜圈 @陪玩A @陪玩B`",
     "defaultText": "用法：{fixed1} 例如：{fixed2}",
     "variables": [
@@ -6722,7 +6559,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.interactions.selects.giftingSelect.8d884f58e",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "未能识别礼物，请重新选择。",
     "defaultText": "未能识别礼物，请重新选择。",
     "variables": [],
@@ -6732,7 +6569,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.interactions.selects.giftingSelect.2824f8ac4",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "未能解析陪玩编号，请稍后再试。",
     "defaultText": "未能解析陪玩编号，请稍后再试。",
     "variables": [],
@@ -6742,7 +6579,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.interactions.selects.giftingSelect.7bce4758a",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "未找到该陪玩，无法打赏。",
     "defaultText": "未找到该陪玩，无法打赏。",
     "variables": [],
@@ -6752,7 +6589,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.interactions.selects.giftingSelect.1985471e1",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "不能给自己打赏哦。",
     "defaultText": "不能给自己打赏哦。",
     "variables": [],
@@ -6995,12 +6832,16 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.totalEarn.74606f45c",
     "group": "积分、券与权益",
-    "label": "❌ 暂时无法确认操作结果，请先核对账户记录或联系管理员，勿重复提交。",
-    "defaultText": "❌ 暂时无法确认操作结果，请先核对账户记录或联系管理员，勿重复提交。",
-    "variables": [],
-    "requiredVariables": [],
+    "label": "❌ 操作失败：{message}",
+    "defaultText": "❌ 操作失败：{message}",
+    "variables": [
+      "message"
+    ],
+    "requiredVariables": [
+      "message"
+    ],
     "maxLength": 2000,
-    "source": "src/commands/totalEarn.ts:80"
+    "source": "src/commands/totalEarn.ts"
   },
   {
     "key": "bot.commands.totalSpent.ab297ccc1",
@@ -7085,12 +6926,16 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.totalSpent.72d5f4a7b",
     "group": "积分、券与权益",
-    "label": "❌ 暂时无法确认操作结果，请先核对账户记录或联系管理员，勿重复提交。",
-    "defaultText": "❌ 暂时无法确认操作结果，请先核对账户记录或联系管理员，勿重复提交。",
-    "variables": [],
-    "requiredVariables": [],
+    "label": "❌ 操作失败：{message}",
+    "defaultText": "❌ 操作失败：{message}",
+    "variables": [
+      "message"
+    ],
+    "requiredVariables": [
+      "message"
+    ],
     "maxLength": 2000,
-    "source": "src/commands/totalSpent.ts:82"
+    "source": "src/commands/totalSpent.ts"
   },
   {
     "key": "bot.commands.loyaltyPoints.9e908b007",
@@ -7165,12 +7010,16 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.loyaltyPoints.c541eff8e",
     "group": "积分、券与权益",
-    "label": "❌ 暂时无法确认操作结果，请先核对账户记录或联系管理员，勿重复提交。",
-    "defaultText": "❌ 暂时无法确认操作结果，请先核对账户记录或联系管理员，勿重复提交。",
-    "variables": [],
-    "requiredVariables": [],
+    "label": "❌ 操作失败：{message}",
+    "defaultText": "❌ 操作失败：{message}",
+    "variables": [
+      "message"
+    ],
+    "requiredVariables": [
+      "message"
+    ],
     "maxLength": 2000,
-    "source": "src/commands/loyaltyPoints.ts:80"
+    "source": "src/commands/loyaltyPoints.ts"
   },
   {
     "key": "bot.commands.grantCouponSlash.ebe1b0bee",
@@ -7603,7 +7452,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.revertGiftSlash.5deb3bdd8",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "❌ 你没有权限执行撤销。",
     "defaultText": "❌ 你没有权限执行撤销。",
     "variables": [],
@@ -7613,7 +7462,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.revertGiftSlash.b90169fae",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "已撤销{actionLabel}流水 {individualTransactionId}，",
     "defaultText": "已撤销{actionLabel}流水 {individualTransactionId}，",
     "variables": [
@@ -7629,7 +7478,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.revertGiftSlash.c209a976d",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "真人试音",
     "defaultText": "真人试音",
     "variables": [],
@@ -7639,7 +7488,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.revertGiftSlash.a9d46fde2",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "打赏",
     "defaultText": "打赏",
     "variables": [],
@@ -7649,7 +7498,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.revertGiftSlash.e8e933429",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "金额 ¥{refundText} 已返还。",
     "defaultText": "金额 ¥{refundText} 已返还。",
     "variables": [
@@ -7663,7 +7512,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.revertGiftSlash.85915c6c0",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "收款账户 {value}：金额 ¥{workerNetText} 已扣回。",
     "defaultText": "收款账户 {value}：金额 ¥{workerNetText} 已扣回。",
     "variables": [
@@ -7679,9 +7528,9 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.revertGiftSlash.5620f3a11",
-    "group": "赠礼与撤销",
-    "label": " 优惠券已恢复 {restoredCount} 张，另有 {expiredCount} 张已过期；有效期保持不变。",
-    "defaultText": " 优惠券已恢复 {restoredCount} 张，另有 {expiredCount} 张已过期；有效期保持不变。",
+    "group": "打赏与撤销",
+    "label": " 用券处理：{restoredCount} 张已按券的当前账户归属恢复，{expiredCount} 张已过期；原有效期未延长。",
+    "defaultText": " 用券处理：{restoredCount} 张已按券的当前账户归属恢复，{expiredCount} 张已过期；原有效期未延长。",
     "variables": [
       "restoredCount",
       "expiredCount"
@@ -7691,13 +7540,13 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "expiredCount"
     ],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts:38"
+    "source": "src/commands/revertGiftSlash.ts"
   },
   {
     "key": "bot.services.giftReversalFacts.cd041037f",
-    "group": "赠礼与撤销",
-    "label": "原单已由管理员完成人工调整，不能再次自动撤销。请查看人工处置回执。",
-    "defaultText": "原单已由管理员完成人工调整，不能再次自动撤销。请查看人工处置回执。",
+    "group": "打赏与撤销",
+    "label": "原单已由管理员完成人工调整，不能再次自动撤销。",
+    "defaultText": "原单已由管理员完成人工调整，不能再次自动撤销。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
@@ -7705,17 +7554,17 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.services.giftReversalFacts.29cf49023",
-    "group": "赠礼与撤销",
-    "label": "暂时无法确认对应的打赏，本次未撤销。请核对完整的打赏编号或联系客服。",
-    "defaultText": "暂时无法确认对应的打赏，本次未撤销。请核对完整的打赏编号或联系客服。",
+    "group": "打赏与撤销",
+    "label": "该编号对应多条记录，本次未撤销。请使用后台显示的 IT 打赏流水号。",
+    "defaultText": "该编号对应多条记录，本次未撤销。请使用后台显示的 IT 打赏流水号。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/giftReversalFacts.ts:187"
+    "source": "src/services/giftReversalFacts.ts"
   },
   {
     "key": "bot.services.giftReversalFacts.174a2a768",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "这笔交易暂时无法撤回，本次未撤销，请联系客服核实归属记录。",
     "defaultText": "这笔交易暂时无法撤回，本次未撤销，请联系客服核实归属记录。",
     "variables": [],
@@ -7724,18 +7573,8 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/giftReversalFacts.ts:188"
   },
   {
-    "key": "bot.services.giftReversalFacts.508d0eb64",
-    "group": "赠礼与撤销",
-    "label": "这笔打赏暂时无法撤回，请联系客服核实，勿重复提交。",
-    "defaultText": "这笔打赏暂时无法撤回，请联系客服核实，勿重复提交。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/giftReversalFacts.ts:189"
-  },
-  {
     "key": "bot.services.giftReversalFacts.557cb8c28",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "这笔打赏暂时无法撤回，本次未撤销，请联系客服核实。",
     "defaultText": "这笔打赏暂时无法撤回，本次未撤销，请联系客服核实。",
     "variables": [],
@@ -7745,7 +7584,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.revertGiftSlash.f40b2c50a",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "该打赏已撤销过。",
     "defaultText": "该打赏已撤销过。",
     "variables": [],
@@ -7755,23 +7594,23 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.revertGiftSlash.760c1f9ec",
-    "group": "赠礼与撤销",
-    "label": "未找到对应的打赏记录，请核对编号。",
-    "defaultText": "未找到对应的打赏记录，请核对编号。",
+    "group": "打赏与撤销",
+    "label": "未找到对应的打赏审计记录。",
+    "defaultText": "未找到对应的打赏审计记录。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts:58"
+    "source": "src/commands/revertGiftSlash.ts"
   },
   {
     "key": "bot.commands.revertGiftSlash.c60f0dd03",
-    "group": "赠礼与撤销",
-    "label": "暂时无法确认打赏是否已撤回，请先查看记录或联系客服，勿重复提交。",
-    "defaultText": "暂时无法确认打赏是否已撤回，请先查看记录或联系客服，勿重复提交。",
+    "group": "打赏与撤销",
+    "label": "撤销失败，请稍后重试。",
+    "defaultText": "撤销失败，请稍后重试。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts:59"
+    "source": "src/commands/revertGiftSlash.ts"
   },
   {
     "key": "bot.commands.revertOrderSlash.91cc4ea32",
@@ -7800,8 +7639,8 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.orderReversalFacts.6dfadd6c8",
     "group": "派单与订单",
-    "label": "原单已由管理员完成人工调整，不能再次自动撤销。请查看人工处置回执。",
-    "defaultText": "原单已由管理员完成人工调整，不能再次自动撤销。请查看人工处置回执。",
+    "label": "原单已由管理员完成人工调整，不能再次自动撤销。",
+    "defaultText": "原单已由管理员完成人工调整，不能再次自动撤销。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
@@ -7818,16 +7657,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/orderReversalFacts.ts:150"
   },
   {
-    "key": "bot.services.orderReversalFacts.042283980",
-    "group": "派单与订单",
-    "label": "这笔订单暂时无法撤回，请联系客服核实，勿重复提交。",
-    "defaultText": "这笔订单暂时无法撤回，请联系客服核实，勿重复提交。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/orderReversalFacts.ts:151"
-  },
-  {
     "key": "bot.services.orderReversalFacts.35c78c6da",
     "group": "派单与订单",
     "label": "这笔订单暂时无法撤回，本次未撤销，请联系客服核实。",
@@ -7840,12 +7669,12 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.orderReversalFacts.c536a2347",
     "group": "派单与订单",
-    "label": "暂时无法确认订单是否已撤回，请先查看记录或联系客服，勿重复撤回。",
-    "defaultText": "暂时无法确认订单是否已撤回，请先查看记录或联系客服，勿重复撤回。",
+    "label": "订单撤销结果暂未确认，请先按订单号核实账目，勿重复撤销；如仍不明确，请联系管理员。",
+    "defaultText": "订单撤销结果暂未确认，请先按订单号核实账目，勿重复撤销；如仍不明确，请联系管理员。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/orderReversalFacts.ts:157"
+    "source": "src/services/orderReversalFacts.ts"
   },
   {
     "key": "bot.commands.revertOrderSlash.fbc4f3c08",
@@ -7870,12 +7699,12 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.revertOrderSlash.9cd6fabad",
     "group": "派单与订单",
-    "label": "这笔订单暂时无法撤回，请联系客服核实。",
-    "defaultText": "这笔订单暂时无法撤回，请联系客服核实。",
+    "label": "该订单没有审计快照，无法撤销。",
+    "defaultText": "该订单没有审计快照，无法撤销。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertOrderSlash.ts:44"
+    "source": "src/commands/revertOrderSlash.ts"
   },
   {
     "key": "bot.commands.revertOrderSlash.3e58f2807",
@@ -7907,12 +7736,12 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.revertOrderSlash.51abe3cef",
     "group": "派单与订单",
-    "label": "这笔订单暂时无法撤回，本次未撤销，请联系客服核实。",
-    "defaultText": "这笔订单暂时无法撤回，本次未撤销，请联系客服核实。",
+    "label": "原额度有效期或当前权益归属无法核实，本次未撤销。请由管理员核实后处理。",
+    "defaultText": "原额度有效期或当前权益归属无法核实，本次未撤销。请由管理员核实后处理。",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertOrderSlash.ts:50"
+    "source": "src/commands/revertOrderSlash.ts"
   },
   {
     "key": "bot.commands.revertOrderSlash.01b5f4bc5",
@@ -8018,7 +7847,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.giftSlash.090343235",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "❌ 你没有权限使用该命令。",
     "defaultText": "❌ 你没有权限使用该命令。",
     "variables": [],
@@ -8028,7 +7857,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.giftSlash.b995db5f4",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "金额必须为正数。",
     "defaultText": "金额必须为正数。",
     "variables": [],
@@ -8038,7 +7867,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.giftSlash.7059b8750",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "已为 <@{id}> 增加余额 {value}，当前余额：{value2}",
     "defaultText": "已为 <@{id}> 增加余额 {value}，当前余额：{value2}",
     "variables": [
@@ -8056,7 +7885,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.commands.giftSlash.e1f4b782d",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "❌ 赠送失败，请稍后再试。",
     "defaultText": "❌ 赠送失败，请稍后再试。",
     "variables": [],
@@ -8610,51 +8439,45 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.balanceCommands.fd42e0620",
     "group": "充值、余额与提现",
-    "label": "用法：`!realcash +金额 @用户` 或 `!realcash -金额 @用户`（正数，最多 4 位小数）。",
-    "defaultText": "用法：{fixed1} 或 {fixed2}（正数，最多 {fixed3} 位小数）。",
+    "label": "用法：`!realcash +金额 @用户` 或 `!realcash -金额 @用户`",
+    "defaultText": "用法：{fixed1} 或 {fixed2}",
     "variables": [
       "fixed1",
-      "fixed2",
-      "fixed3"
+      "fixed2"
     ],
     "requiredVariables": [
       "fixed1",
-      "fixed2",
-      "fixed3"
+      "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts:78",
+    "source": "src/commands/balanceCommands.ts",
     "examples": {
       "fixed1": "`!realcash +金额 @用户`",
-      "fixed2": "`!realcash -金额 @用户`",
-      "fixed3": "4"
+      "fixed2": "`!realcash -金额 @用户`"
     }
   },
   {
     "key": "bot.commands.balanceCommands.adcf50551",
     "group": "充值、余额与提现",
-    "label": "用法：`!扣款 金额 @用户`（正数，最多 4 位小数）。",
-    "defaultText": "用法：{fixed1}（正数，最多 {fixed2} 位小数）。",
+    "label": "用法：`!扣款 金额 @用户`",
+    "defaultText": "用法：{fixed1}",
     "variables": [
-      "fixed1",
-      "fixed2"
+      "fixed1"
     ],
     "requiredVariables": [
-      "fixed1",
-      "fixed2"
+      "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts:79",
+    "source": "src/commands/balanceCommands.ts",
     "examples": {
-      "fixed1": "`!转移余额 金额 @用户A @用户B`",
-      "fixed2": "4"
+      "fixed1": "`!转移余额 金额 @用户A @用户B`"
     }
   },
   {
     "key": "bot.commands.balanceCommands.c2a1660a4",
     "group": "充值、余额与提现",
-    "label": "原请求（{id}）已处理，本次未再次调账、扣款或转移。请核对原流水。",
-    "defaultText": "原请求（{id}）已处理，本次未再次调账、扣款或转移。请核对原流水。",
+    "label": "原请求（{id}）已处理，本次未再次调账、扣款或转移。",
+    "defaultText": "原请求（{id}）已处理，本次未再次调账、扣款或转移。",
     "variables": [
       "id"
     ],
@@ -8667,60 +8490,54 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.balanceCommands.b47a729d9",
     "group": "充值、余额与提现",
-    "label": "调账成功，可以提现余额：{value}，充值余额：{value2}，总余额：{value3}（请求 {id}）",
-    "defaultText": "调账成功，可以提现余额：{value}，充值余额：{value2}，总余额：{value3}（请求 {id}）",
+    "label": "调账成功，可以提现余额：{value}，充值余额：{value2}，总余额：{value3}",
+    "defaultText": "调账成功，可以提现余额：{value}，充值余额：{value2}，总余额：{value3}",
     "variables": [
       "value",
       "value2",
-      "value3",
-      "id"
+      "value3"
     ],
     "requiredVariables": [
       "value",
       "value2",
-      "value3",
-      "id"
+      "value3"
     ],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts:89"
+    "source": "src/commands/balanceCommands.ts"
   },
   {
     "key": "bot.commands.balanceCommands.621011c2e",
     "group": "充值、余额与提现",
-    "label": "已从 <@{value}> 扣除 {value2}。（请求 {id}）",
-    "defaultText": "已从 <@{value}> 扣除 {value2}。（请求 {id}）",
+    "label": "已从 <@{value}> 扣除 {value2}。",
+    "defaultText": "已从 <@{value}> 扣除 {value2}。",
     "variables": [
       "value",
-      "value2",
-      "id"
+      "value2"
     ],
     "requiredVariables": [
       "value",
-      "value2",
-      "id"
+      "value2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts:90"
+    "source": "src/commands/balanceCommands.ts"
   },
   {
     "key": "bot.commands.balanceCommands.d197ac86f",
     "group": "充值、余额与提现",
-    "label": "已从 <@{value}> 转移 {value2} 给 <@{value3}>。（请求 {id}）",
-    "defaultText": "已从 <@{value}> 转移 {value2} 给 <@{value3}>。（请求 {id}）",
+    "label": "已从 <@{value}> 转移 {value2} 给 <@{value3}>。",
+    "defaultText": "已从 <@{value}> 转移 {value2} 给 <@{value3}>。",
     "variables": [
       "value",
       "value2",
-      "value3",
-      "id"
+      "value3"
     ],
     "requiredVariables": [
       "value",
       "value2",
-      "value3",
-      "id"
+      "value3"
     ],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts:91"
+    "source": "src/commands/balanceCommands.ts"
   },
   {
     "key": "bot.commands.balanceCommands.c1ad7fa76",
@@ -8779,8 +8596,8 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.commands.scratchPurchaseFlow.4e6f94703",
     "group": "抽奖、刮卡与积木",
-    "label": "购卡提交结果待核实（请求 {sourceMessageId}）。请先核对余额、代金券和已购票记录，勿重复购买；如无法确认，请联系客服核实。",
-    "defaultText": "购卡提交结果待核实（请求 {sourceMessageId}）。请先核对余额、代金券和已购票记录，勿重复购买；如无法确认，请联系客服核实。",
+    "label": "购卡提交结果待核实（请求 {sourceMessageId}）。",
+    "defaultText": "购卡提交结果待核实（请求 {sourceMessageId}）。",
     "variables": [
       "sourceMessageId"
     ],
@@ -9438,8 +9255,8 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.server.internalWebhookServer.70f5d3ae4",
     "group": "网站与私信通知",
-    "label": "在网站为{value}充值了{amount}点点券",
-    "defaultText": "在网站为{value}充值了{amount}点点券",
+    "label": "在网站为微信老板《{value}》充值了{amount}点点券",
+    "defaultText": "在网站为微信老板《{value}》充值了{amount}点点券",
     "variables": [
       "value",
       "amount"
@@ -9449,7 +9266,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "amount"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:933"
+    "source": "src/server/internalWebhookServer.ts"
   },
   {
     "key": "bot.server.internalWebhookServer.1e264f19f",
@@ -10063,7 +9880,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.services.giftPostCommitMessages.d2300826d",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "打赏成功！{quantity} x {giftName}, 总价值：{gross}",
     "defaultText": "打赏成功！{quantity} x {giftName}, 总价值：{gross}",
     "variables": [
@@ -10081,7 +9898,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.services.giftPostCommitMessages.535dabc79",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "{value}感谢{value2} 老板送给陪玩 {value3} \"{giftName}\", 感谢老板对陪陪的喜爱",
     "defaultText": "{value}感谢{value2} 老板送给陪玩 {value3} \"{giftName}\", 感谢老板对陪陪的喜爱",
     "variables": [
@@ -10101,7 +9918,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.services.giftPostCommitMessages.d3c755c39",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "**{giftName}** 数量：**{quantity}** 总金额：**{gross}**",
     "defaultText": "**{giftName}**\n数量：**{quantity}**\n总金额：**{gross}**",
     "variables": [
@@ -10119,7 +9936,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.services.giftPostCommitMessages.f3a03decc",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "【匿名打赏】 送礼人：{value} ({discordId}) 收礼人：{value2} ({discordId2}) 礼物：{giftName} x {qu",
     "defaultText": "【匿名打赏】\n送礼人：{value} ({discordId})\n收礼人：{value2} ({discordId2})\n礼物：{giftName} x {quantity}\n总价：¥{value3}",
     "variables": [
@@ -10145,7 +9962,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.services.giftPostCommitMessages.8b9027851",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "你收到了客服代打赏的 {quantity} 个 {giftName}，总价 ¥{value2}。",
     "defaultText": "你收到了客服代打赏的 {quantity} 个 {giftName}，总价 ¥{value2}。",
     "variables": [
@@ -10163,7 +9980,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.services.giftPostCommitMessages.99b77bdc7",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "你收到了 {value} 打赏的 {quantity} 个 {giftName}，总价为 ¥{value2}。",
     "defaultText": "你收到了 {value} 打赏的 {quantity} 个 {giftName}，总价为 ¥{value2}。",
     "variables": [
@@ -10183,7 +10000,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.services.giftPostCommitMessages.4c7bb3f95",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "打赏成功！谢谢老板😘",
     "defaultText": "打赏成功！谢谢老板😘",
     "variables": [],
@@ -10193,7 +10010,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.services.giftPostCommitMessages.81797bbdf",
-    "group": "赠礼与撤销",
+    "group": "打赏与撤销",
     "label": "获得点了么积分{value}。",
     "defaultText": "获得点了么积分{value}。",
     "variables": [
@@ -10218,8 +10035,8 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
     "key": "bot.services.adminWalletTransactions.94369e88f",
     "group": "充值、余额与提现",
-    "label": "已为您增加余额 {value}。变更后余额：{totalBalance}",
-    "defaultText": "已为您增加余额 {value}。变更后余额：{totalBalance}",
+    "label": "已为您增加余额 **{value}**。当前余额：**{totalBalance}**",
+    "defaultText": "已为您增加余额 **{value}**。当前余额：**{totalBalance}**",
     "variables": [
       "value",
       "totalBalance"
@@ -10229,7 +10046,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "totalBalance"
     ],
     "maxLength": 1000,
-    "source": "src/services/adminWalletTransactions.ts:199"
+    "source": "src/services/adminWalletTransactions.ts"
   },
   {
     "key": "bot.assistant.orderActions.1f549a9fe",
@@ -11029,121 +10846,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/publicErrorMessages.ts"
   },
   {
-    "key": "bot.services.publicErrorMessages.e7adf2a6f",
-    "group": "操作失败提示",
-    "label": "份数必须为正整数。",
-    "defaultText": "份数必须为正整数。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.59509288e",
-    "group": "操作失败提示",
-    "label": "红包总金额至少 ¥10。",
-    "defaultText": "红包总金额至少 ¥{fixed1}。",
-    "variables": [
-      "fixed1"
-    ],
-    "requiredVariables": [
-      "fixed1"
-    ],
-    "maxLength": 2000,
-    "examples": {
-      "fixed1": "10"
-    },
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.64fa152c1",
-    "group": "操作失败提示",
-    "label": "总金额不足，每份至少 ¥0.1",
-    "defaultText": "总金额不足，每份至少 ¥{fixed1}",
-    "variables": [
-      "fixed1"
-    ],
-    "requiredVariables": [
-      "fixed1"
-    ],
-    "maxLength": 2000,
-    "examples": {
-      "fixed1": "0.1"
-    },
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.892e169e9",
-    "group": "操作失败提示",
-    "label": "口令不能为空。",
-    "defaultText": "口令不能为空。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.a1168ea19",
-    "group": "操作失败提示",
-    "label": "口令长度不能超过 50 个字符。",
-    "defaultText": "口令长度不能超过 {fixed1} 个字符。",
-    "variables": [
-      "fixed1"
-    ],
-    "requiredVariables": [
-      "fixed1"
-    ],
-    "maxLength": 2000,
-    "examples": {
-      "fixed1": "50"
-    },
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.37fffbf8f",
-    "group": "操作失败提示",
-    "label": "口令不能包含 @everyone/@here 或tag提及。",
-    "defaultText": "口令不能包含 {fixed1}/{fixed2} 或tag提及。",
-    "variables": [
-      "fixed1",
-      "fixed2"
-    ],
-    "requiredVariables": [
-      "fixed1",
-      "fixed2"
-    ],
-    "maxLength": 2000,
-    "examples": {
-      "fixed1": "@everyone",
-      "fixed2": "@here"
-    },
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.cc437dc37",
-    "group": "操作失败提示",
-    "label": "未找到用户。",
-    "defaultText": "未找到用户。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.027291dd9",
-    "group": "操作失败提示",
-    "label": "余额不足，无法发红包。",
-    "defaultText": "余额不足，无法发红包。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
     "key": "bot.services.peiwanReviewDisplay.anonymous",
     "group": "名片与个人资料",
     "label": "匿名老板评语",
@@ -11189,8 +10891,8 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.features.giftFeedHelper.feedThanks",
-    "group": "赠礼与打赏",
-    "label": "赠礼频道感谢文案",
+    "group": "打赏",
+    "label": "打赏频道感谢文案",
     "defaultText": "感谢{giverLabel} 老板送给陪玩 {receiver} \"{giftName}\", 感谢老板对陪陪的喜爱",
     "variables": [
       "giverLabel",
@@ -11219,7 +10921,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "key": "bot.sqlNotifications.balanceBody",
     "group": "充值与余额",
     "label": "余额增加提醒正文",
-    "defaultText": "账户余额增加 {amount}。变更后余额：{balance}。详情请查看原业务流水。",
+    "defaultText": "网站自动充值成功！已为您增加余额 **{amount}**。当前余额：**{balance}**",
     "variables": [
       "amount",
       "balance"
@@ -11233,7 +10935,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "amount": "100.00",
       "balance": "250.00"
     },
-    "source": "prisma/migrations/20261025010000_editable_copy/migration.sql"
+    "source": "prisma/migrations/20261026010000_restore_notification_copy/migration.sql"
   },
   {
     "key": "bot.sqlNotifications.profileTitle",
@@ -11504,12 +11206,268 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   },
   {
     "key": "bot.features.giftFeedHelper.anonymousGiver",
-    "group": "赠礼与打赏",
+    "group": "打赏",
     "label": "匿名",
     "defaultText": "匿名",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 80,
     "source": "src/features/giftFeedHelper.ts; src/services/giftPostCommitMessages.ts"
+  },
+  {
+    "key": "bot.commands.money.unknownError",
+    "group": "资金与账户",
+    "label": "未知错误",
+    "defaultText": "未知错误",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/loyaltyPoints.ts"
+  },
+  {
+    "key": "bot.commands.redEnvelope.originalFailure",
+    "group": "红包",
+    "label": "无法发红包：{message}",
+    "defaultText": "无法发红包：{message}",
+    "variables": [
+      "message"
+    ],
+    "requiredVariables": [
+      "message"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/redEnvelope.ts"
+  },
+  {
+    "key": "bot.commands.redEnvelope.originalFailureFallback",
+    "group": "红包",
+    "label": "创建红包失败，请稍后再试。",
+    "defaultText": "创建红包失败，请稍后再试。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/redEnvelope.ts"
+  },
+  {
+    "key": "bot.commands.keywordRedEnvelope.originalFailure",
+    "group": "红包",
+    "label": "无法发口令红包：{message}",
+    "defaultText": "无法发口令红包：{message}",
+    "variables": [
+      "message"
+    ],
+    "requiredVariables": [
+      "message"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/keywordRedEnvelope.ts"
+  },
+  {
+    "key": "bot.commands.keywordRedEnvelope.originalFailureFallback",
+    "group": "红包",
+    "label": "创建口令红包失败，请稍后再试。",
+    "defaultText": "创建口令红包失败，请稍后再试。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/keywordRedEnvelope.ts"
+  },
+  {
+    "key": "bot.commands.redEnvelopeSlash.originalFailure",
+    "group": "红包",
+    "label": "无法发红包：{message}",
+    "defaultText": "无法发红包：{message}",
+    "variables": [
+      "message"
+    ],
+    "requiredVariables": [
+      "message"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/redEnvelopeSlash.ts"
+  },
+  {
+    "key": "bot.commands.redEnvelopeSlash.originalFailureFallback",
+    "group": "红包",
+    "label": "创建红包失败，请稍后再试。",
+    "defaultText": "创建红包失败，请稍后再试。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/redEnvelopeSlash.ts"
+  },
+  {
+    "key": "bot.commands.keywordRedEnvelopeSlash.originalFailure",
+    "group": "红包",
+    "label": "无法发红包：{message}",
+    "defaultText": "无法发红包：{message}",
+    "variables": [
+      "message"
+    ],
+    "requiredVariables": [
+      "message"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/keywordRedEnvelopeSlash.ts"
+  },
+  {
+    "key": "bot.commands.keywordRedEnvelopeSlash.originalFailureFallback",
+    "group": "红包",
+    "label": "创建口令红包失败，请稍后再试。",
+    "defaultText": "创建口令红包失败，请稍后再试。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/keywordRedEnvelopeSlash.ts"
+  },
+  {
+    "key": "bot.commands.balanceCommands.originalMissingRebalance",
+    "group": "充值、余额与提现",
+    "label": "调账失败：用户不存在。",
+    "defaultText": "调账失败：用户不存在。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/balanceCommands.ts"
+  },
+  {
+    "key": "bot.commands.balanceCommands.originalFailure",
+    "group": "充值、余额与提现",
+    "label": "操作失败，请稍后再试。",
+    "defaultText": "操作失败，请稍后再试。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/balanceCommands.ts"
+  },
+  {
+    "key": "bot.commands.revertGiftSlash.legacySummary",
+    "group": "打赏与撤销",
+    "label": " 本笔按旧单记录口径撤回：收款从收益余额扣回，未记录的流水加成未补扣或返还。",
+    "defaultText": " 本笔按旧单记录口径撤回：收款从收益余额扣回，未记录的流水加成未补扣或返还。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/revertGiftSlash.ts"
+  },
+  {
+    "key": "bot.services.giftReversalFacts.original_gift_audit_incomplete",
+    "group": "打赏与撤销",
+    "label": "这笔打赏缺少完整的历史审计，暂不能自动撤销。请由管理员核实原始收款拆分、增益和心动值记录。",
+    "defaultText": "这笔打赏缺少完整的历史审计，暂不能自动撤销。请由管理员核实原始收款拆分、增益和心动值记录。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/giftReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.giftReversalFacts.original_gift_audit_mismatch",
+    "group": "打赏与撤销",
+    "label": "这笔打赏的审计与原始流水不一致，已停止自动撤销，请由管理员核对。",
+    "defaultText": "这笔打赏的审计与原始流水不一致，已停止自动撤销，请由管理员核对。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/giftReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.giftReversalFacts.original_gift_referral_audit_incomplete",
+    "group": "打赏与撤销",
+    "label": "这笔打赏的返佣缺少唯一原始入账流水凭证，已停止自动撤销。请由管理员核实历史收款账号与返佣金额。",
+    "defaultText": "这笔打赏的返佣缺少唯一原始入账流水凭证，已停止自动撤销。请由管理员核实历史收款账号与返佣金额。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/giftReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.giftReversalFacts.original_gift_referral_audit_mismatch",
+    "group": "打赏与撤销",
+    "label": "这笔打赏的返佣凭证与原始流水不一致，已停止自动撤销。请由管理员核实，勿重复尝试扣款。",
+    "defaultText": "这笔打赏的返佣凭证与原始流水不一致，已停止自动撤销。请由管理员核实，勿重复尝试扣款。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/giftReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.giftReversalFacts.original_gift_voucher_requires_review",
+    "group": "打赏与撤销",
+    "label": "这笔打赏的原用券凭证、消费记录、有效期或当前归属无法核实，本次未撤销。请由管理员核实，勿重复提交。",
+    "defaultText": "这笔打赏的原用券凭证、消费记录、有效期或当前归属无法核实，本次未撤销。请由管理员核实，勿重复提交。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/giftReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.giftReversalFacts.original_buff_restore_requires_review",
+    "group": "打赏与撤销",
+    "label": "原额度有效期或当前权益归属无法核实，本次未撤销。请由管理员核实后处理。",
+    "defaultText": "原额度有效期或当前权益归属无法核实，本次未撤销。请由管理员核实后处理。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/giftReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.orderReversalFacts.original_order_audit_incomplete",
+    "group": "派单与订单",
+    "label": "这笔订单缺少完整的历史入账、返佣或权益凭证，暂不能自动撤销。请由管理员核实，勿重复尝试扣款。",
+    "defaultText": "这笔订单缺少完整的历史入账、返佣或权益凭证，暂不能自动撤销。请由管理员核实，勿重复尝试扣款。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/orderReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.orderReversalFacts.original_order_audit_mismatch",
+    "group": "派单与订单",
+    "label": "这笔订单的审计与原始流水或当前归属不一致，本次未撤销。请由管理员核实。",
+    "defaultText": "这笔订单的审计与原始流水或当前归属不一致，本次未撤销。请由管理员核实。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/orderReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.orderReversalFacts.original_order_discount_requires_review",
+    "group": "派单与订单",
+    "label": "这笔订单的折扣返利凭证、券消费记录或当前归属无法核实，本次未撤销。请由管理员核实返利和券的归属。",
+    "defaultText": "这笔订单的折扣返利凭证、券消费记录或当前归属无法核实，本次未撤销。请由管理员核实返利和券的归属。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/orderReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.orderReversalFacts.original_buff_restore_requires_review",
+    "group": "派单与订单",
+    "label": "原额度有效期或当前权益归属无法核实，本次未撤销。请由管理员核实后处理。",
+    "defaultText": "原额度有效期或当前权益归属无法核实，本次未撤销。请由管理员核实后处理。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/orderReversalFacts.ts"
+  },
+  {
+    "key": "bot.services.lotteryFusionNotificationService.originalFallbackUser",
+    "group": "抽奖、刮卡与积木",
+    "label": "该用户",
+    "defaultText": "该用户",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/lotteryFusionNotificationService.ts"
+  },
+  {
+    "key": "bot.services.auditionService.roomCreateFailedWorker",
+    "group": "真人试音",
+    "label": "创建试音厅失败，请稍后让老板重新发起真人试音邀请。",
+    "defaultText": "创建试音厅失败，请稍后让老板重新发起真人试音邀请。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/auditionService.ts"
   }
 ];

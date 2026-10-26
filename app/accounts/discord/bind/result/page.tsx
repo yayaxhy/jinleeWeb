@@ -89,9 +89,6 @@ export default async function DiscordBindResultPage({ searchParams }: DiscordBin
         ><SiteText copyKey="site.app.accounts.discord.bind.result.page.61ae0af769cb" /></p>
         <h1 className="text-3xl font-semibold tracking-wide text-[#171717]"><SiteText namespace="site.app.accounts.discord.bind.result.page" value={message.title} /></h1>
         <p className="text-sm leading-7 text-gray-500"><SiteText namespace={getBindingReviewMessage(code) ? "site.lib.discord.binding.feedback" : "site.app.accounts.discord.bind.result.page"} value={message.body} /></p>
-        <div className="rounded-2xl bg-[#f8fafc] px-4 py-4 text-xs leading-6 text-gray-500">
-          {status === 'success' && code !== 'already_bound' ? <SiteText copyKey="site.app.accounts.discord.bind.result.page.60ff6578efb6" /> : <SiteText copyKey="site.app.accounts.discord.bind.result.page.09825c05823f" />}
-        </div>
         <BindResultActions />
       </div>
     </main>

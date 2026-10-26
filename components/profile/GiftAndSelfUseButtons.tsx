@@ -50,11 +50,11 @@ export function GiftUsageButton({ lotteryId, couponId, prizeName, actor = { dlmI
       if (result.prepareNext && !result.review.reverted) {
         confirmation.controller.invalidate();
         setTarget(''); setOpen(false);
-        setMessage({ type: 'success', text: siteCopyRef.current("site.components.profile.giftandselfusebuttons.e9bff98c367e") });
+        setMessage({ type: 'success', text: siteCopyRef.current("site.components.profile.giftandselfusebuttons.e9bff98c367e", { prizeName }) });
       }
       router.refresh();
     });
-  }, [recovery.controller, confirmation.controller, couponId, lotteryId, router]);
+  }, [recovery.controller, confirmation.controller, couponId, lotteryId, prizeName, router]);
   const close = () => { if (!recovery.blocked) confirmation.controller.invalidate(); setOpen(false); };
   const handleSubmit = async () => {
     if (!confirmation.ready || !confirmation.confirmation || recovery.blocked || usedThisVoucher || submittedConfirmation.current === confirmation.confirmation) return;
@@ -81,7 +81,7 @@ export function GiftUsageButton({ lotteryId, couponId, prizeName, actor = { dlmI
         <form onSubmit={(event) => { event.preventDefault(); void handleSubmit(); }} className="space-y-3">
           <label className="block space-y-1 text-sm text-gray-600"><SiteText copyKey="site.components.profile.giftandselfusebuttons.1ec62b6f4968" /><input value={target} disabled={recovery.blocked} onChange={(event) => { confirmation.controller.invalidate(); setTarget(event.target.value); }} placeholder={siteCopy("site.components.profile.giftandselfusebuttons.defcd75a1443")} className="w-full rounded-lg border border-black/10 bg-gray-50 px-3 py-2 text-sm text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#5c43a3]" />
           </label>
-          {confirmation.lookingUp ? <p role="status" className="text-sm text-gray-500"><SiteText copyKey="site.components.profile.giftandselfusebuttons.2aba7a48cd86" /></p> : !target.trim() ? <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.giftandselfusebuttons.64d6bea2c2b1" /></p> : null}
+          {confirmation.lookingUp ? <p role="status" className="text-sm text-gray-500"><SiteText copyKey="site.components.profile.giftandselfusebuttons.2aba7a48cd86" /></p> : null}
           <TargetConfirmationCard confirmation={confirmation.confirmation} />
           <div className="flex justify-end gap-2">
             <button type="button" onClick={close} disabled={recovery.state.busy} className="rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-black/5"><SiteText copyKey="site.components.profile.giftandselfusebuttons.6c14bd7f6f9e" /></button>

@@ -35,7 +35,7 @@ export async function GET(request: Request, context: { params: Promise<RoutePara
       return NextResponse.json({ error: '试音文件不存在' }, { status: 404 });
     }
     console.error('[voice-preview.audio] read failed', error);
-    const message = '试音暂时无法播放，请稍后再试。';
+    const message = '读取试音失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

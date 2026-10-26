@@ -5,7 +5,7 @@ import { buildGiftRecoveryPreparation, GiftRecoveryConflict, isRecoveryKind, isW
 import type { GiftRecoveryRecord } from './gift-execution-client';
 const headers = { 'Cache-Control': 'no-store' };
 const errorResponse = (error: unknown) => Response.json({ ok: false,
-  error: error instanceof GiftRecoveryConflict || error instanceof TargetConfirmationError ? error.message : '暂时无法确认登记结果，请保留原编号查询赠礼记录。',
+  error: error instanceof GiftRecoveryConflict || error instanceof TargetConfirmationError ? error.message : '暂时无法确认登记结果，请保留原编号查询打赏记录。',
 }, { status: error instanceof GiftRecoveryConflict || error instanceof TargetConfirmationError ? error.status : 503, headers });
 type Access = { session: () => Promise<SessionSnapshot | null>; isAdmin: (discordId: string | null | undefined) => boolean };
 async function sessionFor(deps: Access, kind: RecoveryKind) {

@@ -95,9 +95,9 @@ type Dependencies = {
   exclusive?: <T>(key: string, work: () => Promise<T>) => Promise<T>;
   newId: () => string; now?: () => number; notify?: () => void;
 };
-const UNKNOWN = '原赠礼结果仍待核实，可按编号查询。可以开始新一笔；新赠礼会独立执行，原笔也可能已经成功。';
-const REGISTRATION_UNKNOWN = '登记结果尚未确认，本页未发送赠礼指令。请保留原编号查询；开始新一笔不会自动执行原笔。';
-const HISTORY_ERROR = '暂时无法加载服务器赠礼记录，请稍后刷新；新赠礼仍会先在服务器登记。';
+const UNKNOWN = '原打赏结果仍待核实，可按编号查询。可以开始新一笔；新打赏会独立执行，原笔也可能已经成功。';
+const REGISTRATION_UNKNOWN = '登记结果尚未确认，本页未发送打赏指令。请保留原编号查询；开始新一笔不会自动执行原笔。';
+const HISTORY_ERROR = '暂时无法加载服务器打赏记录，请稍后刷新；新打赏仍会先在服务器登记。';
 
 /** Server registration precedes financial submission. Storage and browser locks are
  * optional caches; recovery reads never execute or replay a gift. Tokens stay ephemeral. */
@@ -219,12 +219,12 @@ export function createGiftExecutionController(deps: Dependencies) {
       try { current = read().find(row => row.requestId === original.requestId); } catch { set({ busy: false, message: UNKNOWN }); return; }
       if (!matches(current, original) || state.record?.requestId !== original.requestId) { refresh(); return; }
       if (!response.ok || !object(data) || data.ok !== true || !object(data.review)) {
-        set({ missing: response.status === 404, message: response.status === 401 ? '请登录后查询赠礼进度。' : UNKNOWN }); return;
+        set({ missing: response.status === 404, message: response.status === 401 ? '请登录后查询打赏进度。' : UNKNOWN }); return;
       }
       if (!validReview(data.review)) { set({ message: UNKNOWN }); return; }
       const review = data.review;
       if (review.requestId !== original.requestId || !object(review.intent) || !sameGiftExecutionIntent(original.intent, review.intent)) {
-        set({ message: '这笔赠礼的信息需要核实，请保留编号并联系客服；新赠礼不会解决原笔的核实问题。' }); return;
+        set({ message: '这笔打赏的信息需要核实，请保留编号并联系客服；新打赏不会解决原笔的核实问题。' }); return;
       }
       if (!['COMPLETED', 'ABANDONED'].includes(review.status) || review.verified !== true) { set({ review, message: UNKNOWN }); return; }
       if (review.status === 'COMPLETED') {
@@ -273,7 +273,7 @@ export function createGiftExecutionController(deps: Dependencies) {
         await exclusive(async () => {
           const records = read();
           if (submittedConfirmations.has(input.confirmation)) {
-            set({ message: '这次对象确认已经提交，请重新核对对象后再开始新一笔赠礼。' }); return;
+            set({ message: '这次对象确认已经提交，请重新核对对象后再开始新一笔打赏。' }); return;
           }
           const expiresAt = Date.parse(input.confirmation.expiresAt);
           if (!Number.isFinite(expiresAt) || expiresAt <= (deps.now ?? Date.now)()) { set({ message: '目标确认已过期，请重新查询并确认。' }); return; }
@@ -320,14 +320,14 @@ export function createGiftExecutionController(deps: Dependencies) {
         }
         const registered = parseRecord(data.record);
         if (registered.requestId !== submitted.requestId || registered.phase !== 'UNCONFIRMED' || !sameGiftExecutionIntent(registered.intent, submitted.intent)) {
-          set({ message: '服务器登记信息与本次确认不一致，本页未发送赠礼指令，请保留编号并联系客服。' }); return;
+          set({ message: '服务器登记信息与本次确认不一致，本页未发送打赏指令，请保留编号并联系客服。' }); return;
         }
         await exclusive(async () => {
           const updated = merge(read(), [registered]);
           write(updated); publishRecords(updated); deps.notify?.();
         });
         if (!data.created) {
-          set({ message: '此编号已有登记，本页不会再次提交赠礼。请查询原请求结果。' }); return;
+          set({ message: '此编号已有登记，本页不会再次提交打赏。请查询原请求结果。' }); return;
         }
         registeredNow = true;
       } catch { set({ message: REGISTRATION_UNKNOWN }); return; }
@@ -347,14 +347,14 @@ export function createGiftExecutionController(deps: Dependencies) {
               const next = { ...current, phase: 'NOT_SENT' as const };
               const updated = records.map(row => row.requestId === submitted.requestId ? next : row);
               write(updated);
-              set({ records: updated, record: next, review: null, missing: false, message: '本次赠礼尚未提交，请核对信息后重新确认。' });
+              set({ records: updated, record: next, review: null, missing: false, message: '本次打赏尚未提交，请核对信息后重新确认。' });
               deps.notify?.();
             });
           } catch { set({ message: UNKNOWN }); }
           return;
         }
         succeeded = response.ok && object(data) && data.ok === true;
-        set({ message: succeeded ? '正在确认赠礼结果，请勿重复提交。' : UNKNOWN });
+        set({ message: succeeded ? '正在确认打赏结果，请勿重复提交。' : UNKNOWN });
       } catch { set({ message: UNKNOWN }); }
       finally { set({ busy: false }); }
       if (succeeded && state.record?.requestId === submitted.requestId) await query(true);
@@ -362,7 +362,7 @@ export function createGiftExecutionController(deps: Dependencies) {
     async abandon() {
       if (state.busy || !state.record || (state.record.inherited && state.missing) || (state.review?.status !== 'PENDING' && !state.missing)) return;
       const original = state.record;
-      set({ busy: true, review: null, message: '正在取消选中的赠礼，请等待核实结果。' });
+      set({ busy: true, review: null, message: '正在取消选中的打赏，请等待核实结果。' });
       try {
         const current = read().find(row => row.requestId === original.requestId);
         if (!matches(current, original)) { refresh(); return; }

@@ -142,7 +142,7 @@ export default async function MonthlyRevenueFilePage({ params }: PageProps) {
           <p className="text-xs text-white/50">净变动包括充值、提现、消费、奖励、返利和冲回等钱包流水；确认前已校验流水连续性。</p>
           <div className="grid gap-x-6 gap-y-1 text-xs text-white/60 md:grid-cols-3">
             {preview.walletReconciliation.movements.map((row) => (
-              <p key={row.type}>{row.type}（{row.count} 笔）：<span className="font-mono">{formatMoney(row.amount)}</span></p>
+              <p key={row.type}>{row.type.replaceAll('赠礼', '打赏')}（{row.count} 笔）：<span className="font-mono">{formatMoney(row.amount)}</span></p>
             ))}
           </div>
         </section>

@@ -40,9 +40,9 @@ async function sourceTx(tx: Tx, source: AdjustmentCommand['source']) {
   if (source.kind === 'GIFT') {
     const a = await tx.giftAudit.findUnique({ where: { individualTransactionId: source.id } });
     const b = await tx.giftAudit.findUnique({ where: { paymentTransactionId: source.id } });
-    if (a && b && a.id !== b.id) fail('source_ambiguous', '原流水关联到不同赠礼，不能处置');
+    if (a && b && a.id !== b.id) fail('source_ambiguous', '原流水关联到不同打赏，不能处置');
     const audit = a ?? b;
-    if (!audit) fail('source_missing', '找不到对应赠礼审计；不能凭备注创建退款原单');
+    if (!audit) fail('source_missing', '找不到对应打赏审计；不能凭备注创建退款原单');
     const [payment, individual] = await Promise.all([
       tx.transaction.findUnique({ where: { Transid: audit.paymentTransactionId } }),
       tx.individualTransaction.findUnique({ where: { transactionId: audit.individualTransactionId } }),

@@ -89,7 +89,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
       } catch (error) {
         setNotice({
           level: 'error',
-          text: publicMessage(error, '暂时无法确认上传结果，请刷新查看当前试音。'),
+          text: publicMessage(error, '上传失败，请稍后再试'),
         });
       }
     });
@@ -111,7 +111,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
     } catch (error) {
       setNotice({
         level: 'error',
-        text: publicMessage(error, '暂时无法确认删除结果，请刷新查看当前试音。'),
+        text: publicMessage(error, '删除失败，请稍后再试'),
       });
     } finally {
       setIsDeleting(false);

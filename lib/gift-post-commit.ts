@@ -28,7 +28,7 @@ const knownErrorCodes = new Set(['gift_post_commit_safe_failure', 'gift_post_com
   'gift_post_commit_send_unknown', 'gift_post_commit_stale_claim']);
 const safeErrorCode = (code: string | null) => code === null ? null : knownErrorCodes.has(code) ? code : 'task_error_requires_review';
 async function checkSession(db: GiftPostCommitDb, session: SessionSnapshot, isAdmin: boolean) {
-  if (!isAdmin || !session.dlmId || !session.discordId) throw new GiftPostCommitError('无权管理赠礼后续任务，请使用有效管理员账号。', 403);
+  if (!isAdmin || !session.dlmId || !session.discordId) throw new GiftPostCommitError('无权管理打赏后续任务，请使用有效管理员账号。', 403);
   const user = await db.dlmUser.findUnique({ where: { dlmId: session.dlmId }, select: { discordUserId: true, sessionVersion: true, member: { select: { discordUserId: true } } } });
   if (!user || user.discordUserId !== session.discordId || user.member?.discordUserId !== session.discordId || user.sessionVersion !== (session.sessionVersion ?? 1)) {
     throw new GiftPostCommitError('登录身份已变化，请重新登录后核实。', 403);
@@ -38,7 +38,7 @@ async function checkRequest(db: GiftPostCommitDb, requestId: string) {
   const request = await db.giftExecutionRequest.findUnique({ where: { requestId }, select: { requestId: true, status: true, giftAuditId: true } });
   if (!request) throw new GiftPostCommitError('未找到原请求，不能据此认定未扣费或外部动作未执行。', 404);
   if (request.requestId !== requestId || request.status !== 'COMPLETED' || !request.giftAuditId) {
-    throw new GiftPostCommitError('原请求尚无已完成关联凭证，请先核实原赠礼，不能重试后续任务。', 409);
+    throw new GiftPostCommitError('原请求尚无已完成关联凭证，请先核实原打赏，不能重试后续任务。', 409);
   }
 }
 /** SELECT-only. Internal payload, results and claim tokens never leave this boundary. */

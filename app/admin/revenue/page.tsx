@@ -821,7 +821,7 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>订单净流水：¥{formatNumber(orderGrossNet, 4)}</p>
             <p>订单净结算：¥{formatNumber(orderNetNet, 4)}</p>
             <p>订单净抽成：¥{formatNumber(orderFeeNet, 4)}</p>
-            <p className="text-xs text-slate-400">原结算按审计时间入账；撤销只冲减撤销所在期间，返佣亦按原支出与当期追回净额计入。</p>
+
             <p>总抽成：¥{formatNumber(commissionTotalNet, 4)}</p>
             <p>总面值原价流水：¥{formatNumber(totalFaceFlow, 4)}</p>
             <p>总实付流水：¥{formatNumber(totalPaidFlow, 4)}</p>

@@ -20,7 +20,7 @@ function parseView(value: unknown, requestId: string): GiftPostCommitView | null
   if ((value.coverage === 'NOT_RECORDED') !== (value.tasks.length === 0)) return null;
   return { requestId, coverage: value.coverage as GiftPostCommitView['coverage'], message: value.message, tasks: value.tasks as GiftPostCommitTaskView[] };
 }
-const unknown = '后续任务状态尚未核实，请只读刷新；原赠礼资金凭证不受此提示影响，查询不会重新执行赠礼。';
+const unknown = '后续任务状态尚未核实，请只读刷新；原打赏资金凭证不受此提示影响，查询不会重新执行打赏。';
 /** This controller never calls a gift endpoint. Every retry has one explicit click,
  * one POST, and a separate GET; uncertain reads block further actions. */
 export function createGiftPostCommitController(requestId: string, fetcher: typeof fetch) {
@@ -47,7 +47,7 @@ export function createGiftPostCommitController(requestId: string, fetcher: typeo
     async retry(taskId: string) {
       const task = state.view?.tasks.find(row => row.id === taskId);
       if (!task?.canRetry || state.loading || state.retrying || state.blocked) return;
-      set({ retrying: taskId, blocked: true, message: '正在请求重试该后续任务；不会重新赠礼或退款。' });
+      set({ retrying: taskId, blocked: true, message: '正在请求重试该后续任务；不会重新打赏或退款。' });
       try {
         const response = await fetcher('/api/admin/gift-post-commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId, taskId }) });
         const data: unknown = await response.json().catch(() => null);

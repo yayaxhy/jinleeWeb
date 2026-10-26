@@ -12,13 +12,13 @@ export type GiftPostCommitRequestDeps = {
 };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 const validTaskId = (value: unknown): value is string => typeof value === 'string' && value.length > 0 && value.length <= 150 && value.trim() === value && !/[\u0000-\u001f\u007f]/.test(value);
-const unknown = () => json({ ok: false, message: '后续任务状态暂时无法核实，请只读刷新。此提示不改变原赠礼的资金凭证；勿重新赠礼。' }, 503);
+const unknown = () => json({ ok: false, message: '后续任务状态暂时无法核实，请只读刷新。此提示不改变原打赏的资金凭证；勿重新打赏。' }, 503);
 export async function handleGiftPostCommitRequest(request: Request, deps: GiftPostCommitRequestDeps) {
   if (!['GET', 'POST'].includes(request.method)) return json({ ok: false, message: '不支持此请求方式。' }, 405);
   try {
     const session = await deps.session();
     if (!session) return json({ ok: false, message: '请先登录。' }, 401);
-    if (!session.discordId || !deps.isAdmin(session.discordId)) return json({ ok: false, message: '仅管理员可以核实和重试赠礼后续任务。' }, 403);
+    if (!session.discordId || !deps.isAdmin(session.discordId)) return json({ ok: false, message: '仅管理员可以核实和重试打赏后续任务。' }, 403);
     if (request.method === 'GET') {
       const params = new URL(request.url).searchParams;
       if (params.getAll('requestId').length !== 1 || [...params.keys()].some(key => key !== 'requestId') || !validGiftExecutionLookupId(params.get('requestId'))) {

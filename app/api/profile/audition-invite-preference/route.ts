@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, enabled });
   } catch (error) {
     console.error('[audition-invite-preference] save failed', error);
-    const message = '暂时无法保存设置，请刷新查看当前状态或联系客服。';
+    const message = '保存失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

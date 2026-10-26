@@ -1517,7 +1517,7 @@ function buildFinancialStatementWorkbook(params: {
       { section: '钱包余额核对', key: '本期净变动', value: walletReconciliation.netMovement },
       { section: '钱包余额核对', key: '流水连续性', value: walletReconciliation.ledgerContinuous ? '通过' : '未通过' },
       ...walletReconciliation.movements.map((row) => ({
-        section: '钱包流水类型', key: `${row.type}（${row.count} 笔）`, value: row.amount,
+        section: '钱包流水类型', key: `${row.type.replaceAll('赠礼', '打赏')}（${row.count} 笔）`, value: row.amount,
       })),
     ] : []),
     { section: '现金余额推算', key: '期初银行余额', value: cashOpeningBalance.toString() },

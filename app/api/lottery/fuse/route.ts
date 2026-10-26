@@ -94,7 +94,7 @@ const callInternalFusion = async (params: {
 }) => {
   if (!INTERNAL_PORT || !INTERNAL_TOKEN) {
     console.error('[lottery.fuse] missing INTERNAL_API_PORT/INTERNAL_API_TOKEN');
-    throw new LotteryFusionApiError('重铸服务暂不可用，请稍后再试或联系客服。', 500);
+    throw new LotteryFusionApiError('内部接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）', 500);
   }
 
   const endpoint = `http://${INTERNAL_HOST}:${INTERNAL_PORT}/internal/lottery/fuse`;
@@ -130,7 +130,7 @@ const callInternalFusion = async (params: {
     throw buildLotteryFusionApiError({
       code,
       fallbackStatus: response.status >= 500 ? 502 : response.status,
-      fallbackMessage: response.status >= 500 ? '暂时无法确认重铸结果，请先查看背包，勿重复提交。' : '暂时无法重铸，请核对所选物品或联系客服。',
+      fallbackMessage: response.status >= 500 ? '暂时无法确认重铸结果，请先查看背包，勿重复提交。' : '重铸失败，请稍后重试',
     });
   }
 

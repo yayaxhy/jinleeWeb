@@ -117,7 +117,7 @@ function DirectedVoucherButton({ prizeName, lotteryId, couponId, successText }: 
         <form onSubmit={(event) => { event.preventDefault(); void handleUse(); }} className="space-y-3">
           <label className="block space-y-1 text-sm text-gray-600"><SiteText copyKey="site.components.profile.voucherusebuttons.1ec62b6f4968" /><input value={target} disabled={confirmation.locked} onChange={(event) => { confirmation.controller.invalidate(); setTarget(event.target.value); }} placeholder={siteCopy("site.components.profile.voucherusebuttons.defcd75a1443")} className="w-full rounded-lg border border-black/10 bg-gray-50 px-3 py-2 text-sm text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#5c43a3]" />
           </label>
-          <p className="text-xs text-gray-500">{confirmation.lookingUp ? <SiteText copyKey="site.components.profile.voucherusebuttons.83e8ed097ae9" /> : <SiteText copyKey="site.components.profile.voucherusebuttons.52dcb217b688" />}</p>
+          {confirmation.lookingUp && <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.voucherusebuttons.83e8ed097ae9" /></p>}
           {confirmation.state.phase === 'error' ? <button type="button" onClick={() => void confirmation.lookup()} className={ghostBtn}><SiteText copyKey="site.components.profile.voucherusebuttons.ad5c0ece8720" /></button> : null}
           <TargetConfirmationCard confirmation={confirmation.confirmation} />
           <div className="flex justify-end gap-2">
@@ -176,7 +176,7 @@ export function PeiwanReviewVoucherButton({ prizeName, lotteryId, couponId }: Pr
           const data = (await res.json().catch(() => ({}))) as { data?: PeiwanSearchItem[] };
           if (generation !== searchGeneration.current) return;
           const hits = Array.isArray(data.data) ? data.data : [];
-          if (!res.ok || hits.length === 0) throw new PublicMessageError('未找到该陪玩，请检查陪玩 ID 或昵称');
+          if (!res.ok || hits.length === 0) throw new PublicMessageError('未找到该陪玩，请检查陪玩ID');
           setSearchResults(hits);
           setTargetResult(hits.length === 1 ? hits[0] : null);
         } catch (err) {
@@ -247,7 +247,7 @@ export function PeiwanReviewVoucherButton({ prizeName, lotteryId, couponId }: Pr
                     className="min-w-0 w-full rounded-lg border border-black/10 bg-gray-50 px-3 py-2 text-sm text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#5c43a3]"
                   />
                 </div>
-                <p className="text-xs text-gray-500">{searching ? <SiteText copyKey="site.components.profile.voucherusebuttons.d6e52550e701" /> : <SiteText copyKey="site.components.profile.voucherusebuttons.8c0e19c523d8" />}</p>
+                {searching && <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.voucherusebuttons.d6e52550e701" /></p>}
                 {error && !confirmation.locked ? <button type="button" disabled={searching} onClick={() => { confirmation.controller.invalidate(); setSearchAttempt(value => value + 1); }} className={ghostBtn}><SiteText copyKey="site.components.profile.voucherusebuttons.72073749ded7" /></button> : null}
                 {searchResults.length > 0 ? (
                   <div className="max-h-40 overflow-auto rounded-lg border border-black/10 bg-white">
@@ -293,7 +293,7 @@ export function PeiwanReviewVoucherButton({ prizeName, lotteryId, couponId }: Pr
             {confirmation.lookingUp ? <p role="status" className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.voucherusebuttons.4173b1450922" /></p> : null}
             <TargetConfirmationCard confirmation={confirmation.confirmation} />
             {confirmation.state.phase === 'error' ? <button type="button" onClick={() => void confirmation.lookup()} className={ghostBtn}><SiteText copyKey="site.components.profile.voucherusebuttons.cb349e361949" /></button> : null}
-            <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.voucherusebuttons.3f9246ebc904" /></p>
+            {targetResult && <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.voucherusebuttons.3f9246ebc904" values={{ displayName: targetResult.serverDisplayName, reviewText: reviewText.trim() }} /></p>}
             <div className="flex justify-end gap-2">
               <button type="button" onClick={closeAll} className={ghostBtn}><SiteText copyKey="site.components.profile.voucherusebuttons.6c14bd7f6f9e" /></button>
               <button type="button" onClick={() => void handleFinalConfirm()} disabled={!confirmation.ready || searching || !reviewText.trim() || reviewText.trim().length > 500} className={primaryBtn}>

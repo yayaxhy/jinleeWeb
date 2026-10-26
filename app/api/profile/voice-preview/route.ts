@@ -122,7 +122,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.voice.preview.route.dd32374a635d") }, { status: 404 });
     }
     console.error('[voice-preview.get] failed', error);
-    const message = '试音暂时无法读取，请稍后再试。';
+    const message = '读取试音失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
     if (uploadedFileName) {
       await removeStoredFile({ filename: uploadedFileName });
     }
-    const message = '暂时无法确认上传结果，请刷新查看当前试音或联系客服。';
+    const message = '上传失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -216,7 +216,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('[voice-preview.delete] failed', error);
-    const message = '暂时无法确认删除结果，请刷新查看当前试音或联系客服。';
+    const message = '删除失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

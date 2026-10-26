@@ -73,7 +73,7 @@ export function AuditionLegacyManager() {
   const locked = busy || unknown;
   return <div className="mx-auto max-w-5xl space-y-5 text-white">
     <header className="space-y-2"><Link href="/admin/auditions" className="text-sm text-cyan-200">← 试音结果查账</Link><h1 className="text-2xl font-semibold">旧试音邀请资料补齐</h1>
-      <p className="text-sm leading-6 text-white/65">仅对仍有效、未入房且未扣费的旧邀请补齐原身份与原报价。请使用原派单、聊天或其他可靠凭据；当前价格不能替代原报价。已有入房、扣款或结果未知的邀请，请先查账及人工处置。</p></header>
+      </header>
     <section className="space-y-3 rounded-xl border border-white/15 p-4"><button disabled={locked} onClick={() => list()} className="rounded-lg border border-white/25 px-3 py-2 text-sm disabled:opacity-50">列出缺失快照的待处理邀请</button>
       <ul className="space-y-2">{rows.map(row => <li key={row.id} className="flex flex-wrap items-center gap-2 text-sm"><button disabled={locked} onClick={() => load(row.id)} className="break-all text-cyan-200 underline disabled:opacity-50">{row.id}</button><span>{row.status} · 到期 {row.expiresAt}</span></li>)}</ul>
       {cursor && <button disabled={locked} onClick={() => list(true)} className="text-sm text-cyan-200">加载下一页</button>}
@@ -82,7 +82,7 @@ export function AuditionLegacyManager() {
     {message && <p role="status" className="break-words rounded-xl bg-amber-300/10 p-4 text-sm text-amber-100">{message}</p>}
     {evidence && <section className="space-y-3 rounded-xl border border-white/15 p-4"><h2 className="font-semibold">原邀请和现有凭据</h2>
       <p className="break-all text-sm">{evidence.invite.id} · {evidence.invite.status} · 到期 {evidence.invite.expiresAt}</p>
-      <p className="text-sm text-white/65">候选个人流水 {evidence.ledgers.length} 条，打赏审计 {evidence.audits.length} 条，支付 {evidence.payments.length} 条。每类最多展示 21 条；查不到不代表从未扣费。</p>
+      <p className="text-sm text-white/65">候选个人流水 {evidence.ledgers.length} 条，打赏审计 {evidence.audits.length} 条，支付 {evidence.payments.length} 条。每类最多展示 21 条。</p>
       <Link href={`/admin/auditions?inviteId=${encodeURIComponent(evidence.invite.id)}`} className="text-sm text-cyan-200 underline">打开原邀请查账页</Link>
       <details><summary className="cursor-pointer text-sm">展开原字段及候选凭据</summary><pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-all text-xs">{JSON.stringify(evidence, null, 2)}</pre></details>
       {evidence.receipt && <p className="break-all text-sm text-amber-100">已有补齐回执：{evidence.receipt.requestId}，请在下方查询。</p>}
@@ -95,12 +95,12 @@ export function AuditionLegacyManager() {
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" required checked={attest} disabled={locked} onChange={e => { setAttest(e.target.checked); setPreview(null); }} /><span>我已依据可靠原凭据确认双方身份及报价，并确认原邀请未入房、未扣费，结果明确。</span></label>
       <p className="break-all text-xs text-white/60">本次请求编号：{requestId}</p><button disabled={locked || !attest} className="rounded-lg bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">生成补齐预览</button>
     </form>}
-    {preview && <section className="space-y-3 rounded-xl border border-cyan-300/40 p-4"><h2 className="font-semibold">确认补齐内容</h2><p className="text-sm text-white/65">{preview.scope}</p>
+    {preview && <section className="space-y-3 rounded-xl border border-cyan-300/40 p-4"><h2 className="font-semibold">确认补齐内容</h2>
       <dl className="grid gap-3 sm:grid-cols-2">{fields.filter(([key]) => key in preview.changes).map(([key, label]) => <div key={key}><dt className="text-xs text-white/60">{label}</dt><dd className="break-all text-sm">未记录 → {String(preview.changes[key])}</dd></div>)}</dl>
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={confirmed} disabled={locked} onChange={e => setConfirmed(e.target.checked)}/><span>我确认上述原凭据及补齐内容；仅补缺失字段，不重新结算。</span></label>
       <button disabled={busy || !confirmed} onClick={submit} className="rounded-lg bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{unknown ? '重试同一请求' : '确认补齐'}</button>
     </section>}
-    <section className="space-y-3 rounded-xl border border-white/15 p-4"><h2 className="font-semibold">按原请求查询回执</h2><p className="text-sm text-white/65">连接中断后，用同一个请求编号查询；其他设备也可由管理员查询。</p><div className="flex flex-col gap-2 sm:flex-row"><input aria-label="原请求编号" className={cls} value={queryId} onChange={e => setQueryId(e.target.value)} maxLength={36}/><button disabled={busy || !queryId} onClick={query} className="shrink-0 rounded-lg border border-white/25 px-3 py-2 text-sm disabled:opacity-50">查询回执</button></div>
+    <section className="space-y-3 rounded-xl border border-white/15 p-4"><h2 className="font-semibold">按原请求查询回执</h2><div className="flex flex-col gap-2 sm:flex-row"><input aria-label="原请求编号" className={cls} value={queryId} onChange={e => setQueryId(e.target.value)} maxLength={36}/><button disabled={busy || !queryId} onClick={query} className="shrink-0 rounded-lg border border-white/25 px-3 py-2 text-sm disabled:opacity-50">查询回执</button></div>
       {receipt && <div className="space-y-2 break-all text-sm"><p>邀请 {receipt.inviteId} · 请求 {receipt.requestId}</p><p>操作者 {receipt.actorDiscordId} · {receipt.createdAt}</p><p>凭据：{receipt.evidenceReference}</p><p>{receipt.evidenceNote}</p><details><summary>查看完整补齐前后记录</summary><pre className="max-h-96 overflow-auto whitespace-pre-wrap break-all text-xs">{JSON.stringify(receipt, null, 2)}</pre></details></div>}
     </section>
   </div>;

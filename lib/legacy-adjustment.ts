@@ -29,7 +29,7 @@ export function parseAdjustmentCommand(value: unknown): AdjustmentCommand {
   const v = object(value), source = object(v.source), reporting = object(v.reporting);
   const requestId = str(v.requestId, '请求编号');
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) invalid('请求编号无效');
-  if (source.kind !== 'GIFT' && source.kind !== 'ORDER') invalid('只能处理已存在的赠礼或已结束订单');
+  if (source.kind !== 'GIFT' && source.kind !== 'ORDER') invalid('只能处理已存在的打赏或已结束订单');
   const wallets = list(v.wallets, 8).map(raw => { const r = object(raw); return {
     dlmId: str(r.dlmId, '账户编号'), incomeDelta: adjustmentAmount(r.incomeDelta), rechargeDelta: adjustmentAmount(r.rechargeDelta),
     totalSpentDelta: adjustmentAmount(r.totalSpentDelta), loyaltyPointsDelta: adjustmentAmount(r.loyaltyPointsDelta), earnDelta: adjustmentAmount(r.earnDelta), rewardIncomeDelta: adjustmentAmount(r.rewardIncomeDelta),

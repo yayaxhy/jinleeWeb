@@ -6,7 +6,7 @@ import { migrationModelLabel, migrationRolesLabel } from '@/lib/account-migratio
 type Account = { dlmId: string; discordId: string | null; displayName: string; wallet: Record<string, string>; peiwanId: number | null };
 type Preview = { previewHash: string; source: Account; target: Account; mergedWallet: Record<string, string>; peiwanId: number | null; vipLevel: number; suppressedVipLevels: number[]; conflicts: Array<{ model: string; recordKey: string; policy: string }>; notice: string };
 type Result = { requestId: string; completed: boolean; sourceDlmId: string; targetDlmId: string; mergedWallet: Record<string, string>; peiwanId: number | null; rolesStatus: string; skipped: Array<{ model: string; recordKey: string; reason: string }>; warnings: string[] };
-const labels: Record<string, string> = { totalBalance: '总余额', income: '可提现收入', recharge: '充值余额', totalSpent: '累计消费', loyaltyPoints: '积分' };
+const labels: Record<string, string> = { totalBalance: '总余额', income: '可提现', recharge: '充值池', totalSpent: '累计消费', loyaltyPoints: '积分' };
 const wallet = (values: Record<string, string>) => <dl className="grid gap-2 sm:grid-cols-2">{Object.entries(values).map(([key, value]) => <div key={key}><dt className="inline text-white/50">{labels[key] ?? key}：</dt><dd className="inline">{value}</dd></div>)}</dl>;
 export default function AssetTransferClient() {
   const [sourceIdentifier, setSource] = useState('');
@@ -60,7 +60,7 @@ export default function AssetTransferClient() {
     finally { setBusy(false); }
   }
   return <div className="space-y-6 text-white/85">
-    <p>新号保留自己的数据并继承旧号，完成后删除旧账号。兼容资产及历史合并，不兼容活动完整归档后跳过；双方需重新登录。</p>
+
     <form onSubmit={previewMerge} className="space-y-3">
       <label className="block">旧账号 DLM／Discord 编号<input className="mt-1 block w-full rounded border border-white/20 bg-black/30 p-3" value={sourceIdentifier} disabled={busy || unknown} onChange={event => change(setSource, event.target.value)} required /></label>
       <label className="block">新账号 DLM／Discord 编号<input className="mt-1 block w-full rounded border border-white/20 bg-black/30 p-3" value={targetIdentifier} disabled={busy || unknown} onChange={event => change(setTarget, event.target.value)} required /></label>
@@ -69,18 +69,17 @@ export default function AssetTransferClient() {
     {preview && <section className="space-y-4 rounded-xl border border-white/20 p-4">
       <div className="grid gap-4 md:grid-cols-2">{([['旧号', preview.source], ['新号', preview.target]] as const).map(([label, account]) => <div key={label} className="min-w-0 break-words"><h2 className="font-semibold">{label}：{account.displayName}</h2><p>{account.dlmId} · {account.discordId ?? '未绑定 Discord'}</p>{wallet(account.wallet)}</div>)}</div>
       <h2 className="font-semibold">合并后的预计资产</h2>{wallet(preview.mergedWallet)}
-      <p>陪玩编号：{preview.peiwanId ?? '无'}；VIP：{preview.vipLevel}。合并跨级不发奖励、不播公告。</p>
-      <p>报价、基础分成及普通偏好新号优先；等级取较高，额度各自到期；旧邀请关系结束。原交易金额、支付编号和已提交提现收款资料保留。</p>
+      <p>陪玩编号：{preview.peiwanId ?? '无'}；VIP：{preview.vipLevel}。</p>
+
       {preview.conflicts.length > 0 && <div><h3 className="font-semibold text-amber-300">预计归档跳过</h3><ul className="list-disc pl-5">{preview.conflicts.map((item, i) => <li key={i} className="break-words">{migrationModelLabel(item.model)}：{item.policy}</li>)}</ul></div>}
-      <p className="text-sm text-white/60">{preview.notice}</p>
+
       <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} /><span>已核对旧号、新号及合并规则，确认合并后删除旧账号。</span></label>
       <p className="break-all text-xs text-white/50">本次编号：{requestId}</p>
-      <button type="button" disabled={!confirmed || busy || unknown} onClick={execute} className="rounded bg-violet-600 px-4 py-2 disabled:opacity-50">确认合并</button>
+      <button type="button" disabled={!confirmed || busy || unknown} onClick={execute} className="rounded bg-violet-600 px-4 py-2 disabled:opacity-50">确认合并并转移</button>
     </section>}
     {message && <p role="status" className="rounded border border-amber-400/30 p-3">{message}</p>}
-    {unknown && <p className="text-amber-300">请保留原编号查询。尚未确认结果前，不创建第二笔迁移；断网不代表失败。</p>}
     <section className="space-y-3 rounded-xl border border-white/20 p-4"><h2 className="font-semibold">查询原迁移结果</h2><input aria-label="原迁移请求编号" value={lookupId} onChange={event => setLookupId(event.target.value)} className="w-full rounded bg-black/30 p-3" placeholder="粘贴原请求编号" /><button type="button" onClick={query} disabled={busy || !lookupId.trim()} className="rounded border border-white/20 px-4 py-2">只读查询</button></section>
-    {result && <section className="space-y-2 rounded-xl border border-emerald-400/30 p-4"><h2 className="font-semibold">账号合并已完成</h2><p className="break-all">编号：{result.requestId}</p>{wallet(result.mergedWallet)}<p>角色处理：{migrationRolesLabel(result.rolesStatus)}。角色失败只续办角色，不重新转移资产。</p>{result.warnings.map((warning, i) => <p key={i}>{warning}</p>)}{result.skipped.length > 0 && <><h3>已归档、未继续使用的内容</h3><ul className="list-disc pl-5">{result.skipped.map((item, i) => <li key={i} className="break-words">{migrationModelLabel(item.model)} · 原始记录已保存</li>)}</ul></>}</section>}
+    {result && <section className="space-y-2 rounded-xl border border-emerald-400/30 p-4"><h2 className="font-semibold">资产转移完成</h2><p className="break-all">编号：{result.requestId}</p>{wallet(result.mergedWallet)}<p>角色处理：{migrationRolesLabel(result.rolesStatus)}。</p>{result.warnings.map((warning, i) => <p key={i}>{warning}</p>)}{result.skipped.length > 0 && <><h3>已归档、未继续使用的内容</h3><ul className="list-disc pl-5">{result.skipped.map((item, i) => <li key={i} className="break-words">{migrationModelLabel(item.model)} · 原始记录已保存</li>)}</ul></>}</section>}
     <p><Link href="/profile/account-migrations" className="underline">查看账户迁移历史与归档</Link></p>
   </div>;
 }

@@ -16,6 +16,6 @@ export const POST = (request: Request) => handleGiftExecutionAbandonRequest(requ
     const token = process.env.INTERNAL_API_TOKEN;
     if (!port || !token) throw new Error('internal_unavailable');
     return postVoucherUseRequest({ endpoint: `http://${host}:${port}/internal/gift-execution/abandon`, token, payload: input,
-      unconfirmedMessage: '终止结果未确认，请继续只读查询原请求，勿重新赠礼。' });
+      unconfirmedMessage: '终止结果未确认，请继续只读查询原请求，勿重新打赏。' });
   },
 });

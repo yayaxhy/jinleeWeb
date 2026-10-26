@@ -22,15 +22,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "source": "app/accounts/discord/bind/BindDiscordClient.tsx:17"
   },
   {
-    "key": "site.app.accounts.discord.bind.binddiscordclient.be2b3be4b21c",
-    "group": "网站 · 登录绑定与换号",
-    "label": "先授权你要使用的 Discord 账号，再查看两边账号资料和合并预览。确认前不会转移余额或删除旧账号。",
-    "defaultText": "先授权你要使用的 Discord 账号，再查看两边账号资料和合并预览。确认前不会转移余额或删除旧账号。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/bind/BindDiscordClient.tsx:16"
-  },
-  {
     "key": "site.app.accounts.discord.bind.binddiscordclient.d769c865e545",
     "group": "网站 · 登录绑定与换号",
     "label": "绑定或更换 Discord",
@@ -76,15 +67,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "source": "app/accounts/discord/bind/result/BindResultActions.tsx:33"
   },
   {
-    "key": "site.app.accounts.discord.bind.result.page.09825c05823f",
-    "group": "网站 · 登录绑定与换号",
-    "label": "返回小程序后，可重新查看绑定状态。",
-    "defaultText": "返回小程序后，可重新查看绑定状态。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:93"
-  },
-  {
     "key": "site.app.accounts.discord.bind.result.page.56ccddf003fb",
     "group": "网站 · 登录绑定与换号",
     "label": "绑定链接已失效",
@@ -92,15 +74,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/accounts/discord/bind/result/page.tsx:35"
-  },
-  {
-    "key": "site.app.accounts.discord.bind.result.page.60ff6578efb6",
-    "group": "网站 · 登录绑定与换号",
-    "label": "合并完成会使原登录会话失效。返回小程序后请重新登录，再查看绑定状态。",
-    "defaultText": "合并完成会使原登录会话失效。返回小程序后请重新登录，再查看绑定状态。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:93"
   },
   {
     "key": "site.app.accounts.discord.bind.result.page.61ae0af769cb",
@@ -427,15 +400,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
   },
   {
-    "key": "site.app.accounts.discord.change.discordchangeclient.c8bd0ab812eb",
-    "group": "网站 · 登录绑定与换号",
-    "label": "先登录原账户，再授权要使用的 Discord。系统会展示两个账户的合并预览，确认后才迁移资产。",
-    "defaultText": "先登录原账户，再授权要使用的 Discord。系统会展示两个账户的合并预览，确认后才迁移资产。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
     "key": "site.app.accounts.discord.change.discordchangeclient.c9cd9ca140da",
     "group": "网站 · 登录绑定与换号",
     "label": "接收账户",
@@ -490,15 +454,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
   },
   {
-    "key": "site.app.accounts.discord.change.discordchangeclient.ee9424515da1",
-    "group": "网站 · 登录绑定与换号",
-    "label": "两边兼容的资产、券、资料和历史归到接收账户；原账户删除。原邀请关系不转移，合并跨 VIP 等级不发奖励、不播报。额度保留原有",
-    "defaultText": "两边兼容的资产、券、资料和历史归到接收账户；原账户删除。原邀请关系不转移，合并跨 VIP 等级不发奖励、不播报。额度保留原有效期。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
     "key": "site.app.accounts.discord.change.discordchangeclient.f74140fedbbb",
     "group": "网站 · 登录绑定与换号",
     "label": "请重试",
@@ -542,15 +497,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/accounts/wechat/bind/BindWechatClient.tsx:30"
-  },
-  {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.0ece068363b9",
-    "group": "网站 · 登录绑定与换号",
-    "label": "解绑会解除这个账户的全部微信登录方式，并退出原登录；不会拆分或删除资产。",
-    "defaultText": "解绑会解除这个账户的全部微信登录方式，并退出原登录；不会拆分或删除资产。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:34"
   },
   {
     "key": "site.app.accounts.wechat.bind.bindwechatclient.196fd91ec1fa",
@@ -643,15 +589,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "source": "app/accounts/wechat/bind/BindWechatClient.tsx:34"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.bb5a54d8bd9a",
-    "group": "网站 · 登录绑定与换号",
-    "label": "微信网页与小程序使用同一个账号归属。授权后先展示两边资料与资产的合并预览，确认后才执行。",
-    "defaultText": "微信网页与小程序使用同一个账号归属。授权后先展示两边资料与资产的合并预览，确认后才执行。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:31"
-  },
-  {
     "key": "site.app.accounts.wechat.bind.bindwechatclient.c5ca3fd0604f",
     "group": "网站 · 登录绑定与换号",
     "label": "结果未确定，请刷新核实",
@@ -704,15 +641,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/accounts/wechat/bind/BindWechatClient.tsx:21"
-  },
-  {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.edb5289f4683",
-    "group": "网站 · 登录绑定与换号",
-    "label": "点击后进入微信官方扫码授权，再回到本站核对两个账号。已有小程序资料会按同一个微信身份识别。",
-    "defaultText": "点击后进入微信官方扫码授权，再回到本站核对两个账号。已有小程序资料会按同一个微信身份识别。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:34"
   },
   {
     "key": "site.app.accounts.wechat.bind.bindwechatclient.fbc713baf5df",
@@ -866,11 +794,12 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
   {
     "key": "site.app.api.lottery.fuse.route.34247b87b596",
     "group": "网站 · 操作反馈",
-    "label": "所选奖品不可用、已过期或不支持重铸，请重新选择。",
-    "defaultText": "所选奖品不可用、已过期或不支持重铸，请重新选择。",
+    "label": "所选奖品不可用、已过期或属于旧主体",
+    "defaultText": "所选奖品不可用、已过期或属于旧主体",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/fuse/route.ts:160"
+    "source": "app/api/lottery/fuse/route.ts:160",
+    "requiredVariables": []
   },
   {
     "key": "site.app.api.lottery.fuse.route.e675865c7663",
@@ -946,11 +875,12 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
   {
     "key": "site.app.api.lottery.use.route.3f8c5a6674cc",
     "group": "网站 · 操作反馈",
-    "label": "用券服务暂不可用，请稍后再试或联系客服。",
-    "defaultText": "用券服务暂不可用，请稍后再试或联系客服。",
+    "label": "内部接口未配置",
+    "defaultText": "内部接口未配置",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:207"
+    "source": "app/api/lottery/use/route.ts:207",
+    "requiredVariables": []
   },
   {
     "key": "site.app.api.lottery.use.route.4349e2c2af16",
@@ -1036,11 +966,12 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
   {
     "key": "site.app.api.orders.orderid.discount.route.c7af1c8eb3b6",
     "group": "网站 · 操作反馈",
-    "label": "请选择要使用的优惠。",
-    "defaultText": "请选择要使用的优惠。",
+    "label": "缺少或非法的 kind",
+    "defaultText": "缺少或非法的 kind",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/orders/[orderId]/discount/route.ts:53"
+    "source": "app/api/orders/[orderId]/discount/route.ts:53",
+    "requiredVariables": []
   },
   {
     "key": "site.app.api.orders.orderid.discount.route.e8041a8c9358",
@@ -1090,11 +1021,12 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
   {
     "key": "site.app.api.profile.audition.invite.preference.route.825d9c887174",
     "group": "网站 · 操作反馈",
-    "label": "请选择是否开启真人试音邀请。",
-    "defaultText": "请选择是否开启真人试音邀请。",
+    "label": "缺少有效的 enabled 参数",
+    "defaultText": "缺少有效的 enabled 参数",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/profile/audition-invite-preference/route.ts:46"
+    "source": "app/api/profile/audition-invite-preference/route.ts:46",
+    "requiredVariables": []
   },
   {
     "key": "site.app.api.profile.audition.invite.preference.route.9fa559a03ec9",
@@ -1423,11 +1355,12 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
   {
     "key": "site.app.api.stripe.recharge.order.route.92b2703596e5",
     "group": "网站 · 操作反馈",
-    "label": "当前金额低于银行卡支付的最低要求，请选择更高金额。",
-    "defaultText": "当前金额低于银行卡支付的最低要求，请选择更高金额。",
+    "label": "Stripe 最低付款金额约为 50 美分，当前金额无法创建支付页面。请改用更高测试金额。",
+    "defaultText": "Stripe 最低付款金额约为 50 美分，当前金额无法创建支付页面。请改用更高测试金额。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/stripe/recharge/order/route.ts:161"
+    "source": "app/api/stripe/recharge/order/route.ts:161",
+    "requiredVariables": []
   },
   {
     "key": "site.app.api.voucher.use.route.00a68abb0983",
@@ -5519,15 +5452,6 @@ const SITE_COPY_PART_3: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/profile/account-migrations/page.tsx:21"
-  },
-  {
-    "key": "site.app.profile.account.migrations.page.7c06439fa67f",
-    "group": "网站 · 个人中心与资产",
-    "label": "原始资料和交易证据保留在这里。标为归档跳过的活动不计入当前可用资产，也不会继续发奖励。",
-    "defaultText": "原始资料和交易证据保留在这里。标为归档跳过的活动不计入当前可用资产，也不会继续发奖励。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/account-migrations/page.tsx:18"
   }
 ];
 
@@ -9501,15 +9425,6 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "source": "components/notifications/NotificationCenter.tsx:101"
   },
   {
-    "key": "site.components.notifications.notificationcenter.17c4feff6457",
-    "group": "网站 · 公会控制台与通知",
-    "label": "业务提醒通过 Discord 私信发送；站内通知仍可在这里查询。",
-    "defaultText": "业务提醒通过 Discord 私信发送；站内通知仍可在这里查询。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/notifications/NotificationCenter.tsx:158"
-  },
-  {
     "key": "site.components.notifications.notificationcenter.36f6553131d0",
     "group": "网站 · 公会控制台与通知",
     "label": "已读状态暂未保存",
@@ -10895,17 +10810,18 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftandselfusebuttons.1ec62b6f4968",
     "group": "网站 · 个人中心与资产",
-    "label": "陪玩 ID 或 Discord ID",
-    "defaultText": "陪玩 ID 或 Discord ID",
+    "label": "陪玩ID 或 Discord ID",
+    "defaultText": "陪玩ID 或 Discord ID",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:77"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:77",
+    "requiredVariables": []
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.2a677deef7f2",
     "group": "网站 · 个人中心与资产",
-    "label": "无法保存已确认的赠礼信息，本次未提交。请重新确认对象。",
-    "defaultText": "无法保存已确认的赠礼信息，本次未提交。请重新确认对象。",
+    "label": "无法保存已确认的打赏信息，本次未提交。请重新确认对象。",
+    "defaultText": "无法保存已确认的打赏信息，本次未提交。请重新确认对象。",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftAndSelfUseButtons.tsx:65"
@@ -10936,15 +10852,6 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftAndSelfUseButtons.tsx:167"
-  },
-  {
-    "key": "site.components.profile.giftandselfusebuttons.64d6bea2c2b1",
-    "group": "网站 · 个人中心与资产",
-    "label": "输入后将自动显示接收对象，核对后确认赠送。",
-    "defaultText": "输入后将自动显示接收对象，核对后确认赠送。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:80"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.68ec92b4d10f",
@@ -11012,17 +10919,22 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftandselfusebuttons.e9bff98c367e",
     "group": "网站 · 个人中心与资产",
-    "label": "赠送成功，可继续选择其他礼物券。",
-    "defaultText": "赠送成功，可继续选择其他礼物券。",
-    "variables": [],
+    "label": "已将 {prizeName} 送给目标用户",
+    "defaultText": "已将 {prizeName} 送给目标用户",
+    "variables": [
+      "prizeName"
+    ],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:48"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:48",
+    "requiredVariables": [
+      "prizeName"
+    ]
   },
   {
     "key": "site.components.profile.giftexecutionrecovery.04e036e0420e",
     "group": "网站 · 个人中心与资产",
-    "label": "选择赠礼记录",
-    "defaultText": "选择赠礼记录",
+    "label": "选择打赏记录",
+    "defaultText": "选择打赏记录",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:74"
@@ -11039,8 +10951,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.12e9ea0616c9",
     "group": "网站 · 个人中心与资产",
-    "label": "查询赠礼进度",
-    "defaultText": "查询赠礼进度",
+    "label": "查询打赏进度",
+    "defaultText": "查询打赏进度",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:96"
@@ -11075,8 +10987,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.39b43c1c6d02",
     "group": "网站 · 个人中心与资产",
-    "label": "所选原赠礼已核实完成。",
-    "defaultText": "所选原赠礼已核实完成。",
+    "label": "所选原打赏已核实完成。",
+    "defaultText": "所选原打赏已核实完成。",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:46"
@@ -11084,8 +10996,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.3d2bfe3f346c",
     "group": "网站 · 个人中心与资产",
-    "label": "重新确认赠礼",
-    "defaultText": "重新确认赠礼",
+    "label": "重新确认打赏",
+    "defaultText": "重新确认打赏",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:102"
@@ -11093,8 +11005,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.5441c5ecb46c",
     "group": "网站 · 个人中心与资产",
-    "label": "暂无待查看的近期赠礼。",
-    "defaultText": "暂无待查看的近期赠礼。",
+    "label": "暂无待查看的近期打赏。",
+    "defaultText": "暂无待查看的近期打赏。",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:72"
@@ -11102,11 +11014,12 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.57edc6939d67",
     "group": "网站 · 个人中心与资产",
-    "label": "赠送成功，已准备好下一笔。",
-    "defaultText": "赠送成功，已准备好下一笔。",
+    "label": "代打赏已完成，余额、积分、礼物账本和操作审计均已更新。",
+    "defaultText": "代打赏已完成，余额、积分、礼物账本和操作审计均已更新。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:46"
+    "source": "components/profile/GiftExecutionRecovery.tsx:46",
+    "requiredVariables": []
   },
   {
     "key": "site.components.profile.giftexecutionrecovery.6b97a80891b2",
@@ -11120,8 +11033,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.7bea9b6e966f",
     "group": "网站 · 个人中心与资产",
-    "label": "取消这笔赠礼",
-    "defaultText": "取消这笔赠礼",
+    "label": "取消这笔打赏",
+    "defaultText": "取消这笔打赏",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:103"
@@ -11129,8 +11042,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.7dba6e17396d",
     "group": "网站 · 个人中心与资产",
-    "label": "赠礼完成",
-    "defaultText": "赠礼完成",
+    "label": "打赏完成",
+    "defaultText": "打赏完成",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:45"
@@ -11156,8 +11069,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.9223c55b32eb",
     "group": "网站 · 个人中心与资产",
-    "label": "赠礼请求恢复",
-    "defaultText": "赠礼请求恢复",
+    "label": "打赏请求恢复",
+    "defaultText": "打赏请求恢复",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:61"
@@ -11165,8 +11078,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.9cb2a6ad7447",
     "group": "网站 · 个人中心与资产",
-    "label": "有 {value1} 笔赠礼记录可查询",
-    "defaultText": "有 {value1} 笔赠礼记录可查询",
+    "label": "有 {value1} 笔打赏记录可查询",
+    "defaultText": "有 {value1} 笔打赏记录可查询",
     "variables": [
       "value1"
     ],
@@ -11179,8 +11092,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.baa04d182f2d",
     "group": "网站 · 个人中心与资产",
-    "label": "此浏览器无法缓存记录，请保留请求编号；已登记的赠礼可从服务器查询。",
-    "defaultText": "此浏览器无法缓存记录，请保留请求编号；已登记的赠礼可从服务器查询。",
+    "label": "此浏览器无法缓存记录，请保留请求编号；已登记的打赏可从服务器查询。",
+    "defaultText": "此浏览器无法缓存记录，请保留请求编号；已登记的打赏可从服务器查询。",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:71"
@@ -11188,8 +11101,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.be99317ce852",
     "group": "网站 · 个人中心与资产",
-    "label": "赠礼记录",
-    "defaultText": "赠礼记录",
+    "label": "打赏记录",
+    "defaultText": "打赏记录",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:62"
@@ -11197,26 +11110,17 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.c248c5a60f60",
     "group": "网站 · 个人中心与资产",
-    "label": "开始下一笔赠礼",
-    "defaultText": "开始下一笔赠礼",
+    "label": "开始下一笔打赏",
+    "defaultText": "开始下一笔打赏",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:102"
   },
   {
-    "key": "site.components.profile.giftexecutionrecovery.c72923be3d69",
-    "group": "网站 · 个人中心与资产",
-    "label": "可查看此账号及合并继承的近期赠礼，包括已完成记录；查看记录不会再次赠送。",
-    "defaultText": "可查看此账号及合并继承的近期赠礼，包括已完成记录；查看记录不会再次赠送。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:69"
-  },
-  {
     "key": "site.components.profile.giftexecutionrecovery.c7b2652d41aa",
     "group": "网站 · 个人中心与资产",
-    "label": "本次赠礼已完成",
-    "defaultText": "本次赠礼已完成",
+    "label": "本次打赏已完成",
+    "defaultText": "本次打赏已完成",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:62"
@@ -11233,8 +11137,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.cfa3a9a8876a",
     "group": "网站 · 个人中心与资产",
-    "label": "本次赠礼已取消",
-    "defaultText": "本次赠礼已取消",
+    "label": "本次打赏已取消",
+    "defaultText": "本次打赏已取消",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:62"
@@ -11242,20 +11146,11 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.d223b528d12a",
     "group": "网站 · 个人中心与资产",
-    "label": "原赠礼已有撤销记录，退款细节需另行核实。",
-    "defaultText": "原赠礼已有撤销记录，退款细节需另行核实。",
+    "label": "原打赏已有撤销记录，退款细节需另行核实。",
+    "defaultText": "原打赏已有撤销记录，退款细节需另行核实。",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:54"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.d3ea529e1f19",
-    "group": "网站 · 个人中心与资产",
-    "label": "这是合并继承的原赠礼，保留原编号、金额和操作身份；确认尚未执行时可以取消，原赠礼不会重新执行。",
-    "defaultText": "这是合并继承的原赠礼，保留原编号、金额和操作身份；确认尚未执行时可以取消，原赠礼不会重新执行。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:84"
   },
   {
     "key": "site.components.profile.giftexecutionrecovery.d6077b82de1b",
@@ -11269,8 +11164,8 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.d8998c8b990f",
     "group": "网站 · 个人中心与资产",
-    "label": "本次赠礼尚未提交",
-    "defaultText": "本次赠礼尚未提交",
+    "label": "本次打赏尚未提交",
+    "defaultText": "本次打赏尚未提交",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:62"
@@ -11281,8 +11176,8 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.e27f10b4f372",
     "group": "网站 · 个人中心与资产",
-    "label": "原赠礼已有管理员人工调整；这不代表全部退款，实际金额与权益以人工处置回执为准。",
-    "defaultText": "原赠礼已有管理员人工调整；这不代表全部退款，实际金额与权益以人工处置回执为准。",
+    "label": "原打赏已有管理员人工调整；这不代表全部退款，实际金额与权益以人工处置回执为准。",
+    "defaultText": "原打赏已有管理员人工调整；这不代表全部退款，实际金额与权益以人工处置回执为准。",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:55"
@@ -11299,8 +11194,8 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.giftexecutionrecovery.ed8ef555fd50",
     "group": "网站 · 个人中心与资产",
-    "label": "刷新最近赠礼",
-    "defaultText": "刷新最近赠礼",
+    "label": "刷新最近打赏",
+    "defaultText": "刷新最近打赏",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:65"
@@ -11315,19 +11210,10 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "source": "components/profile/GiftExecutionRecovery.tsx:51"
   },
   {
-    "key": "site.components.profile.giftexecutionrecovery.f68222cb6ba9",
-    "group": "网站 · 个人中心与资产",
-    "label": "选中赠礼尚未核实完成，记录会继续保留。",
-    "defaultText": "选中赠礼尚未核实完成，记录会继续保留。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:92"
-  },
-  {
     "key": "site.components.profile.giftexecutionrecovery.f717fe3f0123",
     "group": "网站 · 个人中心与资产",
-    "label": "仅取消尚未完成的赠礼，不会退款；已完成的赠礼不会被取消。请先确认这笔赠礼的处理结果，再决定是否重新赠送。确定继续？",
-    "defaultText": "仅取消尚未完成的赠礼，不会退款；已完成的赠礼不会被取消。请先确认这笔赠礼的处理结果，再决定是否重新赠送。确定继续？",
+    "label": "仅取消尚未完成的打赏，不会退款；已完成的打赏不会被取消。请先确认这笔打赏的处理结果，再决定是否重新赠送。确定继续？",
+    "defaultText": "仅取消尚未完成的打赏，不会退款；已完成的打赏不会被取消。请先确认这笔打赏的处理结果，再决定是否重新赠送。确定继续？",
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/GiftExecutionRecovery.tsx:106"
@@ -12881,15 +12767,6 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "source": "components/profile/TargetConfirmation.tsx:36"
   },
   {
-    "key": "site.components.profile.targetconfirmation.92ead33fa686",
-    "group": "网站 · 个人中心与资产",
-    "label": "请核对以上对象，再点击下方确认按钮。",
-    "defaultText": "请核对以上对象，再点击下方确认按钮。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/TargetConfirmation.tsx:45"
-  },
-  {
     "key": "site.components.profile.targetconfirmation.d5b4063434c8",
     "group": "网站 · 个人中心与资产",
     "label": "未设置名称",
@@ -13269,11 +13146,12 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.voucherusebuttons.0465742fe516",
     "group": "网站 · 个人中心与资产",
-    "label": "选择陪玩（输入编号或昵称）",
-    "defaultText": "选择陪玩（输入编号或昵称）",
+    "label": "选择陪玩（输入陪玩ID）",
+    "defaultText": "选择陪玩（输入陪玩ID）",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:238"
+    "source": "components/profile/VoucherUseButtons.tsx:238",
+    "requiredVariables": []
   },
   {
     "key": "site.components.profile.voucherusebuttons.0c17d34b62a3",
@@ -13332,11 +13210,12 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.voucherusebuttons.1ec62b6f4968",
     "group": "网站 · 个人中心与资产",
-    "label": "陪玩 ID 或 Discord ID",
-    "defaultText": "陪玩 ID 或 Discord ID",
+    "label": "陪玩ID 或 Discord ID",
+    "defaultText": "陪玩ID 或 Discord ID",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:121"
+    "source": "components/profile/VoucherUseButtons.tsx:121",
+    "requiredVariables": []
   },
   {
     "key": "site.components.profile.voucherusebuttons.2dcf41705102",
@@ -13350,11 +13229,18 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.voucherusebuttons.3f9246ebc904",
     "group": "网站 · 个人中心与资产",
-    "label": "请核对对象与评语；确认提交后不能修改。",
-    "defaultText": "请核对对象与评语；确认提交后不能修改。",
-    "variables": [],
+    "label": "您给 {displayName} 陪玩的评语是： {reviewText}，确认后就不能修改了噢~",
+    "defaultText": "您给 {displayName} 陪玩的评语是： {reviewText}，确认后就不能修改了噢~",
+    "variables": [
+      "displayName",
+      "reviewText"
+    ],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:304"
+    "source": "components/profile/VoucherUseButtons.tsx:304",
+    "requiredVariables": [
+      "displayName",
+      "reviewText"
+    ]
   },
   {
     "key": "site.components.profile.voucherusebuttons.4173b1450922",
@@ -13382,15 +13268,6 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/VoucherUseButtons.tsx:221"
-  },
-  {
-    "key": "site.components.profile.voucherusebuttons.52dcb217b688",
-    "group": "网站 · 个人中心与资产",
-    "label": "输入编号后自动显示对象，核对后确认一次即可。",
-    "defaultText": "输入编号后自动显示对象，核对后确认一次即可。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:124"
   },
   {
     "key": "site.components.profile.voucherusebuttons.5f4a3eeae24f",
@@ -13436,15 +13313,6 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/VoucherUseButtons.tsx:253"
-  },
-  {
-    "key": "site.components.profile.voucherusebuttons.8c0e19c523d8",
-    "group": "网站 · 个人中心与资产",
-    "label": "输入后自动查询；有多个结果时，请选择具体陪玩。",
-    "defaultText": "输入后自动查询；有多个结果时，请选择具体陪玩。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:257"
   },
   {
     "key": "site.components.profile.voucherusebuttons.9c5605840c67",
@@ -13503,11 +13371,12 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.voucherusebuttons.d6e52550e701",
     "group": "网站 · 个人中心与资产",
-    "label": "正在查询陪玩…",
-    "defaultText": "正在查询陪玩…",
+    "label": "查询中",
+    "defaultText": "查询中",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:257"
+    "source": "components/profile/VoucherUseButtons.tsx:257",
+    "requiredVariables": []
   },
   {
     "key": "site.components.profile.voucherusebuttons.defcd75a1443",
@@ -15216,8 +15085,8 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
   {
     "key": "site.lib.manual.wechat.boss.a53c46d4da12",
     "group": "网站 · 通知与动态",
-    "label": "客服已向你的账户发放 {value1} 币。变更后余额：{value2}。",
-    "defaultText": "客服已向你的账户发放 {value1} 币。变更后余额：{value2}。",
+    "label": "客服已向你的账户发放 {value1} 币{value2}。",
+    "defaultText": "客服已向你的账户发放 {value1} 币{value2}。",
     "variables": [
       "value1",
       "value2"
@@ -15242,16 +15111,14 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
   {
     "key": "site.lib.manual.wechat.boss.f0c16910c207",
     "group": "网站 · 通知与动态",
-    "label": "客服已为你的账户入账 {value1} 币。变更后余额：{value2}。",
-    "defaultText": "客服已为你的账户入账 {value1} 币。变更后余额：{value2}。",
+    "label": "客服已为你的账户入账 {value1} 币。",
+    "defaultText": "客服已为你的账户入账 {value1} 币。",
     "variables": [
-      "value1",
-      "value2"
+      "value1"
     ],
     "maxLength": 300,
     "requiredVariables": [
-      "value1",
-      "value2"
+      "value1"
     ],
     "source": "lib/manual-wechat-boss.ts:216"
   },
@@ -15356,11 +15223,12 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
   {
     "key": "site.lib.mini.program.96c347102cfd",
     "group": "网站 · 通知与动态",
-    "label": "未找到可用的陪玩账号。",
-    "defaultText": "未找到可用的陪玩账号。",
+    "label": "未找到陪玩。",
+    "defaultText": "未找到陪玩。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:778"
+    "source": "lib/mini-program.ts:778",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.mini.program.account.2976c8101251",
@@ -15502,47 +15370,52 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
   {
     "key": "site.lib.public.error.messages.125b9db0e4a7",
     "group": "网站 · 首页与公共导航",
-    "label": "请选择有效的充值金额。",
-    "defaultText": "请选择有效的充值金额。",
+    "label": "invalid_amount",
+    "defaultText": "invalid_amount",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:44"
+    "source": "lib/public-error-messages.ts:44",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.20d730c7886e",
     "group": "网站 · 首页与公共导航",
-    "label": "未找到可用账号，请重新登录或联系客服。",
-    "defaultText": "未找到可用账号，请重新登录或联系客服。",
+    "label": "user_not_found",
+    "defaultText": "user_not_found",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:14"
+    "source": "lib/public-error-messages.ts:14",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.22965d14e8eb",
     "group": "网站 · 首页与公共导航",
-    "label": "充值金额低于最低要求，请选择更高金额。",
-    "defaultText": "充值金额低于最低要求，请选择更高金额。",
+    "label": "amount_too_small",
+    "defaultText": "amount_too_small",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:45"
+    "source": "lib/public-error-messages.ts:45",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.26a9d077cbeb",
     "group": "网站 · 首页与公共导航",
-    "label": "没有可用的靓号卡，请刷新后查看。",
-    "defaultText": "没有可用的靓号卡，请刷新后查看。",
+    "label": "no_card",
+    "defaultText": "no_card",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:13"
+    "source": "lib/public-error-messages.ts:13",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.312b9647b2f3",
     "group": "网站 · 首页与公共导航",
-    "label": "未找到当前账号，请重新登录后再试。",
-    "defaultText": "未找到当前账号，请重新登录后再试。",
+    "label": "当前账号未找到，请重新登录后再试。",
+    "defaultText": "当前账号未找到，请重新登录后再试。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:27"
+    "source": "lib/public-error-messages.ts:27",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.589b325db1c9",
@@ -15556,20 +15429,22 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
   {
     "key": "site.lib.public.error.messages.5e4f22bc1ad9",
     "group": "网站 · 首页与公共导航",
-    "label": "评语过长，请缩短后再提交。",
-    "defaultText": "评语过长，请缩短后再提交。",
+    "label": "review_too_long",
+    "defaultText": "review_too_long",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:19"
+    "source": "lib/public-error-messages.ts:19",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.5f63d4c8e86d",
     "group": "网站 · 首页与公共导航",
-    "label": "请先登录后再充值。",
-    "defaultText": "请先登录后再充值。",
+    "label": "unauthorized",
+    "defaultText": "unauthorized",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:42"
+    "source": "lib/public-error-messages.ts:42",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.609e3671fcfc",
@@ -15583,35 +15458,38 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
   {
     "key": "site.lib.public.error.messages.61968605cceb",
     "group": "网站 · 首页与公共导航",
-    "label": "请在网站中发起微信绑定。",
-    "defaultText": "请在网站中发起微信绑定。",
+    "label": "当前页面只支持网站端发起绑定微信。",
+    "defaultText": "当前页面只支持网站端发起绑定微信。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:26"
+    "source": "lib/public-error-messages.ts:26",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.70cfff94ffc5",
     "group": "网站 · 首页与公共导航",
-    "label": "请重新登录后再试。",
-    "defaultText": "请重新登录后再试。",
+    "label": "当前登录态无效，请重新登录后再试。",
+    "defaultText": "当前登录态无效，请重新登录后再试。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:25"
+    "source": "lib/public-error-messages.ts:25",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.7d01425e8b64",
     "group": "网站 · 首页与公共导航",
-    "label": "没有可用的券，或该券已使用、已过期，请刷新后查看。",
-    "defaultText": "没有可用的券，或该券已使用、已过期，请刷新后查看。",
+    "label": "no_voucher",
+    "defaultText": "no_voucher",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:12"
+    "source": "lib/public-error-messages.ts:12",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.8ae971be9456",
     "group": "网站 · 首页与公共导航",
-    "label": "赠礼结果仍需核实，请查询进度或联系客服，勿重复赠礼。",
-    "defaultText": "赠礼结果仍需核实，请查询进度或联系客服，勿重复赠礼。",
+    "label": "打赏结果仍需核实，请查询进度或联系客服，勿重复打赏。",
+    "defaultText": "打赏结果仍需核实，请查询进度或联系客服，勿重复打赏。",
     "variables": [],
     "maxLength": 300,
     "source": "lib/public-error-messages.ts:39"
@@ -15619,29 +15497,32 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
   {
     "key": "site.lib.public.error.messages.8cb61e287cc0",
     "group": "网站 · 首页与公共导航",
-    "label": "暂不支持该支付币种，请重新选择。",
-    "defaultText": "暂不支持该支付币种，请重新选择。",
+    "label": "暂不支持该 Stripe 支付币种。",
+    "defaultText": "暂不支持该 Stripe 支付币种。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:47"
+    "source": "lib/public-error-messages.ts:47",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.92b2703596e5",
     "group": "网站 · 首页与公共导航",
-    "label": "当前金额低于银行卡支付的最低要求，请选择更高金额。",
-    "defaultText": "当前金额低于银行卡支付的最低要求，请选择更高金额。",
+    "label": "Stripe 最低付款金额约为 50 美分",
+    "defaultText": "Stripe 最低付款金额约为 50 美分",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:48"
+    "source": "lib/public-error-messages.ts:48",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.9bed1591086e",
     "group": "网站 · 首页与公共导航",
-    "label": "提交信息有误，请刷新页面后重新选择。",
-    "defaultText": "提交信息有误，请刷新页面后重新选择。",
+    "label": "invalid_json",
+    "defaultText": "invalid_json",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:43"
+    "source": "lib/public-error-messages.ts:43",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.9c3e92a3b2e2",
@@ -15655,26 +15536,28 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
   {
     "key": "site.lib.public.error.messages.9de511b917a6",
     "group": "网站 · 首页与公共导航",
-    "label": "请重新登录后确认用券。",
-    "defaultText": "请重新登录后确认用券。",
+    "label": "missing_user",
+    "defaultText": "missing_user",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:16"
+    "source": "lib/public-error-messages.ts:16",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.a1addb280f20",
     "group": "网站 · 首页与公共导航",
-    "label": "暂不支持该充值金额，请重新选择。",
-    "defaultText": "暂不支持该充值金额，请重新选择。",
+    "label": "unsupported_stripe_recharge_amount",
+    "defaultText": "unsupported_stripe_recharge_amount",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:46"
+    "source": "lib/public-error-messages.ts:46",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.c47460e42f5d",
     "group": "网站 · 首页与公共导航",
-    "label": "这笔赠礼已取消。本次操作不退款；如需再次赠礼，请重新确认。",
-    "defaultText": "这笔赠礼已取消。本次操作不退款；如需再次赠礼，请重新确认。",
+    "label": "这笔打赏已取消。本次操作不退款；如需再次打赏，请重新确认。",
+    "defaultText": "这笔打赏已取消。本次操作不退款；如需再次打赏，请重新确认。",
     "variables": [],
     "maxLength": 300,
     "source": "lib/public-error-messages.ts:38"
@@ -15682,47 +15565,52 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
   {
     "key": "site.lib.public.error.messages.cddc6b104550",
     "group": "网站 · 首页与公共导航",
-    "label": "请选择使用对象。",
-    "defaultText": "请选择使用对象。",
+    "label": "missing_target",
+    "defaultText": "missing_target",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:17"
+    "source": "lib/public-error-messages.ts:17",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.cf9312e6c7de",
     "group": "网站 · 首页与公共导航",
-    "label": "至少需要保留一种登录方式，不能解绑最后一个渠道。",
-    "defaultText": "至少需要保留一种登录方式，不能解绑最后一个渠道。",
+    "label": "至少还要保留一种登录方式，不能解绑最后一个渠道。",
+    "defaultText": "至少还要保留一种登录方式，不能解绑最后一个渠道。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:28"
+    "source": "lib/public-error-messages.ts:28",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.d003f2d35ea1",
     "group": "网站 · 首页与公共导航",
-    "label": "请先绑定 Discord 账号。",
-    "defaultText": "请先绑定 Discord 账号。",
+    "label": "discord_required",
+    "defaultText": "discord_required",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:15"
+    "source": "lib/public-error-messages.ts:15",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.d6ee913e2aca",
     "group": "网站 · 首页与公共导航",
-    "label": "请补全信息后再提交。",
-    "defaultText": "请补全信息后再提交。",
+    "label": "missing_fields",
+    "defaultText": "missing_fields",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:18"
+    "source": "lib/public-error-messages.ts:18",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.public.error.messages.f7af82cff3c4",
     "group": "网站 · 首页与公共导航",
-    "label": "暂时无法解绑微信，请稍后查看绑定状态或联系客服。",
-    "defaultText": "暂时无法解绑微信，请稍后查看绑定状态或联系客服。",
+    "label": "解绑失败，请稍后再试。",
+    "defaultText": "解绑失败，请稍后再试。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:30"
+    "source": "lib/public-error-messages.ts:30",
+    "requiredVariables": []
   },
   {
     "key": "site.lib.recharge.order.transaction.00a17e777b24",

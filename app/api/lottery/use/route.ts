@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       const token = process.env.INTERNAL_API_TOKEN;
       if (!port || !token) {
         console.error('[lottery.gift] missing INTERNAL_API_PORT/INTERNAL_API_TOKEN');
-        throw new GiftForwardRejected('赠礼服务暂不可用，本次尚未提交，请稍后再试或联系客服。', 503);
+        throw new GiftForwardRejected('内部礼物接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）', 503);
       }
       const connection = { endpoint: `http://${process.env.INTERNAL_API_HOST ?? '127.0.0.1'}:${port}/internal/gift-execution/v1/gift`, token };
       try {

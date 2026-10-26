@@ -214,7 +214,7 @@ export const rechargeManualWechatBoss = async (params: {
       });
       await enqueueNotificationTx(tx, { dedupeKey: `manual-recharge:${requestId}`, recipientDlmId: dlmId,
         recipientDiscordId: boss.dlmUser.discordUserId, event: 'BALANCE_ADJUSTED', title: copy("site.lib.manual.wechat.boss.333c89553678"),
-        body: copy("site.lib.manual.wechat.boss.f0c16910c207", {value1: String(amount.toFixed(2)), value2: String(after.totalBalance.toString())}), href: '/console?tab=wallet' });
+        body: copy("site.lib.manual.wechat.boss.f0c16910c207", {value1: String(amount.toFixed(2))}), href: '/console?tab=wallet' });
       return resultPayload;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     return { result, replayed: false };
@@ -545,7 +545,7 @@ export const giftManualWechatBoss = async (params: {
       });
       await enqueueNotificationTx(tx, { dedupeKey: `manual-gift:${requestId}`, recipientDlmId: dlmId,
         recipientDiscordId: boss.dlmUser.discordUserId, event: 'BALANCE_ADJUSTED', title: copy("site.lib.manual.wechat.boss.1f323e4eedfb"),
-        body: copy("site.lib.manual.wechat.boss.a53c46d4da12", {value1: String(amount.toFixed(2)), value2: String(after.totalBalance.toString())}), href: '/console?tab=wallet' });
+        body: copy("site.lib.manual.wechat.boss.a53c46d4da12", {value1: String(amount.toFixed(2)), value2: reason ? `（${String(reason).slice(0, 40)}）` : ''}), href: '/console?tab=wallet' });
       return resultPayload;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     return { result, replayed: false };

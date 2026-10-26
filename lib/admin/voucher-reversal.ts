@@ -63,7 +63,7 @@ export function summarizeVoucherReversals(reverts: RevertLike[], params: {
       const oldCouponIds = Array.isArray(details.couponIds) ? details.couponIds.length : 0;
       const oldDiscount = checkedDecimal(typeof details.discountRollbackAmount === 'string' ? details.discountRollbackAmount : 0);
       if (oldVoucherIds || oldCouponIds || oldDiscount.gt(0)) {
-        throw new DiscountRevenueFactsError('存在未记录券成本明细的旧撤销记录');
+        throw new DiscountRevenueFactsError('存在未记录券成本明细的旧撤销记录，请人工核对后再确认报表。');
       }
       continue;
     }

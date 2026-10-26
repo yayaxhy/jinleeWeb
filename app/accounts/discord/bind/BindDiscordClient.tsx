@@ -16,7 +16,6 @@ export default function BindDiscordClient({ bindToken }: { bindToken: string }) 
   }
   return <main className="min-h-screen flex items-center justify-center bg-[#0f172a] text-white p-6"><section className="max-w-lg space-y-5">
     <h1 className="text-2xl font-semibold"><SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.d769c865e545" /></h1>
-    <p><SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.be2b3be4b21c" /></p>
     <button disabled={pending} onClick={start} className="rounded-xl bg-indigo-600 px-6 py-3 disabled:opacity-50">{pending ? <SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.e82601e534cf" /> : <SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.4b69ffb7ff99" />}</button>
     {error && <p role="alert" className="text-red-300"><SiteText namespace="site.app.accounts.discord.bind.binddiscordclient" value={error} /></p>}
   </section></main>;

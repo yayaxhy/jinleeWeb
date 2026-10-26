@@ -256,7 +256,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, manualRecharges = []
         <section className="rounded-3xl border border-amber-300/20 bg-amber-300/5 p-5 space-y-4">
           <div>
             <h2 className="text-xl font-semibold">充值更正</h2>
-            <p className="mt-1 text-sm text-white/60">仅用于微信人工充值误充到错误老板的情况。系统会保留原充值记录，并新增一笔扣回与一笔转入流水；原老板余额不足时会拒绝操作。</p>
+
           </div>
           <form onSubmit={correctRecharge} className="grid gap-3 lg:grid-cols-2">
             <label className="space-y-1 text-sm text-white/70">
@@ -316,7 +316,7 @@ export function WechatBossManager({ bosses, gifts, peiwans, manualRecharges = []
         </form>
 
         <form onSubmit={(event) => { event.preventDefault(); void delegatedGift(); }} className="space-y-3 border-t border-white/10 pt-8 lg:border-r lg:pr-8">
-          <div><h2 className="text-xl font-semibold">代打赏</h2><p className="mt-1 text-sm text-white/60">输入后自动显示付款老板和接收陪玩，核对礼物及数量后确认赠送。</p></div>
+          <div><h2 className="text-xl font-semibold">代打赏</h2><p className="mt-1 text-sm text-white/60">直接走 Bot 的真实礼物、余额与积分账本。</p></div>
           <input aria-label="代打赏陪玩" value={giftTarget} disabled={giftRecovery.blocked} onChange={(event) => { giftConfirmation.controller.invalidate(); setGiftTarget(event.target.value); }} required inputMode="numeric" placeholder="陪玩 Discord ID 或数字 ID" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <select aria-label="代打赏礼物" value={giftName} disabled={giftRecovery.blocked} onChange={(event) => { giftConfirmation.controller.invalidate(); setGiftName(event.target.value); }} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
             {giftOptions.map((gift) => <option key={gift.name} value={gift.name}>{gift.name} · ¥{gift.price}</option>)}

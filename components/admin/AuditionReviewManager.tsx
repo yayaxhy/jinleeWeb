@@ -43,19 +43,19 @@ export function AuditionReviewManager({ initialInviteId = '' }: { initialInviteI
   }
   return <div className="mx-auto max-w-5xl space-y-5 text-white">
     <header className="space-y-2"><Link href="/admin" className="text-sm text-white/60 hover:text-white">← 返回管理后台</Link>
-      <h2 className="text-2xl font-semibold">试音结果核实</h2><Link href="/admin/auditions/legacy" className="inline-block text-sm text-cyan-200 underline">旧邀请缺失资料补齐</Link><p className="text-sm leading-6 text-white/60">使用 Discord 消息中的邀请编号查询。此页面只读，不会重新结算或执行退款。</p></header>
+      <h2 className="text-2xl font-semibold">试音结果核实</h2><Link href="/admin/auditions/legacy" className="inline-block text-sm text-cyan-200 underline">旧邀请缺失资料补齐</Link></header>
     <form onSubmit={query} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
       <label htmlFor="audition-invite-id" className="block text-sm">邀请编号</label>
       <div className="flex flex-col gap-3 sm:flex-row"><input id="audition-invite-id" maxLength={100} value={inviteId} autoComplete="off" spellCheck={false}
         onChange={event => { ++sequence.current; setInviteId(event.target.value); setReview(null); setError(null); setLoading(false); }}
         className="min-w-0 flex-1 rounded-xl border border-white/20 bg-black/20 px-3 py-2 text-sm outline-none focus:border-cyan-300" placeholder="粘贴完整邀请编号" />
         <button disabled={loading || !inviteId.trim()} className="rounded-xl bg-cyan-300 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{loading ? '查询中…' : '查询邀请'}</button></div>
-      <p className="text-xs leading-5 text-white/50">查不到记录、等待状态或连接中断，都不能作为再次扣费的依据。</p>
+
     </form>
     {error && <p role="alert" className="rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100">{error}</p>}
     {review && <div className="space-y-4" aria-live="polite">
       <section className={`rounded-2xl border p-4 sm:p-5 ${review.outcome === 'CONSISTENT' ? 'border-emerald-300/30 bg-emerald-300/10' : 'border-amber-300/30 bg-amber-300/10'}`}>
-        <h3 className="font-semibold">{review.summary}</h3><p className="mt-2 text-sm leading-6 text-white/70">{review.scope}</p>
+        <h3 className="font-semibold">{review.summary}</h3>
         {review.issues.length > 0 && <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6 text-amber-100">{review.issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
       </section>
       <Evidence title="邀请与原身份快照"><Fields values={[
@@ -64,7 +64,7 @@ export function AuditionReviewManager({ initialInviteId = '' }: { initialInviteI
         ['原陪玩 DLM ID', review.invite.workerDlmId], ['原陪玩 Discord ID', review.invite.workerDiscordId],
         ['原始报价（点点券）', review.invite.quotedGross], ['原支付编号', review.invite.transactionId],
         ['实付（点点券）', review.invite.grossAmount], ['抽成（点点券）', review.invite.feeAmount], ['净收入（点点券）', review.invite.netAmount],
-      ]} /><p className="text-xs leading-5 text-white/50">原昵称未保存；以固定身份编号核对。当前邀请关联：老板 {review.invite.currentBossDiscordId}，陪玩 {review.invite.currentWorkerDiscordId}。</p></Evidence>
+      ]} /><p className="text-xs leading-5 text-white/50">当前邀请关联：老板 {review.invite.currentBossDiscordId}，陪玩 {review.invite.currentWorkerDiscordId}。</p></Evidence>
       <Evidence title="事件时间 · 北京时间"><Fields values={[
         ['创建', time(review.invite.createdAt)], ['更新', time(review.invite.updatedAt)], ['接受', time(review.invite.acceptedAt)], ['加入', time(review.invite.joinedAt)],
         ['扣款', time(review.invite.chargedAt)], ['完成', time(review.invite.fulfilledAt)], ['到期', time(review.invite.expiresAt)],
@@ -91,7 +91,7 @@ export function AuditionReviewManager({ initialInviteId = '' }: { initialInviteI
       ]} />)}</Evidence>
       <Evidence title={`关联撤销 · ${review.reverts.length} 条`}>{review.reverts.length ? review.reverts.map((row, index) => <Fields key={index} values={[
         ['撤销编号', row.id], ['原付款个人流水', row.originalTransactionId], ['撤销状态', row.status], ['记录时间', time(row.createdAt)],
-      ]} />) : <p className="text-sm text-white/60">当前关联凭证中未查到撤销记录；本页不验证退款全链路。</p>}</Evidence>
+      ]} />) : <p className="text-sm text-white/60">当前关联凭证中未查到撤销记录。</p>}</Evidence>
     </div>}
   </div>;
 }

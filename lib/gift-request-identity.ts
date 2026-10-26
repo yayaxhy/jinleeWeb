@@ -2,12 +2,12 @@ import type { PrismaClient } from '@prisma/client';
 import { isDiscordSnowflake } from './discord-id';
 import { resolveVoucherTargetIdentity, VoucherRequestIdentityError, type VoucherRequestIdentity } from './voucher-request-identity';
 
-export const GIFT_RESULT_UNCONFIRMED = '打赏结果未确认，请按原编号核实余额、礼物和操作记录。新赠礼独立执行，不代表原笔失败。';
+export const GIFT_RESULT_UNCONFIRMED = '打赏结果未确认，请按原编号核实余额、礼物和操作记录。新打赏独立执行，不代表原笔失败。';
 
 type LookupClient = Pick<PrismaClient, 'member' | 'pEIWAN' | 'dlmUser'>;
 export class GiftRequestIdentityError extends Error {
   constructor() {
-    super('赠礼账户绑定状态已变化，请刷新后重新确认付款方和收礼方。');
+    super('打赏账户绑定状态已变化，请刷新后重新确认付款方和收礼方。');
     this.name = 'GiftRequestIdentityError';
   }
 }

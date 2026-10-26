@@ -38,7 +38,7 @@ const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN;
 async function callInternal(path: string, payload: Record<string, unknown>) {
   if (!INTERNAL_PORT || !INTERNAL_TOKEN) {
     console.error('[voucher.use] missing INTERNAL_API_PORT/INTERNAL_API_TOKEN');
-    throw new VoucherInternalRequestError('用券服务暂不可用，请稍后再试或联系客服。', 500);
+    throw new VoucherInternalRequestError('内部接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）', 500);
   }
   return postVoucherUseRequest({
     endpoint: `http://${INTERNAL_HOST}:${INTERNAL_PORT}${path}`,

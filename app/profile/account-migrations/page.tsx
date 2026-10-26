@@ -17,7 +17,6 @@ export default async function MigrationHistoryPage({ searchParams }: { searchPar
   const archives = selected ? await prisma.accountMigrationArchive.findMany({ where: { migrationId: selected.id, model: { notIn: PRIVATE_MIGRATION_ARCHIVE_MODELS } }, orderBy: { id: 'asc' }, take: 51,
     ...(validCursor ? { cursor: { id: validCursor.id }, skip: 1 } : {}) }) : [];
   return <main className="mx-auto max-w-5xl space-y-5 p-6"><h1 className="text-2xl font-semibold"><SiteText copyKey="site.app.profile.account.migrations.page.54ecbdefc114" /></h1>
-    <p><SiteText copyKey="site.app.profile.account.migrations.page.7c06439fa67f" /></p>
     <Link href="/profile" className="underline"><SiteText copyKey="site.app.profile.account.migrations.page.4ab3251af877" /></Link>
     {migrations.length === 0 && <p><SiteText copyKey="site.app.profile.account.migrations.page.113413a04995" /></p>}
     <ul className="space-y-2">{migrations.map(row => <li key={row.id} className="break-words rounded border p-3"><Link className="underline" href={`/profile/account-migrations?requestId=${encodeURIComponent(row.id)}`}>{row.sourceDlmId} → {row.targetDlmId} · {row.createdAt.toISOString()}</Link><p><SiteText copyKey="site.app.profile.account.migrations.page.564363fdde27" />{row.id}<SiteText copyKey="site.app.profile.account.migrations.page.29fde0ce8b7e" /><SiteText namespace="site.lib.account.migration.labels" value={migrationRolesLabel(row.rolesStatus)} /></p></li>)}</ul>

@@ -8,7 +8,7 @@ import { giftHistoryActorMatches, giftHistoryOriginalOwners } from './gift-histo
 
 export type RecoveryKind = GiftRecoveryRecord['kind'];
 export class GiftRecoveryConflict extends Error {
-  constructor(message = '赠礼登记与当前账号或赠礼内容不符，请查询原编号。', public status = 409) { super(message); }
+  constructor(message = '打赏登记与当前账号或打赏内容不符，请查询原编号。', public status = 409) { super(message); }
 }
 export const isWebGiftRequestId = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 export const isRecoveryKind = (value: unknown): value is RecoveryKind => value === 'VOUCHER_GIFT' || value === 'DELEGATED_GIFT';
@@ -49,7 +49,7 @@ export function buildGiftRecoveryPreparation(proof: TargetConfirmationEvidence, 
 export type GiftRecoveryPreparation = ReturnType<typeof buildGiftRecoveryPreparation>;
 
 async function requireSession(db: GiftRecoveryDb, session: SessionSnapshot) {
-  if (!session.dlmId || !session.discordId) throw new GiftRecoveryConflict('请重新登录后查询赠礼。', 401);
+  if (!session.dlmId || !session.discordId) throw new GiftRecoveryConflict('请重新登录后查询打赏。', 401);
   const current = await db.dlmUser.findUnique({ where: { dlmId: session.dlmId }, select: {
     discordUserId: true, sessionVersion: true, member: { select: { discordUserId: true } },
   } });
@@ -89,7 +89,7 @@ function record(row: Row, session: SessionSnapshot): GiftRecoveryRecord {
  * Bot-compatible registration are inserted together; an existing row is never claimed. */
 export async function registerGiftRecovery(db: GiftRecoveryDb, session: SessionSnapshot, requestId: string, prepared: GiftRecoveryPreparation) {
   const owner = await requireSession(db, session);
-  if (!isWebGiftRequestId(requestId)) throw new GiftRecoveryConflict('赠礼编号无效。', 400);
+  if (!isWebGiftRequestId(requestId)) throw new GiftRecoveryConflict('打赏编号无效。', 400);
   requestId = requestId.toLowerCase();
   const intent = parseGiftExecutionIntent(prepared.intent); requireIntentOwner(intent, session);
   const existing = await db.giftExecutionRequest.findUnique({ where: { requestId }, select: { requestId: true } });

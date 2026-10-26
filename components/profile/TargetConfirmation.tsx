@@ -45,6 +45,5 @@ export function TargetConfirmationCard({ confirmation, dark = false }: { confirm
     {confirmation.payer ? identity('付款老板', confirmation.payer) : null}
     {identity('接收对象', confirmation.target)}
     {confirmation.selectedVoucher ? <p className="break-all text-xs"><SiteText copyKey="site.components.profile.targetconfirmation.62b9c1195ca8" />{confirmation.selectedVoucher.prizeName} · {confirmation.selectedVoucher.voucherId}</p> : null}
-    <p className="text-xs"><SiteText copyKey="site.components.profile.targetconfirmation.92ead33fa686" /></p>
   </section>;
 }

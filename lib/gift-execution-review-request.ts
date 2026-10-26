@@ -13,9 +13,9 @@ type Dependencies = {
   publicUrl?: string;
 };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
-const missing = () => json({ ok: false, message: '暂时无法查询这笔赠礼，也无法确认是否已扣款，请保留编号并联系客服，勿重复赠礼。' }, 404);
+const missing = () => json({ ok: false, message: '暂时无法查询这笔打赏，也无法确认是否已扣款，请保留编号并联系客服，勿重复打赏。' }, 404);
 const unknown = (requestId?: string) => json({ ok: false, ...(requestId ? { requestId } : {}),
-  message: '暂时无法确认赠礼结果，请保留编号查询进度或联系客服，勿重复赠礼。' }, 503);
+  message: '暂时无法确认打赏结果，请保留编号查询进度或联系客服，勿重复打赏。' }, 503);
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 
 /** Authentication, reading and mutation forwarding are injected separately.
@@ -28,7 +28,7 @@ export async function handleGiftExecutionReviewRequest(request: Request, deps: P
     const params = new URL(request.url).searchParams;
     const rawId = params.get('requestId');
     if (params.getAll('requestId').length !== 1 || [...params.keys()].some(key => key !== 'requestId') || !validGiftExecutionLookupId(rawId)) {
-      return json({ ok: false, message: '请输入有效的原赠礼请求编号。' }, 400);
+      return json({ ok: false, message: '请输入有效的原打赏请求编号。' }, 400);
     }
     const review = await deps.load(session, !!session.discordId && deps.isAdmin(session.discordId), normalizeGiftExecutionId(rawId));
     return review ? json({ ok: true, review }) : missing();
@@ -36,12 +36,12 @@ export async function handleGiftExecutionReviewRequest(request: Request, deps: P
 }
 
 export async function handleGiftExecutionAbandonRequest(request: Request, deps: Dependencies) {
-  if (request.method !== 'POST') return json({ ok: false, message: '请在页面中确认是否取消这笔赠礼。' }, 405);
+  if (request.method !== 'POST') return json({ ok: false, message: '请在页面中确认是否取消这笔打赏。' }, 405);
   const parsed = await readAdminJsonWrite(request, deps.publicUrl);
   if (!parsed.ok) return parsed.response;
   const body = parsed.body;
   if (Object.keys(body).some(key => !['requestId', 'intent'].includes(key)) || !validGiftExecutionLookupId(body.requestId)) {
-    return json({ ok: false, message: '暂时无法取消这笔赠礼，请保留编号并联系客服核实。' }, 400);
+    return json({ ok: false, message: '暂时无法取消这笔打赏，请保留编号并联系客服核实。' }, 400);
   }
   const requestId = normalizeGiftExecutionId(body.requestId);
   try {
@@ -61,7 +61,7 @@ export async function handleGiftExecutionAbandonRequest(request: Request, deps: 
     if (response.status === 'ABANDONED' && (response.giftAuditId !== null || response.result !== null)) return unknown(requestId);
     if (response.status === 'COMPLETED' && (typeof response.giftAuditId !== 'string' || !response.giftAuditId || !object(response.result))) return unknown(requestId);
     // The client follows with GET; the HTTP reply alone does not prove all audit facts.
-    return json({ ok: true, requestId, status: response.status, message: '取消申请已收到，请查询赠礼进度确认结果。' });
+    return json({ ok: true, requestId, status: response.status, message: '取消申请已收到，请查询打赏进度确认结果。' });
   } catch (error) {
     console.error('[gift.review] cancellation unconfirmed', { requestId, error });
     if (error instanceof GiftExecutionReviewConflict) return json({ ok: false, requestId, message: error.message }, 409);

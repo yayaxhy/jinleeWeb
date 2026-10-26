@@ -50,8 +50,8 @@ async function api<T>(input: string, init?: RequestInit): Promise<T> {
 
 const channelName: Record<string, string> = {
   DISCORD: "Discord DM",
-  WEB_PUSH: "网页推送（停用历史）",
-  EMAIL: "邮件（停用历史）",
+  WEB_PUSH: "网页 Push",
+  EMAIL: "邮件",
 };
 
 export function NotificationDeliveryMonitor({ source = 'center' }: { source?: 'center' | 'outbox' }) {
@@ -101,7 +101,7 @@ export function NotificationDeliveryMonitor({ source = 'center' }: { source?: 'c
         { method: "POST", body: JSON.stringify({ limit: 100, source }) },
       );
       await load(true, page);
-      setMessage(`本次处理 ${response.attempted} 条可重试投递，其中 ${response.uncertain} 个结果待核实。未知结果会在间隔满 5 分钟后有限补发；已成功、超过 24 小时或已达 3 次上限的私信不再发送。`);
+      setMessage(`已尝试重发 ${response.attempted} 条通知。`);
     } catch (error) {
       // A failed batch may already have completed some channels. Refresh their
       // state and the global eligibility count before presenting the error.
@@ -116,10 +116,8 @@ export function NotificationDeliveryMonitor({ source = 'center' }: { source?: 'c
     <section aria-busy={loading || busy} className="rounded-2xl border border-white/10 bg-white/5">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
         <div>
-          <h2 className="font-semibold">{source === 'outbox' ? '余额及资料私信任务' : '订单通知投递异常'}</h2>
-          <p className="mt-1 text-xs text-white/55">
-            仅发送 Discord 私信：每 5 分钟检查，创建 24 小时内总共最多 3 次（含首次）。未知结果允许有限补发，可能重复提醒；已成功不重发，过期催接停止。通知结果不代表订单或余额操作失败，请勿重做原业务。
-          </p>
+          <h2 className="font-semibold">{source === 'outbox' ? '余额及资料私信任务' : '通知投递异常'}</h2>
+
         </div>
         <div className="flex gap-2">
           <button
@@ -184,7 +182,7 @@ export function NotificationDeliveryMonitor({ source = 'center' }: { source?: 'c
         </div>
       ) : (
         <p className="px-4 py-5 text-sm text-white/55">
-          {loading ? "正在加载通知投递状态…" : "最近 24 小时没有待处理投递，也没有尚待核实的结果。"}
+          {loading ? "正在加载通知投递状态…" : "最近 24 小时没有待处理的通知投递。"}
         </p>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-4 py-3 text-xs text-white/55">

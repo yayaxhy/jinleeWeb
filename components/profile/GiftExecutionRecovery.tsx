@@ -4,7 +4,6 @@ import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { createGiftExecutionController, giftRecoveryKey, newGiftRequestId, type GiftActor, type GiftRecoveryRecord } from '@/lib/gift-execution-client';
-import { giftReviewPublicMessage } from '@/lib/public-error-messages';
 
 const controllers = new Map<string, ReturnType<typeof createGiftExecutionController>>();
 const EVENT = 'dlm-gift-recovery-change';
@@ -46,7 +45,7 @@ export function GiftExecutionRecovery({ actor, kind, dark = false, onNew }: {
   const completedCard = state.completed ? (() => {
     const { record: completed, review } = state.completed!;
     return <section aria-label={siteCopy("site.components.profile.giftexecutionrecovery.7dba6e17396d")} className={`space-y-2 rounded-xl border p-3 text-sm ${dark ? 'border-emerald-300/30 bg-emerald-300/10 text-emerald-100' : 'border-emerald-300 bg-emerald-50 text-emerald-900'}`}>
-      <p role="status" className="font-semibold">{state.completed!.prepareNext ? <SiteText copyKey="site.components.profile.giftexecutionrecovery.57edc6939d67" /> : <SiteText copyKey="site.components.profile.giftexecutionrecovery.39b43c1c6d02" />}</p>
+      <p role="status" className="font-semibold">{state.completed!.prepareNext ? kind === 'DELEGATED_GIFT' ? <SiteText copyKey="site.components.profile.giftexecutionrecovery.57edc6939d67" /> : <SiteText copyKey="site.components.profile.giftandselfusebuttons.e9bff98c367e" values={{ prizeName: completed.scope.prizeName ?? completed.intent.giftName }} /> : <SiteText copyKey="site.components.profile.giftexecutionrecovery.39b43c1c6d02" />}</p>
       <p className="break-words">{completed.target.displayName} · {completed.intent.giftName} × {completed.intent.quantity}</p>
       <details className="text-xs">
         <summary className="cursor-pointer"><SiteText copyKey="site.components.profile.giftexecutionrecovery.3355ba495a9a" /></summary>
@@ -69,7 +68,6 @@ export function GiftExecutionRecovery({ actor, kind, dark = false, onNew }: {
       </button>
       {state.nextCursor && <button type="button" disabled={state.historyLoading} onClick={() => void controller.loadMoreHistory()} className="rounded-full border border-current/20 px-3 py-2 text-xs disabled:opacity-50"><SiteText copyKey="site.components.profile.giftexecutionrecovery.6b97a80891b2" /></button>}
     </div>
-    <p className="text-xs leading-5"><SiteText copyKey="site.components.profile.giftexecutionrecovery.c72923be3d69" /></p>
     {state.historyError && <p role="status" className="text-xs leading-5">{state.historyError}</p>}
     {state.storageError && <p className="text-xs leading-5"><SiteText copyKey="site.components.profile.giftexecutionrecovery.baa04d182f2d" /></p>}
     {state.historyLoaded && !state.records.length && !state.message && <p className="text-xs"><SiteText copyKey="site.components.profile.giftexecutionrecovery.5441c5ecb46c" /></p>}
@@ -84,7 +82,6 @@ export function GiftExecutionRecovery({ actor, kind, dark = false, onNew }: {
       </select>
     </label>}
     {record && <>
-      {record.inherited && <p className="text-xs"><SiteText copyKey="site.components.profile.giftexecutionrecovery.d3ea529e1f19" /></p>}
       <p className="break-all text-xs"><SiteText copyKey="site.components.profile.giftexecutionrecovery.efeb9bc96fe9" /><span className="font-mono">{record.requestId}</span></p>
       <p><SiteText copyKey="site.components.profile.giftexecutionrecovery.d6077b82de1b" />{record.intent.giftName} × {record.intent.quantity}</p>
       <p className="break-words"><SiteText copyKey="site.components.profile.giftexecutionrecovery.183a0ed03d81" />{record.target.displayName} · {record.target.dlmId}</p>
@@ -92,7 +89,6 @@ export function GiftExecutionRecovery({ actor, kind, dark = false, onNew }: {
     </>}
     {state.message && <p role="status" className="leading-6">{state.message}</p>}
     {state.review && <div className="space-y-1 break-all text-xs">
-      <p>{terminal ? <SiteText namespace="site.lib.public.error.messages" value={giftReviewPublicMessage(state.review)} /> : <SiteText copyKey="site.components.profile.giftexecutionrecovery.f68222cb6ba9" />}</p>
       {state.review.transactionId && <p><SiteText copyKey="site.components.profile.giftexecutionrecovery.8ac9b8893a2e" />{state.review.transactionId}</p>}
     </div>}
     {record && <div className="flex flex-wrap gap-2">

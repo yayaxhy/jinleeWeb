@@ -150,7 +150,6 @@ export function NotificationCenter({
             ) : null}
           </div>
           <div className="border-t border-stone-200 bg-stone-50 p-4">
-            <p className="text-xs leading-5 text-slate-500"><SiteText copyKey="site.components.notifications.notificationcenter.17c4feff6457" /></p>
             {message ? (
               <p className="mt-3 text-xs text-slate-600"><SiteText namespace="site.components.notifications.notificationcenter" value={message} /></p>
             ) : null}

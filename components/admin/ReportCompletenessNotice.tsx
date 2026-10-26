@@ -6,7 +6,7 @@ export function ReportCompletenessNotice({ completeness, historical = false }: {
   if (completeness.complete) return null;
   return <section role="alert" className="space-y-3 rounded-xl border border-amber-300/50 bg-amber-300/10 p-5 text-amber-100">
     <h3 className="text-lg font-semibold">报表不完整：下方金额仅为已核实部分</h3>
-    <p className="text-sm">{completeness.issues.length} 项凭据待核实，相关部分暂未计入；当前报表不能确认月结。导出文件会同时列出缺失项目。</p>
+    <p className="text-sm">{completeness.issues.length} 项凭据待核实。</p>
     <ul className="space-y-3 text-sm">{completeness.issues.map((issue, index) => <li key={`${issue.source}-${index}`} className="break-words">
       <p>{issue.reason}</p>
       {issue.ids.length > 0 && <p className="break-all text-xs">记录编号：{issue.ids.join('、')}</p>}

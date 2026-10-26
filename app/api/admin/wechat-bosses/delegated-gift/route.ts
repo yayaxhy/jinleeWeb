@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         const host = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
         const port = process.env.INTERNAL_API_PORT;
         const token = process.env.INTERNAL_API_TOKEN;
-        if (!port || !token) throw new GiftForwardRejected('内部打赏接口暂不可用，本次尚未转发', 503);
+        if (!port || !token) throw new GiftForwardRejected('internal_bot_not_configured', 503);
         return { endpoint: `http://${host}:${port}/internal/gift-execution/v1/delegated-gift`, token, payload: {
           dlmId,
           ...identity,
