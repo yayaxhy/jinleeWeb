@@ -426,7 +426,7 @@ export default async function AdminHomePage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm text-white/70">可撤回订单</p>
-              <p className="text-xs text-white/50">查看已结单记录；旧单经人工核实后可进入独立调整</p>
+              <p className="text-xs text-white/50">查看已结单记录</p>
             </div>
             <Link
               href="/admin/refundable-orders"
@@ -434,7 +434,6 @@ export default async function AdminHomePage() {
             >
               前往查看
             </Link>
-            {canManageGuildOperations(session.discordId) && <Link href="/admin/legacy-adjustments" className="text-sm text-cyan-200 hover:underline">旧交易人工退款／调整</Link>}
           </div>
         </div>
 
