@@ -1,7 +1,6 @@
+import { summarizeManualQuota } from '@/lib/manual-quota-view';
 
 import { SiteText } from "@/components/SiteCopyProvider";
-import { Prisma } from '@prisma/client';
-import { loadAccountMigrationBenefits, inheritedAutoCommissionExpiry } from '@/lib/account-migration-benefits';
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -17,24 +16,11 @@ import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { getDlmPortalSession } from '@/lib/dlm-portal-session';
 import { isDiscordSnowflake } from '@/lib/discord-id';
 import { formatAmountDown, formatAmountDown2 } from '@/lib/numberFormat';
-import { formatPeiwanGameProfile, getPeiwanGameLabel, getPeiwanTierLabel, sortPeiwanGameProfiles, type PeiwanGameProfileView } from '@/lib/peiwan/gameProfiles';
+import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { formatTransactionType } from '@/lib/transaction-display';
 import { VIP_LEVELS } from '@/lib/vip-levels';
-import { summarizeManualQuota, type ManualQuotaPeriod } from '@/lib/manual-quota-view';
-
-// Keep role-specific labels intact; only localize the known game/tier display names.
-function PeiwanGameProfileLabel({ profile }: { profile: PeiwanGameProfileView }) {
-  const label = formatPeiwanGameProfile(profile);
-  const game = getPeiwanGameLabel(profile.gameCode);
-  const tier = getPeiwanTierLabel(profile.tier);
-  if (label === game) return <SiteText namespace="site.constants.peiwan" value={game} />;
-  if (label === `${game} · ${tier}`) {
-    return <><SiteText namespace="site.constants.peiwan" value={game} /> · <SiteText namespace="site.constants.peiwan" value={tier} /></>;
-  }
-  return label;
-}
 
 const TRANSACTIONS_PER_PAGE = 10;
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -214,8 +200,6 @@ export default async function Profile(props: ProfilePageProps) {
 
   const navLinks = [
     { href: '/profile', label: '个人主页' },
-    { href: '/accounts/discord/change', label: '账号绑定与换号' },
-    { href: '/profile/account-migrations', label: '迁移历史与归档' },
     { href: '/profile/bag', label: '我的背包' },
     { href: '/profile/lottery-fusion', label: '奖品重铸' },
     { href: '/profile/heart', label: '心动值' },
@@ -298,22 +282,23 @@ export default async function Profile(props: ProfilePageProps) {
         where: { userId: discordUserId },
       })
     : Promise.resolve(null);
-  const flowBuffPromise = discordUserId
+  const quotaOwnerId = discordUserId ?? (await prisma.detachedDiscordAccount.findUnique({
+    where: { ownerDlmId: dlmId }, select: { memberKey: true },
+  }))?.memberKey ?? null;
+  const flowBuffPromise = quotaOwnerId
     ? prisma.flowBuff.findUnique({
-        where: { userId: discordUserId },
+        where: { userId: quotaOwnerId },
       })
     : Promise.resolve(null);
-  const spendBuffPromise = discordUserId
+  const spendBuffPromise = quotaOwnerId
     ? prisma.spendBuff.findUnique({
-        where: { userId: discordUserId },
+        where: { userId: quotaOwnerId },
       })
     : Promise.resolve(null);
-  const quotaRestorationsPromise = discordUserId
-    ? prisma.manualQuotaRestoration.findMany({ where: { userId: discordUserId, expiresAt: { gt: now }, remainingExtra: { gt: 0 } } })
-    : Promise.resolve([]);
-  const ordinaryQuotaBatchesPromise = discordUserId
-    ? prisma.manualQuotaBatch.findMany({ where: { userId: discordUserId, expiresAt: { gt: now }, remainingExtra: { gt: 0 } } })
-    : Promise.resolve([]);
+  const quotaRowsPromise = quotaOwnerId ? Promise.all([
+    prisma.manualQuotaBatch.findMany({ where: { userId: quotaOwnerId } }),
+    prisma.manualQuotaRestoration.findMany({ where: { userId: quotaOwnerId } }),
+  ]) : Promise.resolve([[], []]);
   const loyaltyPointPromise = prisma.loyaltyPoint.findFirst({
     where: { dlmId },
   });
@@ -382,12 +367,11 @@ export default async function Profile(props: ProfilePageProps) {
     autoCommissionBuff,
     flowBuff,
     spendBuff,
-    quotaRestorations,
-    ordinaryQuotaBatches,
     loyaltyPoint,
     peiwanReviews,
     authoredPeiwanReviews,
     blacklistEntries,
+    quotaRows,
   ] = await Promise.all([
     couponsPromise,
     totalTransactionsPromise,
@@ -396,12 +380,11 @@ export default async function Profile(props: ProfilePageProps) {
     autoCommissionBuffPromise,
     flowBuffPromise,
     spendBuffPromise,
-    quotaRestorationsPromise,
-    ordinaryQuotaBatchesPromise,
     loyaltyPointPromise,
     peiwanReviewsPromise,
     authoredPeiwanReviewsPromise,
     blacklistEntriesPromise,
+    quotaRowsPromise,
   ]);
   const counterpartyDiscordIds = Array.from(
     new Set(
@@ -439,16 +422,13 @@ export default async function Profile(props: ProfilePageProps) {
     peiwanId: entry.blocked.peiwan?.PEIWANID ?? null,
     createdAtLabel: formatUtcDate(entry.createdAt),
   }));
-  const migrationBenefits = await loadAccountMigrationBenefits(prisma, { dlmId }, now);
-  const autoCommissionActiveUntil = inheritedAutoCommissionExpiry(autoCommissionBuff?.activeUntil ?? null, migrationBenefits, now);
-  // An inherited expiry does not extend the target's original qualification window.
-  const ownQualificationActive = !!autoCommissionBuff?.lastQualifiedAt && new Date(autoCommissionBuff.lastQualifiedAt).getTime() + AUTO_COMMISSION_WINDOW_DAYS * 86400000 > now.getTime();
+  const autoCommissionActiveUntil = autoCommissionBuff?.activeUntil ?? null;
   const autoCommissionActive =
     isPeiwanMember &&
     !!autoCommissionActiveUntil &&
     new Date(autoCommissionActiveUntil).getTime() > now.getTime();
   const { windowStart: autoCommissionWindowStart, windowEnd: autoCommissionWindowEnd } =
-    isPeiwanMember && ownQualificationActive
+    isPeiwanMember && autoCommissionActive
       ? getAutoCommissionRetentionWindow(autoCommissionBuff?.lastQualifiedAt, now)
       : getAutoCommissionWindow(now);
   const autoCommissionIncomeRows = isPeiwanMember
@@ -461,7 +441,7 @@ export default async function Profile(props: ProfilePageProps) {
           },
           typeOfTransaction: { in: [...AUTO_COMMISSION_INCOME_TYPES] },
         },
-        select: { transactionId: true, typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
+        select: { typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
       })
     : [];
   const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
@@ -537,7 +517,6 @@ export default async function Profile(props: ProfilePageProps) {
 
   const autoCommissionCurrentAmount = isPeiwanMember
     ? autoCommissionIncomeRows.reduce((sum, row) => {
-        if (migrationBenefits.excludedIncomeIds.has(row.transactionId)) return sum;
         const rowType = String((row as { typeOfTransaction?: unknown }).typeOfTransaction ?? '');
         const before = parseNumeric(row.balanceBefore) ?? 0;
         const after = parseNumeric(row.balanceAfter) ?? 0;
@@ -557,25 +536,25 @@ export default async function Profile(props: ProfilePageProps) {
   );
   const autoCommissionWindowLabel = `${formatUtcDate(autoCommissionWindowStart)} ~ ${formatUtcDate(autoCommissionWindowEnd)}`;
   const autoCommissionEligibleNow =
-    isPeiwanMember && !ownQualificationActive && autoCommissionCurrentAmount >= AUTO_COMMISSION_THRESHOLD;
+    isPeiwanMember && !autoCommissionActive && autoCommissionCurrentAmount >= AUTO_COMMISSION_THRESHOLD;
   const autoCommissionStatusMeta = autoCommissionEligibleNow
     ? { label: '已达标', badgeClass: 'bg-amber-50 text-amber-600' }
     : getBuffStatusMeta(autoCommissionActiveUntil);
-  const autoCommissionCardTitle = ownQualificationActive ? '点了么福星陪玩保级进度' : '点了么福星陪玩进度';
+  const autoCommissionCardTitle = autoCommissionActive ? '点了么福星陪玩保级进度' : '点了么福星陪玩进度';
   const autoCommissionDeadlineLabel = formatUtcDate(autoCommissionWindowEnd);
   const autoCommissionShortfall = Math.max(0, AUTO_COMMISSION_THRESHOLD - autoCommissionCurrentAmount);
-  const autoCommissionHint = ownQualificationActive
+  const autoCommissionHint = autoCommissionActive
     ? `在 ${autoCommissionDeadlineLabel} 前累计收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，当前还差 ${formatNumber(autoCommissionShortfall)} 完成保级`
     : autoCommissionEligibleNow
       ? `最近30天累计实际收入已达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，福星状态等待同步`
     : `最近30天累计实际收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)} 即可晋升点了么福星陪玩`;
-  const profileCommissionBase = peiwan?.baseCommissionRate ?? member?.baseCommissionRate ?? peiwan?.commissionRate ?? member?.commissionRate ?? 0.75;
-  const profileCommissionRate = autoCommissionActive
-    ? Prisma.Decimal.max(profileCommissionBase, autoCommissionBuff?.targetShare ?? 0.91)
-    : member?.commissionRate ?? null;
+  const profileCommissionRate =
+    autoCommissionActive && autoCommissionBuff?.targetShare != null
+      ? autoCommissionBuff.targetShare
+      : member?.commissionRate ?? null;
 
-  const flowQuota = summarizeManualQuota(flowBuff, quotaRestorations.filter((row) => row.kind === 'flow'), now, ordinaryQuotaBatches.filter(row => row.kind === 'flow'));
-  const spendQuota = summarizeManualQuota(spendBuff, quotaRestorations.filter((row) => row.kind === 'spend'), now, ordinaryQuotaBatches.filter(row => row.kind === 'spend'));
+  const flowQuota = summarizeManualQuota(flowBuff, quotaRows[1].filter(row => row.kind === 'flow'), new Date(), quotaRows[0].filter(row => row.kind === 'flow'));
+  const spendQuota = summarizeManualQuota(spendBuff, quotaRows[1].filter(row => row.kind === 'spend'), new Date(), quotaRows[0].filter(row => row.kind === 'spend'));
   const buffCards = [
     {
       key: 'commission',
@@ -585,27 +564,24 @@ export default async function Profile(props: ProfilePageProps) {
       value: commissionBuff?.boost ?? null,
       expiresAt: commissionBuff?.expiresAt ?? null,
       createdAt: commissionBuff?.createdAt ?? null,
-      periods: [] as ManualQuotaPeriod[],
     },
     {
       key: 'flow',
       title: '流水 Buff',
       subtitle: '额外流水额度',
       valueLabel: '剩余额度',
-      value: flowBuff || flowQuota.periods.length ? flowQuota.remaining : null,
-      expiresAt: flowQuota.nextExpiresAt ? new Date(flowQuota.nextExpiresAt) : flowBuff?.expiresAt ?? null,
+      value: flowQuota.periods.length ? flowQuota.remaining : null,
+      expiresAt: flowQuota.nextExpiresAt ? new Date(flowQuota.nextExpiresAt) : null,
       createdAt: flowBuff?.createdAt ?? null,
-      periods: flowQuota.periods,
     },
     {
       key: 'spend',
       title: '消费 Buff',
       subtitle: '消费额外额度',
       valueLabel: '剩余额度',
-      value: spendBuff || spendQuota.periods.length ? spendQuota.remaining : null,
-      expiresAt: spendQuota.nextExpiresAt ? new Date(spendQuota.nextExpiresAt) : spendBuff?.expiresAt ?? null,
+      value: spendQuota.periods.length ? spendQuota.remaining : null,
+      expiresAt: spendQuota.nextExpiresAt ? new Date(spendQuota.nextExpiresAt) : null,
       createdAt: spendBuff?.createdAt ?? null,
-      periods: spendQuota.periods,
     },
   ];
   const hasBuffData = buffCards.some(
@@ -652,7 +628,7 @@ export default async function Profile(props: ProfilePageProps) {
                 return (
                   <tr key={tx.transactionId} className="border-b border-black/5 last:border-0">
                     <td className="py-4 pr-4 font-mono">{formatDate(tx.timeCreatedAt)}</td>
-                    <td className="py-4 pr-4">{tx.typeOfTransaction === 'Stripe充值' || tx.typeOfTransaction === '微信人工充值' ? <SiteText namespace="site.lib.transaction.display" value={formatTransactionType(tx.typeOfTransaction)} /> : formatTransactionType(tx.typeOfTransaction)}</td>
+                    <td className="py-4 pr-4">{formatTransactionType(tx.typeOfTransaction)}</td>
                     <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceBefore, ledgerDigits)}</td>
                     <td className={`py-4 pr-4 font-mono ${changeMeta.className}`}>{changeMeta.label}</td>
                     <td className="py-4 pr-4 font-mono">{formatAmountDown(tx.balanceAfter, ledgerDigits)}</td>
@@ -696,7 +672,7 @@ export default async function Profile(props: ProfilePageProps) {
       key={item.label}
       className="rounded-2xl border border-dashed border-black/10 bg-white/70 p-5 text-center space-y-2"
     >
-      <p className="text-xs tracking-[0.4em] text-gray-500"><SiteText namespace="site.app.profile.personalpage" value={item.label} /></p>
+      <p className="text-xs tracking-[0.4em] text-gray-500">{item.label}</p>
       <p className="text-2xl font-mono">{formatNumber(item.value)}</p>
       {item.label === '可提现余额' && (
         <div className="pt-2">
@@ -772,7 +748,7 @@ export default async function Profile(props: ProfilePageProps) {
                   href={link.href}
                   className="rounded-full border-2 border-black/15 px-5 py-2 text-xs font-semibold tracking-[0.2em] text-gray-600 transition hover:border-[#f8c84a] hover:bg-[#f8c84a]/12 hover:text-[#c18400]"
                 >
-                  <SiteText namespace="site.app.profile.personalpage" value={link.label} />
+                  {link.label}
                 </Link>
               ))}
             </div>
@@ -802,7 +778,7 @@ export default async function Profile(props: ProfilePageProps) {
                         : 'border-black/10 text-gray-600 hover:border-[#f8c84a] hover:text-[#c18400]'
                     }`}
                   >
-                    <SiteText namespace="site.app.profile.personalpage" value={tab.label} />
+                    {tab.label}
                   </Link>
                   );
                 })}
@@ -860,7 +836,7 @@ export default async function Profile(props: ProfilePageProps) {
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-lg font-semibold text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.25083e17b076" /></h3>
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${autoCommissionStatusMeta.badgeClass}`}>
-                              <SiteText namespace="site.app.profile.personalpage" value={autoCommissionStatusMeta.label} />
+                              {autoCommissionStatusMeta.label}
                             </span>
                           </div>
                         </div>
@@ -911,41 +887,28 @@ export default async function Profile(props: ProfilePageProps) {
                     {hasBuffData ? (
                       <div className="space-y-4">
                         {buffCards.map((buff) => {
-                          const statusMeta = buff.key === 'commission' ? getBuffStatusMeta(buff.expiresAt)
-                            : buff.periods.length ? { label: '可用', badgeClass: 'bg-emerald-50 text-emerald-600' }
-                            : { label: '暂无有效额度', badgeClass: 'bg-gray-100 text-gray-500' };
-                          const valueDisplay = buff.key === 'commission' ? formatBuffValue(buff.value) : String(buff.value ?? '0');
+                          const statusMeta = getBuffStatusMeta(buff.expiresAt);
+                          const valueDisplay = formatBuffValue(buff.value);
                           return (
                             <div
                               key={buff.key}
                               className="rounded-2xl border border-[#d4b24c]/25 bg-gradient-to-br from-[#fff9e8] to-[#fff1c6] p-5 space-y-3 shadow-[0_8px_30px_rgba(17,24,39,0.05)]"
                             >
                               <div className="space-y-1">
-                                <p className="text-xs uppercase tracking-[0.4em] text-gray-400"><SiteText namespace="site.app.profile.personalpage" value={buff.subtitle} /></p>
+                                <p className="text-xs uppercase tracking-[0.4em] text-gray-400">{buff.subtitle}</p>
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <h3 className="text-lg font-semibold text-[#171717]"><SiteText namespace="site.app.profile.personalpage" value={buff.title} /></h3>
+                                  <h3 className="text-lg font-semibold text-[#171717]">{buff.title}</h3>
                                   <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusMeta.badgeClass}`}>
-                                    <SiteText namespace="site.app.profile.personalpage" value={statusMeta.label} />
+                                    {statusMeta.label}
                                   </span>
                                 </div>
                               </div>
                               <div className="space-y-1 text-sm text-gray-600">
                                 <p className="flex flex-wrap items-center gap-2">
-                                  <span className="text-gray-500"><SiteText namespace="site.app.profile.personalpage" value={buff.valueLabel} /></span>
+                                  <span className="text-gray-500">{buff.valueLabel}</span>
                                   <span className="text-2xl font-semibold text-[#8a6000] leading-none">{valueDisplay}</span>
                                 </p>
-                                {buff.key === 'commission' ? <p><SiteText copyKey="site.app.profile.personalpage.3d7c3fd5d46e" />{formatDate(buff.expiresAt)}</p> : buff.periods.length ? (
-                                  <details className="pt-1">
-                                    <summary className="cursor-pointer text-[#8a6000]"><SiteText copyKey="site.app.profile.personalpage.54bc5b3c8e00" /></summary>
-                                    <ul className="mt-2 space-y-1">
-                                      {buff.periods.map((period, index) => (
-                                        <li key={`${period.expiresAt}:${index}`}>
-                                          {period.restored ? <SiteText copyKey="site.app.profile.personalpage.5973e83a84e4" /> : <SiteText copyKey="site.app.profile.personalpage.d083aba29cec" />} {period.amount}<SiteText copyKey="site.app.profile.personalpage.c09cac686059" />{new Date(period.expiresAt).toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE, timeZoneName: 'short' })}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </details>
-                                ) : <p><SiteText copyKey="site.app.profile.personalpage.af526b515416" /></p>}
+                                <p><SiteText copyKey="site.app.profile.personalpage.3d7c3fd5d46e" />{formatDate(buff.expiresAt)}</p>
                               </div>
                             </div>
                           );
@@ -1020,7 +983,7 @@ export default async function Profile(props: ProfilePageProps) {
                                 key={`${profile.gameCode}-${profile.tier}-${profile.sourceRoleId ?? 'tagless'}`}
                                 className="px-4 py-1 rounded-full border border-[#b07d00] text-[#8a6000] text-sm tracking-wide"
                               >
-                                <PeiwanGameProfileLabel profile={profile} />
+                                {formatPeiwanGameProfile(profile)}
                               </span>
                             ))
                           ) : (

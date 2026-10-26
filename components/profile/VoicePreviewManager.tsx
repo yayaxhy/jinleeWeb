@@ -2,8 +2,6 @@
 import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
 
 
-import { PublicMessageError, publicMessage } from '@/lib/public-error-messages';
-
 import { ChangeEvent, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { NoticeBanner } from './NoticeBanner';
@@ -80,7 +78,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new PublicMessageError(typeof data?.error === 'string' ? data.error : '上传失败');
+          throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.voicepreviewmanager.a6f805694be5"));
         }
         setSelectedFile(null);
         if (inputRef.current) inputRef.current.value = '';
@@ -89,7 +87,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
       } catch (error) {
         setNotice({
           level: 'error',
-          text: publicMessage(error, '上传失败，请稍后再试'),
+          text: error instanceof Error ? error.message : siteCopy("site.components.profile.voicepreviewmanager.98dad5059784"),
         });
       }
     });
@@ -102,7 +100,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
       const res = await fetch('/api/profile/voice-preview', { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new PublicMessageError(typeof data?.error === 'string' ? data.error : '删除失败');
+        throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.voicepreviewmanager.72250c5922f2"));
       }
       setSelectedFile(null);
       if (inputRef.current) inputRef.current.value = '';
@@ -111,7 +109,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
     } catch (error) {
       setNotice({
         level: 'error',
-        text: publicMessage(error, '删除失败，请稍后再试'),
+        text: error instanceof Error ? error.message : siteCopy("site.components.profile.voicepreviewmanager.da8080ee145d"),
       });
     } finally {
       setIsDeleting(false);
@@ -135,7 +133,7 @@ export function VoicePreviewManager({ initialUrl, initialFilename }: Props) {
         <div className="rounded-2xl border border-dashed border-[#d4b24c]/25 bg-gradient-to-br from-[#fff9e8] to-[#fff1c6] p-5 space-y-4">
           <div className="space-y-1">
             <p className="text-sm font-semibold text-[#171717]"><SiteText copyKey="site.components.profile.voicepreviewmanager.df61d8d5c5f6" /></p>
-            <p className="text-xs text-gray-500"><SiteText namespace="site.components.profile.voicepreviewmanager" value={SUPPORTED_TYPES_TEXT} /></p>
+            <p className="text-xs text-gray-500">{SUPPORTED_TYPES_TEXT}</p>
           </div>
 
           {previewSrc ? (

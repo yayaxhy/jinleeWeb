@@ -2,8 +2,6 @@
 import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
 
 
-import { PublicMessageError, publicMessage, rechargeErrorMessage, RECHARGE_UNCONFIRMED } from '@/lib/public-error-messages';
-
 import Image from 'next/image';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
@@ -193,15 +191,15 @@ export default function RechargeClient({
       const payload = await response.json();
       if (!response.ok) {
         if (payload?.error === 'stripe_first_recharge_limited') {
-          throw new PublicMessageError(`首次信用卡/银行卡充值仅支持 ¥${Number(payload.allowedAmount ?? 500).toFixed(0)}。`);
+          throw new Error(siteCopy("site.app.recharge.rechargeclient.b984143026a1", {value1: String(Number(payload.allowedAmount ?? 500).toFixed(0))}));
         }
         if (payload?.error === 'stripe_amount_too_small') {
-          throw new PublicMessageError(payload?.message ?? rechargeErrorMessage('stripe_amount_too_small'));
+          throw new Error(payload?.message ?? siteCopy("site.app.recharge.rechargeclient.bfa2d46bd7b6"));
         }
         if (payload?.error === 'unsupported_stripe_currency') {
-          throw new PublicMessageError(rechargeErrorMessage('unsupported_stripe_currency'));
+          throw new Error(siteCopy("site.app.recharge.rechargeclient.75c76fa9a1aa"));
         }
-        throw new PublicMessageError(rechargeErrorMessage(payload?.error));
+        throw new Error(payload?.error ?? siteCopy("site.app.recharge.rechargeclient.152544f67d2f"));
       }
       setOrder({
         id: payload.orderId,
@@ -221,7 +219,7 @@ export default function RechargeClient({
             : '订单已创建，请在 15 分钟内完成支付，系统会自动更新余额。',
       );
     } catch (err: unknown) {
-      const message = siteCopy.text(publicMessage(err, RECHARGE_UNCONFIRMED), "site.lib.public.error.messages");
+      const message = err instanceof Error ? err.message : siteCopy("site.app.recharge.rechargeclient.1a95b6cbc404");
       setError(message);
     } finally {
       setLoading(false);
@@ -266,12 +264,12 @@ export default function RechargeClient({
                       setError(null);
                     }}
                   >
-                    <SiteText namespace="site.app.recharge.rechargeclient" value={item.label} />
+                    {item.label}
                   </button>
                 );
               })}
             </div>
-            <p className="text-sm text-gray-500"><SiteText namespace="site.app.recharge.rechargeclient" value={selectedChannel.description} /></p>
+            <p className="text-sm text-gray-500">{selectedChannel.description}</p>
             {channel === 'stripe' ? (
               stripeNotice ? (
                 <p className="text-xs text-gray-500">{stripeNotice}</p>
@@ -368,7 +366,7 @@ export default function RechargeClient({
                   >
                     <span className="block">{meta?.shortLabel ?? currency.toUpperCase()}</span>
                     <span className={`mt-1 block text-xs ${active ? 'text-white/70' : 'text-gray-400'}`}>
-                      <SiteText namespace="site.app.recharge.rechargeclient" value={meta?.label ?? currency.toUpperCase()} />
+                      {meta?.label ?? currency.toUpperCase()}
                     </span>
                   </button>
                 );

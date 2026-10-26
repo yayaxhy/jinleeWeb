@@ -1,5 +1,4 @@
-import { getSiteCopy } from "./site-copy-server";
-import { knownPublicMessage } from './public-error-messages';
+import { getSiteCopy } from "@/lib/site-copy-server";
 import {
   AccountProvider,
   DispatchCandidateStatus,
@@ -467,12 +466,7 @@ export async function grabDispatchRequest(currentUser: CurrentDlmUser, dispatchI
       return { ok: false, status: 409, error: copy("site.lib.mini.program.5998ae0a745a") };
     }
 
-    console.error('[mini-dispatch] grab failed', { dispatchId, error });
-    return { ok: false, status: 400, error: knownPublicMessage(error, {
-      '派单不存在。': '派单不存在。',
-      '不能抢自己的派单。': '不能抢自己的派单。',
-      '派单已关闭。': '派单已关闭。',
-    }, '暂时无法确认抢单结果，请先查看订单或联系客服。') };
+    return { ok: false, status: 400, error: error instanceof Error ? error.message : copy("site.lib.mini.program.be58fe467597") };
   }
 }
 
@@ -597,7 +591,6 @@ export async function selectDispatchCandidate(
         body: copy("site.lib.mini.program.b957d6787ad5"),
         href: '/console?tab=orders',
         dedupeKey: `order-created:${result.order.id}:${result.workerDlmId}`,
-        details: { orderId: result.order.id },
       });
     } catch (error) {
       // The order is already committed. Preserve the completed business action
@@ -779,8 +772,8 @@ export async function startConversation(currentUser: CurrentDlmUser, payload: Re
       where: { PEIWANID: peiwanId },
       include: { member: true },
     });
-    if (!peiwan || peiwan.discordUserId.startsWith('detached:')) {
-      return { ok: false, status: 404, error: copy("site.lib.mini.program.96c347102cfd") };
+    if (!peiwan) {
+      return { ok: false, status: 404, error: copy("site.lib.mini.program.276bfd8f1632") };
     }
 
     const ensured = await ensureDlmUserForDiscordMember({
@@ -931,14 +924,10 @@ export async function sendMiniMessage(currentUser: CurrentDlmUser, payload: Reco
 
   const conversation = await prisma.miniConversation.findUnique({
     where: { id: conversationId },
-    select: { id: true, type: true, peerKey: true, userAId: true, userBId: true, adminWatched: true },
+    select: { id: true, type: true, userAId: true, userBId: true, adminWatched: true },
   });
   if (!conversation || !canAccessConversation(conversation, currentUser)) {
     return { ok: false, status: 404, error: copy("site.lib.mini.program.1211c69ea1e3") };
-  }
-
-  if (conversation.peerKey?.startsWith('migration-history:')) {
-    return { ok: false, status: 409, error: copy("site.lib.mini.program.b5bdca8f7459") };
   }
 
   const moderation = conversation.type === MiniConversationType.SUPPORT

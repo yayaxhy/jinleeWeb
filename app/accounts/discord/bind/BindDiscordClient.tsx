@@ -1,22 +1,45 @@
-'use client';
-import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+"use client";
+import { SiteText } from "@/components/SiteCopyProvider";
 
-import { useState } from 'react';
-export default function BindDiscordClient({ bindToken }: { bindToken: string }) {
-  const siteCopy = useSiteCopy();
-  const [pending, setPending] = useState(false); const [error, setError] = useState('');
-  async function start() {
-    if (pending) return; setPending(true); setError('');
-    try {
-      const response = await fetch(`/api/discord/change/start?bindToken=${encodeURIComponent(bindToken)}`, { cache: 'no-store' });
-      const result = await response.json();
-      if (!response.ok || !result.authorizeUrl) throw new Error(result.error ?? siteCopy("site.app.accounts.discord.bind.binddiscordclient.009dac9c626a"));
-      window.location.assign(result.authorizeUrl);
-    } catch (error) { setError(error instanceof Error ? error.message : siteCopy("site.app.accounts.discord.bind.binddiscordclient.009dac9c626a")); setPending(false); }
-  }
-  return <main className="min-h-screen flex items-center justify-center bg-[#0f172a] text-white p-6"><section className="max-w-lg space-y-5">
-    <h1 className="text-2xl font-semibold"><SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.d769c865e545" /></h1>
-    <button disabled={pending} onClick={start} className="rounded-xl bg-indigo-600 px-6 py-3 disabled:opacity-50">{pending ? <SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.e82601e534cf" /> : <SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.4b69ffb7ff99" />}</button>
-    {error && <p role="alert" className="text-red-300"><SiteText namespace="site.app.accounts.discord.bind.binddiscordclient" value={error} /></p>}
-  </section></main>;
+
+import { useEffect, useMemo, useRef } from 'react';
+
+type BindDiscordClientProps = {
+  bindToken: string;
+};
+
+const buildLoginUrl = (bindToken: string) => {
+  if (typeof window === 'undefined') return '/api/discord/login';
+
+  const callbackUrl = `/api/discord/bind/complete?bindToken=${encodeURIComponent(bindToken)}`;
+  const target = new URL('/api/discord/login', window.location.origin);
+  target.searchParams.set('callbackUrl', callbackUrl);
+  return target.toString();
+};
+
+export default function BindDiscordClient({ bindToken }: BindDiscordClientProps) {
+  const loginUrl = useMemo(() => buildLoginUrl(bindToken), [bindToken]);
+  const triggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (triggeredRef.current) return;
+    triggeredRef.current = true;
+    window.location.href = loginUrl;
+  }, [loginUrl]);
+
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a] text-white px-6 text-center">
+      <div className="max-w-lg space-y-5">
+        <p className="text-xs uppercase tracking-[0.45em] text-white/60"><SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.61ae0af769cb" /></p>
+        <h1 className="text-3xl font-semibold tracking-wide"><SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.b4e0baf831b0" /></h1>
+        <p className="text-sm leading-7 text-white/70"><SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.245b76347fea" /></p>
+        <button
+          className="inline-flex items-center justify-center rounded-full bg-[#5865F2] px-8 py-3 text-sm uppercase tracking-[0.4em] hover:bg-[#4753c7] transition"
+          onClick={() => {
+            window.location.href = loginUrl;
+          }}
+        ><SiteText copyKey="site.app.accounts.discord.bind.binddiscordclient.60402f3c5e5e" /></button>
+      </div>
+    </main>
+  );
 }

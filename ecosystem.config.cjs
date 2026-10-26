@@ -1,21 +1,6 @@
 module.exports = {
   apps: [
     {
-      name: 'jinlee-notification-retry',
-      cwd: __dirname,
-      script: 'scripts/notification-retry-scheduler.mjs',
-      instances: 1,
-      exec_mode: 'fork',
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '256M',
-      env: {
-        NODE_ENV: 'production',
-        NOTIFICATION_RETRY_URL: 'http://127.0.0.1:3000/api/internal/notifications/retry',
-        NOTIFICATION_RETRY_INTERVAL_MS: '300000',
-      },
-    },
-    {
       name: 'jinlee-web',
       cwd: __dirname,
       script: 'npm',

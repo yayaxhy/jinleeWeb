@@ -31,8 +31,8 @@ const buildFallbackItem = (id: number): PeiwanItem => ({
   gameLabels: [],
 });
 
-const formatPrice = (value: PeiwanItem['price'], fallback: string) => {
-  if (value === null || value === undefined) return fallback;
+const formatPrice = (value: PeiwanItem['price']) => {
+  if (value === null || value === undefined) return '价格待定';
   const formatted = formatAmountDown2(value);
   if (formatted === '—') return String(value);
   return `${formatted} 币/H`;
@@ -54,7 +54,6 @@ const CardImage = ({ item, src }: { item: PeiwanItem; src: string }) => {
 };
 
 const RecommendationCard = ({ item, src }: { item: PeiwanItem; src: string }) => {
-  const siteCopy = useSiteCopy();
   const tags = item.gameLabels.slice(0, 2);
 
   return (
@@ -67,7 +66,7 @@ const RecommendationCard = ({ item, src }: { item: PeiwanItem; src: string }) =>
         <p className="text-sm font-semibold text-neutral-900">
           {item.serverDisplayName ?? <SiteText copyKey="site.components.home.peiwanrecommendations.1d61b82ec64b" values={{value1: String(item.id)}} />}
         </p>
-        <p className="text-xs text-neutral-500">{formatPrice(item.price, siteCopy("site.components.home.peiwanrecommendations.e376565f075f"))}</p>
+        <p className="text-xs text-neutral-500">{formatPrice(item.price)}</p>
         {tags.length > 0 && (
           <div className="flex justify-center gap-2 text-[0.68rem] text-neutral-500">
             {tags.map((tag) => (
@@ -159,7 +158,7 @@ export function PeiwanRecommendations() {
 
     load();
     return () => controller.abort();
-  }, [siteCopy]);
+  }, []);
 
   useEffect(() => {
     setStart(0);

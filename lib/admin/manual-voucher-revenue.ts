@@ -1,9 +1,10 @@
 import { Prisma } from '@prisma/client';
 import { NEW_ENTITY_OPERATIONS_STARTED_AT } from '../operating-entity-cutover';
-import type { DiscountRevenueSources } from './discount-revenue';
 import type { ManualAdjustmentSource } from './manual-adjustment-revenue';
 import type { VoucherReversalRow } from './voucher-reversal';
 import { asRecord, groupReportFacts, orderFromKey, stringId, uniqueIds, type ReportFactIssue } from './report-facts';
+
+export type ManualVoucherLiveRow = { issuedAt: Date; status: string | null; consumedAt: Date | null; amount: Prisma.Decimal | null; orderId: string | null; dlmId: string | null };
 
 const kindFor = (model: unknown) => model === 'coupon' ? 'coupon' : model === 'pointShopGrant' ? 'pointshop' : model === 'lotteryDraw' ? 'lottery' : null;
 export const manualVoucherKeys = (sources: ManualAdjustmentSource[]) => uniqueIds(sources.flatMap(row => {
@@ -26,7 +27,7 @@ const amount = (value: unknown) => {
 /** Restoring a voucher clears its live consumption fields. Preserve the old
  * cost in its original period, exactly once. The manual wallet profit effect
  * already represents this disposition; do not also reverse this expense. */
-export function summarizeManualVoucherRevenue(sources: ManualAdjustmentSource[], live: DiscountRevenueSources['live'],
+export function summarizeManualVoucherRevenue(sources: ManualAdjustmentSource[], live: Map<string, ManualVoucherLiveRow>,
   params: { start: Date; end: Date; excludeDlmIds?: string[]; excludeDiscordIds?: string[] }) {
   const entries = sources.flatMap(record => {
     const details = asRecord(record.details); const result = asRecord(details?.result);

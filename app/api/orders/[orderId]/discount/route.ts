@@ -5,10 +5,6 @@ import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 
 const mapErrorStatus = (status: string) => {
   switch (status) {
-    case 'requires_review':
-      return { code: 409, message: '暂时无法使用该优惠，本次未使用，请联系客服核实。' };
-    case 'outcome_unknown':
-      return { code: 503, message: '优惠使用结果未确认，请先核对订单、券和余额，勿重复提交。' };
     case 'order_not_found':
       return { code: 404, message: '订单不存在' };
     case 'legacy_order':
@@ -51,7 +47,7 @@ export async function POST(
   };
   const kind = body.kind;
   if (kind !== 'coupon' && kind !== 'lottery') {
-    return NextResponse.json({ error: await renderSiteCopy("site.app.api.orders.orderid.discount.route.c7af1c8eb3b6") }, { status: 400 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.orders.orderid.discount.route.b679fd486d7c") }, { status: 400 });
   }
 
   const result = await applyDiscountForOrder({
@@ -70,7 +66,6 @@ export async function POST(
     );
   }
 
-  console.warn('[order.discount] not applied', { orderId, result });
   const { code, message } = mapErrorStatus(result.status);
   return NextResponse.json({ error: message }, { status: code });
 }

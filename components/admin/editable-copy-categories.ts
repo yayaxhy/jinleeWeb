@@ -275,6 +275,8 @@ const NAMESPACE_CATEGORIES: readonly { category: CopyCategoryId; prefixes: reado
     'bot.services.recruitmentapplicationservice.',
     'bot.services.inviterewardservice.',
     'bot.ui.welcomemessage.',
+    'bot.presentation.welcomegreeting',
+    'bot.presentation.welcomeintro',
     'bot.commands.registerpeiwanslash.',
   ] },
   { category: 'peiwan', prefixes: [
@@ -299,6 +301,8 @@ const NAMESPACE_CATEGORIES: readonly { category: CopyCategoryId; prefixes: reado
     'site.app.api.orders.',
     'site.components.home.dispatchticker.',
     'bot.ui.orderembeds.',
+    'bot.dispatch.',
+    'bot.presentation.completionnote',
     'bot.events.messagecreate.',
     'bot.services.order',
     'bot.services.timerservice.',

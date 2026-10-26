@@ -4,9 +4,6 @@ import { randomUUID } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { addReportFactsWorksheets } from '@/lib/admin/report-facts-workbook';
-import { loadRevenueFacts } from '@/lib/admin/revenue-facts';
-import { assertReportComplete, assertReportBalanced, reportStatusRows, type ReportFactIssue } from '@/lib/admin/report-facts';
 import {
   isNewEntityReportMonth,
   NEW_ENTITY_OPERATIONS_STARTED_AT,
@@ -31,11 +28,13 @@ import {
   decimalSum,
   dec,
   getRevenueInviteRewardRows,
+  getRevenueOrderReferralRows,
   normalizeExpenseGroupRows,
   REVENUE_EXPENSE_REASON_GIFT_REFERRAL,
   REVENUE_EXPENSE_REASON_INVITE_REWARD,
   REVENUE_EXPENSE_REASON_ORDER_REFERRAL,
   summarizeInviteRewardExpenseRows,
+  summarizeOrderReferralExpenseRows,
 } from '@/lib/admin/revenue-expense';
 import {
   countLotteryRevenueDraws,
@@ -45,6 +44,7 @@ import {
   type LotteryFusionCountBucket,
 } from '@/lib/admin/lottery-fusion-revenue';
 import { isLotteryFusionNonce } from '@/lib/lottery-fusion';
+import { getVoucherReversalAdjustments } from '@/lib/admin/voucher-reversal';
 
 // The new operating entity started with no money in its bank account.
 const NEW_ENTITY_OPENING_BANK_BALANCE = new Prisma.Decimal(0);
@@ -415,8 +415,6 @@ async function loadMonthlyRevenueData(params: {
   ]);
   const start = newEntityReportStart(params.start);
   const { end } = params;
-  const facts = await loadRevenueFacts(prisma, { start, end, excludeDiscordIds: excludeMemberResolved.excludeDiscordIds, excludeDlmIds: excludeMemberResolved.excludeDlmIds });
-  const { orderRevenue, voucherReversals } = facts;
   const startMonthParts = getCentralEuropeanMonthParts(start);
   const monthKey = params.monthKey ?? formatCentralEuropeanMonthKey(startMonthParts.year, startMonthParts.month);
 
@@ -483,8 +481,11 @@ async function loadMonthlyRevenueData(params: {
     excludeMemberResolved.excludeDiscordIds,
   ) as Prisma.DlmUserWhereInput;
 
+  const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
+    typeOfTransaction: '优惠返利',
+    timeCreatedAt: { gte: start, lt: end },
+  };
   const couponWhere: Prisma.CouponWhereInput = {
-    ...facts.voucherWhere('coupon'),
     status: CouponStatus.USED,
     source: { in: Object.values(CouponSource) },
     issuedAt: newEntityOnlyTime(),
@@ -506,7 +507,10 @@ async function loadMonthlyRevenueData(params: {
     memberRows,
     commissionRows,
     giftAuditRows,
+    orderRows,
+    referralPayoutRows,
     inviteRewardRows,
+    discountRebateRows,
     scratchPurchaseRows,
     lotteryCreatedRows,
     lotteryConsumeRows,
@@ -515,6 +519,7 @@ async function loadMonthlyRevenueData(params: {
     manualExpenseRows,
     pureProfitAgg,
     revertedGiftRows,
+    revertedOrderRows,
     couponConsumedBySource,
     pointShopCouponRows,
     pointShopBalanceRows,
@@ -543,12 +548,28 @@ async function loadMonthlyRevenueData(params: {
         member: { select: { totalBalance: true } },
       },
     }),
-    prisma.commission.findMany({ where: { ...facts.commissionWhere, createdAt: { gte: start, lt: end } }, orderBy: { createdAt: 'desc' } }),
+    prisma.commission.findMany({ where: { createdAt: { gte: start, lt: end } }, orderBy: { createdAt: 'desc' } }),
     prisma.giftAudit.findMany({ where: { createdAt: { gte: start, lt: end } }, orderBy: { createdAt: 'desc' } }),
+    prisma.order.findMany({
+      where: {
+        status: 'ENDED',
+        endedAt: { gte: start, lt: end },
+      },
+      orderBy: { endedAt: 'desc' },
+    }),
+    getRevenueOrderReferralRows({
+      start,
+      end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
     getRevenueInviteRewardRows({
       start,
       end,
       excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
+    prisma.individualTransaction.findMany({
+      where: discountRebateWhere,
+      orderBy: { timeCreatedAt: 'desc' },
     }),
     prisma.individualTransaction.findMany({
       where: {
@@ -577,7 +598,6 @@ async function loadMonthlyRevenueData(params: {
     }),
     prisma.lotteryDraw.findMany({
       where: {
-        ...facts.voucherWhere('lottery'),
         consumeAt: { gte: start, lt: end },
         createdAt: newEntityOnlyTime(),
         ...(buildIdentityExclusion(
@@ -633,6 +653,20 @@ async function loadMonthlyRevenueData(params: {
         AND r."createdAt" < ${end}
       ORDER BY r."createdAt" DESC
     `),
+    prisma.$queryRaw<{ revertedOrderGross: Prisma.Decimal | null; revertedOrderFee: Prisma.Decimal | null }[]>(Prisma.sql`
+      SELECT
+        COALESCE(SUM(oa."gross"), 0) AS "revertedOrderGross",
+        COALESCE(SUM(oa."gross" - oa."netAmount"), 0) AS "revertedOrderFee"
+      FROM "order_audit" oa
+      JOIN "Order" o
+        ON o."id" = oa."orderId"
+      JOIN "revert" r
+        ON r."originalTransactionId" = CONCAT('ORDER:', oa."orderId")
+      WHERE r."status" = 'SUCCESS'
+        AND o."endedAt" > ${NEW_ENTITY_OPERATIONS_STARTED_AT}
+        AND r."createdAt" >= ${start}
+        AND r."createdAt" < ${end}
+    `),
     prisma.coupon.groupBy({
       by: ['source'],
       _sum: { consumeAmount: true },
@@ -641,7 +675,6 @@ async function loadMonthlyRevenueData(params: {
     }),
     prisma.pointShopGrant.findMany({
       where: {
-        ...facts.voucherWhere('pointshop'),
         deliveryType: 'COUPON',
         deliveryStatus: 'DELIVERED',
         couponStatus: CouponStatus.USED,
@@ -671,11 +704,11 @@ async function loadMonthlyRevenueData(params: {
       orderBy: { issuedAt: 'desc' },
     }),
   ]);
-
-  const { orderRows, revertedOrderRows, referralRows: referralPayoutRows,
-    orderGross, orderNet, orderFee, orderGrossNet, orderNetNet, orderFeeNet,
-    revertedOrderGross, revertedOrderNet, revertedOrderFee,
-  } = orderRevenue;
+  const voucherReversals = await getVoucherReversalAdjustments({
+    start,
+    end,
+    excludeDlmIds: excludeMemberResolved.excludeDlmIds,
+  });
 
   const blockTotalRevenue = decimalSum(blockStackRows, 'totalRevenue');
   const blockSettled = decimalSum(blockStackRows, 'settledAmount');
@@ -701,7 +734,7 @@ async function loadMonthlyRevenueData(params: {
   const memberRechargeTotal = decimalSum(effectiveMemberRows, 'recharge');
   const memberIncomeTotal = decimalSum(effectiveMemberRows, 'income');
   const memberBalanceTotal = decimalSum(effectiveMemberRows, 'totalBalance');
-
+  const commissionTotal = decimalSum(commissionRows, 'feeAmount');
 
   const giftGross = decimalSum(giftAuditRows, 'gross');
   const giftPaid = decimalSum(giftAuditRows, 'payable');
@@ -710,11 +743,12 @@ async function loadMonthlyRevenueData(params: {
   const revertedGiftPaid = decimalSum(revertedGiftRows, 'payable');
   const revertedGiftSubsidy = decimalSum(revertedGiftRows, 'subsidyAmount');
   const revertedGiftFee = decimalSum(revertedGiftRows, 'feeAmount');
+  const revertedOrderGross = decimalSum(revertedOrderRows, 'revertedOrderGross');
+  const revertedOrderFee = decimalSum(revertedOrderRows, 'revertedOrderFee');
   const giftGrossNet = giftGross.sub(revertedGiftGross);
   const giftPaidNet = giftPaid.sub(revertedGiftPaid);
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = decimalSum(giftAuditRows, 'feeAmount');
-  const commissionTotal = facts.commissionUnattributed ? giftFee.add(orderFee) : decimalSum(commissionRows, 'feeAmount');
   const giftFeeNet = giftFee.sub(revertedGiftFee);
   const giftReferralExpenseRow = buildGiftReferralExpenseSummaryFromRows({
     giftAuditRows,
@@ -722,16 +756,18 @@ async function loadMonthlyRevenueData(params: {
     excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
   });
   const giftReferralNet = giftReferralExpenseRow.amount;
-  const orderReferralExpenseRow = orderRevenue.referralExpense;
+  const orderReferralExpenseRow = summarizeOrderReferralExpenseRows(referralPayoutRows);
   const orderReferral = orderReferralExpenseRow.amount;
-  const totalPaidFlow = giftPaidNet.add(orderGrossNet);
-  const totalFaceFlow = giftGrossNet.add(orderGrossNet);
+  const orderGross = decimalSum(orderRows, 'grossAmount');
+  const orderNet = decimalSum(orderRows, 'netAmount');
+  const orderFee = orderGross.sub(orderNet);
+  const totalPaidFlow = giftPaidNet.add(orderGross);
+  const totalFaceFlow = giftGrossNet.add(orderGross);
   const rawFeeFromOrderAndGiftModel = giftFee.add(orderFee);
-  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFeeNet);
+  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee).sub(revertedOrderFee);
   const commissionOtherSources = commissionTotal.sub(rawFeeFromOrderAndGiftModel);
   const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee).sub(revertedOrderFee);
-  const { discountRebateRows, discountOriginalAmount, discountRecoveredAmount } = voucherReversals;
-  const discountDeductionTotal = voucherReversals.discountNetAmount;
+  const discountDeductionTotal = decimalSum(discountRebateRows, 'amountChange');
 
   // A fusion output is a replacement prize, not a new lottery draw.
   const drawCount = countLotteryRevenueDraws(lotteryCreatedRows);
@@ -858,9 +894,7 @@ async function loadMonthlyRevenueData(params: {
   const manualIncomeAdjustment = dec(pureProfitAgg._sum.amount);
 
   return {
-    completeness: facts.completeness,
-    commissionUnattributed: facts.commissionUnattributed,
-    manualAdjustments: facts.manualAdjustments,
+    manualAdjustments: voucherReversals.manualAdjustments,
     start,
     end,
     excludeRechargeInput,
@@ -925,7 +959,6 @@ async function loadMonthlyRevenueData(params: {
       revertedGiftFee,
       revertedOrderGross,
       revertedOrderFee,
-      revertedOrderNet,
       giftGrossNet,
       giftPaidNet,
       giftSubsidyNet,
@@ -936,16 +969,11 @@ async function loadMonthlyRevenueData(params: {
       orderGross,
       orderNet,
       orderFee,
-      orderGrossNet,
-      orderNetNet,
-      orderFeeNet,
       totalPaidFlow,
       totalFaceFlow,
       feeFromOrderAndGiftModel,
       commissionOtherSources,
       discountDeductionTotal,
-      discountOriginalAmount,
-      discountRecoveredAmount,
       drawCount,
       grossIncome,
       consumeTotal,
@@ -1162,15 +1190,15 @@ const buildIncomeStatementRows = (
   data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>,
   adjustments: MonthFinancialAdjustments,
 ) => [
-  {
+  ...(data.manualAdjustments.rows.length ? [{
     name: '人工钱包调整净影响',
     amount: data.manualAdjustments.profitDelta,
-    note: '平台钱包负债净变动的相反数；分类仅作核对，不是银行／支付平台现金流',
-  },
+    note: '',
+  }] : []),
   {
     name: '抽成净收入',
     amount: data.totals.commissionTotalNetAll,
-    note: '原结算按审计入账；订单成功撤销按撤销发生期冲减',
+    note: '来自 admin 当前区间数据',
   },
   {
     name: '抽奖净收入',
@@ -1289,9 +1317,7 @@ const buildIncomeStatementExpenseRows = (
     amount: row.amount,
     count: row.count,
     note:
-      row.reason === REVENUE_EXPENSE_REASON_ORDER_REFERRAL
-        ? `合并 ${row.count} 笔原返佣与当期追回，追回为负数`
-        : getExpenseSource(row.reason) === '数据库支出'
+      getExpenseSource(row.reason) === '数据库支出'
         ? `合并 ${row.count} 笔 Expense`
         : `合并 ${row.count} 笔`,
   })),
@@ -1328,7 +1354,6 @@ function buildFinancialStatementWorkbook(params: {
   workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
   workbook.modified = new Date();
-  addReportFactsWorksheets(workbook, data.completeness, data.manualAdjustments.rows);
 
   const lastDay = getLastDayOfMonth(year, month);
   const incomeRows = buildIncomeStatementRows(data, adjustments);
@@ -1352,7 +1377,7 @@ function buildFinancialStatementWorkbook(params: {
     { key: 'count', width: 12 },
     { key: 'note', width: 50 },
   ];
-  styleTitle(profitSheet, `${year}年${month}月${lastDay}号利润表${data.completeness.complete ? '' : '（已核实部分／不完整）'}`, 'F');
+  styleTitle(profitSheet, `${year}年${month}月${lastDay}号利润表`, 'F');
   profitSheet.addRow([]);
   profitSheet.addRow([]);
   profitSheet.addRow(['收入项目', null, null, '金额', null, '备注']);
@@ -1548,11 +1573,8 @@ function buildAdminRevenueDataWorkbook(
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
-  addReportFactsWorksheets(workbook, data.completeness, data.manualAdjustments.rows);
 
   addKeyValueSheet(workbook, '导出参数', [
-    ...reportStatusRows(data.completeness),
-    { section: '人工钱包调整', key: '已发生收益净影响（非现金流）', value: data.manualAdjustments.profitDelta.toString() },
     { section: 'filters', key: 'start', value: formatDateTimeTextCentralEuropean(data.start) },
     { section: 'filters', key: 'end(exclusive)', value: formatDateTimeTextCentralEuropean(data.end) },
     { section: 'filters', key: 'excludeRecharge(raw)', value: data.excludeRechargeInput },
@@ -1570,8 +1592,8 @@ function buildAdminRevenueDataWorkbook(
     { section: 'rows', key: 'DlmUser(filtered)', value: data.rows.memberRows.length },
     { section: 'rows', key: 'Commission(all)', value: data.rows.commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: data.rows.giftAuditRows.length },
-    { section: 'rows', key: 'OrderAudit(original postings)', value: data.rows.orderRows.length },
-    { section: 'rows', key: 'OrderAudit + Revert(referral postings)', value: data.rows.referralPayoutRows.length },
+    { section: 'rows', key: 'Order(ENDED all)', value: data.rows.orderRows.length },
+    { section: 'rows', key: 'ReferralPayout(filtered ENDED)', value: data.rows.referralPayoutRows.length },
     { section: 'rows', key: 'InviteLinkUsage(filtered)', value: data.rows.inviteRewardRows.length },
     { section: 'rows', key: 'IndividualTransaction(优惠返利 all)', value: data.rows.discountRebateRows.length },
     { section: 'rows', key: 'LotteryDraw(createdAt window)', value: data.rows.lotteryCreatedRows.length },
@@ -1582,7 +1604,7 @@ function buildAdminRevenueDataWorkbook(
     { section: 'rows', key: 'Expense', value: data.rows.expenseRows.length },
     { section: 'rows', key: 'MonthlyManualExpense', value: data.rows.manualExpenseRows.length },
     { section: 'rows', key: 'RevertedGiftSubsidy(join)', value: data.rows.revertedGiftRows.length },
-    { section: 'rows', key: 'Revert(SUCCESS order postings)', value: data.rows.revertedOrderRows.length },
+    { section: 'rows', key: 'RevertedOrder(join)', value: data.rows.revertedOrderRows.length },
     { section: 'rows', key: 'Coupon(used MANUAL_GRANT)', value: data.totals.manualGrantCouponCount },
     { section: 'rows', key: 'Coupon(used VIP_BENEFIT)', value: data.totals.vipBenefitCouponCount },
     { section: 'rows', key: 'Coupon(used CHAT_DROP)', value: data.totals.chatDropCouponCount },
@@ -1668,18 +1690,11 @@ function buildAdminRevenueDataWorkbook(
     { section: '抽成详情', key: '打赏补贴(代金券原始)', value: data.totals.giftSubsidy.toString() },
     { section: '抽成详情', key: '打赏补贴回退(打赏撤销)', value: data.totals.revertedGiftSubsidy.toString() },
     { section: '抽成详情', key: '打赏补贴(代金券净额)', value: data.totals.giftSubsidyNet.toString() },
-    { section: '抽成详情', key: '原优惠返利', value: data.totals.discountOriginalAmount.toString() },
-    { section: '抽成详情', key: '当期优惠返利追回', value: data.totals.discountRecoveredAmount.toString() },
-    { section: '抽成详情', key: '打折券抵扣净额', value: data.totals.discountDeductionTotal.toString() },
+    { section: '抽成详情', key: '打折券抵扣金额', value: data.totals.discountDeductionTotal.toString() },
     { section: '抽成详情', key: '单子总数', value: data.rows.orderRows.length },
-    { section: '抽成详情', key: '订单原流水', value: data.totals.orderGross.toString() },
-    { section: '抽成详情', key: '订单原结算', value: data.totals.orderNet.toString() },
-    { section: '抽成详情', key: '订单原抽成', value: data.totals.orderFee.toString() },
-    { section: '抽成详情', key: '订单当期冲销结算', value: data.totals.revertedOrderNet.toString() },
-    { section: '抽成详情', key: '订单当期冲销抽成', value: data.totals.revertedOrderFee.toString() },
-    { section: '抽成详情', key: '订单净流水', value: data.totals.orderGrossNet.toString() },
-    { section: '抽成详情', key: '订单净结算', value: data.totals.orderNetNet.toString() },
-    { section: '抽成详情', key: '订单净抽成', value: data.totals.orderFeeNet.toString() },
+    { section: '抽成详情', key: '订单流水', value: data.totals.orderGross.toString() },
+    { section: '抽成详情', key: '订单结算', value: data.totals.orderNet.toString() },
+    { section: '抽成详情', key: '订单抽成', value: data.totals.orderFee.toString() },
     { section: '抽成详情', key: '总抽成', value: data.totals.commissionTotalNetAll.toString() },
     { section: '抽成详情', key: '总面值原价流水', value: data.totals.totalFaceFlow.toString() },
     { section: '抽成详情', key: '总实付流水', value: data.totals.totalPaidFlow.toString() },
@@ -1734,11 +1749,11 @@ function buildAdminRevenueDataWorkbook(
   addObjectRowsSheet(workbook, '微信原生已支付明细', data.rows.wechatNativeRows);
   addObjectRowsSheet(workbook, 'Stripe已支付明细', data.rows.stripeRows);
   addObjectRowsSheet(workbook, '会员汇总明细', data.rows.memberRows);
-  addObjectRowsSheet(workbook, data.commissionUnattributed ? '抽成原始记录_待归属' : '抽成明细_Commission', data.rows.commissionRows);
+  addObjectRowsSheet(workbook, '抽成明细_Commission', data.rows.commissionRows);
+  if (data.manualAdjustments.rows.length) addObjectRowsSheet(workbook, '人工钱包调整', data.manualAdjustments.rows);
   addObjectRowsSheet(workbook, '打赏审计明细', data.rows.giftAuditRows);
   addObjectRowsSheet(workbook, '打赏补贴回退明细', data.rows.revertedGiftRows);
-  addObjectRowsSheet(workbook, '订单原结算审计', data.rows.orderRows);
-  addObjectRowsSheet(workbook, '订单当期撤销明细', data.rows.revertedOrderRows);
+  addObjectRowsSheet(workbook, '订单明细_ENDED', data.rows.orderRows);
   addObjectRowsSheet(workbook, '订单返利明细', data.rows.referralPayoutRows);
   addObjectRowsSheet(workbook, '邀请进服奖励明细', data.rows.inviteRewardRows);
   addObjectRowsSheet(workbook, '优惠返利流水', data.rows.discountRebateRows);
@@ -1877,7 +1892,6 @@ export const getDividendLedgerState = async (monthKey: string) => {
 };
 
 const getOpeningOperatingCapital = async (monthKey: string) => {
-  const issues: ReportFactIssue[] = [];
   let capital = new Prisma.Decimal(0);
   const decisions = await prisma.monthlyDividendDecision.findMany({
     where: { monthKey: { lt: monthKey } }, select: { monthKey: true, amount: true },
@@ -1898,7 +1912,6 @@ const getOpeningOperatingCapital = async (monthKey: string) => {
         loadMonthlyRevenueData({ start: range.start, end: range.end, monthKey: priorMonthKey }),
         readFinancialAdjustments(priorMonthKey),
       ]);
-      issues.push(...data.completeness.issues.map(issue => ({ ...issue, reason: `期初经营资本引用的 ${priorMonthKey} 未确认报表：${issue.reason}` })));
       const income = buildIncomeStatementRows(data, adjustments).reduce((sum, row) => sum.add(dec(row.amount)), dec(0));
       const expense = buildIncomeStatementExpenseRows(data, adjustments).reduce((sum, row) => sum.add(dec(row.amount)), dec(0));
       netProfit = income.sub(expense);
@@ -1907,7 +1920,7 @@ const getOpeningOperatingCapital = async (monthKey: string) => {
     month += 1;
     if (month > 12) { year += 1; month = 1; }
   }
-  return { amount: capital, issues };
+  return capital;
 };
 
 const loadMonthlyFinancialReportContext = async (monthKey?: string) => {
@@ -1926,10 +1939,6 @@ const loadMonthlyFinancialReportContext = async (monthKey?: string) => {
     getOpeningOperatingCapital(target.monthKey),
     getDividendLedgerState(target.monthKey),
   ]);
-  if (openingCapital.issues.length) {
-    data.completeness.complete = false;
-    data.completeness.issues.push(...openingCapital.issues);
-  }
   const walletBalances = target.end <= new Date() ? await getWalletBalancesAtMonthEnd(target.end) : null;
   if (walletBalances) {
     const balanceByDlmId = new Map(walletBalances.map((row) => [row.dlmId, row.closingBalance]));
@@ -1939,7 +1948,7 @@ const loadMonthlyFinancialReportContext = async (monthKey?: string) => {
     }));
     data.totals.memberBalanceTotal = decimalSum(data.rows.memberRows, 'totalBalance');
   }
-  return { target, adjustments, data, walletBalances, cashOpeningBalance, openingCapital: openingCapital.amount, dividendLedger };
+  return { target, adjustments, data, walletBalances, cashOpeningBalance, openingCapital, dividendLedger };
 };
 
 type FinancialReportPreviewRow = {
@@ -1978,8 +1987,6 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
   }));
 
   return {
-    completeness: data.completeness,
-    manualAdjustments: { rows: data.manualAdjustments.rows, walletNetDelta: data.manualAdjustments.walletNetDelta.toString(), profitDelta: data.manualAdjustments.profitDelta.toString() },
     monthKey: target.monthKey,
     year: target.year,
     month: target.month,
@@ -2244,7 +2251,6 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
       throw new Error('请先确认上一个月份，再确认本月；经营资本必须按已确认数字逐月结转。');
     }
     const context = await loadMonthlyFinancialReportContext(monthKey);
-    assertReportComplete(context.data.completeness);
     // Rewind through the entire period, not only transactions after month-end.
     // A closing balance without a continuous opening-to-closing ledger must
     // never be presented as an audited monthly snapshot.
@@ -2300,7 +2306,6 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
         })).sort((left, right) => left.type.localeCompare(right.type, 'zh-CN')),
       },
     };
-    assertReportBalanced(preview.reconciliationDifference);
     const financialWorkbook = buildFinancialStatementWorkbook({
       year: target.year,
       month: target.month,
@@ -2434,7 +2439,6 @@ export async function generateStoredMonthlyFinancialReports(params: {
     month: target.month,
     start: target.start,
     end: target.end,
-    completeness: data.completeness,
     financialStatement,
     adminData,
   };

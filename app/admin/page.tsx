@@ -5,7 +5,7 @@ import { DeletePeiwanCard } from '@/components/admin/DeletePeiwanCard';
 import { SyncDlmPeiwanCardsCard } from '@/components/admin/SyncDlmPeiwanCardsCard';
 import { SyncAllPeiwanTagsCard } from '@/components/admin/SyncAllPeiwanTagsCard';
 import { getServerSession } from '@/lib/session';
-import { canViewAdminHome, canViewStripePricing, canViewTraffic, isAdminDiscordId, canManageGuildOperations } from '@/lib/admin';
+import { canManageGuildOperations, canViewAdminHome, canViewStripePricing, canViewTraffic, isAdminDiscordId } from '@/lib/admin';
 import { getSettlementOperableOwnerIds } from '@/lib/settlement-reconciliation';
 
 export default async function AdminHomePage() {
@@ -189,49 +189,12 @@ export default async function AdminHomePage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {canManageGuildOperations(session.discordId) ? (
-          <>
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm text-white/70">文案管理</p>
-                </div>
-                <Link href="/admin/copy" className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25">前往管理</Link>
-              </div>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm text-white/70">Bot 频道与派单文案</p>
-                </div>
-                <Link
-                  href="/admin/bot"
-                  className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
-                >
-                  前往管理
-                </Link>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm text-white/70">试音结果核实</p>
-                </div>
-                <Link href="/admin/auditions" className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25">前往核实</Link>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm text-white/70">打赏请求核实</p>
-                </div>
-                <Link href="/admin/gift-requests" className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25">前往核实</Link>
-              </div>
-            </div>
-          </>
-        ) : null}
+        {canManageGuildOperations(session.discordId) ? <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-white/70">文案管理</p>
+            <Link href="/admin/copy" className="inline-flex items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25">前往管理</Link>
+          </div>
+        </div> : null}
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -326,7 +289,6 @@ export default async function AdminHomePage() {
             </Link>
           </div>
         </div>
-
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">

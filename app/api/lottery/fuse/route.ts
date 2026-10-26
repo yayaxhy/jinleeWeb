@@ -93,7 +93,6 @@ const callInternalFusion = async (params: {
   requestId: string;
 }) => {
   if (!INTERNAL_PORT || !INTERNAL_TOKEN) {
-    console.error('[lottery.fuse] missing INTERNAL_API_PORT/INTERNAL_API_TOKEN');
     throw new LotteryFusionApiError('内部接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）', 500);
   }
 
@@ -116,21 +115,19 @@ const callInternalFusion = async (params: {
       clearTimeout(timeout);
     }
   } catch (error) {
-    console.error('[lottery.fuse] request failed', error);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new LotteryFusionApiError('暂时无法确认重铸结果，请先查看背包，勿重复提交。', 504);
+      throw new LotteryFusionApiError('重铸服务超时，请稍后重试', 504);
     }
-    throw new LotteryFusionApiError('暂时无法确认重铸结果，请先查看背包，勿重复提交。', 503);
+    throw new LotteryFusionApiError('重铸服务暂不可用，请稍后重试', 503);
   }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    console.error('[lottery.fuse] upstream rejected', { status: response.status, error: data?.error });
     const code = typeof data?.error === 'string' ? data.error : '';
     throw buildLotteryFusionApiError({
       code,
       fallbackStatus: response.status >= 500 ? 502 : response.status,
-      fallbackMessage: response.status >= 500 ? '暂时无法确认重铸结果，请先查看背包，勿重复提交。' : '重铸失败，请稍后重试',
+      fallbackMessage: response.status >= 500 ? '重铸服务暂不可用，请稍后重试' : '重铸失败，请稍后重试',
     });
   }
 
@@ -158,7 +155,7 @@ export async function POST(request: Request) {
     sourceIds,
     now: new Date(),
   })) {
-    return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.fuse.route.34247b87b596") }, { status: 409 });
+    return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.fuse.route.88ed6351387b") }, { status: 409 });
   }
 
   try {
@@ -169,9 +166,8 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ ok: true, result: data?.result ?? null });
   } catch (error) {
-    console.error('[lottery.fuse] failed', error);
     const status = error instanceof LotteryFusionApiError ? error.status : 500;
-    const message = error instanceof LotteryFusionApiError ? error.message : '暂时无法确认重铸结果，请先查看背包，勿重复提交。';
+    const message = error instanceof Error ? error.message : '重铸服务暂不可用，请稍后重试';
     const code = error instanceof LotteryFusionApiError ? error.code ?? null : null;
     return NextResponse.json(
       { error: message, code },

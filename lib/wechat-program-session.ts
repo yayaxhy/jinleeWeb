@@ -1,7 +1,7 @@
+import { hasCurrentWechatProgramBinding } from './session-validation';
 import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { hasCurrentWechatProgramBinding } from './session-validation';
 
 const WECHAT_PROGRAM_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 

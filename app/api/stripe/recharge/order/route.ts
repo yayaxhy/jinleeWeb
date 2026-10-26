@@ -159,7 +159,7 @@ export async function POST(request: Request) {
           {
             ok: false,
             error: 'stripe_amount_too_small',
-            message: await renderSiteCopy("site.app.api.stripe.recharge.order.route.92b2703596e5"),
+            message: await renderSiteCopy("site.app.api.stripe.recharge.order.route.78607c98184b"),
           },
           { status: 400 },
         );

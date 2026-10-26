@@ -1,4 +1,4 @@
-import { getSiteCopy, renderSiteCopy } from "@/lib/site-copy-server";
+import { renderSiteCopy } from "@/lib/site-copy-server";
 import { NextResponse } from 'next/server';
 import {
   CouponStatus,
@@ -10,18 +10,6 @@ import {
 import { prisma } from '@/lib/prisma';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
-import { buildVoucherIdentityPayload, VoucherRequestIdentityError } from '@/lib/voucher-request-identity';
-import { postVoucherUseRequest, VoucherInternalRequestError } from '@/lib/voucher-internal-request';
-import { consumeSelfUseVoucherTx } from '@/lib/self-use-voucher-transaction';
-import { buildGiftIdentityPayload, GiftRequestIdentityError, GIFT_RESULT_UNCONFIRMED } from '@/lib/gift-request-identity';
-import { TargetConfirmationError } from '@/lib/target-confirmation';
-import { targetConfirmationService } from '@/lib/target-confirmation-server';
-import { DlmWalletIdentityChangedError } from '@/lib/dlm-wallet-lock';
-import { GiftForwardRejected, handleGiftExecutionForward } from '@/lib/gift-execution-forward';
-import { readAdminJsonWrite } from '@/lib/admin-write-request';
-import { getServerSession } from '@/lib/session';
-import { readTargetConfirmationCaller } from '@/lib/target-confirmation-service';
-import { assertPreparedGiftRecovery, buildGiftRecoveryPreparation, GiftRecoveryConflict } from '@/lib/gift-execution-recovery';
 import {
   COUPON_VOUCHER_META,
   GIFT_NAME_BY_PRIZE_NAME,
@@ -30,7 +18,7 @@ import {
 } from '@/lib/voucherCatalog';
 
 type UsePayload =
-  | { lotteryId?: string; couponId?: string; mode: 'gift'; target: string; prizeName?: string; confirmationToken?: string; requestId?: string }
+  | { lotteryId?: string; couponId?: string; mode: 'gift'; target: string; prizeName?: string }
   | { lotteryId?: string; couponId?: string; mode: 'selfuse'; prizeName?: string };
 
 const isVanityCardPrize = (name: string | undefined | null) => {
@@ -38,17 +26,48 @@ const isVanityCardPrize = (name: string | undefined | null) => {
   return VANITY_CARD_PRIZE_NAMES.has(name.trim());
 };
 
+const resolveTargetDiscordId = async (raw: string) => {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  // Try discord id first
+  const member = await prisma.member.findUnique({
+    where: { discordUserId: trimmed },
+    select: { discordUserId: true },
+  });
+  if (member) return member.discordUserId;
+
+  // Try peiwanId numeric lookup
+  const numeric = Number(trimmed);
+  if (Number.isInteger(numeric) && numeric > 0) {
+    const peiwan = await prisma.pEIWAN.findUnique({
+      where: { PEIWANID: numeric },
+      select: { discordUserId: true },
+    });
+    if (peiwan?.discordUserId) return peiwan.discordUserId;
+  }
+
+  return null;
+};
+
 const callGiftWebhook = async (params: {
-  identity: ReturnType<typeof buildGiftIdentityPayload>;
+  giverId: string;
+  receiverId: string;
   giftName: string;
   quantity?: number;
   lotteryId?: string;
   couponId?: string;
   requestId?: string;
-  connection: { endpoint: string; token: string };
 }) => {
+  const port = process.env.INTERNAL_API_PORT;
+  const host = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
+  const token = process.env.INTERNAL_API_TOKEN;
+  if (!port || !token) {
+    throw new Error('内部礼物接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）');
+  }
+  const endpoint = `http://${host}:${port}/internal/gift`;
   const payload = {
-    ...params.identity,
+    giverId: params.giverId,
+    receiverId: params.receiverId,
     giftName: params.giftName,
     quantity: params.quantity ?? 1,
     anonymous: false,
@@ -56,60 +75,50 @@ const callGiftWebhook = async (params: {
     couponId: params.couponId,
     requestId: params.requestId,
   };
-  return postVoucherUseRequest({ ...params.connection, payload, unconfirmedMessage: GIFT_RESULT_UNCONFIRMED });
+  let res: Response;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Token': token,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('礼物服务超时，请稍后重试');
+    }
+    throw new Error('礼物服务暂不可用，请联系管理员');
+  }
+  if (!res.ok) {
+    let message = `礼物接口错误 (${res.status})`;
+    try {
+      const data = await res.json();
+      if (typeof data?.error === 'string') {
+        message = data.error;
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
 };
 
 export async function POST(request: Request) {
-  const parsed = await readAdminJsonWrite(request.clone());
-  if (!parsed.ok) return parsed.response;
-  const candidate = parsed.body;
-  if (candidate?.mode === 'gift') return handleGiftExecutionForward(request, {
-    prepare: async body => {
-      const session = await getServerSession();
-      if (!session) throw new GiftForwardRejected('未登录', 401);
-      const currentUser = await readTargetConfirmationCaller(prisma, session);
-      const port = process.env.INTERNAL_API_PORT;
-      const token = process.env.INTERNAL_API_TOKEN;
-      if (!port || !token) {
-        console.error('[lottery.gift] missing INTERNAL_API_PORT/INTERNAL_API_TOKEN');
-        throw new GiftForwardRejected('内部礼物接口未配置（INTERNAL_API_PORT/INTERNAL_API_TOKEN）', 503);
-      }
-      const connection = { endpoint: `http://${process.env.INTERNAL_API_HOST ?? '127.0.0.1'}:${port}/internal/gift-execution/v1/gift`, token };
-      try {
-        const proof = await targetConfirmationService().verify(body.confirmationToken, currentUser, {
-          purpose: 'gift', target: body.target, prizeName: body.prizeName, couponId: body.couponId, lotteryId: body.lotteryId,
-        });
-        const prepared = buildGiftRecoveryPreparation(proof, 'VOUCHER_GIFT', session.username);
-        await prisma.$transaction(tx => assertPreparedGiftRecovery(tx, session, body.requestId, prepared.intent), { isolationLevel: 'RepeatableRead' });
-        const selected = proof.selectedVoucher!;
-        if (selected.prizeName === '一日冠75折券') {
-          const balance = await prisma.dlmUser.findUnique({
-            where: { dlmId: currentUser.dlmId },
-            select: { totalBalance: true },
-          });
-          if (!balance || balance.totalBalance.lt(888)) {
-            throw new GiftForwardRejected('余额不足888，请联系客服充值哦～', 400);
-          }
-        }
-        return { connection, identity: buildGiftIdentityPayload(currentUser, proof.target),
-          giftName: GIFT_NAME_BY_PRIZE_NAME[selected.prizeName] ?? selected.prizeName.replace(/代金券$/, ''), quantity: 1,
-          lotteryId: selected.source === 'lottery' ? selected.voucherId : undefined,
-          couponId: selected.source === 'lottery' ? undefined : selected.voucherId };
-      } catch (error) {
-        if (error instanceof GiftRecoveryConflict) throw new GiftForwardRejected(error.message, error.status);
-        if (error instanceof TargetConfirmationError) throw new GiftForwardRejected(error.message, error.status, error.code);
-        if (error instanceof GiftRequestIdentityError) throw new GiftForwardRejected(error.message, 409);
-        throw error;
-      }
-    },
-    send: (payload, requestId) => callGiftWebhook({ ...payload, requestId }),
-  });
   const currentUser = await getCurrentDlmUser(request);
   if (!currentUser) {
     return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.e8041a8c9358") }, { status: 401 });
   }
 
-  const body = candidate as Partial<UsePayload>;
+  const body = (await request.json().catch(() => ({}))) as Partial<UsePayload>;
   const lotteryId = typeof body.lotteryId === 'string' ? body.lotteryId : '';
   const couponId = typeof body.couponId === 'string' ? body.couponId : '';
   const mode = body.mode;
@@ -198,6 +207,45 @@ export async function POST(request: Request) {
     prizeType = draw.prize?.type ?? LotteryPrizeType.COUPON;
   }
 
+  if (mode === 'gift') {
+    if (prizeType !== LotteryPrizeType.GIFT) {
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.d2d7d0af62f8") }, { status: 400 });
+    }
+    const target = typeof body.target === 'string' ? body.target : '';
+    const receiverId = await resolveTargetDiscordId(target);
+    if (!receiverId) {
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.0e3f9841e498") }, { status: 404 });
+    }
+    const giftNameForBot = GIFT_NAME_BY_PRIZE_NAME[prizeName] ?? prizeName.replace(/代金券$/, '') ?? '礼物';
+    const requestId = `GIFT:${receiverId}`;
+    if (!currentUser.discordUserId) {
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.137a22b366cc") }, { status: 400 });
+    }
+    try {
+      if (prizeName === '一日冠75折券') {
+        const balance = await prisma.dlmUser.findUnique({
+          where: { dlmId: currentUser.dlmId },
+          select: { totalBalance: true },
+        });
+        if (!balance || balance.totalBalance.lt(888)) {
+          return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.643355c0f2cc") }, { status: 400 });
+        }
+      }
+      await callGiftWebhook({
+        giverId: currentUser.discordUserId,
+        receiverId,
+        giftName: giftNameForBot,
+        quantity: 1,
+        lotteryId: source === 'lottery' ? lotteryId : undefined,
+        couponId: source === 'lottery' ? undefined : couponId,
+        requestId,
+      });
+    } catch (error) {
+      return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   if (mode === 'selfuse') {
     const isVanityCard = isVanityCardPrize(prizeName);
     if (prizeType !== LotteryPrizeType.SELFUSE && !isVanityCard) {
@@ -213,41 +261,106 @@ export async function POST(request: Request) {
       const host = process.env.INTERNAL_API_HOST ?? '127.0.0.1';
       const token = process.env.INTERNAL_API_TOKEN;
       if (!port || !token) {
-        console.error('[lottery.use] missing INTERNAL_API_PORT/INTERNAL_API_TOKEN');
-        return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.3f8c5a6674cc") }, { status: 500 });
+        return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.3d0e094eb097") }, { status: 500 });
       }
+      const endpoint = `http://${host}:${port}/internal/rename-card`;
+      let res: Response;
       try {
-        await postVoucherUseRequest({
-          endpoint: `http://${host}:${port}/internal/rename-card`,
-          token,
-          payload: { ...buildVoucherIdentityPayload(currentUser), voucherId: couponId || lotteryId },
-        });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        try {
+          res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Internal-Token': token,
+            },
+            body: JSON.stringify({ userId: currentUser.discordUserId, voucherId: couponId || lotteryId }),
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeout);
+        }
       } catch (error) {
-        if (error instanceof VoucherRequestIdentityError) {
-          return NextResponse.json({ error: (await getSiteCopy()).text(error.message, "site.lib.public.error.messages") }, { status: 409 });
-        }
-        if (error instanceof VoucherInternalRequestError) {
-          return NextResponse.json({ error: error.message }, { status: error.status });
-        }
-        throw error;
+        const message =
+          error instanceof Error && error.name === 'AbortError'
+            ? '靓号券服务超时，请稍后重试'
+            : '靓号券服务暂不可用，请联系管理员';
+        return NextResponse.json({ error: message }, { status: 502 });
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = typeof data?.error === 'string' ? data.error : '靓号券服务返回异常';
+        return NextResponse.json({ error: msg }, { status: res.status });
       }
       return NextResponse.json({ ok: true });
     }
 
-    try {
-      const updateResult = await prisma.$transaction((tx) => consumeSelfUseVoucherTx(tx, {
-        identity: { dlmId: currentUser.dlmId, discordUserId: currentUser.discordUserId },
-        source,
-        voucherId: source === 'lottery' ? lotteryId : couponId,
-      }));
+    if (source === 'coupon') {
+      const updateResult = await prisma.coupon.updateMany({
+        where: {
+          id: couponId,
+          dlmId: currentUser.dlmId,
+          status: CouponStatus.ACTIVE,
+          issuedAt: newEntityOnlyTime(),
+          expiresAt: { gt: now },
+          consumedAt: null,
+        },
+        data: {
+          status: CouponStatus.USED,
+          consumedAt: now,
+          consumeAmount: 0,
+          consumeTargetId: currentUser.discordUserId,
+          consumeTargetDlmId: currentUser.dlmId,
+        },
+      });
       if (updateResult.count !== 1) {
         return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.280d4a373cb6") }, { status: 409 });
       }
-    } catch (error) {
-      if (error instanceof DlmWalletIdentityChangedError) {
-        return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.0b206884f138") }, { status: 409 });
+    } else if (source === 'pointshop') {
+      const updateResult = await prisma.pointShopGrant.updateMany({
+        where: {
+          id: couponId,
+          dlmId: currentUser.dlmId,
+          deliveryType: PointShopDeliveryType.COUPON,
+          deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+          couponStatus: CouponStatus.ACTIVE,
+          issuedAt: newEntityOnlyTime(),
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
+        data: {
+          couponStatus: CouponStatus.USED,
+          consumedAt: now,
+          consumeAmount: 0,
+          consumeTargetId: currentUser.discordUserId,
+          consumeTargetDlmId: currentUser.dlmId,
+        },
+      });
+      if (updateResult.count !== 1) {
+        return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.280d4a373cb6") }, { status: 409 });
       }
-      throw error;
+    } else {
+      const updateResult = await prisma.lotteryDraw.updateMany({
+        where: {
+          id: lotteryId,
+          dlmId: currentUser.dlmId,
+          status: LotteryStatus.UNUSED,
+          createdAt: newEntityOnlyTime(),
+          consumeAt: null,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
+        data: {
+          status: LotteryStatus.USED,
+          consumeAt: now,
+          requestId: 'SELFUSE',
+          consumeTargetId: currentUser.discordUserId ?? null,
+          consumeTargetDlmId: currentUser.dlmId,
+        },
+      });
+      if (updateResult.count !== 1) {
+        return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.280d4a373cb6") }, { status: 409 });
+      }
     }
     return NextResponse.json({ ok: true });
   }

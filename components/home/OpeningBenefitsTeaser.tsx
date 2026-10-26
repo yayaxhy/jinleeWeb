@@ -1,6 +1,5 @@
 
-'use client';
-import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
+import { SiteText } from "@/components/SiteCopyProvider";
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -9,7 +8,6 @@ const crownCouponImage = '/brand/dlm-v1/prizes/17-day-crown-75-voucher.png';
 const characterArt = '/brand/dlm-v1/operations/18-thankBoss.gif';
 
 export function OpeningBenefitsTeaser() {
-  const siteCopy = useSiteCopy();
   return (
     <section className="relative mx-auto max-w-7xl px-6 pb-8 pt-2 md:pb-12">
       <div className="relative isolate overflow-hidden rounded-[2.5rem] border border-[#ffb8cc]/70 bg-[#fff6f1] px-6 py-8 text-[#563b4d] shadow-[0_25px_70px_rgba(255,128,159,0.2)] md:px-10 md:py-10">
@@ -20,7 +18,7 @@ export function OpeningBenefitsTeaser() {
         <div className="pointer-events-none absolute -bottom-6 left-[38%] hidden h-28 w-28 -rotate-6 overflow-hidden rounded-[1.6rem] bg-white shadow-[0_12px_14px_rgba(78,72,155,0.2)] md:block">
           <Image
             src={characterArt}
-            alt={siteCopy("site.components.home.openingbenefitsteaser.a731b36ba6d9")}
+            alt="抽奖角色插画"
             fill
             sizes="144px"
             unoptimized
@@ -48,14 +46,14 @@ export function OpeningBenefitsTeaser() {
             <div className="absolute inset-x-8 bottom-3 top-3 rounded-[2rem] bg-[#ffe0a7]/70" />
             <Image
               src={couponImage}
-              alt={siteCopy("site.components.home.openingbenefitsteaser.8fd8b9c4ee21")}
+              alt="特殊九折券"
               width={650}
               height={433}
               className="absolute left-0 top-3 w-[78%] -rotate-6 drop-shadow-[0_20px_17px_rgba(173,62,97,0.24)] transition duration-300 hover:-rotate-3 hover:scale-[1.02]"
             />
             <Image
               src={crownCouponImage}
-              alt={siteCopy("site.components.home.openingbenefitsteaser.f602e55b23ce")}
+              alt="日冠七五折券"
               width={650}
               height={433}
               className="absolute bottom-0 right-0 w-[68%] rotate-6 drop-shadow-[0_20px_17px_rgba(173,62,97,0.2)] transition duration-300 hover:rotate-3 hover:scale-[1.02]"

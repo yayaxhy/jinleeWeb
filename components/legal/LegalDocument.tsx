@@ -12,7 +12,6 @@ type LegalSection = {
 };
 
 type LegalDocumentProps = {
-  copyNamespace: string;
   eyebrow: string;
   title: string;
   description: string;
@@ -21,7 +20,6 @@ type LegalDocumentProps = {
 };
 
 export function LegalDocument({
-  copyNamespace,
   eyebrow,
   title,
   description,
@@ -35,8 +33,8 @@ export function LegalDocument({
         <div className="mx-auto max-w-6xl">
           <header className="rounded-[2rem] bg-[#111111] px-7 py-10 text-white shadow-xl sm:px-12 sm:py-14">
             <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-200/80">{eyebrow}</p>
-            <h1 className="mt-4 text-4xl font-black tracking-[-0.04em] sm:text-5xl"><SiteText namespace={copyNamespace} value={title} /></h1>
-            <p className="mt-5 max-w-3xl text-sm leading-7 text-white/65 sm:text-base"><SiteText namespace={copyNamespace} value={description} /></p>
+            <h1 className="mt-4 text-4xl font-black tracking-[-0.04em] sm:text-5xl"><SiteText namespace="site.components.legal.legaldocument" value={title} /></h1>
+            <p className="mt-5 max-w-3xl text-sm leading-7 text-white/65 sm:text-base"><SiteText namespace="site.components.legal.legaldocument" value={description} /></p>
             <p className="mt-6 text-xs text-white/45"><SiteText copyKey="site.components.legal.legaldocument.7f85b630b627" />{effectiveDate}</p>
           </header>
 
@@ -50,7 +48,7 @@ export function LegalDocument({
                     href={`#${section.id}`}
                     className="block rounded-xl px-3 py-2 text-sm leading-6 text-neutral-600 transition hover:bg-neutral-100 hover:text-black"
                   >
-                    {index + 1}. <SiteText namespace={copyNamespace} value={section.title} />
+                    {index + 1}. <SiteText namespace="site.components.legal.legaldocument" value={section.title} />
                   </a>
                 ))}
               </nav>
@@ -61,7 +59,7 @@ export function LegalDocument({
                 {sections.map((section, index) => (
                   <section key={section.id} id={section.id} className="scroll-mt-8">
                     <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
-                      {index + 1}. <SiteText namespace={copyNamespace} value={section.title} />
+                      {index + 1}. <SiteText namespace="site.components.legal.legaldocument" value={section.title} />
                     </h2>
                     <div className="mt-4 space-y-3 text-sm leading-7 text-neutral-700 sm:text-[15px] [&_a]:font-medium [&_a]:text-blue-700 [&_a]:underline [&_a]:underline-offset-4 [&_li]:pl-1 [&_strong]:font-semibold [&_strong]:text-neutral-950 [&_ul]:ml-5 [&_ul]:list-disc [&_ul]:space-y-2">
                       {section.content}

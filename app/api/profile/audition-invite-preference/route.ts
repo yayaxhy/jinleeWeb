@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const enabled = body?.enabled;
     if (typeof enabled !== 'boolean') {
-      return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.audition.invite.preference.route.825d9c887174") }, { status: 400 });
+      return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.audition.invite.preference.route.ee23c5832beb") }, { status: 400 });
     }
     if (enabled && !current.peiwan.voicePreviewUrl) {
       return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.audition.invite.preference.route.9fa559a03ec9") }, { status: 400 });
@@ -57,8 +57,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, enabled });
   } catch (error) {
-    console.error('[audition-invite-preference] save failed', error);
-    const message = '保存失败，请稍后再试';
+    const message = error instanceof Error ? error.message : '保存失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

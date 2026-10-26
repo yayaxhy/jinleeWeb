@@ -5,7 +5,7 @@ import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import Image from 'next/image';
 import { LoginButton } from './LoginButton';
-import { SITE_LOGO, SITE_NAME } from '@/lib/site';
+import { SITE_ALTERNATE_NAME, SITE_LOGO, SITE_NAME } from '@/lib/site';
 
 const links = [
   { href: '/', label: 'HOME' },

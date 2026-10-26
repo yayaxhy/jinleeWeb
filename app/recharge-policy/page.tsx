@@ -126,7 +126,6 @@ const sections = [
 export default function RechargePolicyPage() {
   return (
     <LegalDocument
-      copyNamespace="site.app.recharge.policy.page"
       eyebrow="Payment & Refund"
       title="充值余额与退款规则"
       description="本规则明确充值比例、余额有效期、未消费余额退款、接单后取消及异常服务的售后处理方式。"

@@ -136,7 +136,6 @@ const sections = [
 export default function TermsPage() {
   return (
     <LegalDocument
-      copyNamespace="site.app.terms.page"
       eyebrow="Legal"
       title="用户协议"
       description="本协议说明点了么娱乐公会网站的服务内容、价格确认、账户使用、订单履行、取消退款和售后规则。"

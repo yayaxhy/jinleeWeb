@@ -1,6 +1,5 @@
 
 import { SiteText } from "@/components/SiteCopyProvider";
-import { getBindingReviewMessage } from '@/lib/discord-binding-feedback';
 import BindResultActions from './BindResultActions';
 
 type DiscordBindResultPageProps = {
@@ -21,14 +20,9 @@ const getMessage = (status?: string, code?: string) => {
   if (status === 'success') {
     return {
       title: '绑定成功',
-      body: '当前微信账号已经和 Discord 账号关联完成。请在小程序重新登录，读取合并后的账号。',
+      body: '当前微信账号已经和 Discord 账号关联完成。回到小程序绑定页刷新后，就能看到已绑定状态。',
       tone: 'success',
     };
-  }
-
-  const reviewMessage = getBindingReviewMessage(code);
-  if (reviewMessage) {
-    return { title: '账号绑定需要核实', body: reviewMessage, tone: 'error' };
   }
 
   switch (code) {
@@ -38,24 +32,10 @@ const getMessage = (status?: string, code?: string) => {
         body: '请回到微信小程序重新生成新的绑定链接，再发起一次绑定。',
         tone: 'error',
       };
-    case 'dlm_user_already_bound_to_other_wechat':
     case 'discord_already_bound_to_other_wechat':
       return {
         title: 'Discord 已绑定其他微信账号',
         body: '当前 Discord 账号已经关联了另一位微信用户，不能直接再次绑定。请先确认你使用的是正确账号。',
-        tone: 'error',
-      };
-    case 'incoming_discord_already_bound':
-      return {
-        title: '账号已关联另一个 Discord',
-        body: '不能直接合并两个 Discord 账号。请联系客服核实账号与资产归属后再处理。',
-        tone: 'error',
-      };
-    case 'discord_binding_changed':
-    case 'binding_state_changed':
-      return {
-        title: '账号绑定状态已变化',
-        body: '请重新登录并刷新绑定状态，再发起绑定。',
         tone: 'error',
       };
     case 'discord_session_missing':
@@ -87,8 +67,9 @@ export default async function DiscordBindResultPage({ searchParams }: DiscordBin
             message.tone === 'success' ? 'text-emerald-600' : 'text-red-500'
           }`}
         ><SiteText copyKey="site.app.accounts.discord.bind.result.page.61ae0af769cb" /></p>
-        <h1 className="text-3xl font-semibold tracking-wide text-[#171717]"><SiteText namespace="site.app.accounts.discord.bind.result.page" value={message.title} /></h1>
-        <p className="text-sm leading-7 text-gray-500"><SiteText namespace={getBindingReviewMessage(code) ? "site.lib.discord.binding.feedback" : "site.app.accounts.discord.bind.result.page"} value={message.body} /></p>
+        <h1 className="text-3xl font-semibold tracking-wide text-[#171717]">{message.title}</h1>
+        <p className="text-sm leading-7 text-gray-500">{message.body}</p>
+        <div className="rounded-2xl bg-[#f8fafc] px-4 py-4 text-xs leading-6 text-gray-500"><SiteText copyKey="site.app.accounts.discord.bind.result.page.5c346d829e8a" /></div>
         <BindResultActions />
       </div>
     </main>

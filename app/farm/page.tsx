@@ -1,6 +1,3 @@
-import { localizeSiteMetadata } from '@/lib/site-copy-metadata';
-import { getSiteCopy } from '@/lib/site-copy-server';
-import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { FarmClient } from '@/components/farm/FarmClient';
@@ -8,7 +5,7 @@ import { getFarmDashboard } from '@/lib/farm';
 import { resolveFarmSession } from '@/lib/farmDevSession';
 import { getServerSession } from '@/lib/session';
 
-const defaultMetadata: Metadata = {
+export const metadata = {
   title: '点了么庄园',
   robots: {
     index: false,
@@ -29,8 +26,4 @@ export default async function FarmPage() {
   const dashboard = await getFarmDashboard(session.discordId);
 
   return <FarmClient initialDashboard={dashboard} />;
-}
-
-export async function generateMetadata(): Promise<Metadata> {
-  return localizeSiteMetadata(defaultMetadata, await getSiteCopy(), 'site.app.farm.page');
 }

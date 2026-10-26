@@ -3,26 +3,6 @@ import type { EditableCopyEntry } from './editable-copy-contract';
 /** Explicit outgoing display copy. Never use these keys as business identifiers. */
 export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
   {
-    "key": "bot.interactions.buttons.miniDispatch.44abb608d",
-    "group": "派单与订单",
-    "label": "派单已关闭。",
-    "defaultText": "派单已关闭。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/interactions/buttons/miniDispatch.ts:75"
-  },
-  {
-    "key": "bot.interactions.buttons.miniDispatch.c9daac191",
-    "group": "派单与订单",
-    "label": "不能抢自己的派单。",
-    "defaultText": "不能抢自己的派单。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/interactions/buttons/miniDispatch.ts:76"
-  },
-  {
     "key": "bot.services.recruitmentApplicationService.3432eb27f",
     "group": "名片、资料与入职",
     "label": "公会昵称",
@@ -219,7 +199,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/orderInteractionManager.ts:34"
+    "source": "src/services/orderInteractionManager.ts:33"
   },
   {
     "key": "bot.services.orderInteractionManager.6fbcb4497",
@@ -230,7 +210,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/orderInteractionManager.ts:44"
+    "source": "src/services/orderInteractionManager.ts:43"
   },
   {
     "key": "bot.services.orderInteractionManager.e2ef72f97",
@@ -241,7 +221,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/orderInteractionManager.ts:257"
+    "source": "src/services/orderInteractionManager.ts:249"
   },
   {
     "key": "bot.services.orderInteractionManager.791479a05",
@@ -257,10 +237,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/services/orderInteractionManager.ts:270",
-    "examples": {
-      "fixed2": "10"
-    }
+    "source": "src/services/orderInteractionManager.ts:285"
   },
   {
     "key": "bot.services.autoCommissionBuffService.3b9d9c89e",
@@ -505,7 +482,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "vipLevel"
     ],
     "maxLength": 2000,
-    "source": "src/services/spentRoleService.ts:107"
+    "source": "src/services/spentRoleService.ts:150"
   },
   {
     "key": "bot.services.spentRoleService.9a39a9e57",
@@ -515,7 +492,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/spentRoleService.ts:108"
+    "source": "src/services/spentRoleService.ts:151"
   },
   {
     "key": "bot.services.spentRoleService.7138920f5",
@@ -525,7 +502,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/spentRoleService.ts:110"
+    "source": "src/services/spentRoleService.ts:153"
   },
   {
     "key": "bot.services.auditionService.23ee6f369",
@@ -536,7 +513,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:532"
+    "source": "src/services/auditionService.ts:548"
   },
   {
     "key": "bot.services.auditionService.ab0bec0bc",
@@ -547,18 +524,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:590"
-  },
-  {
-    "key": "bot.services.auditionService.f8c2ec5fa",
-    "group": "真人试音",
-    "label": "真人试音需核实",
-    "defaultText": "真人试音需核实",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 80,
-    "singleLine": true,
-    "source": "src/services/auditionService.ts:649"
+    "source": "src/services/auditionService.ts:606"
   },
   {
     "key": "bot.services.auditionService.a2fba5d22",
@@ -569,7 +535,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:666"
+    "source": "src/services/auditionService.ts:886"
   },
   {
     "key": "bot.services.auditionService.e16155cce",
@@ -580,18 +546,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:675"
-  },
-  {
-    "key": "bot.services.auditionService.d06f22e6c",
-    "group": "真人试音",
-    "label": "结算结果待核实",
-    "defaultText": "结算结果待核实",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 80,
-    "singleLine": true,
-    "source": "src/services/auditionService.ts:690"
+    "source": "src/services/auditionService.ts:904"
   },
   {
     "key": "bot.services.auditionService.9f74c4d0d",
@@ -602,7 +557,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:1090"
+    "source": "src/services/auditionService.ts:1469"
   },
   {
     "key": "bot.services.auditionService.984e7a2cf",
@@ -613,7 +568,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:933"
+    "source": "src/services/auditionService.ts:1280"
   },
   {
     "key": "bot.services.auditionService.a2bdec810",
@@ -624,7 +579,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:968"
+    "source": "src/services/auditionService.ts:1356"
   },
   {
     "key": "bot.services.auditionService.8ea81866a",
@@ -635,7 +590,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:1091"
+    "source": "src/services/auditionService.ts:1470"
   },
   {
     "key": "bot.services.auditionService.5b6c45789",
@@ -646,7 +601,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:1155"
+    "source": "src/services/auditionService.ts:1521"
   },
   {
     "key": "bot.services.auditionService.1ed343e2e",
@@ -660,7 +615,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "peiwanText"
     ],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:118"
+    "source": "src/services/auditionService.ts:108"
   },
   {
     "key": "bot.services.auditionService.a54132d00",
@@ -674,7 +629,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "peiwanId"
     ],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:96"
+    "source": "src/services/auditionService.ts:89"
   },
   {
     "key": "bot.services.auditionService.fcd46f5fe",
@@ -684,7 +639,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:98"
+    "source": "src/services/auditionService.ts:91"
   },
   {
     "key": "bot.services.auditionService.db9b4d810",
@@ -700,7 +655,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "channelUrl"
     ],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:196"
+    "source": "src/services/auditionService.ts:186"
   },
   {
     "key": "bot.services.auditionService.95f94a6ea",
@@ -716,7 +671,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "channelUrl"
     ],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:204"
+    "source": "src/services/auditionService.ts:194"
   },
   {
     "key": "bot.services.auditionService.f01e0d283",
@@ -732,7 +687,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:218"
+    "source": "src/services/auditionService.ts:207"
   },
   {
     "key": "bot.services.auditionService.f345876af",
@@ -746,7 +701,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:226"
+    "source": "src/services/auditionService.ts:215"
   },
   {
     "key": "bot.services.auditionService.e73179cb3",
@@ -757,7 +712,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:117"
+    "source": "src/services/auditionService.ts:107"
   },
   {
     "key": "bot.services.auditionService.6100f5022",
@@ -768,7 +723,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:195"
+    "source": "src/services/auditionService.ts:185"
   },
   {
     "key": "bot.services.auditionService.160d89563",
@@ -779,7 +734,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:203"
+    "source": "src/services/auditionService.ts:193"
   },
   {
     "key": "bot.services.auditionService.301b10aef",
@@ -790,7 +745,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:225"
+    "source": "src/services/auditionService.ts:214"
   },
   {
     "key": "bot.services.auditionService.5fbc7dd65",
@@ -804,7 +759,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:135"
+    "source": "src/services/auditionService.ts:125"
   },
   {
     "key": "bot.services.auditionService.b2976253d",
@@ -814,7 +769,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:136"
+    "source": "src/services/auditionService.ts:126"
   },
   {
     "key": "bot.services.auditionService.3d20c22e3",
@@ -828,7 +783,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:137"
+    "source": "src/services/auditionService.ts:127"
   },
   {
     "key": "bot.services.auditionService.3fca989f6",
@@ -838,7 +793,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 4096,
-    "source": "src/services/auditionService.ts:138"
+    "source": "src/services/auditionService.ts:128"
   },
   {
     "key": "bot.services.auditionService.4abd08523",
@@ -849,7 +804,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:132"
+    "source": "src/services/auditionService.ts:122"
   },
   {
     "key": "bot.services.auditionService.6e0ede19b",
@@ -860,7 +815,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:145"
+    "source": "src/services/auditionService.ts:135"
   },
   {
     "key": "bot.services.auditionService.40f5d0f7a",
@@ -871,7 +826,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:149"
+    "source": "src/services/auditionService.ts:139"
   },
   {
     "key": "bot.services.auditionService.6fd6b82f4",
@@ -882,7 +837,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/services/auditionService.ts:161"
+    "source": "src/services/auditionService.ts:151"
   },
   {
     "key": "bot.services.auditionService.efa9970ee",
@@ -896,7 +851,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "peiwanText"
     ],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:179"
+    "source": "src/services/auditionService.ts:169"
   },
   {
     "key": "bot.services.auditionService.363f55215",
@@ -910,7 +865,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "peiwanId"
     ],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:178"
+    "source": "src/services/auditionService.ts:168"
   },
   {
     "key": "bot.services.auditionService.66b0d97d0",
@@ -920,7 +875,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:178"
+    "source": "src/services/auditionService.ts:168"
   },
   {
     "key": "bot.services.auditionService.ed93b0d89",
@@ -936,33 +891,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "peiwanText"
     ],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:174"
-  },
-  {
-    "key": "bot.services.auditionService.2d1e9514a",
-    "group": "真人试音",
-    "label": "{AUDITION_SETTLEMENT_REVIEW_MESSAGE} 邀请编号：{inviteId}",
-    "defaultText": "{AUDITION_SETTLEMENT_REVIEW_MESSAGE}\n邀请编号：{inviteId}",
-    "variables": [
-      "AUDITION_SETTLEMENT_REVIEW_MESSAGE",
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "AUDITION_SETTLEMENT_REVIEW_MESSAGE",
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:650"
-  },
-  {
-    "key": "bot.services.auditionSettlementTransaction.a3caac325",
-    "group": "真人试音",
-    "label": "真人试音的邀请身份或结算凭证无法核实，请先核对邀请、余额与流水，勿重复邀请或取消，请联系管理员核实。",
-    "defaultText": "真人试音的邀请身份或结算凭证无法核实，请先核对邀请、余额与流水，勿重复邀请或取消，请联系管理员核实。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/auditionSettlementTransaction.ts:7"
+    "source": "src/services/auditionService.ts:164"
   },
   {
     "key": "bot.services.auditionService.f3e18e467",
@@ -978,33 +907,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:184"
-  },
-  {
-    "key": "bot.services.auditionService.361835efe",
-    "group": "真人试音",
-    "label": "{AUDITION_SETTLEMENT_UNKNOWN_MESSAGE} 邀请编号：{inviteId}",
-    "defaultText": "{AUDITION_SETTLEMENT_UNKNOWN_MESSAGE}\n邀请编号：{inviteId}",
-    "variables": [
-      "AUDITION_SETTLEMENT_UNKNOWN_MESSAGE",
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "AUDITION_SETTLEMENT_UNKNOWN_MESSAGE",
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:691"
-  },
-  {
-    "key": "bot.services.auditionSettlementTransaction.1ee6105dc",
-    "group": "真人试音",
-    "label": "真人试音结算结果未确认，请先核对余额与流水，勿重复邀请或取消，请联系管理员核实。",
-    "defaultText": "真人试音结算结果未确认，请先核对余额与流水，勿重复邀请或取消，请联系管理员核实。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/auditionSettlementTransaction.ts:8"
+    "source": "src/services/auditionService.ts:174"
   },
   {
     "key": "bot.services.auditionService.2ca36b17d",
@@ -1014,7 +917,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:935"
+    "source": "src/services/auditionService.ts:1285"
   },
   {
     "key": "bot.services.auditionService.c7f513914",
@@ -1030,7 +933,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "peiwanText"
     ],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:169"
+    "source": "src/services/auditionService.ts:159"
   },
   {
     "key": "bot.services.auditionService.20880606a",
@@ -1044,7 +947,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "reason"
     ],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:232"
+    "source": "src/services/auditionService.ts:221"
   },
   {
     "key": "bot.services.auditionService.0566eb130",
@@ -1054,7 +957,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:669"
+    "source": "src/services/auditionService.ts:893"
   },
   {
     "key": "bot.services.auditionService.1d3eea5a7",
@@ -1064,7 +967,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1092"
+    "source": "src/services/auditionService.ts:1471"
   },
   {
     "key": "bot.services.auditionService.1a1cf67aa",
@@ -1074,7 +977,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:775"
+    "source": "src/services/auditionService.ts:1005"
   },
   {
     "key": "bot.services.auditionService.c02422096",
@@ -1084,7 +987,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:784"
+    "source": "src/services/auditionService.ts:1014"
   },
   {
     "key": "bot.services.auditionService.e020ff152",
@@ -1094,7 +997,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:797"
+    "source": "src/services/auditionService.ts:1027"
   },
   {
     "key": "bot.services.auditionService.9ed50a629",
@@ -1104,49 +1007,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:804"
-  },
-  {
-    "key": "bot.services.auditionService.d97586445",
-    "group": "真人试音",
-    "label": "邀请身份或钱包记录需管理员核实，未创建本次邀请。请求编号：{invitationId}",
-    "defaultText": "邀请身份或钱包记录需管理员核实，未创建本次邀请。请求编号：{invitationId}",
-    "variables": [
-      "invitationId"
-    ],
-    "requiredVariables": [
-      "invitationId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:821"
-  },
-  {
-    "key": "bot.services.auditionService.d5d16f9c7",
-    "group": "真人试音",
-    "label": "邀请结果未确认，请让管理员按邀请编号 {invitationId} 查询状态，勿重复发起。",
-    "defaultText": "邀请结果未确认，请让管理员按邀请编号 {invitationId} 查询状态，勿重复发起。",
-    "variables": [
-      "invitationId"
-    ],
-    "requiredVariables": [
-      "invitationId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:824"
-  },
-  {
-    "key": "bot.services.auditionService.70bc13b60",
-    "group": "真人试音",
-    "label": "邀请身份或原记录需要核实，请让管理员核对邀请编号 {value}，不要继续使用旧名片。",
-    "defaultText": "邀请身份或原记录需要核实，请让管理员核对邀请编号 {value}，不要继续使用旧名片。",
-    "variables": [
-      "value"
-    ],
-    "requiredVariables": [
-      "value"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:829"
+    "source": "src/services/auditionService.ts:1034"
   },
   {
     "key": "bot.services.auditionService.c50ef6caa",
@@ -1156,7 +1017,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:833"
+    "source": "src/services/auditionService.ts:1140"
   },
   {
     "key": "bot.services.auditionService.392599096",
@@ -1166,7 +1027,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:837"
+    "source": "src/services/auditionService.ts:1144"
   },
   {
     "key": "bot.services.auditionService.8dc91db3b",
@@ -1176,7 +1037,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:841"
+    "source": "src/services/auditionService.ts:1148"
   },
   {
     "key": "bot.services.auditionService.6105b5bee",
@@ -1186,7 +1047,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:858"
+    "source": "src/services/auditionService.ts:1165"
   },
   {
     "key": "bot.services.auditionService.77c66aebd",
@@ -1196,35 +1057,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:873"
-  },
-  {
-    "key": "bot.services.auditionService.d65c86767",
-    "group": "真人试音",
-    "label": "私信结果未确认，邀请状态已变化，请让管理员核对 {id}，勿重复发起。",
-    "defaultText": "私信结果未确认，邀请状态已变化，请让管理员核对 {id}，勿重复发起。",
-    "variables": [
-      "id"
-    ],
-    "requiredVariables": [
-      "id"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:874"
-  },
-  {
-    "key": "bot.services.auditionService.4dec39099",
-    "group": "真人试音",
-    "label": "邀请结果未确认，请让管理员核对 {id}，勿重复发起。",
-    "defaultText": "邀请结果未确认，请让管理员核对 {id}，勿重复发起。",
-    "variables": [
-      "id"
-    ],
-    "requiredVariables": [
-      "id"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:877"
+    "source": "src/services/auditionService.ts:1194"
   },
   {
     "key": "bot.services.auditionService.cea1534d0",
@@ -1234,21 +1067,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:898"
-  },
-  {
-    "key": "bot.services.auditionService.34cc09fb8",
-    "group": "真人试音",
-    "label": "试音处理结果未确认，请让管理员按邀请编号 {inviteId} 查询，勿重复操作。",
-    "defaultText": "试音处理结果未确认，请让管理员按邀请编号 {inviteId} 查询，勿重复操作。",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:900"
+    "source": "src/services/auditionService.ts:1211"
   },
   {
     "key": "bot.services.auditionService.1e1d6330b",
@@ -1258,35 +1077,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:907"
-  },
-  {
-    "key": "bot.services.auditionService.bf0bb6834",
-    "group": "真人试音",
-    "label": "邀请身份或原报价需要核实，已停止处理。邀请编号：{inviteId}",
-    "defaultText": "邀请身份或原报价需要核实，已停止处理。邀请编号：{inviteId}",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:909"
-  },
-  {
-    "key": "bot.services.auditionService.f68d5e85e",
-    "group": "真人试音",
-    "label": "邀请身份或记录已变化，需管理员核实。邀请编号：{inviteId}",
-    "defaultText": "邀请身份或记录已变化，需管理员核实。邀请编号：{inviteId}",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:952"
+    "source": "src/services/auditionService.ts:1241"
   },
   {
     "key": "bot.services.auditionService.c0c2b56a0",
@@ -1296,7 +1087,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:996"
+    "source": "src/services/auditionService.ts:1245"
   },
   {
     "key": "bot.services.auditionService.f77c3d26d",
@@ -1306,21 +1097,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1000"
-  },
-  {
-    "key": "bot.services.auditionService.da19a10be",
-    "group": "真人试音",
-    "label": "试音频道记录需要核实，尚未取消。邀请编号：{inviteId}",
-    "defaultText": "试音频道记录需要核实，尚未取消。邀请编号：{inviteId}",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1011"
+    "source": "src/services/auditionService.ts:1400"
   },
   {
     "key": "bot.services.auditionService.0f6086752",
@@ -1330,7 +1107,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1023"
+    "source": "src/services/auditionService.ts:1417"
   },
   {
     "key": "bot.services.auditionService.e37cde8ed",
@@ -1340,35 +1117,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1030"
-  },
-  {
-    "key": "bot.services.auditionService.242e4c0eb",
-    "group": "真人试音",
-    "label": "取消结果尚未确认，请让管理员核对邀请编号 {inviteId}，勿重新发起试音。",
-    "defaultText": "取消结果尚未确认，请让管理员核对邀请编号 {inviteId}，勿重新发起试音。",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1063"
-  },
-  {
-    "key": "bot.services.auditionService.06c928955",
-    "group": "真人试音",
-    "label": "邀请或频道状态已变化，尚未取消；请核对邀请编号 {inviteId} 后再处理。",
-    "defaultText": "邀请或频道状态已变化，尚未取消；请核对邀请编号 {inviteId} 后再处理。",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1079"
+    "source": "src/services/auditionService.ts:1424"
   },
   {
     "key": "bot.services.auditionService.0c4d86cf3",
@@ -1378,35 +1127,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1083"
-  },
-  {
-    "key": "bot.services.auditionService.7326016b8",
-    "group": "真人试音",
-    "label": "拒绝结果尚未确认，请让管理员核对邀请编号 {inviteId}，勿重新发起试音。",
-    "defaultText": "拒绝结果尚未确认，请让管理员核对邀请编号 {inviteId}，勿重新发起试音。",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1133"
-  },
-  {
-    "key": "bot.services.auditionService.7e24392bb",
-    "group": "真人试音",
-    "label": "邀请存在结算记录，尚未拒绝；请让管理员核对邀请编号 {inviteId}。",
-    "defaultText": "邀请存在结算记录，尚未拒绝；请让管理员核对邀请编号 {inviteId}。",
-    "variables": [
-      "inviteId"
-    ],
-    "requiredVariables": [
-      "inviteId"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/auditionService.ts:1142"
+    "source": "src/services/auditionService.ts:1463"
   },
   {
     "key": "bot.services.auditionService.2bcfb45f5",
@@ -1420,7 +1141,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "normalized"
     ],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:125"
+    "source": "src/services/auditionService.ts:115"
   },
   {
     "key": "bot.services.auditionService.2b92ae361",
@@ -1430,7 +1151,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts:126"
+    "source": "src/services/auditionService.ts:116"
   },
   {
     "key": "bot.ui.orderEmbeds.fc96d727c",
@@ -2777,7 +2498,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/miniDispatch.ts:18"
+    "source": "src/interactions/buttons/miniDispatch.ts:17"
   },
   {
     "key": "bot.interactions.buttons.miniDispatch.f3ba8f4a9",
@@ -2787,7 +2508,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/miniDispatch.ts:26"
+    "source": "src/interactions/buttons/miniDispatch.ts:25"
   },
   {
     "key": "bot.interactions.buttons.miniDispatch.0871b9758",
@@ -2797,7 +2518,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/miniDispatch.ts:30"
+    "source": "src/interactions/buttons/miniDispatch.ts:29"
   },
   {
     "key": "bot.interactions.buttons.miniDispatch.93674996e",
@@ -2812,7 +2533,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/interactions/buttons/miniDispatch.ts:63"
+    "source": "src/interactions/buttons/miniDispatch.ts:62"
   },
   {
     "key": "bot.interactions.buttons.miniDispatch.69e18746d",
@@ -2822,7 +2543,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/miniDispatch.ts:66"
+    "source": "src/interactions/buttons/miniDispatch.ts:65"
   },
   {
     "key": "bot.interactions.buttons.miniDispatch.255f4a21e",
@@ -2832,7 +2553,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/miniDispatch.ts:70"
+    "source": "src/interactions/buttons/miniDispatch.ts:68"
   },
   {
     "key": "bot.services.publicErrorMessages.bed9f7c1b",
@@ -2858,10 +2579,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/services/lotteryService.ts:418",
-    "examples": {
-      "fixed2": "1"
-    }
+    "source": "src/services/lotteryService.ts:419"
   },
   {
     "key": "bot.services.lotteryService.b8cc5d1f8",
@@ -2875,7 +2593,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "name"
     ],
     "maxLength": 2000,
-    "source": "src/services/lotteryService.ts:478"
+    "source": "src/services/lotteryService.ts:481"
   },
   {
     "key": "bot.services.orderNotificationService.ab93b281f",
@@ -2889,7 +2607,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "displayNo"
     ],
     "maxLength": 2000,
-    "source": "src/services/orderNotificationService.ts:121"
+    "source": "src/services/orderNotificationService.ts:120"
   },
   {
     "key": "bot.services.orderNotificationService.dc37e8775",
@@ -2903,7 +2621,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "displayNo"
     ],
     "maxLength": 2000,
-    "source": "src/services/orderNotificationService.ts:122"
+    "source": "src/services/orderNotificationService.ts:121"
   },
   {
     "key": "bot.services.timerService.a0105f104",
@@ -2921,25 +2639,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/services/timerService.ts:94"
-  },
-  {
-    "key": "bot.services.timerService.600b38551",
-    "group": "派单与订单",
-    "label": "您与{value} 总点单时长 **{elapsed}** 分钟，预计金额 **¥{value2}**。老板余额不足时会自动结单。",
-    "defaultText": "您与{value} 总点单时长 **{elapsed}** 分钟，预计金额 **¥{value2}**。老板余额不足时会自动结单。",
-    "variables": [
-      "value",
-      "elapsed",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value",
-      "elapsed",
-      "value2"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/timerService.ts:102"
+    "source": "src/services/timerService.ts:91"
   },
   {
     "key": "bot.interactions.buttons.acceptOrder.f76547c35",
@@ -2953,7 +2653,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "display"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/acceptOrder.ts:27"
+    "source": "src/interactions/buttons/acceptOrder.ts:25"
   },
   {
     "key": "bot.interactions.buttons.acceptOrder.2853072f9",
@@ -2967,7 +2667,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "displayNo"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/acceptOrder.ts:79"
+    "source": "src/interactions/buttons/acceptOrder.ts:97"
   },
   {
     "key": "bot.interactions.buttons.acceptOrder.44bd74853",
@@ -2981,7 +2681,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "displayNo"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/acceptOrder.ts:80"
+    "source": "src/interactions/buttons/acceptOrder.ts:98"
   },
   {
     "key": "bot.interactions.buttons.acceptOrder.d035817c6",
@@ -2991,7 +2691,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/acceptOrder.ts:192"
+    "source": "src/interactions/buttons/acceptOrder.ts:207"
   },
   {
     "key": "bot.interactions.buttons.acceptOrder.292b5f105",
@@ -3001,7 +2701,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/acceptOrder.ts:197"
+    "source": "src/interactions/buttons/acceptOrder.ts:212"
   },
   {
     "key": "bot.interactions.buttons.acceptOrder.29853332f",
@@ -3011,7 +2711,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/acceptOrder.ts:228"
+    "source": "src/interactions/buttons/acceptOrder.ts:243"
   },
   {
     "key": "bot.interactions.buttons.acceptOrder.b4e499ad2",
@@ -3021,7 +2721,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/acceptOrder.ts:228"
+    "source": "src/interactions/buttons/acceptOrder.ts:243"
   },
   {
     "key": "bot.interactions.buttons.declineOrder.8f945b3d3",
@@ -3035,7 +2735,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "displayNo"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/declineOrder.ts:86"
+    "source": "src/interactions/buttons/declineOrder.ts:83"
   },
   {
     "key": "bot.interactions.buttons.declineOrder.8cbe5ecc5",
@@ -3049,7 +2749,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "displayNo"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/declineOrder.ts:87"
+    "source": "src/interactions/buttons/declineOrder.ts:84"
   },
   {
     "key": "bot.interactions.buttons.declineOrder.363b595c3",
@@ -3059,7 +2759,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/declineOrder.ts:153"
+    "source": "src/interactions/buttons/declineOrder.ts:149"
   },
   {
     "key": "bot.interactions.buttons.declineOrder.40e6cb5e1",
@@ -3069,7 +2769,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/declineOrder.ts:158"
+    "source": "src/interactions/buttons/declineOrder.ts:154"
   },
   {
     "key": "bot.interactions.buttons.declineOrder.bc28f1780",
@@ -3079,7 +2779,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/declineOrder.ts:174"
+    "source": "src/interactions/buttons/declineOrder.ts:170"
   },
   {
     "key": "bot.interactions.buttons.declineOrder.2ad62f58e",
@@ -3089,7 +2789,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/declineOrder.ts:176"
+    "source": "src/interactions/buttons/declineOrder.ts:172"
   },
   {
     "key": "bot.interactions.buttons.declineOrder.1ea2b74d0",
@@ -3099,7 +2799,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/declineOrder.ts:177"
+    "source": "src/interactions/buttons/declineOrder.ts:173"
   },
   {
     "key": "bot.commands.lottery.9b93ba6f4",
@@ -3115,11 +2815,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/lottery.ts:75",
-    "examples": {
-      "fixed1": "`!抽奖`",
-      "fixed2": "`!抽奖 @用户`"
-    }
+    "source": "src/commands/lottery.ts:75"
   },
   {
     "key": "bot.commands.lottery.b27618240",
@@ -3330,10 +3026,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 4096,
-    "source": "src/commands/lottery.ts:146",
-    "examples": {
-      "fixed1": "!抽积木消耗该代金券"
-    }
+    "source": "src/commands/lottery.ts:146"
   },
   {
     "key": "bot.commands.lottery.5c7007dc5",
@@ -3381,12 +3074,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed5"
     ],
     "maxLength": 2000,
-    "source": "src/commands/lottery.ts:34",
-    "examples": {
-      "fixed3": "150",
-      "fixed4": "600",
-      "fixed5": "700"
-    }
+    "source": "src/commands/lottery.ts:34"
   },
   {
     "key": "bot.commands.renameCard.80cca201a",
@@ -3434,7 +3122,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "quantity"
     ],
     "maxLength": 4096,
-    "source": "src/features/giftFeedHelper.ts:216"
+    "source": "src/features/giftFeedHelper.ts:211"
   },
   {
     "key": "bot.features.giftFeedHelper.e4f3ebb98",
@@ -3448,7 +3136,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "totalAmount"
     ],
     "maxLength": 4096,
-    "source": "src/features/giftFeedHelper.ts:217"
+    "source": "src/features/giftFeedHelper.ts:212"
   },
   {
     "key": "bot.features.giftFeedHelper.3c1cdcb6c",
@@ -3468,10 +3156,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed4"
     ],
     "maxLength": 2000,
-    "source": "src/features/giftFeedHelper.ts:268",
-    "examples": {
-      "fixed4": "!打赏"
-    }
+    "source": "src/features/giftFeedHelper.ts:260"
   },
   {
     "key": "bot.features.giftFeedHelper.2974fb660",
@@ -3489,7 +3174,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "totalAmount"
     ],
     "maxLength": 2000,
-    "source": "src/features/giftFeedHelper.ts:272"
+    "source": "src/features/giftFeedHelper.ts:264"
   },
   {
     "key": "bot.commands.cash.9738b62a3",
@@ -3499,7 +3184,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/cash.ts:48"
+    "source": "src/commands/cash.ts:76"
   },
   {
     "key": "bot.commands.cash.70b8329a1",
@@ -3515,65 +3200,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/cash.ts",
-    "examples": {
-      "fixed1": "`!cash +金额 @用户`",
-      "fixed2": "`!cash -金额 @用户`"
-    }
-  },
-  {
-    "key": "bot.commands.cash.826b5d432",
-    "group": "充值、余额与提现",
-    "label": "原请求（{id}）已处理，本次未再次入账或扣款。",
-    "defaultText": "原请求（{id}）已处理，本次未再次入账或扣款。",
-    "variables": [
-      "id"
-    ],
-    "requiredVariables": [
-      "id"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/cash.ts:64"
-  },
-  {
-    "key": "bot.commands.cash.e461f6706",
-    "group": "充值、余额与提现",
-    "label": "已为 <@{targetId}> {value}余额 **{value2}**。当前余额：**{balance}**",
-    "defaultText": "已为 <@{targetId}> {value}余额 **{value2}**。当前余额：**{balance}**",
-    "variables": [
-      "targetId",
-      "value",
-      "value2",
-      "balance"
-    ],
-    "requiredVariables": [
-      "targetId",
-      "value",
-      "value2",
-      "balance"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/cash.ts"
-  },
-  {
-    "key": "bot.commands.cash.d1c9fbd60",
-    "group": "充值、余额与提现",
-    "label": "增加",
-    "defaultText": "增加",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/cash.ts:68"
-  },
-  {
-    "key": "bot.commands.cash.22b8b5dd0",
-    "group": "充值、余额与提现",
-    "label": "扣减",
-    "defaultText": "扣减",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/cash.ts:68"
+    "source": "src/commands/cash.ts:83"
   },
   {
     "key": "bot.commands.cash.853f0bffd",
@@ -3583,51 +3210,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/cash.ts"
-  },
-  {
-    "key": "bot.commands.cash.037cba099",
-    "group": "充值、余额与提现",
-    "label": "❌ 操作失败：TARGET_NOT_FOUND",
-    "defaultText": "❌ 操作失败：TARGET_NOT_FOUND",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/cash.ts"
-  },
-  {
-    "key": "bot.commands.cash.2fe18a2c7",
-    "group": "充值、余额与提现",
-    "label": "原请求记录与本次参数不一致，已阻止重复处理，请核对原流水。",
-    "defaultText": "原请求记录与本次参数不一致，已阻止重复处理，请核对原流水。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/cash.ts:76"
-  },
-  {
-    "key": "bot.commands.cash.bd0e4e9aa",
-    "group": "充值、余额与提现",
-    "label": "❌ 请求参数无效。",
-    "defaultText": "❌ 请求参数无效。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/cash.ts:77"
-  },
-  {
-    "key": "bot.commands.cash.f02292727",
-    "group": "充值、余额与提现",
-    "label": "提交结果待核实（请求 {id}），请先核对余额与原流水，勿重复提交。",
-    "defaultText": "提交结果待核实（请求 {id}），请先核对余额与原流水，勿重复提交。",
-    "variables": [
-      "id"
-    ],
-    "requiredVariables": [
-      "id"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/cash.ts:78"
+    "source": "src/commands/cash.ts:230"
   },
   {
     "key": "bot.commands.gifting.a372f08e3",
@@ -3689,7 +3272,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1223"
+    "source": "src/commands/gifting.ts:1296"
   },
   {
     "key": "bot.commands.gifting.a13e30e3b",
@@ -3703,10 +3286,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1248",
-    "examples": {
-      "fixed1": "`!匿名打赏 数量/礼物名 PEIWANID`"
-    }
+    "source": "src/commands/gifting.ts:1321"
   },
   {
     "key": "bot.commands.gifting.ee83c161b",
@@ -3722,11 +3302,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1254",
-    "examples": {
-      "fixed1": "`!匿名打赏 数量/礼物名 PEIWANID`",
-      "fixed2": "`!匿名打赏 1/甜甜圈 1101`"
-    }
+    "source": "src/commands/gifting.ts:1327"
   },
   {
     "key": "bot.commands.gifting.e2bd8b39a",
@@ -3736,7 +3312,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1268"
+    "source": "src/commands/gifting.ts:1341"
   },
   {
     "key": "bot.commands.gifting.ca5d3d053",
@@ -3750,10 +3326,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1274",
-    "examples": {
-      "fixed1": "`数量/礼物名`"
-    }
+    "source": "src/commands/gifting.ts:1347"
   },
   {
     "key": "bot.commands.gifting.c8e679cd1",
@@ -3763,7 +3336,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1282"
+    "source": "src/commands/gifting.ts:1355"
   },
   {
     "key": "bot.commands.gifting.7bd601d56",
@@ -3777,7 +3350,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "peiwanId"
     ],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1291"
+    "source": "src/commands/gifting.ts:1364"
   },
   {
     "key": "bot.commands.gifting.ac6fd2703",
@@ -3787,7 +3360,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1297"
+    "source": "src/commands/gifting.ts:1370"
   },
   {
     "key": "bot.commands.gifting.8fa0025e3",
@@ -3797,7 +3370,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1329"
+    "source": "src/commands/gifting.ts:1401"
   },
   {
     "key": "bot.commands.gifting.d45a673aa",
@@ -3807,7 +3380,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1349"
+    "source": "src/commands/gifting.ts:1421"
   },
   {
     "key": "bot.commands.gifting.97fcc3e6e",
@@ -3821,10 +3394,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1355",
-    "examples": {
-      "fixed1": "`!代打赏 数量/礼物名 @老板 @陪玩A @陪玩B`"
-    }
+    "source": "src/commands/gifting.ts:1427"
   },
   {
     "key": "bot.commands.gifting.36a293791",
@@ -3834,7 +3404,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1362"
+    "source": "src/commands/gifting.ts:1434"
   },
   {
     "key": "bot.commands.gifting.54e0549c3",
@@ -3850,7 +3420,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "hint"
     ],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1383"
+    "source": "src/commands/gifting.ts:1455"
   },
   {
     "key": "bot.commands.gifting.fcd86e119",
@@ -3860,7 +3430,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:147"
+    "source": "src/commands/gifting.ts:151"
   },
   {
     "key": "bot.commands.gifting.bb7ef1c24",
@@ -3876,7 +3446,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:179"
+    "source": "src/commands/gifting.ts:183"
   },
   {
     "key": "bot.commands.gifting.a0c9b2e92",
@@ -3886,7 +3456,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1387"
+    "source": "src/commands/gifting.ts:1459"
   },
   {
     "key": "bot.commands.gifting.7674891f1",
@@ -3902,11 +3472,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1435",
-    "examples": {
-      "fixed1": "!匿名打赏",
-      "fixed2": "5"
-    }
+    "source": "src/commands/gifting.ts:1506"
   },
   {
     "key": "bot.commands.gifting.1c0e73eb8",
@@ -3922,11 +3488,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/gifting.ts:1441",
-    "examples": {
-      "fixed1": "`!打赏 数量/礼物名 @对方(可多个)`",
-      "fixed2": "`!打赏 3/甜甜圈 @陪玩A @陪玩B`"
-    }
+    "source": "src/commands/gifting.ts:1512"
   },
   {
     "key": "bot.assistant.orderActions.782169a27",
@@ -3936,7 +3498,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:367"
+    "source": "src/assistant/orderActions.ts:360"
   },
   {
     "key": "bot.assistant.orderActions.15af82fa8",
@@ -3946,41 +3508,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:269"
-  },
-  {
-    "key": "bot.assistant.orderActions.7662ce155",
-    "group": "智能助手与百科",
-    "label": "派单标识：{orderId}",
-    "defaultText": "派单标识：{orderId}",
-    "variables": [
-      "orderId"
-    ],
-    "requiredVariables": [
-      "orderId"
-    ],
-    "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:270"
-  },
-  {
-    "key": "bot.assistant.orderActions.3512c7bb4",
-    "group": "智能助手与百科",
-    "label": "派单人和业务详情仅在受保护的后台记录中核对。",
-    "defaultText": "派单人和业务详情仅在受保护的后台记录中核对。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:271"
-  },
-  {
-    "key": "bot.assistant.orderActions.2fb53f6f4",
-    "group": "智能助手与百科",
-    "label": "正在办理您的匿名派单，请稍候；请勿重复提交。",
-    "defaultText": "正在办理您的匿名派单，请稍候；请勿重复提交。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:212"
+    "source": "src/assistant/orderActions.ts:263"
   },
   {
     "key": "bot.assistant.orderActions.f8c37eefa",
@@ -3990,7 +3518,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:259"
+    "source": "src/assistant/orderActions.ts:251"
   },
   {
     "key": "bot.assistant.orderActions.5c8d7081c",
@@ -4000,7 +3528,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 256,
-    "source": "src/assistant/orderActions.ts:356"
+    "source": "src/assistant/orderActions.ts:349"
   },
   {
     "key": "bot.assistant.orderActions.186688b35",
@@ -4010,7 +3538,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 1024,
-    "source": "src/assistant/orderActions.ts:357"
+    "source": "src/assistant/orderActions.ts:350"
   },
   {
     "key": "bot.assistant.orderActions.6eb3984b3",
@@ -4020,7 +3548,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 256,
-    "source": "src/assistant/orderActions.ts:351"
+    "source": "src/assistant/orderActions.ts:344"
   },
   {
     "key": "bot.assistant.orderActions.60564d111",
@@ -4030,7 +3558,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 4096,
-    "source": "src/assistant/orderActions.ts:349"
+    "source": "src/assistant/orderActions.ts:342"
   },
   {
     "key": "bot.assistant.orderActions.c2bc55539",
@@ -4041,7 +3569,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/assistant/orderActions.ts:347"
+    "source": "src/assistant/orderActions.ts:340"
   },
   {
     "key": "bot.assistant.orderActions.cde10f7e8",
@@ -4051,7 +3579,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 256,
-    "source": "src/assistant/orderActions.ts:362"
+    "source": "src/assistant/orderActions.ts:355"
   },
   {
     "key": "bot.assistant.confirmButtons.46cc763b0",
@@ -4062,7 +3590,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/assistant/confirmButtons.ts:36"
+    "source": "src/assistant/confirmButtons.ts:29"
   },
   {
     "key": "bot.assistant.confirmButtons.b36ade4fc",
@@ -4073,7 +3601,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/assistant/confirmButtons.ts:41"
+    "source": "src/assistant/confirmButtons.ts:34"
   },
   {
     "key": "bot.assistant.confirmButtons.8b5dcbf28",
@@ -4083,27 +3611,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:85"
-  },
-  {
-    "key": "bot.assistant.confirmButtons.aecd34f04",
-    "group": "智能助手与百科",
-    "label": "这不是发给你的确认，或确认已过期。请自行重新发起操作。",
-    "defaultText": "这不是发给你的确认，或确认已过期。请自行重新发起操作。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:155"
-  },
-  {
-    "key": "bot.assistant.confirmButtons.d885d9be2",
-    "group": "智能助手与百科",
-    "label": "您还有请求正在处理，或操作过于频繁；请稍候再确认。",
-    "defaultText": "您还有请求正在处理，或操作过于频繁；请稍候再确认。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:160"
+    "source": "src/assistant/confirmButtons.ts:77"
   },
   {
     "key": "bot.assistant.confirmButtons.caf7f1cca",
@@ -4113,67 +3621,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:179"
-  },
-  {
-    "key": "bot.assistant.confirmButtons.cf0bce223",
-    "group": "智能助手与百科",
-    "label": "已确认，正在处理，请勿重复提交...",
-    "defaultText": "已确认，正在处理，请勿重复提交...",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:186"
-  },
-  {
-    "key": "bot.assistant.confirmButtons.052560554",
-    "group": "智能助手与百科",
-    "label": "本次操作已处理，详细结果请查看私密回复或原业务界面；不要重复提交。",
-    "defaultText": "本次操作已处理，详细结果请查看私密回复或原业务界面；不要重复提交。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:212"
-  },
-  {
-    "key": "bot.assistant.confirmButtons.eaf13075b",
-    "group": "智能助手与百科",
-    "label": "本次操作未完成或结果待核实，请查看私密提示或联系服务器客服；不要重复提交。",
-    "defaultText": "本次操作未完成或结果待核实，请查看私密提示或联系服务器客服；不要重复提交。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:237"
-  },
-  {
-    "key": "bot.assistant.confirmButtons.f4e249b39",
-    "group": "智能助手与百科",
-    "label": "本次操作已经处理成功，但结果提示暂时未能送达。请联系服务器客服核实，不要重复提交。",
-    "defaultText": "本次操作已经处理成功，但结果提示暂时未能送达。请联系服务器客服核实，不要重复提交。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:224"
-  },
-  {
-    "key": "bot.assistant.confirmButtons.09682ae2d",
-    "group": "智能助手与百科",
-    "label": "本次操作的结果暂时无法确认，请联系服务器客服核实。为避免重复派单或扣款，在客服核实前不要重复提交。",
-    "defaultText": "本次操作的结果暂时无法确认，请联系服务器客服核实。为避免重复派单或扣款，在客服核实前不要重复提交。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:138"
-  },
-  {
-    "key": "bot.assistant.confirmButtons.c7ef20356",
-    "group": "智能助手与百科",
-    "label": "这次确认已处理过，不会重复执行。",
-    "defaultText": "这次确认已处理过，不会重复执行。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:139"
+    "source": "src/assistant/confirmButtons.ts:158"
   },
   {
     "key": "bot.assistant.confirmButtons.63ddb81e6",
@@ -4183,7 +3631,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:140"
+    "source": "src/assistant/confirmButtons.ts:127"
   },
   {
     "key": "bot.assistant.confirmButtons.6f93aff08",
@@ -4193,7 +3641,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:141"
+    "source": "src/assistant/confirmButtons.ts:128"
   },
   {
     "key": "bot.assistant.confirmButtons.ebd65bfcb",
@@ -4203,7 +3651,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:142"
+    "source": "src/assistant/confirmButtons.ts:129"
   },
   {
     "key": "bot.assistant.confirmButtons.dff1f257b",
@@ -4213,7 +3661,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:146"
+    "source": "src/assistant/confirmButtons.ts:133"
   },
   {
     "key": "bot.assistant.confirmButtons.565645c2f",
@@ -4223,31 +3671,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/confirmButtons.ts:147"
-  },
-  {
-    "key": "bot.assistant.orderActions.3e764d30d",
-    "group": "智能助手与百科",
-    "label": "已按您的要求发起匿名派单：{url}。请等待陪玩回应；不要重复提交。",
-    "defaultText": "已按您的要求发起匿名派单：{url}。请等待陪玩回应；不要重复提交。",
-    "variables": [
-      "url"
-    ],
-    "requiredVariables": [
-      "url"
-    ],
-    "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:275"
-  },
-  {
-    "key": "bot.assistant.executor.b8dd0a5a3",
-    "group": "智能助手与百科",
-    "label": "已发送点单价格选择界面，请在私聊中选择报价。选择后才会向陪玩发出邀请；对方接受后才算接单成功。",
-    "defaultText": "已发送点单价格选择界面，请在私聊中选择报价。选择后才会向陪玩发出邀请；对方接受后才算接单成功。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/executor.ts:44"
+    "source": "src/assistant/confirmButtons.ts:134"
   },
   {
     "key": "bot.assistant.executor.2fa1e45d4",
@@ -4329,10 +3753,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/helpResponses.ts:11",
-    "examples": {
-      "fixed1": "1101"
-    }
+    "source": "src/assistant/helpResponses.ts:11"
   },
   {
     "key": "bot.assistant.helpResponses.f43470ba0",
@@ -4356,10 +3777,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/helpResponses.ts:13",
-    "examples": {
-      "fixed1": "100"
-    }
+    "source": "src/assistant/helpResponses.ts:13"
   },
   {
     "key": "bot.assistant.helpResponses.4859fe420",
@@ -4377,12 +3795,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed3"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/helpResponses.ts:17",
-    "examples": {
-      "fixed1": "10",
-      "fixed2": "10",
-      "fixed3": "61111"
-    }
+    "source": "src/assistant/helpResponses.ts:17"
   },
   {
     "key": "bot.assistant.helpResponses.ebb66c142",
@@ -4426,10 +3839,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/helpResponses.ts:25",
-    "examples": {
-      "fixed1": "1234"
-    }
+    "source": "src/assistant/helpResponses.ts:25"
   },
   {
     "key": "bot.assistant.helpResponses.145ddeb0a",
@@ -4513,10 +3923,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/helpResponses.ts:39",
-    "examples": {
-      "fixed1": "1101"
-    }
+    "source": "src/assistant/helpResponses.ts:39"
   },
   {
     "key": "bot.assistant.helpResponses.f23740cef",
@@ -4540,10 +3947,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/helpResponses.ts:41",
-    "examples": {
-      "fixed1": "10"
-    }
+    "source": "src/assistant/helpResponses.ts:41"
   },
   {
     "key": "bot.assistant.helpResponses.18e0a32a2",
@@ -4623,27 +4027,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "gross"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/executor.ts:121"
-  },
-  {
-    "key": "bot.services.orderCompletion.970112a58",
-    "group": "派单与订单",
-    "label": "订单账户身份、余额或结算凭据需要人工核实，本次未结算。请联系工作人员，勿反复提交。",
-    "defaultText": "订单账户身份、余额或结算凭据需要人工核实，本次未结算。请联系工作人员，勿反复提交。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/orderCompletion.ts:28"
-  },
-  {
-    "key": "bot.services.orderCompletion.30545438f",
-    "group": "派单与订单",
-    "label": "结单失败，请稍后重试或联系工作人员。",
-    "defaultText": "结单失败，请稍后重试或联系工作人员。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/orderCompletion.ts:13"
+    "source": "src/assistant/executor.ts:117"
   },
   {
     "key": "bot.assistant.index.c9876e6f5",
@@ -4653,7 +4037,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/index.ts:96"
+    "source": "src/assistant/index.ts:52"
   },
   {
     "key": "bot.assistant.index.d350e2541",
@@ -4663,7 +4047,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/index.ts:99"
+    "source": "src/assistant/index.ts:55"
   },
   {
     "key": "bot.assistant.index.207a50b46",
@@ -4673,7 +4057,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/index.ts:102"
+    "source": "src/assistant/index.ts:58"
   },
   {
     "key": "bot.assistant.index.708d03d17",
@@ -4683,7 +4067,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/index.ts:114"
+    "source": "src/assistant/index.ts:70"
   },
   {
     "key": "bot.assistant.index.0cffc9a56",
@@ -4693,67 +4077,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/index.ts:116"
-  },
-  {
-    "key": "bot.assistant.index.e58977c1f",
-    "group": "智能助手与百科",
-    "label": "上一条请求还在处理中，请稍等。",
-    "defaultText": "上一条请求还在处理中，请稍等。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:329"
-  },
-  {
-    "key": "bot.assistant.index.d4331ce4e",
-    "group": "智能助手与百科",
-    "label": "消息有点快，请一分钟后再试。",
-    "defaultText": "消息有点快，请一分钟后再试。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:329"
-  },
-  {
-    "key": "bot.assistant.index.06008e413",
-    "group": "智能助手与百科",
-    "label": "请先加入本俱乐部服务器，再使用操作助手；如果已经加入，请稍后重试或联系客服。",
-    "defaultText": "请先加入本俱乐部服务器，再使用操作助手；如果已经加入，请稍后重试或联系客服。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:335"
-  },
-  {
-    "key": "bot.assistant.index.881eb9584",
-    "group": "智能助手与百科",
-    "label": "这次请求暂时无法处理，请稍后重试或联系服务器客服。",
-    "defaultText": "这次请求暂时无法处理，请稍后重试或联系服务器客服。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:339"
-  },
-  {
-    "key": "bot.assistant.index.ec20729ef",
-    "group": "智能助手与百科",
-    "label": "好的，本次办理已取消。需要时可以重新发起。",
-    "defaultText": "好的，本次办理已取消。需要时可以重新发起。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:362"
-  },
-  {
-    "key": "bot.assistant.index.f5aa9464e",
-    "group": "智能助手与百科",
-    "label": "为了避免误操作，请点击上方的办理或确认按钮；文字“好/确认”不会直接执行操作。",
-    "defaultText": "为了避免误操作，请点击上方的办理或确认按钮；文字“好/确认”不会直接执行操作。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:366"
+    "source": "src/assistant/index.ts:72"
   },
   {
     "key": "bot.assistant.index.630a093f9",
@@ -4763,7 +4087,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/index.ts:55"
+    "source": "src/assistant/index.ts:41"
   },
   {
     "key": "bot.events.messageCreate.6702e0f5e",
@@ -4773,7 +4097,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:827"
+    "source": "src/events/messageCreate.ts:822"
   },
   {
     "key": "bot.events.messageCreate.77c2455d2",
@@ -4789,7 +4113,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "id"
     ],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:828"
+    "source": "src/events/messageCreate.ts:823"
   },
   {
     "key": "bot.events.messageCreate.f137616bb",
@@ -4803,7 +4127,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:829"
+    "source": "src/events/messageCreate.ts:824"
   },
   {
     "key": "bot.events.messageCreate.9f0523d38",
@@ -4813,7 +4137,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:829"
+    "source": "src/events/messageCreate.ts:824"
   },
   {
     "key": "bot.events.messageCreate.32de6c413",
@@ -4827,7 +4151,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "balanceLabel"
     ],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:830"
+    "source": "src/events/messageCreate.ts:825"
   },
   {
     "key": "bot.events.messageCreate.52416c4ed",
@@ -4837,7 +4161,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:825"
+    "source": "src/events/messageCreate.ts:820"
   },
   {
     "key": "bot.events.messageCreate.e07c43f05",
@@ -4847,7 +4171,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:345"
+    "source": "src/events/messageCreate.ts:347"
   },
   {
     "key": "bot.events.messageCreate.5e16f9671",
@@ -4857,7 +4181,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:348"
+    "source": "src/events/messageCreate.ts:350"
   },
   {
     "key": "bot.events.messageCreate.c9072d958",
@@ -4867,7 +4191,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:351"
+    "source": "src/events/messageCreate.ts:353"
   },
   {
     "key": "bot.events.messageCreate.58847a171",
@@ -4877,7 +4201,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:354"
+    "source": "src/events/messageCreate.ts:356"
   },
   {
     "key": "bot.events.messageCreate.867205bb2",
@@ -4895,11 +4219,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed3"
     ],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:358",
-    "examples": {
-      "fixed2": "!陪玩结单",
-      "fixed3": "!老板结单"
-    }
+    "source": "src/events/messageCreate.ts:360"
   },
   {
     "key": "bot.events.messageCreate.34deaff5b",
@@ -4913,7 +4233,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "orderLabel"
     ],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:381"
+    "source": "src/events/messageCreate.ts:383"
   },
   {
     "key": "bot.events.messageCreate.b37967522",
@@ -4923,7 +4243,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:385"
+    "source": "src/events/messageCreate.ts:387"
   },
   {
     "key": "bot.events.messageCreate.e3a7fe449",
@@ -4939,11 +4259,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:407",
-    "examples": {
-      "fixed1": "`!点单 <陪玩编号>`",
-      "fixed2": "`!点单 1101`"
-    }
+    "source": "src/events/messageCreate.ts:407"
   },
   {
     "key": "bot.events.messageCreate.25b62b24a",
@@ -5003,10 +4319,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:476",
-    "examples": {
-      "fixed2": "100"
-    }
+    "source": "src/events/messageCreate.ts:476"
   },
   {
     "key": "bot.events.messageCreate.d899b7139",
@@ -5151,10 +4464,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:562",
-    "examples": {
-      "fixed1": "`!yes.12345`"
-    }
+    "source": "src/events/messageCreate.ts:562"
   },
   {
     "key": "bot.events.messageCreate.100a616d6",
@@ -5220,10 +4530,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:616",
-    "examples": {
-      "fixed2": "5"
-    }
+    "source": "src/events/messageCreate.ts:616"
   },
   {
     "key": "bot.events.messageCreate.72f7853d0",
@@ -5311,7 +4618,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/events/messageCreate.ts:778"
+    "source": "src/events/messageCreate.ts:773"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.679ef5db5",
@@ -5321,7 +4628,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:395"
+    "source": "src/interactions/buttons/orderPriceSelect.ts:393"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.deea94906",
@@ -5337,7 +4644,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "hostId"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:396"
+    "source": "src/interactions/buttons/orderPriceSelect.ts:394"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.b71cbe0a9",
@@ -5353,7 +4660,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "workerId"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:397"
+    "source": "src/interactions/buttons/orderPriceSelect.ts:395"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.f4fc629ac",
@@ -5367,7 +4674,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "orderLabel"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:398"
+    "source": "src/interactions/buttons/orderPriceSelect.ts:396"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.aa4508601",
@@ -5381,7 +4688,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:399"
+    "source": "src/interactions/buttons/orderPriceSelect.ts:397"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.ba976c202",
@@ -5391,7 +4698,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:399"
+    "source": "src/interactions/buttons/orderPriceSelect.ts:397"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.74fd8b49f",
@@ -5405,7 +4712,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "balanceLabel"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:400"
+    "source": "src/interactions/buttons/orderPriceSelect.ts:398"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.111eb1a60",
@@ -5415,7 +4722,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:393"
+    "source": "src/interactions/buttons/orderPriceSelect.ts:391"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.3a009e197",
@@ -5547,10 +4854,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:267",
-    "examples": {
-      "fixed2": "100"
-    }
+    "source": "src/interactions/buttons/orderPriceSelect.ts:267"
   },
   {
     "key": "bot.interactions.buttons.orderPriceSelect.bd9aeb4f0",
@@ -5578,7 +4882,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value2"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/orderPriceSelect.ts:372"
+    "source": "src/interactions/buttons/orderPriceSelect.ts:370"
   },
   {
     "key": "bot.interactions.buttons.endOrder.8320af745",
@@ -5588,7 +4892,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/endOrder.ts:18"
+    "source": "src/interactions/buttons/endOrder.ts:17"
   },
   {
     "key": "bot.interactions.buttons.endOrder.71feb7bc6",
@@ -5598,7 +4902,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/endOrder.ts:37"
+    "source": "src/interactions/buttons/endOrder.ts:36"
   },
   {
     "key": "bot.interactions.buttons.endOrder.4a22c57b6",
@@ -5608,7 +4912,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/endOrder.ts:46"
+    "source": "src/interactions/buttons/endOrder.ts:45"
   },
   {
     "key": "bot.interactions.buttons.endOrder.59bf3c96d",
@@ -5618,7 +4922,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/endOrder.ts:50"
+    "source": "src/interactions/buttons/endOrder.ts:49"
   },
   {
     "key": "bot.interactions.buttons.endOrder.9d80b92c1",
@@ -5632,7 +4936,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "orderLabel"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/endOrder.ts:91"
+    "source": "src/interactions/buttons/endOrder.ts:90"
   },
   {
     "key": "bot.interactions.buttons.endOrder.134ff80e1",
@@ -5646,7 +4950,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "orderLabel"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/buttons/endOrder.ts:96"
+    "source": "src/interactions/buttons/endOrder.ts:95"
   },
   {
     "key": "bot.ui.blockStackEmbeds.f2e998ee2",
@@ -5740,10 +5044,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 4096,
-    "source": "src/ui/blockStackEmbeds.ts:81",
-    "examples": {
-      "fixed1": "10"
-    }
+    "source": "src/ui/blockStackEmbeds.ts:81"
   },
   {
     "key": "bot.ui.blockStackEmbeds.6c04c213c",
@@ -5777,10 +5078,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 4096,
-    "source": "src/ui/blockStackEmbeds.ts:85",
-    "examples": {
-      "fixed1": "!抽积木"
-    }
+    "source": "src/ui/blockStackEmbeds.ts:85"
   },
   {
     "key": "bot.ui.blockStackEmbeds.d9e9ae68c",
@@ -6381,13 +5679,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed6"
     ],
     "maxLength": 1024,
-    "source": "src/ui/scratchEmbeds.ts:59",
-    "examples": {
-      "fixed3": "!刮刮乐",
-      "fixed4": "!刮刮乐",
-      "fixed5": "!刮刮乐",
-      "fixed6": "!刮刮乐"
-    }
+    "source": "src/ui/scratchEmbeds.ts:59"
   },
   {
     "key": "bot.ui.scratchEmbeds.c236ea228",
@@ -6565,7 +5857,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/giftingSelect.ts:25"
+    "source": "src/interactions/selects/giftingSelect.ts:24"
   },
   {
     "key": "bot.interactions.selects.giftingSelect.2824f8ac4",
@@ -6575,7 +5867,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/giftingSelect.ts:56"
+    "source": "src/interactions/selects/giftingSelect.ts:55"
   },
   {
     "key": "bot.interactions.selects.giftingSelect.7bce4758a",
@@ -6585,7 +5877,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/giftingSelect.ts:76"
+    "source": "src/interactions/selects/giftingSelect.ts:75"
   },
   {
     "key": "bot.interactions.selects.giftingSelect.1985471e1",
@@ -6595,7 +5887,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/giftingSelect.ts:83"
+    "source": "src/interactions/selects/giftingSelect.ts:82"
   },
   {
     "key": "bot.interactions.selects.discountSelect.e45fa5fe5",
@@ -6618,36 +5910,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/interactions/selects/discountSelect.ts:31"
   },
   {
-    "key": "bot.interactions.selects.discountSelect.68352a690",
-    "group": "客服与运营工具",
-    "label": "暂时无法使用该优惠，本次未使用，请联系客服核实。",
-    "defaultText": "暂时无法使用该优惠，本次未使用，请联系客服核实。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:57"
-  },
-  {
-    "key": "bot.interactions.selects.discountSelect.1010cbbb3",
-    "group": "客服与运营工具",
-    "label": "优惠使用结果未确认，请先核对订单、券和余额，勿重复提交。",
-    "defaultText": "优惠使用结果未确认，请先核对订单、券和余额，勿重复提交。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:60"
-  },
-  {
-    "key": "bot.interactions.selects.discountSelect.9ec58988c",
-    "group": "客服与运营工具",
-    "label": "订单已撤销，不能使用优惠。",
-    "defaultText": "订单已撤销，不能使用优惠。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:63"
-  },
-  {
     "key": "bot.interactions.selects.discountSelect.37e0ae147",
     "group": "客服与运营工具",
     "label": "未找到对应订单。",
@@ -6655,7 +5917,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:66"
+    "source": "src/interactions/selects/discountSelect.ts:56"
   },
   {
     "key": "bot.interactions.selects.discountSelect.699ecdcb1",
@@ -6665,7 +5927,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:69"
+    "source": "src/interactions/selects/discountSelect.ts:59"
   },
   {
     "key": "bot.interactions.selects.discountSelect.1e9f8fda9",
@@ -6675,7 +5937,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:72"
+    "source": "src/interactions/selects/discountSelect.ts:62"
   },
   {
     "key": "bot.interactions.selects.discountSelect.10b0fe8f4",
@@ -6685,7 +5947,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:75"
+    "source": "src/interactions/selects/discountSelect.ts:65"
   },
   {
     "key": "bot.interactions.selects.discountSelect.f9b473a72",
@@ -6695,7 +5957,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:78"
+    "source": "src/interactions/selects/discountSelect.ts:68"
   },
   {
     "key": "bot.interactions.selects.discountSelect.e4d803500",
@@ -6709,7 +5971,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "label"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:81"
+    "source": "src/interactions/selects/discountSelect.ts:71"
   },
   {
     "key": "bot.interactions.selects.discountSelect.e255430fb",
@@ -6729,7 +5991,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:86"
+    "source": "src/interactions/selects/discountSelect.ts:76"
   },
   {
     "key": "bot.interactions.selects.discountSelect.36aedb2ba",
@@ -6745,7 +6007,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/interactions/selects/discountSelect.ts:95"
+    "source": "src/interactions/selects/discountSelect.ts:85"
   },
   {
     "key": "bot.commands.totalEarn.d89ede695",
@@ -6771,11 +6033,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/totalEarn.ts:48",
-    "examples": {
-      "fixed1": "`!totalearn +金额 @陪玩`",
-      "fixed2": "`!totalearn -金额 @陪玩`"
-    }
+    "source": "src/commands/totalEarn.ts:48"
   },
   {
     "key": "bot.commands.totalEarn.7559d1158",
@@ -6830,20 +6088,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/commands/totalEarn.ts:73"
   },
   {
-    "key": "bot.commands.totalEarn.74606f45c",
-    "group": "积分、券与权益",
-    "label": "❌ 操作失败：{message}",
-    "defaultText": "❌ 操作失败：{message}",
-    "variables": [
-      "message"
-    ],
-    "requiredVariables": [
-      "message"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/totalEarn.ts"
-  },
-  {
     "key": "bot.commands.totalSpent.ab297ccc1",
     "group": "积分、券与权益",
     "label": "❌ 你没有权限使用该命令。",
@@ -6867,11 +6111,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/totalSpent.ts:49",
-    "examples": {
-      "fixed1": "`!totalspent +金额 @用户`",
-      "fixed2": "`!totalspent -金额 @用户`"
-    }
+    "source": "src/commands/totalSpent.ts:49"
   },
   {
     "key": "bot.commands.totalSpent.027b3eb24",
@@ -6924,20 +6164,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/commands/totalSpent.ts:74"
   },
   {
-    "key": "bot.commands.totalSpent.72d5f4a7b",
-    "group": "积分、券与权益",
-    "label": "❌ 操作失败：{message}",
-    "defaultText": "❌ 操作失败：{message}",
-    "variables": [
-      "message"
-    ],
-    "requiredVariables": [
-      "message"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/totalSpent.ts"
-  },
-  {
     "key": "bot.commands.loyaltyPoints.9e908b007",
     "group": "积分、券与权益",
     "label": "❌ 你没有权限使用该命令。",
@@ -6961,11 +6187,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/loyaltyPoints.ts:50",
-    "examples": {
-      "fixed1": "`!积分 +金额 @用户`",
-      "fixed2": "`!积分 -金额 @用户`"
-    }
+    "source": "src/commands/loyaltyPoints.ts:50"
   },
   {
     "key": "bot.commands.loyaltyPoints.cb5028640",
@@ -7006,20 +6228,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 2000,
     "source": "src/commands/loyaltyPoints.ts:73"
-  },
-  {
-    "key": "bot.commands.loyaltyPoints.c541eff8e",
-    "group": "积分、券与权益",
-    "label": "❌ 操作失败：{message}",
-    "defaultText": "❌ 操作失败：{message}",
-    "variables": [
-      "message"
-    ],
-    "requiredVariables": [
-      "message"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/loyaltyPoints.ts"
   },
   {
     "key": "bot.commands.grantCouponSlash.ebe1b0bee",
@@ -7083,10 +6291,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed4"
     ],
     "maxLength": 2000,
-    "source": "src/commands/grantCouponSlash.ts:163",
-    "examples": {
-      "fixed4": "30"
-    }
+    "source": "src/commands/grantCouponSlash.ts:163"
   },
   {
     "key": "bot.commands.grantCouponSlash.0c03927f7",
@@ -7150,10 +6355,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/grantCouponSlash.ts:149",
-    "examples": {
-      "fixed1": "!抽积木消耗该代金券"
-    }
+    "source": "src/commands/grantCouponSlash.ts:149"
   },
   {
     "key": "bot.commands.registerPeiwanSlash.671fff290",
@@ -7182,26 +6384,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/commands/registerPeiwanSlash.ts:48"
   },
   {
-    "key": "bot.commands.registerPeiwanSlash.f99925412",
-    "group": "名片、资料与入职",
-    "label": "未找到该用户的陪玩资料，请先完善资料。",
-    "defaultText": "未找到该用户的陪玩资料，请先完善资料。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/registerPeiwanSlash.ts:53"
-  },
-  {
-    "key": "bot.commands.registerPeiwanSlash.a00c27aa7",
-    "group": "名片、资料与入职",
-    "label": "暂时无法确认录入结果，请先查看陪玩资料或联系管理员。",
-    "defaultText": "暂时无法确认录入结果，请先查看陪玩资料或联系管理员。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/registerPeiwanSlash.ts:54"
-  },
-  {
     "key": "bot.commands.redEnvelopeSlash.27826c3fe",
     "group": "红包",
     "label": "请在服务器频道里发红包哦。",
@@ -7209,7 +6391,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelopeSlash.ts:59"
+    "source": "src/commands/redEnvelopeSlash.ts:58"
   },
   {
     "key": "bot.commands.redEnvelopeSlash.50db62f4e",
@@ -7223,10 +6405,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelopeSlash.ts:69",
-    "examples": {
-      "fixed1": "100"
-    }
+    "source": "src/commands/redEnvelopeSlash.ts:68"
   },
   {
     "key": "bot.commands.redEnvelopeSlash.ffaad059d",
@@ -7240,10 +6419,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelopeSlash.ts:73",
-    "examples": {
-      "fixed1": "10"
-    }
+    "source": "src/commands/redEnvelopeSlash.ts:72"
   },
   {
     "key": "bot.commands.redEnvelopeSlash.ce517833c",
@@ -7253,7 +6429,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelopeSlash.ts:94"
+    "source": "src/commands/redEnvelopeSlash.ts:93"
   },
   {
     "key": "bot.commands.redEnvelopeSlash.b14ba1293",
@@ -7263,7 +6439,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelopeSlash.ts:143"
+    "source": "src/commands/redEnvelopeSlash.ts:142"
   },
   {
     "key": "bot.commands.keywordRedEnvelopeSlash.ea2610790",
@@ -7277,7 +6453,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "reason"
     ],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelopeSlash.ts:22"
+    "source": "src/commands/keywordRedEnvelopeSlash.ts:21"
   },
   {
     "key": "bot.services.redEnvelopeService.515dfc435",
@@ -7301,10 +6477,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/services/redEnvelopeService.ts:90",
-    "examples": {
-      "fixed1": "50"
-    }
+    "source": "src/services/redEnvelopeService.ts:90"
   },
   {
     "key": "bot.services.redEnvelopeService.7963bddd1",
@@ -7320,11 +6493,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/services/redEnvelopeService.ts:93",
-    "examples": {
-      "fixed1": "@everyone",
-      "fixed2": "@here"
-    }
+    "source": "src/services/redEnvelopeService.ts:93"
   },
   {
     "key": "bot.commands.keywordRedEnvelopeSlash.0cc1e4bc5",
@@ -7334,7 +6503,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelopeSlash.ts:68"
+    "source": "src/commands/keywordRedEnvelopeSlash.ts:67"
   },
   {
     "key": "bot.commands.keywordRedEnvelopeSlash.810804fab",
@@ -7348,10 +6517,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelopeSlash.ts:84",
-    "examples": {
-      "fixed1": "100"
-    }
+    "source": "src/commands/keywordRedEnvelopeSlash.ts:83"
   },
   {
     "key": "bot.commands.keywordRedEnvelopeSlash.2e21efc1b",
@@ -7365,10 +6531,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelopeSlash.ts:88",
-    "examples": {
-      "fixed1": "10"
-    }
+    "source": "src/commands/keywordRedEnvelopeSlash.ts:87"
   },
   {
     "key": "bot.commands.keywordRedEnvelopeSlash.c4ef6c9dc",
@@ -7378,7 +6541,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelopeSlash.ts:111"
+    "source": "src/commands/keywordRedEnvelopeSlash.ts:110"
   },
   {
     "key": "bot.commands.keywordRedEnvelopeSlash.9ff40f343",
@@ -7388,7 +6551,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelopeSlash.ts:114"
+    "source": "src/commands/keywordRedEnvelopeSlash.ts:113"
   },
   {
     "key": "bot.commands.customerGangSlash.7c6605154",
@@ -7398,7 +6561,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/customerGangSlash.ts:45"
+    "source": "src/commands/customerGangSlash.ts:44"
   },
   {
     "key": "bot.commands.customerGangSlash.88e4f7bcf",
@@ -7408,7 +6571,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/customerGangSlash.ts:58"
+    "source": "src/commands/customerGangSlash.ts:57"
   },
   {
     "key": "bot.commands.customerGangSlash.c5e8f78e4",
@@ -7418,7 +6581,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/customerGangSlash.ts:63"
+    "source": "src/commands/customerGangSlash.ts:62"
   },
   {
     "key": "bot.commands.customerGangSlash.e42dfd70e",
@@ -7428,7 +6591,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/customerGangSlash.ts:138"
+    "source": "src/commands/customerGangSlash.ts:137"
   },
   {
     "key": "bot.commands.customerGangSlash.440d23f27",
@@ -7438,7 +6601,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/customerGangSlash.ts:143"
+    "source": "src/commands/customerGangSlash.ts:142"
   },
   {
     "key": "bot.commands.customerGangSlash.429a75d7a",
@@ -7448,7 +6611,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/customerGangSlash.ts:147"
+    "source": "src/commands/customerGangSlash.ts:146"
   },
   {
     "key": "bot.commands.revertGiftSlash.5deb3bdd8",
@@ -7474,7 +6637,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "individualTransactionId"
     ],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts:45"
+    "source": "src/commands/revertGiftSlash.ts:48"
   },
   {
     "key": "bot.commands.revertGiftSlash.c209a976d",
@@ -7524,7 +6687,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "workerNetText"
     ],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts:47"
+    "source": "src/commands/revertGiftSlash.ts:50"
   },
   {
     "key": "bot.commands.revertGiftSlash.5620f3a11",
@@ -7540,17 +6703,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "expiredCount"
     ],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts"
-  },
-  {
-    "key": "bot.services.giftReversalFacts.cd041037f",
-    "group": "打赏与撤销",
-    "label": "原单已由管理员完成人工调整，不能再次自动撤销。",
-    "defaultText": "原单已由管理员完成人工调整，不能再次自动撤销。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/giftReversalFacts.ts:184"
+    "source": "src/commands/revertGiftSlash.ts:38"
   },
   {
     "key": "bot.services.giftReversalFacts.29cf49023",
@@ -7590,7 +6743,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts:56"
+    "source": "src/commands/revertGiftSlash.ts:58"
   },
   {
     "key": "bot.commands.revertGiftSlash.760c1f9ec",
@@ -7600,7 +6753,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts"
+    "source": "src/commands/revertGiftSlash.ts:60"
   },
   {
     "key": "bot.commands.revertGiftSlash.c60f0dd03",
@@ -7610,7 +6763,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts"
+    "source": "src/commands/revertGiftSlash.ts:61"
   },
   {
     "key": "bot.commands.revertOrderSlash.91cc4ea32",
@@ -7635,16 +6788,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 2000,
     "source": "src/commands/revertOrderSlash.ts:35"
-  },
-  {
-    "key": "bot.services.orderReversalFacts.6dfadd6c8",
-    "group": "派单与订单",
-    "label": "原单已由管理员完成人工调整，不能再次自动撤销。",
-    "defaultText": "原单已由管理员完成人工调整，不能再次自动撤销。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/orderReversalFacts.ts:148"
   },
   {
     "key": "bot.services.orderReversalFacts.71c04450a",
@@ -7684,7 +6827,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertOrderSlash.ts:40"
+    "source": "src/commands/revertOrderSlash.ts:39"
   },
   {
     "key": "bot.commands.revertOrderSlash.a710a7e68",
@@ -7694,7 +6837,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertOrderSlash.ts:42"
+    "source": "src/commands/revertOrderSlash.ts:41"
   },
   {
     "key": "bot.commands.revertOrderSlash.9cd6fabad",
@@ -7704,7 +6847,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertOrderSlash.ts"
+    "source": "src/commands/revertOrderSlash.ts:43"
   },
   {
     "key": "bot.commands.revertOrderSlash.3e58f2807",
@@ -7714,7 +6857,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertOrderSlash.ts:46"
+    "source": "src/commands/revertOrderSlash.ts:45"
   },
   {
     "key": "bot.commands.revertOrderSlash.adf8a14ba",
@@ -7728,10 +6871,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/revertOrderSlash.ts:48",
-    "examples": {
-      "fixed1": "0"
-    }
+    "source": "src/commands/revertOrderSlash.ts:47"
   },
   {
     "key": "bot.commands.revertOrderSlash.51abe3cef",
@@ -7741,7 +6881,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertOrderSlash.ts"
+    "source": "src/commands/revertOrderSlash.ts:49"
   },
   {
     "key": "bot.commands.revertOrderSlash.01b5f4bc5",
@@ -7751,7 +6891,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertOrderSlash.ts:51"
+    "source": "src/commands/revertOrderSlash.ts:50"
   },
   {
     "key": "bot.commands.bulkDm.b04ae2eeb",
@@ -7970,7 +7110,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/lookSelfSlash.ts:15"
+    "source": "src/commands/lookSelfSlash.ts:14"
   },
   {
     "key": "bot.commands.lookSelfSlash.19fabc453",
@@ -7980,7 +7120,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/lookSelfSlash.ts:20"
+    "source": "src/commands/lookSelfSlash.ts:19"
   },
   {
     "key": "bot.commands.viewCardSlash.50ea6e6ec",
@@ -8034,7 +7174,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "prizeName"
     ],
     "maxLength": 2000,
-    "source": "src/services/lotteryFusionNotificationService.ts:8"
+    "source": "src/services/lotteryFusionNotificationService.ts:7"
   },
   {
     "key": "bot.services.lotteryFusionNotificationService.7a3301104",
@@ -8045,7 +7185,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/lotteryFusionNotificationService.ts:23"
+    "source": "src/services/lotteryFusionNotificationService.ts:26"
   },
   {
     "key": "bot.services.lotteryFusionNotificationService.de1e12b56",
@@ -8061,7 +7201,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "prizeName"
     ],
     "maxLength": 2000,
-    "source": "src/services/lotteryFusionNotificationService.ts:17"
+    "source": "src/services/lotteryFusionNotificationService.ts:20"
   },
   {
     "key": "bot.commands.lotteryFusionSlash.d91b3117f",
@@ -8195,10 +7335,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 4096,
-    "source": "src/commands/lotteryFusionSlash.ts:180",
-    "examples": {
-      "fixed1": "3"
-    }
+    "source": "src/commands/lotteryFusionSlash.ts:180"
   },
   {
     "key": "bot.commands.lotteryFusionSlash.6f288532b",
@@ -8411,10 +7548,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/lotteryFusionSlash.ts:419",
-    "examples": {
-      "fixed1": "3"
-    }
+    "source": "src/commands/lotteryFusionSlash.ts:419"
   },
   {
     "key": "bot.commands.lotteryFusionSlash.ce5327e5a",
@@ -8434,7 +7568,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts:74"
+    "source": "src/commands/balanceCommands.ts:71"
   },
   {
     "key": "bot.commands.balanceCommands.fd42e0620",
@@ -8450,11 +7584,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts",
-    "examples": {
-      "fixed1": "`!realcash +金额 @用户`",
-      "fixed2": "`!realcash -金额 @用户`"
-    }
+    "source": "src/commands/balanceCommands.ts:77"
   },
   {
     "key": "bot.commands.balanceCommands.adcf50551",
@@ -8468,24 +7598,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts",
-    "examples": {
-      "fixed1": "`!转移余额 金额 @用户A @用户B`"
-    }
-  },
-  {
-    "key": "bot.commands.balanceCommands.c2a1660a4",
-    "group": "充值、余额与提现",
-    "label": "原请求（{id}）已处理，本次未再次调账、扣款或转移。",
-    "defaultText": "原请求（{id}）已处理，本次未再次调账、扣款或转移。",
-    "variables": [
-      "id"
-    ],
-    "requiredVariables": [
-      "id"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts:88"
+    "source": "src/commands/balanceCommands.ts:158"
   },
   {
     "key": "bot.commands.balanceCommands.b47a729d9",
@@ -8503,55 +7616,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value3"
     ],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts"
-  },
-  {
-    "key": "bot.commands.balanceCommands.621011c2e",
-    "group": "充值、余额与提现",
-    "label": "已从 <@{value}> 扣除 {value2}。",
-    "defaultText": "已从 <@{value}> 扣除 {value2}。",
-    "variables": [
-      "value",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value",
-      "value2"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts"
-  },
-  {
-    "key": "bot.commands.balanceCommands.d197ac86f",
-    "group": "充值、余额与提现",
-    "label": "已从 <@{value}> 转移 {value2} 给 <@{value3}>。",
-    "defaultText": "已从 <@{value}> 转移 {value2} 给 <@{value3}>。",
-    "variables": [
-      "value",
-      "value2",
-      "value3"
-    ],
-    "requiredVariables": [
-      "value",
-      "value2",
-      "value3"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts"
-  },
-  {
-    "key": "bot.commands.balanceCommands.c1ad7fa76",
-    "group": "充值、余额与提现",
-    "label": "提交结果待核实（请求 {id}），请先核对余额与原流水，勿重复提交。",
-    "defaultText": "提交结果待核实（请求 {id}），请先核对余额与原流水，勿重复提交。",
-    "variables": [
-      "id"
-    ],
-    "requiredVariables": [
-      "id"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts:106"
+    "source": "src/commands/balanceCommands.ts:127"
   },
   {
     "key": "bot.commands.blockStack.9d5a1c0d4",
@@ -8594,58 +7659,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/commands/blockStack.ts:321"
   },
   {
-    "key": "bot.commands.scratchPurchaseFlow.4e6f94703",
-    "group": "抽奖、刮卡与积木",
-    "label": "购卡提交结果待核实（请求 {sourceMessageId}）。",
-    "defaultText": "购卡提交结果待核实（请求 {sourceMessageId}）。",
-    "variables": [
-      "sourceMessageId"
-    ],
-    "requiredVariables": [
-      "sourceMessageId"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/scratchPurchaseFlow.ts:28"
-  },
-  {
-    "key": "bot.commands.scratchPurchaseFlow.b3680278f",
-    "group": "抽奖、刮卡与积木",
-    "label": "已购买 {code} 号刮刮乐，{value}已完成。票券展示发送未确认，请勿重复购买；请凭票号及请求 {sourceMessageId} 联系客服恢复展示。",
-    "defaultText": "已购买 {code} 号刮刮乐，{value}已完成。票券展示发送未确认，请勿重复购买；请凭票号及请求 {sourceMessageId} 联系客服恢复展示。",
-    "variables": [
-      "code",
-      "value",
-      "sourceMessageId"
-    ],
-    "requiredVariables": [
-      "code",
-      "value",
-      "sourceMessageId"
-    ],
-    "maxLength": 2000,
-    "source": "src/commands/scratchPurchaseFlow.ts:43"
-  },
-  {
-    "key": "bot.commands.scratchPurchaseFlow.df48bc360",
-    "group": "抽奖、刮卡与积木",
-    "label": "付款",
-    "defaultText": "付款",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/scratchPurchaseFlow.ts:43"
-  },
-  {
-    "key": "bot.commands.scratchPurchaseFlow.af9e4b6b6",
-    "group": "抽奖、刮卡与积木",
-    "label": "代金券扣除",
-    "defaultText": "代金券扣除",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/scratchPurchaseFlow.ts:43"
-  },
-  {
     "key": "bot.commands.scratch.2cab763b9",
     "group": "抽奖、刮卡与积木",
     "label": "不能赠送给机器人。",
@@ -8653,7 +7666,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/scratch.ts:37"
+    "source": "src/commands/scratch.ts:36"
   },
   {
     "key": "bot.commands.scratch.c920bb85d",
@@ -8663,7 +7676,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/scratch.ts:47"
+    "source": "src/commands/scratch.ts:46"
   },
   {
     "key": "bot.commands.scratch.5346e9ab1",
@@ -8673,17 +7686,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/scratch.ts:28"
-  },
-  {
-    "key": "bot.commands.scratch.e05a472a5",
-    "group": "抽奖、刮卡与积木",
-    "label": "命令处理未完成，请先核对已购票记录，勿重复购买。",
-    "defaultText": "命令处理未完成，请先核对已购票记录，勿重复购买。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/commands/scratch.ts:78"
+    "source": "src/commands/scratch.ts:27"
   },
   {
     "key": "bot.commands.scratchStockSlash.2bb7b4bee",
@@ -8794,11 +7797,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed3"
     ],
     "maxLength": 1024,
-    "source": "src/commands/scratchStockSlash.ts:70",
-    "examples": {
-      "fixed2": "!刮刮乐",
-      "fixed3": "!刮刮乐"
-    }
+    "source": "src/commands/scratchStockSlash.ts:70"
   },
   {
     "key": "bot.commands.scratchStockSlash.beafb5f15",
@@ -8927,58 +7926,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/withdrawalNotificationService.ts:219"
   },
   {
-    "key": "bot.services.peiwanRoleSyncService.a8c9def84",
-    "group": "名片、资料与入职",
-    "label": "陪玩资料已更新",
-    "defaultText": "陪玩资料已更新",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "source": "src/services/peiwanRoleSyncService.ts:203"
-  },
-  {
-    "key": "bot.services.peiwanRoleSyncService.7749902e6",
-    "group": "名片、资料与入职",
-    "label": "陪玩 ID {PEIWANID} 已更新，您的信息已经注册完毕",
-    "defaultText": "陪玩 ID {PEIWANID} 已更新，您的信息已经注册完毕",
-    "variables": [
-      "PEIWANID"
-    ],
-    "requiredVariables": [
-      "PEIWANID"
-    ],
-    "maxLength": 1000,
-    "source": "src/services/peiwanRoleSyncService.ts:204"
-  },
-  {
-    "key": "bot.services.notificationOutboxRuntime.efdbfd83c",
-    "group": "网站与私信通知",
-    "label": "查看详情：{href}",
-    "defaultText": "查看详情：{href}",
-    "variables": [
-      "href"
-    ],
-    "requiredVariables": [
-      "href"
-    ],
-    "maxLength": 600,
-    "source": "src/services/notificationOutboxRuntime.ts:61"
-  },
-  {
-    "key": "bot.services.guildNotificationDm.5a785e016",
-    "group": "网站与私信通知",
-    "label": "查看详情：{href}",
-    "defaultText": "查看详情：{href}",
-    "variables": [
-      "href"
-    ],
-    "requiredVariables": [
-      "href"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/guildNotificationDm.ts:64"
-  },
-  {
     "key": "bot.services.orderCancellationService.76974fc4d",
     "group": "派单与订单",
     "label": "订单 #{displayNo} 已由老板取消。",
@@ -9004,7 +7951,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "action"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:423"
+    "source": "src/server/internalWebhookServer.ts:399"
   },
   {
     "key": "bot.server.internalWebhookServer.19ee94304",
@@ -9018,7 +7965,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "eventId"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:424"
+    "source": "src/server/internalWebhookServer.ts:400"
   },
   {
     "key": "bot.server.internalWebhookServer.2e3bd40ac",
@@ -9032,7 +7979,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:425"
+    "source": "src/server/internalWebhookServer.ts:401"
   },
   {
     "key": "bot.server.internalWebhookServer.fca2b207f",
@@ -9046,7 +7993,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:426"
+    "source": "src/server/internalWebhookServer.ts:402"
   },
   {
     "key": "bot.server.internalWebhookServer.4c2cf5eff",
@@ -9060,7 +8007,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:427"
+    "source": "src/server/internalWebhookServer.ts:403"
   },
   {
     "key": "bot.server.internalWebhookServer.4a573ce62",
@@ -9074,7 +8021,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "rawText"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:428"
+    "source": "src/server/internalWebhookServer.ts:404"
   },
   {
     "key": "bot.server.internalWebhookServer.58ebd9659",
@@ -9084,7 +8031,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2048,
-    "source": "src/server/internalWebhookServer.ts:489"
+    "source": "src/server/internalWebhookServer.ts:461"
   },
   {
     "key": "bot.server.internalWebhookServer.21c121933",
@@ -9094,7 +8041,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 256,
-    "source": "src/server/internalWebhookServer.ts:484"
+    "source": "src/server/internalWebhookServer.ts:456"
   },
   {
     "key": "bot.server.internalWebhookServer.7389faadc",
@@ -9104,7 +8051,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 256,
-    "source": "src/server/internalWebhookServer.ts:485"
+    "source": "src/server/internalWebhookServer.ts:457"
   },
   {
     "key": "bot.server.internalWebhookServer.1cccbc141",
@@ -9114,7 +8061,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 1024,
-    "source": "src/server/internalWebhookServer.ts:471"
+    "source": "src/server/internalWebhookServer.ts:447"
   },
   {
     "key": "bot.server.internalWebhookServer.a6b50f4d2",
@@ -9124,7 +8071,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 256,
-    "source": "src/server/internalWebhookServer.ts:486"
+    "source": "src/server/internalWebhookServer.ts:458"
   },
   {
     "key": "bot.server.internalWebhookServer.f5609e4c0",
@@ -9134,7 +8081,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 1024,
-    "source": "src/server/internalWebhookServer.ts:486"
+    "source": "src/server/internalWebhookServer.ts:458"
   },
   {
     "key": "bot.server.internalWebhookServer.6b57e39cd",
@@ -9144,7 +8091,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 256,
-    "source": "src/server/internalWebhookServer.ts:487"
+    "source": "src/server/internalWebhookServer.ts:459"
   },
   {
     "key": "bot.server.internalWebhookServer.45c45a3b0",
@@ -9155,7 +8102,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "requiredVariables": [],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/server/internalWebhookServer.ts:480"
+    "source": "src/server/internalWebhookServer.ts:452"
   },
   {
     "key": "bot.server.internalWebhookServer.b392f8f1b",
@@ -9170,10 +8117,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 80,
     "singleLine": true,
-    "source": "src/server/internalWebhookServer.ts:492",
-    "examples": {
-      "fixed1": "0"
-    }
+    "source": "src/server/internalWebhookServer.ts:464"
   },
   {
     "key": "bot.server.internalWebhookServer.c587147b8",
@@ -9187,7 +8131,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "workerDiscordId"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:548"
+    "source": "src/server/internalWebhookServer.ts:520"
   },
   {
     "key": "bot.server.internalWebhookServer.90548a678",
@@ -9205,10 +8149,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed3"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:1039",
-    "examples": {
-      "fixed3": "1%"
-    }
+    "source": "src/server/internalWebhookServer.ts:1422"
   },
   {
     "key": "bot.server.internalWebhookServer.705cc3bd2",
@@ -9226,10 +8167,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed3"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:1080",
-    "examples": {
-      "fixed3": "5000"
-    }
+    "source": "src/server/internalWebhookServer.ts:1474"
   },
   {
     "key": "bot.server.internalWebhookServer.15b9fe99c",
@@ -9247,26 +8185,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed3"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:1123",
-    "examples": {
-      "fixed3": "5000"
-    }
-  },
-  {
-    "key": "bot.server.internalWebhookServer.70f5d3ae4",
-    "group": "网站与私信通知",
-    "label": "在网站为微信老板《{value}》充值了{amount}点点券",
-    "defaultText": "在网站为微信老板《{value}》充值了{amount}点点券",
-    "variables": [
-      "value",
-      "amount"
-    ],
-    "requiredVariables": [
-      "value",
-      "amount"
-    ],
-    "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts"
+    "source": "src/server/internalWebhookServer.ts:1527"
   },
   {
     "key": "bot.server.internalWebhookServer.1e264f19f",
@@ -9282,23 +8201,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "PROFILE_PERSONALISATION_URL"
     ],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:1200"
-  },
-  {
-    "key": "bot.server.internalWebhookServer.445fd97cb",
-    "group": "网站与私信通知",
-    "label": "{value} 使用了{value2}，请联系老板。",
-    "defaultText": "{value} 使用了{value2}，请联系老板。",
-    "variables": [
-      "value",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value",
-      "value2"
-    ],
-    "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:1621"
+    "source": "src/server/internalWebhookServer.ts:1649"
   },
   {
     "key": "bot.server.internalWebhookServer.adc712051",
@@ -9308,7 +8211,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/server/internalWebhookServer.ts:1621"
+    "source": "src/server/internalWebhookServer.ts:2064"
   },
   {
     "key": "bot.services.inviteRewardService.8409eb1ec",
@@ -9324,10 +8227,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed2"
     ],
     "maxLength": 2000,
-    "source": "src/services/inviteRewardService.ts:90",
-    "examples": {
-      "fixed2": "2"
-    }
+    "source": "src/services/inviteRewardService.ts:179"
   },
   {
     "key": "bot.services.inviteRewardService.96e593589",
@@ -9345,7 +8245,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "countText"
     ],
     "maxLength": 2000,
-    "source": "src/services/inviteRewardService.ts:125"
+    "source": "src/services/inviteRewardService.ts:214"
   },
   {
     "key": "bot.services.inviteRewardService.be63aac1a",
@@ -9359,7 +8259,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "id"
     ],
     "maxLength": 2000,
-    "source": "src/services/inviteRewardService.ts:137"
+    "source": "src/services/inviteRewardService.ts:226"
   },
   {
     "key": "bot.ui.welcomeMessage.3e2811eb4",
@@ -9520,10 +8420,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed3"
     ],
     "maxLength": 4096,
-    "source": "src/services/chatVoucherDropService.ts:373",
-    "examples": {
-      "fixed3": "1"
-    }
+    "source": "src/services/chatVoucherDropService.ts:373"
   },
   {
     "key": "bot.services.chatVoucherDropService.3a5ea6ffa",
@@ -9548,7 +8445,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelope.ts:71"
+    "source": "src/commands/redEnvelope.ts:70"
   },
   {
     "key": "bot.commands.redEnvelope.f4effd517",
@@ -9562,10 +8459,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelope.ts:76",
-    "examples": {
-      "fixed1": "10"
-    }
+    "source": "src/commands/redEnvelope.ts:75"
   },
   {
     "key": "bot.commands.redEnvelope.91b020d9f",
@@ -9579,10 +8473,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelope.ts:81",
-    "examples": {
-      "fixed1": "100"
-    }
+    "source": "src/commands/redEnvelope.ts:80"
   },
   {
     "key": "bot.commands.redEnvelope.91fb3d39b",
@@ -9592,7 +8483,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelope.ts:99"
+    "source": "src/commands/redEnvelope.ts:98"
   },
   {
     "key": "bot.commands.keywordRedEnvelope.67edc7a3d",
@@ -9606,7 +8497,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "reason"
     ],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelope.ts:28"
+    "source": "src/commands/keywordRedEnvelope.ts:27"
   },
   {
     "key": "bot.commands.keywordRedEnvelope.94b87109b",
@@ -9616,7 +8507,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelope.ts:84"
+    "source": "src/commands/keywordRedEnvelope.ts:83"
   },
   {
     "key": "bot.commands.keywordRedEnvelope.6900ee60b",
@@ -9630,10 +8521,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelope.ts:94",
-    "examples": {
-      "fixed1": "10"
-    }
+    "source": "src/commands/keywordRedEnvelope.ts:93"
   },
   {
     "key": "bot.commands.keywordRedEnvelope.b597c12c8",
@@ -9647,10 +8535,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelope.ts:99",
-    "examples": {
-      "fixed1": "100"
-    }
+    "source": "src/commands/keywordRedEnvelope.ts:98"
   },
   {
     "key": "bot.commands.keywordRedEnvelope.0b60fc992",
@@ -9660,7 +8545,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelope.ts:105"
+    "source": "src/commands/keywordRedEnvelope.ts:104"
   },
   {
     "key": "bot.services.leaderboardService.0794e9f30",
@@ -9670,7 +8555,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 4096,
-    "source": "src/services/leaderboardService.ts:270"
+    "source": "src/services/leaderboardService.ts:269"
   },
   {
     "key": "bot.services.leaderboardService.4d9226270",
@@ -9692,7 +8577,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "amount"
     ],
     "maxLength": 500,
-    "source": "src/services/leaderboardService.ts:280"
+    "source": "src/services/leaderboardService.ts:279"
   },
   {
     "key": "bot.services.leaderboardService.f74128d22",
@@ -9702,7 +8587,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 100,
-    "source": "src/services/leaderboardService.ts:278"
+    "source": "src/services/leaderboardService.ts:277"
   },
   {
     "key": "bot.services.leaderboardService.92242509c",
@@ -9721,7 +8606,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/leaderboardService.ts:510"
+    "source": "src/services/leaderboardService.ts:509"
   },
   {
     "key": "bot.services.leaderboardService.556428823",
@@ -9738,7 +8623,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/leaderboardService.ts:716"
+    "source": "src/services/leaderboardService.ts:715"
   },
   {
     "key": "bot.services.leaderboardService.3f9e1ed30",
@@ -9755,7 +8640,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/leaderboardService.ts:774"
+    "source": "src/services/leaderboardService.ts:773"
   },
   {
     "key": "bot.services.leaderboardService.c7d12bb8b",
@@ -9769,7 +8654,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 40,
-    "source": "src/services/leaderboardService.ts:251"
+    "source": "src/services/leaderboardService.ts:250"
   },
   {
     "key": "bot.services.leaderboardService.32b2b8fa0",
@@ -9788,7 +8673,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/leaderboardService.ts:511"
+    "source": "src/services/leaderboardService.ts:510"
   },
   {
     "key": "bot.services.leaderboardService.eccb831ba",
@@ -9805,7 +8690,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/leaderboardService.ts:721"
+    "source": "src/services/leaderboardService.ts:720"
   },
   {
     "key": "bot.services.leaderboardService.25964e06e",
@@ -9822,7 +8707,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     ],
     "maxLength": 256,
     "singleLine": true,
-    "source": "src/services/leaderboardService.ts:779"
+    "source": "src/services/leaderboardService.ts:778"
   },
   {
     "key": "bot.interactions.buttons.cancelOrder.a91e9427c",
@@ -9879,226 +8764,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/interactions/buttons/cancelOrder.ts:28"
   },
   {
-    "key": "bot.services.giftPostCommitMessages.d2300826d",
-    "group": "打赏与撤销",
-    "label": "打赏成功！{quantity} x {giftName}, 总价值：{gross}",
-    "defaultText": "打赏成功！{quantity} x {giftName}, 总价值：{gross}",
-    "variables": [
-      "quantity",
-      "giftName",
-      "gross"
-    ],
-    "requiredVariables": [
-      "quantity",
-      "giftName",
-      "gross"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/giftPostCommitMessages.ts:87"
-  },
-  {
-    "key": "bot.services.giftPostCommitMessages.535dabc79",
-    "group": "打赏与撤销",
-    "label": "{value}感谢{value2} 老板送给陪玩 {value3} \"{giftName}\", 感谢老板对陪陪的喜爱",
-    "defaultText": "{value}感谢{value2} 老板送给陪玩 {value3} \"{giftName}\", 感谢老板对陪陪的喜爱",
-    "variables": [
-      "value",
-      "value2",
-      "value3",
-      "giftName"
-    ],
-    "requiredVariables": [
-      "value",
-      "value2",
-      "value3",
-      "giftName"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/giftPostCommitMessages.ts:99"
-  },
-  {
-    "key": "bot.services.giftPostCommitMessages.d3c755c39",
-    "group": "打赏与撤销",
-    "label": "**{giftName}** 数量：**{quantity}** 总金额：**{gross}**",
-    "defaultText": "**{giftName}**\n数量：**{quantity}**\n总金额：**{gross}**",
-    "variables": [
-      "giftName",
-      "quantity",
-      "gross"
-    ],
-    "requiredVariables": [
-      "giftName",
-      "quantity",
-      "gross"
-    ],
-    "maxLength": 4096,
-    "source": "src/services/giftPostCommitMessages.ts:100"
-  },
-  {
-    "key": "bot.services.giftPostCommitMessages.f3a03decc",
-    "group": "打赏与撤销",
-    "label": "【匿名打赏】 送礼人：{value} ({discordId}) 收礼人：{value2} ({discordId2}) 礼物：{giftName} x {qu",
-    "defaultText": "【匿名打赏】\n送礼人：{value} ({discordId})\n收礼人：{value2} ({discordId2})\n礼物：{giftName} x {quantity}\n总价：¥{value3}",
-    "variables": [
-      "value",
-      "discordId",
-      "value2",
-      "discordId2",
-      "giftName",
-      "quantity",
-      "value3"
-    ],
-    "requiredVariables": [
-      "value",
-      "discordId",
-      "value2",
-      "discordId2",
-      "giftName",
-      "quantity",
-      "value3"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/giftPostCommitMessages.ts:106"
-  },
-  {
-    "key": "bot.services.giftPostCommitMessages.8b9027851",
-    "group": "打赏与撤销",
-    "label": "你收到了客服代打赏的 {quantity} 个 {giftName}，总价 ¥{value2}。",
-    "defaultText": "你收到了客服代打赏的 {quantity} 个 {giftName}，总价 ¥{value2}。",
-    "variables": [
-      "quantity",
-      "giftName",
-      "value2"
-    ],
-    "requiredVariables": [
-      "quantity",
-      "giftName",
-      "value2"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/giftPostCommitMessages.ts:110"
-  },
-  {
-    "key": "bot.services.giftPostCommitMessages.99b77bdc7",
-    "group": "打赏与撤销",
-    "label": "你收到了 {value} 打赏的 {quantity} 个 {giftName}，总价为 ¥{value2}。",
-    "defaultText": "你收到了 {value} 打赏的 {quantity} 个 {giftName}，总价为 ¥{value2}。",
-    "variables": [
-      "value",
-      "quantity",
-      "giftName",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value",
-      "quantity",
-      "giftName",
-      "value2"
-    ],
-    "maxLength": 2000,
-    "source": "src/services/giftPostCommitMessages.ts:111"
-  },
-  {
-    "key": "bot.services.giftPostCommitMessages.4c7bb3f95",
-    "group": "打赏与撤销",
-    "label": "打赏成功！谢谢老板😘",
-    "defaultText": "打赏成功！谢谢老板😘",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 256,
-    "source": "src/services/giftPostCommitMessages.ts:114"
-  },
-  {
-    "key": "bot.services.giftPostCommitMessages.81797bbdf",
-    "group": "打赏与撤销",
-    "label": "获得点了么积分{value}。",
-    "defaultText": "获得点了么积分{value}。",
-    "variables": [
-      "value"
-    ],
-    "requiredVariables": [
-      "value"
-    ],
-    "maxLength": 4096,
-    "source": "src/services/giftPostCommitMessages.ts:114"
-  },
-  {
-    "key": "bot.services.adminWalletTransactions.04ab439ef",
-    "group": "充值、余额与提现",
-    "label": "余额已人工充值",
-    "defaultText": "余额已人工充值",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "source": "src/services/adminWalletTransactions.ts:198"
-  },
-  {
-    "key": "bot.services.adminWalletTransactions.94369e88f",
-    "group": "充值、余额与提现",
-    "label": "已为您增加余额 **{value}**。当前余额：**{totalBalance}**",
-    "defaultText": "已为您增加余额 **{value}**。当前余额：**{totalBalance}**",
-    "variables": [
-      "value",
-      "totalBalance"
-    ],
-    "requiredVariables": [
-      "value",
-      "totalBalance"
-    ],
-    "maxLength": 1000,
-    "source": "src/services/adminWalletTransactions.ts"
-  },
-  {
-    "key": "bot.assistant.orderActions.1f549a9fe",
-    "group": "智能助手与百科",
-    "label": "未配置匿名派单频道，请联系客服。",
-    "defaultText": "未配置匿名派单频道，请联系客服。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:192"
-  },
-  {
-    "key": "bot.assistant.orderActions.b993f5034",
-    "group": "智能助手与百科",
-    "label": "匿名派单频道不可用，请联系客服。",
-    "defaultText": "匿名派单频道不可用，请联系客服。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:203"
-  },
-  {
-    "key": "bot.assistant.orderActions.c2646d09f",
-    "group": "智能助手与百科",
-    "label": "当前陪陪身份组配置不可用，派单尚未提交，请联系客服。",
-    "defaultText": "当前陪陪身份组配置不可用，派单尚未提交，请联系客服。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:206"
-  },
-  {
-    "key": "bot.assistant.orderActions.5d84f64d8",
-    "group": "智能助手与百科",
-    "label": "当前陪陪身份组无法核实，派单尚未提交，请联系客服。",
-    "defaultText": "当前陪陪身份组无法核实，派单尚未提交，请联系客服。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:209"
-  },
-  {
-    "key": "bot.assistant.orderActions.a982943df",
-    "group": "智能助手与百科",
-    "label": "无法私信您，派单尚未提交。请开启服务器私信后重新办理。",
-    "defaultText": "无法私信您，派单尚未提交。请开启服务器私信后重新办理。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/orderActions.ts:211"
-  },
-  {
     "key": "bot.assistant.executor.513d76bd0",
     "group": "智能助手与百科",
     "label": "这笔邀请已经过期了，请让老板重新派单。",
@@ -10119,43 +8784,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/assistant/executor.ts:86"
   },
   {
-    "key": "bot.assistant.executor.68f66a509",
-    "group": "智能助手与百科",
-    "label": "礼物数量不正确，请重新发起。",
-    "defaultText": "礼物数量不正确，请重新发起。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/executor.ts:107"
-  },
-  {
-    "key": "bot.assistant.executor.f21934a7f",
-    "group": "智能助手与百科",
-    "label": "礼物价格或上架状态已改变，请重新发起并确认。",
-    "defaultText": "礼物价格或上架状态已改变，请重新发起并确认。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/executor.ts:109"
-  },
-  {
-    "key": "bot.assistant.planner.fb09f9c04",
-    "group": "智能助手与百科",
-    "label": "请告诉我要操作的订单号，例如“#123”；也可以说“最新邀请”或“当前订单”，有多笔匹配时我会请您明确选择。",
-    "defaultText": "请告诉我要操作的订单号，例如“#{fixed1}”；也可以说“最新邀请”或“当前订单”，有多笔匹配时我会请您明确选择。",
-    "variables": [
-      "fixed1"
-    ],
-    "requiredVariables": [
-      "fixed1"
-    ],
-    "maxLength": 2000,
-    "source": "src/assistant/planner.ts:50",
-    "examples": {
-      "fixed1": "123"
-    }
-  },
-  {
     "key": "bot.assistant.planner.d67f44151",
     "group": "智能助手与百科",
     "label": "要派单的话，请告诉我是什么游戏，例如“瓦”“LoL”“OW”。",
@@ -10163,7 +8791,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:53"
+    "source": "src/assistant/planner.ts:51"
   },
   {
     "key": "bot.assistant.planner.e356636fe",
@@ -10177,20 +8805,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:58",
-    "examples": {
-      "fixed1": "1101"
-    }
-  },
-  {
-    "key": "bot.assistant.planner.774a558a5",
-    "group": "智能助手与百科",
-    "label": "请先告诉我要送给哪位陪玩，可以发送陪玩编号或 @ 对方。",
-    "defaultText": "请先告诉我要送给哪位陪玩，可以发送陪玩编号或 @ 对方。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/planner.ts:63"
+    "source": "src/assistant/planner.ts:56"
   },
   {
     "key": "bot.assistant.planner.23ad2e543",
@@ -10200,7 +8815,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:66"
+    "source": "src/assistant/planner.ts:61"
   },
   {
     "key": "bot.assistant.planner.1a4be0620",
@@ -10210,27 +8825,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:69"
-  },
-  {
-    "key": "bot.assistant.planner.dc0e896a5",
-    "group": "智能助手与百科",
-    "label": "要打赏的话，请告诉我要送几个（1～1000 个）。",
-    "defaultText": "要打赏的话，请告诉我要送几个（{fixed1}～{fixed2} 个）。",
-    "variables": [
-      "fixed1",
-      "fixed2"
-    ],
-    "requiredVariables": [
-      "fixed1",
-      "fixed2"
-    ],
-    "maxLength": 2000,
-    "source": "src/assistant/planner.ts:72",
-    "examples": {
-      "fixed1": "1",
-      "fixed2": "1000"
-    }
+    "source": "src/assistant/planner.ts:64"
   },
   {
     "key": "bot.assistant.planner.435d4dd54",
@@ -10240,7 +8835,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:75"
+    "source": "src/assistant/planner.ts:70"
   },
   {
     "key": "bot.assistant.planner.f495ee3ce",
@@ -10254,7 +8849,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "summary"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:46"
+    "source": "src/assistant/planner.ts:45"
   },
   {
     "key": "bot.assistant.planner.9034e1f59",
@@ -10268,7 +8863,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "value"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:45"
+    "source": "src/assistant/planner.ts:44"
   },
   {
     "key": "bot.assistant.planner.27b5f100c",
@@ -10278,7 +8873,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:19"
+    "source": "src/assistant/planner.ts:18"
   },
   {
     "key": "bot.assistant.planner.404e5140a",
@@ -10288,7 +8883,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:21"
+    "source": "src/assistant/planner.ts:20"
   },
   {
     "key": "bot.assistant.planner.b2e688104",
@@ -10298,7 +8893,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:25"
+    "source": "src/assistant/planner.ts:24"
   },
   {
     "key": "bot.assistant.planner.434da974d",
@@ -10312,21 +8907,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "companionType"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:38"
-  },
-  {
-    "key": "bot.assistant.planner.00f884585",
-    "group": "智能助手与百科",
-    "label": "原始需求：{orderContent}",
-    "defaultText": "原始需求：{orderContent}",
-    "variables": [
-      "orderContent"
-    ],
-    "requiredVariables": [
-      "orderContent"
-    ],
-    "maxLength": 2000,
-    "source": "src/assistant/planner.ts:42"
+    "source": "src/assistant/planner.ts:37"
   },
   {
     "key": "bot.assistant.planner.a1855a709",
@@ -10340,7 +8921,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "sourceLabel"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:83"
+    "source": "src/assistant/planner.ts:78"
   },
   {
     "key": "bot.assistant.planner.03bc7da94",
@@ -10354,7 +8935,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "label"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:87"
+    "source": "src/assistant/planner.ts:82"
   },
   {
     "key": "bot.assistant.planner.209e99aef",
@@ -10368,7 +8949,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "label"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:91"
+    "source": "src/assistant/planner.ts:86"
   },
   {
     "key": "bot.assistant.planner.1ede2ae91",
@@ -10382,43 +8963,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "label"
     ],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:95"
-  },
-  {
-    "key": "bot.assistant.planner.73cb6168e",
-    "group": "智能助手与百科",
-    "label": "确认要给 {sourceLabel} 匿名打赏 {qty} 个 {giftName} 吗？ {value}确认后将使用您的余额结算。",
-    "defaultText": "确认要给 {sourceLabel} 匿名打赏 {qty} 个 {giftName} 吗？\n{value}确认后将使用您的余额结算。",
-    "variables": [
-      "sourceLabel",
-      "qty",
-      "giftName",
-      "value"
-    ],
-    "requiredVariables": [
-      "sourceLabel",
-      "qty",
-      "giftName",
-      "value"
-    ],
-    "maxLength": 2000,
-    "source": "src/assistant/planner.ts:99"
-  },
-  {
-    "key": "bot.assistant.planner.f7962eefe",
-    "group": "智能助手与百科",
-    "label": "单价 ¥{unitPrice}，总价 ¥{totalPrice}（优惠以现有结算规则为准）。 ",
-    "defaultText": "单价 ¥{unitPrice}，总价 ¥{totalPrice}（优惠以现有结算规则为准）。\n",
-    "variables": [
-      "unitPrice",
-      "totalPrice"
-    ],
-    "requiredVariables": [
-      "unitPrice",
-      "totalPrice"
-    ],
-    "maxLength": 2000,
-    "source": "src/assistant/planner.ts:99"
+    "source": "src/assistant/planner.ts:90"
   },
   {
     "key": "bot.assistant.planner.39aff629b",
@@ -10428,7 +8973,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/planner.ts:101"
+    "source": "src/assistant/planner.ts:96"
   },
   {
     "key": "bot.assistant.resolver.7cf712fc8",
@@ -10568,27 +9113,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/index.ts:167"
-  },
-  {
-    "key": "bot.assistant.index.20c4f20be",
-    "group": "智能助手与百科",
-    "label": "这笔邀请不是发给您的陪玩账号，不能替对方接单。",
-    "defaultText": "这笔邀请不是发给您的陪玩账号，不能替对方接单。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:208"
-  },
-  {
-    "key": "bot.assistant.index.18dda4e49",
-    "group": "智能助手与百科",
-    "label": "这笔邀请不是发给您的陪玩账号，不能替对方拒单。",
-    "defaultText": "这笔邀请不是发给您的陪玩账号，不能替对方拒单。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:220"
+    "source": "src/assistant/index.ts:123"
   },
   {
     "key": "bot.assistant.index.9a84ae8ba",
@@ -10598,47 +9123,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/assistant/index.ts:243"
-  },
-  {
-    "key": "bot.assistant.index.604901422",
-    "group": "智能助手与百科",
-    "label": "礼物数量必须是 1～1000 的整数，请重新填写。",
-    "defaultText": "礼物数量必须是 {fixed1}～{fixed2} 的整数，请重新填写。",
-    "variables": [
-      "fixed1",
-      "fixed2"
-    ],
-    "requiredVariables": [
-      "fixed1",
-      "fixed2"
-    ],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:246",
-    "examples": {
-      "fixed1": "1",
-      "fixed2": "1000"
-    }
-  },
-  {
-    "key": "bot.assistant.index.fbaa5b539",
-    "group": "智能助手与百科",
-    "label": "该礼物不存在、已下架或不能由普通用户打赏，请重新选择。",
-    "defaultText": "该礼物不存在、已下架或不能由普通用户打赏，请重新选择。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:249"
-  },
-  {
-    "key": "bot.assistant.index.46c8b30b6",
-    "group": "智能助手与百科",
-    "label": "不能给自己打赏。",
-    "defaultText": "不能给自己打赏。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/assistant/index.ts:250"
+    "source": "src/assistant/index.ts:197"
   },
   {
     "key": "bot.ui.orderEmbeds.c86d896c7",
@@ -10691,233 +9176,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/ui/blockStackEmbeds.ts:48"
   },
   {
-    "key": "bot.services.publicErrorMessages.71603cd5e",
-    "group": "操作失败提示",
-    "label": "不能给自己打赏。",
-    "defaultText": "不能给自己打赏。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.b384442fe",
-    "group": "操作失败提示",
-    "label": "数量必须大于 0。",
-    "defaultText": "数量必须大于 {fixed1}。",
-    "variables": [
-      "fixed1"
-    ],
-    "requiredVariables": [
-      "fixed1"
-    ],
-    "maxLength": 2000,
-    "examples": {
-      "fixed1": "0"
-    },
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.c20229c47",
-    "group": "操作失败提示",
-    "label": "金额必须大于 0。",
-    "defaultText": "金额必须大于 {fixed1}。",
-    "variables": [
-      "fixed1"
-    ],
-    "requiredVariables": [
-      "fixed1"
-    ],
-    "maxLength": 2000,
-    "examples": {
-      "fixed1": "0"
-    },
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.be98d9e65",
-    "group": "操作失败提示",
-    "label": "该礼物已经下架",
-    "defaultText": "该礼物已经下架",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.b7051ef35",
-    "group": "操作失败提示",
-    "label": "收款方不存在。",
-    "defaultText": "收款方不存在。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.601a1fef6",
-    "group": "操作失败提示",
-    "label": "无权限。",
-    "defaultText": "无权限。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.ac77176f6",
-    "group": "操作失败提示",
-    "label": "该礼物不支持代打赏。",
-    "defaultText": "该礼物不支持代打赏。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.4e1b8ee78",
-    "group": "操作失败提示",
-    "label": "礼物券不可用或已过期。",
-    "defaultText": "礼物券不可用或已过期。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.e004da92d",
-    "group": "操作失败提示",
-    "label": "该礼物不支持所选礼物券，请核实后处理。",
-    "defaultText": "该礼物不支持所选礼物券，请核实后处理。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.36ead190a",
-    "group": "操作失败提示",
-    "label": "缺少老板或陪玩账户。",
-    "defaultText": "缺少老板或陪玩账户。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.97afc588c",
-    "group": "操作失败提示",
-    "label": "余额不足，无法完成打赏。",
-    "defaultText": "余额不足，无法完成打赏。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.3660c89e6",
-    "group": "操作失败提示",
-    "label": "可用余额不足，请先处理进行中的订单。",
-    "defaultText": "可用余额不足，请先处理进行中的订单。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.publicErrorMessages.fe8c7fd8c",
-    "group": "操作失败提示",
-    "label": "该礼物券暂时无法使用，请联系客服核实。",
-    "defaultText": "该礼物券暂时无法使用，请联系客服核实。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "examples": {},
-    "source": "src/services/publicErrorMessages.ts"
-  },
-  {
-    "key": "bot.services.peiwanReviewDisplay.anonymous",
-    "group": "名片与个人资料",
-    "label": "匿名老板评语",
-    "defaultText": "匿名老板评语：{reviewText}",
-    "variables": [
-      "reviewText"
-    ],
-    "requiredVariables": [
-      "reviewText"
-    ],
-    "maxLength": 1024,
-    "source": "src/services/peiwanReviewDisplayService.ts"
-  },
-  {
-    "key": "bot.services.peiwanReviewDisplay.named",
-    "group": "名片与个人资料",
-    "label": "实名老板评语",
-    "defaultText": "老板{reviewerName}评语：{reviewText}",
-    "variables": [
-      "reviewerName",
-      "reviewText"
-    ],
-    "requiredVariables": [
-      "reviewerName",
-      "reviewText"
-    ],
-    "maxLength": 1024,
-    "source": "src/services/peiwanReviewDisplayService.ts"
-  },
-  {
-    "key": "bot.services.peiwanReviewDisplay.unnamed",
-    "group": "名片与个人资料",
-    "label": "未记录姓名的老板评语",
-    "defaultText": "老板评语：{reviewText}",
-    "variables": [
-      "reviewText"
-    ],
-    "requiredVariables": [
-      "reviewText"
-    ],
-    "maxLength": 1024,
-    "source": "src/services/peiwanReviewDisplayService.ts"
-  },
-  {
-    "key": "bot.features.giftFeedHelper.feedThanks",
-    "group": "打赏",
-    "label": "打赏频道感谢文案",
-    "defaultText": "感谢{giverLabel} 老板送给陪玩 {receiver} \"{giftName}\", 感谢老板对陪陪的喜爱",
-    "variables": [
-      "giverLabel",
-      "receiver",
-      "giftName"
-    ],
-    "requiredVariables": [
-      "giverLabel",
-      "receiver",
-      "giftName"
-    ],
-    "maxLength": 2000,
-    "source": "src/features/giftFeedHelper.ts"
-  },
-  {
-    "key": "bot.sqlNotifications.balanceTitle",
-    "group": "充值与余额",
-    "label": "余额增加提醒标题",
-    "defaultText": "余额已增加",
-    "variables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "prisma/migrations/20261025010000_editable_copy/migration.sql"
-  },
-  {
     "key": "bot.sqlNotifications.balanceBody",
     "group": "充值与余额",
     "label": "余额增加提醒正文",
@@ -10935,7 +9193,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "amount": "100.00",
       "balance": "250.00"
     },
-    "source": "prisma/migrations/20261026010000_restore_notification_copy/migration.sql"
+    "source": "src/services/rechargeWatcher.ts:120"
   },
   {
     "key": "bot.sqlNotifications.profileTitle",
@@ -10945,7 +9203,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 160,
     "singleLine": true,
-    "source": "prisma/migrations/20261025010000_editable_copy/migration.sql"
+    "source": "src/services/peiwanWatcher.ts:94"
   },
   {
     "key": "bot.sqlNotifications.profileBody",
@@ -10962,7 +9220,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "examples": {
       "peiwanId": "18"
     },
-    "source": "prisma/migrations/20261025010000_editable_copy/migration.sql"
+    "source": "src/services/peiwanWatcher.ts:94"
   },
   {
     "key": "bot.ui.orderEmbeds.activitiesHeading",
@@ -11103,30 +9361,6 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/vipBenefitService.ts"
   },
   {
-    "key": "bot.services.withdrawalNotificationService.workId",
-    "group": "充值、余额与提现",
-    "label": "陪玩ID：{workId}",
-    "defaultText": "陪玩ID：{workId}",
-    "variables": [
-      "workId"
-    ],
-    "requiredVariables": [
-      "workId"
-    ],
-    "maxLength": 150,
-    "source": "src/services/withdrawalNotificationService.ts"
-  },
-  {
-    "key": "bot.services.dlmPeiwanCardSyncService.completed",
-    "group": "名片、资料与入职",
-    "label": "以上名片已经上传完成",
-    "defaultText": "以上名片已经上传完成",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 2000,
-    "source": "src/services/dlmPeiwanCardSyncService.ts"
-  },
-  {
     "key": "bot.services.vipBenefitService.noTier",
     "group": "会员与权益",
     "label": "当前未达到 VIP 等级",
@@ -11195,34 +9429,14 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "source": "src/services/vipBenefitService.ts"
   },
   {
-    "key": "bot.services.spentRoleService.noAutomaticBenefit",
-    "group": "会员与权益",
-    "label": "本级无自动福利，请检查等级结算状态",
-    "defaultText": "本级无自动福利，请检查等级结算状态",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 150,
-    "source": "src/services/spentRoleService.ts"
-  },
-  {
-    "key": "bot.features.giftFeedHelper.anonymousGiver",
-    "group": "打赏",
-    "label": "匿名",
-    "defaultText": "匿名",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 80,
-    "source": "src/features/giftFeedHelper.ts; src/services/giftPostCommitMessages.ts"
-  },
-  {
     "key": "bot.commands.money.unknownError",
-    "group": "资金与账户",
+    "group": "积分、券与权益",
     "label": "未知错误",
     "defaultText": "未知错误",
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/loyaltyPoints.ts"
+    "source": "src/commands/loyaltyPoints.ts:80"
   },
   {
     "key": "bot.commands.redEnvelope.originalFailure",
@@ -11236,7 +9450,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "message"
     ],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelope.ts"
+    "source": "src/commands/redEnvelope.ts:163"
   },
   {
     "key": "bot.commands.redEnvelope.originalFailureFallback",
@@ -11246,7 +9460,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelope.ts"
+    "source": "src/commands/redEnvelope.ts:161"
   },
   {
     "key": "bot.commands.keywordRedEnvelope.originalFailure",
@@ -11260,7 +9474,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "message"
     ],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelope.ts"
+    "source": "src/commands/keywordRedEnvelope.ts:164"
   },
   {
     "key": "bot.commands.keywordRedEnvelope.originalFailureFallback",
@@ -11270,7 +9484,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelope.ts"
+    "source": "src/commands/keywordRedEnvelope.ts:162"
   },
   {
     "key": "bot.commands.redEnvelopeSlash.originalFailure",
@@ -11284,7 +9498,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "message"
     ],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelopeSlash.ts"
+    "source": "src/commands/redEnvelopeSlash.ts:147"
   },
   {
     "key": "bot.commands.redEnvelopeSlash.originalFailureFallback",
@@ -11294,7 +9508,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/redEnvelopeSlash.ts"
+    "source": "src/commands/redEnvelopeSlash.ts:145"
   },
   {
     "key": "bot.commands.keywordRedEnvelopeSlash.originalFailure",
@@ -11308,7 +9522,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
       "message"
     ],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelopeSlash.ts"
+    "source": "src/commands/keywordRedEnvelopeSlash.ts:149"
   },
   {
     "key": "bot.commands.keywordRedEnvelopeSlash.originalFailureFallback",
@@ -11318,7 +9532,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/keywordRedEnvelopeSlash.ts"
+    "source": "src/commands/keywordRedEnvelopeSlash.ts:147"
   },
   {
     "key": "bot.commands.balanceCommands.originalMissingRebalance",
@@ -11328,7 +9542,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts"
+    "source": "src/commands/balanceCommands.ts:133"
   },
   {
     "key": "bot.commands.balanceCommands.originalFailure",
@@ -11338,7 +9552,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/balanceCommands.ts"
+    "source": "src/commands/balanceCommands.ts:285"
   },
   {
     "key": "bot.commands.revertGiftSlash.legacySummary",
@@ -11348,7 +9562,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/commands/revertGiftSlash.ts"
+    "source": "src/commands/revertGiftSlash.ts:42"
   },
   {
     "key": "bot.services.giftReversalFacts.original_gift_audit_incomplete",
@@ -11458,7 +9672,7 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/lotteryFusionNotificationService.ts"
+    "source": "src/services/lotteryFusionNotificationService.ts:19"
   },
   {
     "key": "bot.services.auditionService.roomCreateFailedWorker",
@@ -11468,6 +9682,837 @@ export const BOT_COPY_CATALOG: readonly EditableCopyEntry[] = [
     "variables": [],
     "requiredVariables": [],
     "maxLength": 2000,
-    "source": "src/services/auditionService.ts"
+    "source": "src/services/auditionService.ts:1287"
+  },
+  {
+    "key": "bot.services.auditionService.52278a086",
+    "group": "真人试音",
+    "label": "申请真人试音(付费5点点券)",
+    "defaultText": "申请真人试音(付费{fixed1}点点券)",
+    "variables": [
+      "fixed1"
+    ],
+    "requiredVariables": [
+      "fixed1"
+    ],
+    "maxLength": 80,
+    "singleLine": true,
+    "source": "src/services/auditionService.ts:307"
+  },
+  {
+    "key": "bot.interactions.buttons.miniDispatch.43d1458b4",
+    "group": "派单与订单",
+    "label": "抢单失败，请稍后重试。",
+    "defaultText": "抢单失败，请稍后重试。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/interactions/buttons/miniDispatch.ts:71"
+  },
+  {
+    "key": "bot.services.timerService.70437b3c0",
+    "group": "派单与订单",
+    "label": "您与老板 {hostName} 总点单时长 **{elapsed}** 分钟，预计金额 **¥{value}**。老板余额不足时会自动结单。",
+    "defaultText": "您与老板 {hostName} 总点单时长 **{elapsed}** 分钟，预计金额 **¥{value}**。老板余额不足时会自动结单。",
+    "variables": [
+      "hostName",
+      "elapsed",
+      "value"
+    ],
+    "requiredVariables": [
+      "hostName",
+      "elapsed",
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/services/timerService.ts:99"
+  },
+  {
+    "key": "bot.commands.cash.0f9456744",
+    "group": "充值、余额与提现",
+    "label": " 已为 <@{targetId}> 增加余额 **{value}**。当前余额：**{value2}**",
+    "defaultText": " 已为 <@{targetId}> 增加余额 **{value}**。当前余额：**{value2}**",
+    "variables": [
+      "targetId",
+      "value",
+      "value2"
+    ],
+    "requiredVariables": [
+      "targetId",
+      "value",
+      "value2"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/cash.ts:152"
+  },
+  {
+    "key": "bot.commands.cash.4ad19fe16",
+    "group": "充值、余额与提现",
+    "label": "已为您增加余额 **{value}**。当前余额：**{value2}**",
+    "defaultText": "已为您增加余额 **{value}**。当前余额：**{value2}**",
+    "variables": [
+      "value",
+      "value2"
+    ],
+    "requiredVariables": [
+      "value",
+      "value2"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/cash.ts:157"
+  },
+  {
+    "key": "bot.commands.cash.c68e0f68b",
+    "group": "充值、余额与提现",
+    "label": "已为 <@{targetId}> 扣减余额 **{value}**。当前余额：**{value2}**",
+    "defaultText": "已为 <@{targetId}> 扣减余额 **{value}**。当前余额：**{value2}**",
+    "variables": [
+      "targetId",
+      "value",
+      "value2"
+    ],
+    "requiredVariables": [
+      "targetId",
+      "value",
+      "value2"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/cash.ts:227"
+  },
+  {
+    "key": "bot.commands.cash.7c71b9e65",
+    "group": "充值、余额与提现",
+    "label": "❌ 操作失败：{value}",
+    "defaultText": "❌ 操作失败：{value}",
+    "variables": [
+      "value"
+    ],
+    "requiredVariables": [
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/cash.ts:238"
+  },
+  {
+    "key": "bot.commands.cash.7789e1e68",
+    "group": "充值、余额与提现",
+    "label": "未知错误",
+    "defaultText": "未知错误",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/cash.ts:238"
+  },
+  {
+    "key": "bot.commands.gifting.f8abdc233",
+    "group": "打赏与撤销",
+    "label": "【匿名打赏】",
+    "defaultText": "【匿名打赏】",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/gifting.ts:385"
+  },
+  {
+    "key": "bot.commands.gifting.bf63f1b9e",
+    "group": "打赏与撤销",
+    "label": "送礼人：<@{giverId}> ({giverId2})",
+    "defaultText": "送礼人：<@{giverId}> ({giverId2})",
+    "variables": [
+      "giverId",
+      "giverId2"
+    ],
+    "requiredVariables": [
+      "giverId",
+      "giverId2"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/gifting.ts:386"
+  },
+  {
+    "key": "bot.commands.gifting.717948589",
+    "group": "打赏与撤销",
+    "label": "收礼人：<@{receiverId}> ({receiverId2})",
+    "defaultText": "收礼人：<@{receiverId}> ({receiverId2})",
+    "variables": [
+      "receiverId",
+      "receiverId2"
+    ],
+    "requiredVariables": [
+      "receiverId",
+      "receiverId2"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/gifting.ts:387"
+  },
+  {
+    "key": "bot.commands.gifting.61100fb89",
+    "group": "打赏与撤销",
+    "label": "礼物：{giftName} x {quantity}",
+    "defaultText": "礼物：{giftName} x {quantity}",
+    "variables": [
+      "giftName",
+      "quantity"
+    ],
+    "requiredVariables": [
+      "giftName",
+      "quantity"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/gifting.ts:388"
+  },
+  {
+    "key": "bot.commands.gifting.a191d3981",
+    "group": "打赏与撤销",
+    "label": "总价：¥{value}",
+    "defaultText": "总价：¥{value}",
+    "variables": [
+      "value"
+    ],
+    "requiredVariables": [
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/gifting.ts:389"
+  },
+  {
+    "key": "bot.commands.gifting.af3b523ad",
+    "group": "打赏与撤销",
+    "label": "你收到了 {giverMention} 打赏的 {value} 个 {giftName}，总价为 ¥{totalPrice}。",
+    "defaultText": "你收到了 {giverMention} 打赏的 {value} 个 {giftName}，总价为 ¥{totalPrice}。",
+    "variables": [
+      "giverMention",
+      "value",
+      "giftName",
+      "totalPrice"
+    ],
+    "requiredVariables": [
+      "giverMention",
+      "value",
+      "giftName",
+      "totalPrice"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/gifting.ts:1008"
+  },
+  {
+    "key": "bot.commands.gifting.20958a59f",
+    "group": "打赏与撤销",
+    "label": "获得点了么积分{value}",
+    "defaultText": "获得点了么积分{value}",
+    "variables": [
+      "value"
+    ],
+    "requiredVariables": [
+      "value"
+    ],
+    "maxLength": 4096,
+    "source": "src/commands/gifting.ts:1039"
+  },
+  {
+    "key": "bot.commands.gifting.2e5e5481d",
+    "group": "打赏与撤销",
+    "label": "VIP加成额外积分：{value} x {value2}% = {value3}",
+    "defaultText": "VIP加成额外积分：{value} x {value2}% = {value3}",
+    "variables": [
+      "value",
+      "value2",
+      "value3"
+    ],
+    "requiredVariables": [
+      "value",
+      "value2",
+      "value3"
+    ],
+    "maxLength": 4096,
+    "source": "src/commands/gifting.ts:74"
+  },
+  {
+    "key": "bot.commands.gifting.61dc20628",
+    "group": "打赏与撤销",
+    "label": "已累计点了么积分 {totalText}",
+    "defaultText": "已累计点了么积分 {totalText}",
+    "variables": [
+      "totalText"
+    ],
+    "requiredVariables": [
+      "totalText"
+    ],
+    "maxLength": 4096,
+    "source": "src/commands/gifting.ts:1041"
+  },
+  {
+    "key": "bot.commands.gifting.e1580b03f",
+    "group": "打赏与撤销",
+    "label": "获得点了么积分{value}，已累计点了么积分 {totalText}。",
+    "defaultText": "获得点了么积分{value}，已累计点了么积分 {totalText}。",
+    "variables": [
+      "value",
+      "totalText"
+    ],
+    "requiredVariables": [
+      "value",
+      "totalText"
+    ],
+    "maxLength": 4096,
+    "source": "src/commands/gifting.ts:1043"
+  },
+  {
+    "key": "bot.commands.gifting.841dae4fc",
+    "group": "打赏与撤销",
+    "label": "打赏成功！谢谢老板😘",
+    "defaultText": "打赏成功！谢谢老板😘",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 256,
+    "singleLine": true,
+    "source": "src/commands/gifting.ts:1052"
+  },
+  {
+    "key": "bot.commands.gifting.cc5bed10b",
+    "group": "打赏与撤销",
+    "label": "你收到了客服代打赏的 {value} 个 {giftName}，总价 ¥{totalPrice}。",
+    "defaultText": "你收到了客服代打赏的 {value} 个 {giftName}，总价 ¥{totalPrice}。",
+    "variables": [
+      "value",
+      "giftName",
+      "totalPrice"
+    ],
+    "requiredVariables": [
+      "value",
+      "giftName",
+      "totalPrice"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/gifting.ts:1270"
+  },
+  {
+    "key": "bot.interactions.buttons.endOrder.e77536f70",
+    "group": "派单与订单",
+    "label": "结单失败，请稍后重试或联系工作人员。",
+    "defaultText": "结单失败，请稍后重试或联系工作人员。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/interactions/buttons/endOrder.ts:101"
+  },
+  {
+    "key": "bot.commands.totalEarn.bcf0bb794",
+    "group": "积分、券与权益",
+    "label": "❌ 操作失败：{value}",
+    "defaultText": "❌ 操作失败：{value}",
+    "variables": [
+      "value"
+    ],
+    "requiredVariables": [
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/totalEarn.ts:80"
+  },
+  {
+    "key": "bot.commands.totalEarn.f03e55bf1",
+    "group": "积分、券与权益",
+    "label": "未知错误",
+    "defaultText": "未知错误",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/totalEarn.ts:80"
+  },
+  {
+    "key": "bot.commands.totalSpent.590722cc6",
+    "group": "积分、券与权益",
+    "label": "❌ 操作失败：{value}",
+    "defaultText": "❌ 操作失败：{value}",
+    "variables": [
+      "value"
+    ],
+    "requiredVariables": [
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/totalSpent.ts:82"
+  },
+  {
+    "key": "bot.commands.totalSpent.299a06e09",
+    "group": "积分、券与权益",
+    "label": "未知错误",
+    "defaultText": "未知错误",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/totalSpent.ts:82"
+  },
+  {
+    "key": "bot.commands.loyaltyPoints.83e7e4383",
+    "group": "积分、券与权益",
+    "label": "❌ 操作失败：{value}",
+    "defaultText": "❌ 操作失败：{value}",
+    "variables": [
+      "value"
+    ],
+    "requiredVariables": [
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/loyaltyPoints.ts:80"
+  },
+  {
+    "key": "bot.commands.registerPeiwanSlash.e50698500",
+    "group": "名片、资料与入职",
+    "label": "录入失败，请检查编号或数据库约束。",
+    "defaultText": "录入失败，请检查编号或数据库约束。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/registerPeiwanSlash.ts:55"
+  },
+  {
+    "key": "bot.commands.balanceCommands.36375010b",
+    "group": "充值、余额与提现",
+    "label": "调账失败：充值余额不足。",
+    "defaultText": "调账失败：充值余额不足。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/balanceCommands.ts:137"
+  },
+  {
+    "key": "bot.commands.balanceCommands.d26589121",
+    "group": "充值、余额与提现",
+    "label": "调账失败：可提现余额不足。",
+    "defaultText": "调账失败：可提现余额不足。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/balanceCommands.ts:141"
+  },
+  {
+    "key": "bot.commands.balanceCommands.f6de6d82d",
+    "group": "充值、余额与提现",
+    "label": "调账失败，请稍后再试。",
+    "defaultText": "调账失败，请稍后再试。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/balanceCommands.ts:145"
+  },
+  {
+    "key": "bot.commands.balanceCommands.335c5c3be",
+    "group": "充值、余额与提现",
+    "label": "已从 <@{targetId}> 扣除 {value}。",
+    "defaultText": "已从 <@{targetId}> 扣除 {value}。",
+    "variables": [
+      "targetId",
+      "value"
+    ],
+    "requiredVariables": [
+      "targetId",
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/balanceCommands.ts:200"
+  },
+  {
+    "key": "bot.commands.balanceCommands.728b1ebe5",
+    "group": "充值、余额与提现",
+    "label": "转出与转入用户不能相同。",
+    "defaultText": "转出与转入用户不能相同。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/balanceCommands.ts:218"
+  },
+  {
+    "key": "bot.commands.balanceCommands.77e6b9c59",
+    "group": "充值、余额与提现",
+    "label": "已从 <@{fromId}> 转移 {value} 给 <@{toId}>。",
+    "defaultText": "已从 <@{fromId}> 转移 {value} 给 <@{toId}>。",
+    "variables": [
+      "fromId",
+      "value",
+      "toId"
+    ],
+    "requiredVariables": [
+      "fromId",
+      "value",
+      "toId"
+    ],
+    "maxLength": 2000,
+    "source": "src/commands/balanceCommands.ts:275"
+  },
+  {
+    "key": "bot.commands.balanceCommands.eff5b8174",
+    "group": "充值、余额与提现",
+    "label": "余额不足，转移/扣款失败。",
+    "defaultText": "余额不足，转移/扣款失败。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/balanceCommands.ts:281"
+  },
+  {
+    "key": "bot.commands.scratch.b9517d67b",
+    "group": "抽奖、刮卡与积木",
+    "label": "余额不足！",
+    "defaultText": "余额不足！",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/scratch.ts:59"
+  },
+  {
+    "key": "bot.commands.scratch.4c8e8e0a7",
+    "group": "抽奖、刮卡与积木",
+    "label": "刮刮乐已售罄。",
+    "defaultText": "刮刮乐已售罄。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/scratch.ts:63"
+  },
+  {
+    "key": "bot.commands.scratch.527b1c529",
+    "group": "抽奖、刮卡与积木",
+    "label": "该号码已售出",
+    "defaultText": "该号码已售出",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/scratch.ts:71"
+  },
+  {
+    "key": "bot.commands.scratch.a2a94220e",
+    "group": "抽奖、刮卡与积木",
+    "label": "刮刮乐创建失败，请稍后再试。",
+    "defaultText": "刮刮乐创建失败，请稍后再试。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/commands/scratch.ts:93"
+  },
+  {
+    "key": "bot.server.internalWebhookServer.0e99d2768",
+    "group": "网站与私信通知",
+    "label": "查看详情：{value}",
+    "defaultText": "查看详情：{value}",
+    "variables": [
+      "value"
+    ],
+    "requiredVariables": [
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/server/internalWebhookServer.ts:372"
+  },
+  {
+    "key": "bot.server.internalWebhookServer.ca2661551",
+    "group": "网站与私信通知",
+    "label": "匿名老板",
+    "defaultText": "匿名老板",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 1024,
+    "source": "src/server/internalWebhookServer.ts:456"
+  },
+  {
+    "key": "bot.server.internalWebhookServer.c9abb43e7",
+    "group": "网站与私信通知",
+    "label": "微信用户",
+    "defaultText": "微信用户",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 1024,
+    "source": "src/server/internalWebhookServer.ts:456"
+  },
+  {
+    "key": "bot.server.internalWebhookServer.6fe4b070e",
+    "group": "网站与私信通知",
+    "label": "在网站为微信老板《{bossName}》充值了{amount}点点券",
+    "defaultText": "在网站为微信老板《{bossName}》充值了{amount}点点券",
+    "variables": [
+      "bossName",
+      "amount"
+    ],
+    "requiredVariables": [
+      "bossName",
+      "amount"
+    ],
+    "maxLength": 2000,
+    "source": "src/server/internalWebhookServer.ts:1304"
+  },
+  {
+    "key": "bot.server.internalWebhookServer.ae8764dec",
+    "group": "网站与私信通知",
+    "label": "老板 <@{notifyDiscordId}> 使用了{value}，请联系老板。",
+    "defaultText": "老板 <@{notifyDiscordId}> 使用了{value}，请联系老板。",
+    "variables": [
+      "notifyDiscordId",
+      "value"
+    ],
+    "requiredVariables": [
+      "notifyDiscordId",
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/server/internalWebhookServer.ts:2064"
+  },
+  {
+    "key": "bot.assistant.orderActions.947908f9c",
+    "group": "智能助手与百科",
+    "label": "派单人：{value} ({ownerId})",
+    "defaultText": "派单人：{value} ({ownerId})",
+    "variables": [
+      "value",
+      "ownerId"
+    ],
+    "requiredVariables": [
+      "value",
+      "ownerId"
+    ],
+    "maxLength": 2000,
+    "source": "src/assistant/orderActions.ts:264"
+  },
+  {
+    "key": "bot.assistant.orderActions.f24a99efd",
+    "group": "智能助手与百科",
+    "label": "派单内容：{value}",
+    "defaultText": "派单内容：{value}",
+    "variables": [
+      "value"
+    ],
+    "requiredVariables": [
+      "value"
+    ],
+    "maxLength": 2000,
+    "source": "src/assistant/orderActions.ts:265"
+  },
+  {
+    "key": "bot.assistant.orderActions.fda3a203d",
+    "group": "智能助手与百科",
+    "label": "（无）",
+    "defaultText": "（无）",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/assistant/orderActions.ts:265"
+  },
+  {
+    "key": "bot.assistant.orderActions.0ae694e44",
+    "group": "智能助手与百科",
+    "label": "派单人余额：{balanceLabel}",
+    "defaultText": "派单人余额：{balanceLabel}",
+    "variables": [
+      "balanceLabel"
+    ],
+    "requiredVariables": [
+      "balanceLabel"
+    ],
+    "maxLength": 2000,
+    "source": "src/assistant/orderActions.ts:266"
+  },
+  {
+    "key": "bot.assistant.orderActions.e2c042a4d",
+    "group": "智能助手与百科",
+    "label": "未知",
+    "defaultText": "未知",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/assistant/orderActions.ts:259"
+  },
+  {
+    "key": "bot.assistant.confirmButtons.d29a86b7b",
+    "group": "智能助手与百科",
+    "label": "这条确认已经失效，请重新发起操作。",
+    "defaultText": "这条确认已经失效，请重新发起操作。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/assistant/confirmButtons.ts:142"
+  },
+  {
+    "key": "bot.assistant.confirmButtons.f88b55a2c",
+    "group": "智能助手与百科",
+    "label": "已确认，正在处理...",
+    "defaultText": "已确认，正在处理...",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/assistant/confirmButtons.ts:163"
+  },
+  {
+    "key": "bot.assistant.index.ce68c5984",
+    "group": "智能助手与百科",
+    "label": "当前有待确认操作，请点击上面的“确认执行”或“取消操作”按钮。",
+    "defaultText": "当前有待确认操作，请点击上面的“确认执行”或“取消操作”按钮。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/assistant/index.ts:309"
+  },
+  {
+    "key": "bot.assistant.planner.2700f72db",
+    "group": "智能助手与百科",
+    "label": "要打赏的话，请告诉我要送几个。",
+    "defaultText": "要打赏的话，请告诉我要送几个。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/assistant/planner.ts:67"
+  },
+  {
+    "key": "bot.assistant.planner.c5eb49f2d",
+    "group": "智能助手与百科",
+    "label": "备注：{orderContent}",
+    "defaultText": "备注：{orderContent}",
+    "variables": [
+      "orderContent"
+    ],
+    "requiredVariables": [
+      "orderContent"
+    ],
+    "maxLength": 2000,
+    "source": "src/assistant/planner.ts:41"
+  },
+  {
+    "key": "bot.assistant.planner.fa0b28fde",
+    "group": "智能助手与百科",
+    "label": "确认要给 {sourceLabel} 打赏 {qty} 个 {giftName} 吗？",
+    "defaultText": "确认要给 {sourceLabel} 打赏 {qty} 个 {giftName} 吗？",
+    "variables": [
+      "sourceLabel",
+      "qty",
+      "giftName"
+    ],
+    "requiredVariables": [
+      "sourceLabel",
+      "qty",
+      "giftName"
+    ],
+    "maxLength": 2000,
+    "source": "src/assistant/planner.ts:94"
+  },
+  {
+    "key": "bot.dispatch.requestHint",
+    "group": "派单与订单",
+    "label": "派单提示",
+    "defaultText": "老板派单啦，快来抢单",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 200,
+    "source": "src/constants/orderRequestCopy.ts:1",
+    "singleLine": true,
+    "preserveDefault": true
+  },
+  {
+    "key": "bot.dispatch.selectedHint",
+    "group": "派单与订单",
+    "label": "选人提示",
+    "defaultText": "老板点到了心仪的陪玩。派单还未结束，可继续扣单！",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 200,
+    "source": "src/constants/orderRequestCopy.ts:1",
+    "singleLine": true,
+    "preserveDefault": true
+  },
+  {
+    "key": "bot.dispatch.endedHint",
+    "group": "派单与订单",
+    "label": "结束派单提示",
+    "defaultText": "老板已结束派单。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 200,
+    "source": "src/constants/orderRequestCopy.ts:1",
+    "singleLine": true,
+    "preserveDefault": true
+  },
+  {
+    "key": "bot.dispatch.closedHint",
+    "group": "派单与订单",
+    "label": "关闭派单提示",
+    "defaultText": "派单已关闭。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 200,
+    "source": "src/constants/orderRequestCopy.ts:1",
+    "singleLine": true,
+    "preserveDefault": true
+  },
+  {
+    "key": "bot.dispatch.title",
+    "group": "派单与订单",
+    "label": "派单标题",
+    "defaultText": "派单进行中",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 80,
+    "source": "src/constants/orderRequestCopy.ts:1",
+    "singleLine": true,
+    "preserveDefault": true
+  },
+  {
+    "key": "bot.dispatch.description",
+    "group": "派单与订单",
+    "label": "派单说明",
+    "defaultText": "正在派单 呼叫陪陪啦 <a:45:1552516008793739387>\n\n<a:36:1552515993182412812> {caller}：正在呼叫陪陪",
+    "variables": [
+      "caller"
+    ],
+    "requiredVariables": [
+      "caller"
+    ],
+    "maxLength": 600,
+    "source": "src/constants/orderRequestCopy.ts:1",
+    "preserveDefault": true
+  },
+  {
+    "key": "bot.presentation.completionNote",
+    "group": "派单与订单",
+    "label": "结单附言",
+    "defaultText": "",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "source": "src/ui/orderEmbeds.ts:100",
+    "singleLine": true,
+    "allowEmpty": true,
+    "preserveDefault": true
+  },
+  {
+    "key": "bot.sqlNotifications.profileBodyUnknown",
+    "group": "名片、资料与入职",
+    "label": "陪玩资料更新正文（无编号）",
+    "defaultText": "您的陪玩信息 已更新，您的信息已经注册完毕",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 2000,
+    "source": "src/services/peiwanWatcher.ts:94"
+  },
+  {
+    "key": "bot.presentation.welcomeGreeting",
+    "group": "入群与邀请",
+    "label": "欢迎开场",
+    "defaultText": "您好🌷 欢迎来到点了么娱乐公会！",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 100,
+    "source": "src/ui/welcomeMessage.ts:1",
+    "singleLine": true,
+    "preserveDefault": true
+  },
+  {
+    "key": "bot.presentation.welcomeIntro",
+    "group": "入群与邀请",
+    "label": "欢迎介绍",
+    "defaultText": "很开心在这里遇见你 🩷\n🎮 无论是想找人一起开黑，还是聊聊天，都希望你在这里玩得开心。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 300,
+    "source": "src/ui/welcomeMessage.ts:1",
+    "preserveDefault": true
   }
 ];

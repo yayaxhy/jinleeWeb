@@ -124,7 +124,7 @@ function HoverLetter({
     <div
       role="button"
       tabIndex={0}
-      aria-label={siteCopy("site.components.home.dlmhoverletters.cbf1f4274d56", {value1: siteCopy("site.components.home.dlmhoverletters.video.letter", {value1: item.letter})})}
+      aria-label={siteCopy("site.components.home.dlmhoverletters.cbf1f4274d56", {value1: String(item.label)})}
       className="group relative h-full min-h-0 flex-1 cursor-pointer outline-none transition duration-500 hover:-translate-y-3 focus-visible:-translate-y-3"
       onPointerEnter={playVideo}
       onPointerLeave={stopVideo}

@@ -121,8 +121,7 @@ export async function GET(request: Request) {
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
       return NextResponse.json({ error: await renderSiteCopy("site.app.api.profile.voice.preview.route.dd32374a635d") }, { status: 404 });
     }
-    console.error('[voice-preview.get] failed', error);
-    const message = '读取试音失败，请稍后再试';
+    const message = error instanceof Error ? error.message : '读取试音失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -183,11 +182,10 @@ export async function POST(request: Request) {
       voicePreviewFilename: originalFilename,
     });
   } catch (error) {
-    console.error('[voice-preview.upload] failed', error);
     if (uploadedFileName) {
       await removeStoredFile({ filename: uploadedFileName });
     }
-    const message = '上传失败，请稍后再试';
+    const message = error instanceof Error ? error.message : '上传失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -215,8 +213,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('[voice-preview.delete] failed', error);
-    const message = '删除失败，请稍后再试';
+    const message = error instanceof Error ? error.message : '删除失败，请稍后再试';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,43 +1,41 @@
 import type { EditableCopyEntry } from "./editable-copy-contract";
 
-/** Explicit UI copy. Business values, routes and identifiers are never rewritten. */
-// Keep typed batches small enough for TypeScript to validate every entry.
-const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
+const SITE_COPY_PART_0: readonly EditableCopyEntry[] = [
   {
-    "key": "site.app.accounts.discord.bind.binddiscordclient.009dac9c626a",
+    "key": "site.app.accounts.discord.bind.binddiscordclient.245b76347fea",
     "group": "网站 · 登录绑定与换号",
-    "label": "无法开始授权",
-    "defaultText": "无法开始授权",
+    "label": "如果浏览器没有自动跳转，请点击下面的按钮继续。完成 Discord 授权后，系统会自动把当前微信账号和 Discord 账号",
+    "defaultText": "如果浏览器没有自动跳转，请点击下面的按钮继续。完成 Discord 授权后，系统会自动把当前微信账号和 Discord 账号合并成同一个业务用户。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/BindDiscordClient.tsx:12"
+    "source": "app/accounts/discord/bind/BindDiscordClient.tsx:34"
   },
   {
-    "key": "site.app.accounts.discord.bind.binddiscordclient.4b69ffb7ff99",
+    "key": "site.app.accounts.discord.bind.binddiscordclient.60402f3c5e5e",
     "group": "网站 · 登录绑定与换号",
-    "label": "授权目标 Discord 账号",
-    "defaultText": "授权目标 Discord 账号",
+    "label": "Continue with Discord",
+    "defaultText": "Continue with Discord",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/BindDiscordClient.tsx:17"
+    "source": "app/accounts/discord/bind/BindDiscordClient.tsx:43"
   },
   {
-    "key": "site.app.accounts.discord.bind.binddiscordclient.d769c865e545",
+    "key": "site.app.accounts.discord.bind.binddiscordclient.61ae0af769cb",
     "group": "网站 · 登录绑定与换号",
-    "label": "绑定或更换 Discord",
-    "defaultText": "绑定或更换 Discord",
+    "label": "Discord Binding",
+    "defaultText": "Discord Binding",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/BindDiscordClient.tsx:15"
+    "source": "app/accounts/discord/bind/BindDiscordClient.tsx:31"
   },
   {
-    "key": "site.app.accounts.discord.bind.binddiscordclient.e82601e534cf",
+    "key": "site.app.accounts.discord.bind.binddiscordclient.b4e0baf831b0",
     "group": "网站 · 登录绑定与换号",
-    "label": "正在打开…",
-    "defaultText": "正在打开…",
+    "label": "正在跳转 Discord 绑定…",
+    "defaultText": "正在跳转 Discord 绑定…",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/BindDiscordClient.tsx:17"
+    "source": "app/accounts/discord/bind/BindDiscordClient.tsx:32"
   },
   {
     "key": "site.app.accounts.discord.bind.page.56ccddf003fb",
@@ -73,7 +71,16 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "绑定链接已失效",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:35"
+    "source": "app/accounts/discord/bind/result/page.tsx:29"
+  },
+  {
+    "key": "site.app.accounts.discord.bind.result.page.5c346d829e8a",
+    "group": "网站 · 登录绑定与换号",
+    "label": "返回小程序后，绑定页会重新读取账号状态；也可以点击“检查绑定结果”。",
+    "defaultText": "返回小程序后，绑定页会重新读取账号状态；也可以点击“检查绑定结果”。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/discord/bind/result/page.tsx:73"
   },
   {
     "key": "site.app.accounts.discord.bind.result.page.61ae0af769cb",
@@ -82,7 +89,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "Discord Binding",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:88"
+    "source": "app/accounts/discord/bind/result/page.tsx:68"
   },
   {
     "key": "site.app.accounts.discord.bind.result.page.758d54627944",
@@ -91,7 +98,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "绑定成功",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:21"
+    "source": "app/accounts/discord/bind/result/page.tsx:20"
   },
   {
     "key": "site.app.accounts.discord.bind.result.page.8e2d2c806d13",
@@ -100,7 +107,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "Discord 已绑定其他微信账号",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:42"
+    "source": "app/accounts/discord/bind/result/page.tsx:35"
   },
   {
     "key": "site.app.accounts.discord.bind.result.page.9e83cb37523e",
@@ -109,16 +116,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "账号已经绑定",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:13"
-  },
-  {
-    "key": "site.app.accounts.discord.bind.result.page.af859f9e1d86",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号绑定需要核实",
-    "defaultText": "账号绑定需要核实",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:29"
+    "source": "app/accounts/discord/bind/result/page.tsx:12"
   },
   {
     "key": "site.app.accounts.discord.bind.result.page.b21393463ae1",
@@ -127,25 +125,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "Discord 登录状态缺失",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:61"
-  },
-  {
-    "key": "site.app.accounts.discord.bind.result.page.db761ca11b29",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号绑定状态已变化",
-    "defaultText": "账号绑定状态已变化",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:55"
-  },
-  {
-    "key": "site.app.accounts.discord.bind.result.page.e2402bbf976b",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号已关联另一个 Discord",
-    "defaultText": "账号已关联另一个 Discord",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:48"
+    "source": "app/accounts/discord/bind/result/page.tsx:41"
   },
   {
     "key": "site.app.accounts.discord.bind.result.page.fceff76d6f8d",
@@ -154,313 +134,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "绑定失败",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/discord/bind/result/page.tsx:67"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.0298fb023625",
-    "group": "网站 · 登录绑定与换号",
-    "label": "陪玩 #",
-    "defaultText": "陪玩 #",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:12"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.06be9d047d6e",
-    "group": "网站 · 登录绑定与换号",
-    "label": "解除 Discord 登录关联后，资产和历史仍留在当前平台账户。请使用微信重新登录。旧 Discord 再次注册时会得到空账",
-    "defaultText": "解除 Discord 登录关联后，资产和历史仍留在当前平台账户。请使用微信重新登录。旧 Discord 再次注册时会得到空账户，不会取回这里的资产。确认解绑？",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:21"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.0a9d5d36c31c",
-    "group": "网站 · 登录绑定与换号",
-    "label": "确认合并并换号",
-    "defaultText": "确认合并并换号",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.23381f3ad8fd",
-    "group": "网站 · 登录绑定与换号",
-    "label": "重新选择",
-    "defaultText": "重新选择",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.2a9fb20232a4",
-    "group": "网站 · 登录绑定与换号",
-    "label": "查看账号迁移记录",
-    "defaultText": "查看账号迁移记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:22"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.2fd656e16e93",
-    "group": "网站 · 登录绑定与换号",
-    "label": "结果未确定，请查询原请求后再操作",
-    "defaultText": "结果未确定，请查询原请求后再操作",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:23"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.3074199faa59",
-    "group": "网站 · 登录绑定与换号",
-    "label": "沿用陪玩编号 #",
-    "defaultText": "沿用陪玩编号 #",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.334cd99b3805",
-    "group": "网站 · 登录绑定与换号",
-    "label": "合并后",
-    "defaultText": "合并后",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.3bf179d8d045",
-    "group": "网站 · 登录绑定与换号",
-    "label": "未绑定",
-    "defaultText": "未绑定",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:12"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.3ea428bbd904",
-    "group": "网站 · 登录绑定与换号",
-    "label": "原账户",
-    "defaultText": "原账户",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.3f9d01ff8ffc",
-    "group": "网站 · 登录绑定与换号",
-    "label": "重新登录",
-    "defaultText": "重新登录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:23"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.425652af65a9",
-    "group": "网站 · 登录绑定与换号",
-    "label": "返回个人主页",
-    "defaultText": "返回个人主页",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:22"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.47a3c5bd52a2",
-    "group": "网站 · 登录绑定与换号",
-    "label": "正在读取账号…",
-    "defaultText": "正在读取账号…",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:25"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.4e8e440d1569",
-    "group": "网站 · 登录绑定与换号",
-    "label": "仅解除 Discord 绑定",
-    "defaultText": "仅解除 Discord 绑定",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.4febfd14555d",
-    "group": "网站 · 登录绑定与换号",
-    "label": "刷新核实",
-    "defaultText": "刷新核实",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:25"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.53666869b505",
-    "group": "网站 · 登录绑定与换号",
-    "label": "余额 ¥",
-    "defaultText": "余额 ¥",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:12"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.5d17670f3314",
-    "group": "网站 · 登录绑定与换号",
-    "label": "授权的 Discord 已关联当前平台账户，无需合并。",
-    "defaultText": "授权的 Discord 已关联当前平台账户，无需合并。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.60ed9053ceb4",
-    "group": "网站 · 登录绑定与换号",
-    "label": "仅解绑需要先关联微信，确保你仍能登录原账户。直接换号可在上方验证目标 Discord。",
-    "defaultText": "仅解绑需要先关联微信，确保你仍能登录原账户。直接换号可在上方验证目标 Discord。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.6370fcc8094c",
-    "group": "网站 · 登录绑定与换号",
-    "label": "当前账户",
-    "defaultText": "当前账户",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.759866630f92",
-    "group": "网站 · 登录绑定与换号",
-    "label": "· VIP ",
-    "defaultText": "· VIP ",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.7776c1b4f720",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号绑定与换号",
-    "defaultText": "账号绑定与换号",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:22"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.805a3a94c0a4",
-    "group": "网站 · 登录绑定与换号",
-    "label": "· 积分 ",
-    "defaultText": "· 积分 ",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:12"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.85a39a975dc2",
-    "group": "网站 · 登录绑定与换号",
-    "label": "重新选择目标账号",
-    "defaultText": "重新选择目标账号",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.8752a84bed60",
-    "group": "网站 · 登录绑定与换号",
-    "label": "以下内容仅留归档",
-    "defaultText": "以下内容仅留归档",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.960189df3fc9",
-    "group": "网站 · 登录绑定与换号",
-    "label": "Discord：",
-    "defaultText": "Discord：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:12"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.995ed5f418f6",
-    "group": "网站 · 登录绑定与换号",
-    "label": "正在核实并处理…",
-    "defaultText": "正在核实并处理…",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.c7006ed9e880",
-    "group": "网站 · 登录绑定与换号",
-    "label": "我已核对这两个账号，并确认按预览合并。",
-    "defaultText": "我已核对这两个账号，并确认按预览合并。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.c9cd9ca140da",
-    "group": "网站 · 登录绑定与换号",
-    "label": "接收账户",
-    "defaultText": "接收账户",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.d65c6fb8a7be",
-    "group": "网站 · 登录绑定与换号",
-    "label": "解绑失败",
-    "defaultText": "解绑失败",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.d769c865e545",
-    "group": "网站 · 登录绑定与换号",
-    "label": "绑定或更换 Discord",
-    "defaultText": "绑定或更换 Discord",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.d9f607a20068",
-    "group": "网站 · 登录绑定与换号",
-    "label": "读取失败",
-    "defaultText": "读取失败",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:19"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.e790e4eca3f8",
-    "group": "网站 · 登录绑定与换号",
-    "label": "无法授权",
-    "defaultText": "无法授权",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:21"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.e82601e534cf",
-    "group": "网站 · 登录绑定与换号",
-    "label": "正在打开…",
-    "defaultText": "正在打开…",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:24"
-  },
-  {
-    "key": "site.app.accounts.discord.change.discordchangeclient.f74140fedbbb",
-    "group": "网站 · 登录绑定与换号",
-    "label": "请重试",
-    "defaultText": "请重试",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/accounts/discord/change/DiscordChangeClient.tsx:22"
+    "source": "app/accounts/discord/bind/result/page.tsx:47"
   },
   {
     "key": "site.app.accounts.discord.login.discordloginclient.a3d23a0568ec",
@@ -490,229 +164,579 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "source": "app/accounts/discord/login/DiscordLoginClient.tsx:59"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.0c8950eecba0",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.078385a4fe0c",
     "group": "网站 · 登录绑定与换号",
-    "label": "微信网页和小程序登录已解除关联。资产和历史保持在原账户，请用 Discord 重新登录。",
-    "defaultText": "微信网页和小程序登录已解除关联。资产和历史保持在原账户，请用 Discord 重新登录。",
+    "label": "微信渠道已解绑，资产保持不变。",
+    "defaultText": "微信渠道已解绑，资产保持不变。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:30"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:225"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.196fd91ec1fa",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.0d776c4be545",
     "group": "网站 · 登录绑定与换号",
-    "label": "微信登录关联",
-    "defaultText": "微信登录关联",
+    "label": "复制绑定码",
+    "defaultText": "复制绑定码",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:29"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:381"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.1f39c0d17884",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.154b0027abbd",
     "group": "网站 · 登录绑定与换号",
-    "label": "使用 Discord 登录",
-    "defaultText": "使用 Discord 登录",
+    "label": "解绑中...",
+    "defaultText": "解绑中...",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:30"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:309"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.4ab3251af877",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.1a7fb664a490",
     "group": "网站 · 登录绑定与换号",
-    "label": "返回个人页",
-    "defaultText": "返回个人页",
+    "label": "当前未绑定微信",
+    "defaultText": "当前未绑定微信",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:28"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:268"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.4febfd14555d",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.26eab253a08e",
     "group": "网站 · 登录绑定与换号",
-    "label": "刷新核实",
-    "defaultText": "刷新核实",
+    "label": "生成中...",
+    "defaultText": "生成中...",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:37"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:300"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.551f79dfc560",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.27d196ab5973",
     "group": "网站 · 登录绑定与换号",
-    "label": "验证微信并查看合并预览",
-    "defaultText": "验证微信并查看合并预览",
+    "label": "绑定完成后，网站端刷新即可看到已绑定状态。",
+    "defaultText": "绑定完成后，网站端刷新即可看到已绑定状态。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:34"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:334"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.581512170a55",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.361130c06dd3",
     "group": "网站 · 登录绑定与换号",
-    "label": "解除微信关联",
-    "defaultText": "解除微信关联",
+    "label": "微信会直接打开 DLMClub 小程序绑定页。",
+    "defaultText": "微信会直接打开 DLMClub 小程序绑定页。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:34"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:332"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.5d54600db306",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.3bf179d8d045",
     "group": "网站 · 登录绑定与换号",
-    "label": "正在读取关联状态…",
-    "defaultText": "正在读取关联状态…",
+    "label": "未绑定",
+    "defaultText": "未绑定",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:35"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:284"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.6b682b6c5c32",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.3c2f34d27275",
     "group": "网站 · 登录绑定与换号",
-    "label": "当前尚未关联微信",
-    "defaultText": "当前尚未关联微信",
+    "label": "手动绑定码",
+    "defaultText": "手动绑定码",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:32"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:368"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.853743338c30",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.40fe070f625f",
     "group": "网站 · 登录绑定与换号",
-    "label": "当前已关联微信",
-    "defaultText": "当前已关联微信",
+    "label": "扫描右侧二维码后，会进入微信小程序绑定页；确认后当前网站账号和微信账号会合并成同一个 DLMClub 业务用户。",
+    "defaultText": "扫描右侧二维码后，会进入微信小程序绑定页；确认后当前网站账号和微信账号会合并成同一个 DLMClub 业务用户。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:32"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:277"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.a76cf59e053d",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.43031953004b",
     "group": "网站 · 登录绑定与换号",
-    "label": "请先绑定 Discord，保留可用登录方式。",
-    "defaultText": "请先绑定 Discord，保留可用登录方式。",
+    "label": "解绑失败，请稍后再试。",
+    "defaultText": "解绑失败，请稍后再试。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:34"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:69"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.c5ca3fd0604f",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.491485a5068b",
     "group": "网站 · 登录绑定与换号",
-    "label": "结果未确定，请刷新核实",
-    "defaultText": "结果未确定，请刷新核实",
+    "label": "二维码生成失败。",
+    "defaultText": "二维码生成失败。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:27"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:205"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.ce9fd54c50a3",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.4adea7deb8a3",
     "group": "网站 · 登录绑定与换号",
-    "label": "正在处理…",
-    "defaultText": "正在处理…",
+    "label": "绑定二维码生成失败，请稍后再试。",
+    "defaultText": "绑定二维码生成失败，请稍后再试。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:34"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:67"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.d769c865e545",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.503a188e0317",
     "group": "网站 · 登录绑定与换号",
-    "label": "绑定或更换 Discord",
-    "defaultText": "绑定或更换 Discord",
+    "label": "微信会打开 DLMClub 小程序绑定页。",
+    "defaultText": "微信会打开 DLMClub 小程序绑定页。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:28"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:339"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.d9f607a20068",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.55cc8c216144",
     "group": "网站 · 登录绑定与换号",
-    "label": "读取失败",
-    "defaultText": "读取失败",
+    "label": "正在同步绑定状态...",
+    "defaultText": "正在同步绑定状态...",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:16"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:261"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.e6ba5f5cadd6",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.569f76c23f46",
     "group": "网站 · 登录绑定与换号",
-    "label": "解除当前账户全部微信登录方式，资产和历史留在此账户。之后请使用 Discord 重新登录。确认解绑？",
-    "defaultText": "解除当前账户全部微信登录方式，资产和历史留在此账户。之后请使用 Discord 重新登录。确认解绑？",
+    "label": "当前账号未找到，请重新登录后再试。",
+    "defaultText": "当前账号未找到，请重新登录后再试。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:21"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:46"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.e790e4eca3f8",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.572fbc4e2685",
     "group": "网站 · 登录绑定与换号",
-    "label": "无法授权",
-    "defaultText": "无法授权",
+    "label": "当前页面用于把网站账号和微信小程序账号绑定到同一个 DLMClub 业务用户。请按照页面提示完成绑定，成功后网站端、 Bot",
+    "defaultText": "当前页面用于把网站账号和微信小程序账号绑定到同一个 DLMClub 业务用户。请按照页面提示完成绑定，成功后网站端、 Bot 和微信小程序会共用同一个业务账号。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:21"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:254"
   },
   {
-    "key": "site.app.accounts.wechat.bind.bindwechatclient.fbc713baf5df",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.5aca2bf8034d",
     "group": "网站 · 登录绑定与换号",
-    "label": "正在打开授权…",
-    "defaultText": "正在打开授权…",
+    "label": "把绑定码粘贴到小程序输入框并确认提交。",
+    "defaultText": "把绑定码粘贴到小程序输入框并确认提交。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:34"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:326"
   },
   {
-    "key": "site.app.api.discord.change.import.route.0432549bfdd4",
-    "group": "网站 · 操作反馈",
-    "label": "确认链接已过期，请重新验证",
-    "defaultText": "确认链接已过期，请重新验证",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.5c50d2a1c673",
+    "group": "网站 · 登录绑定与换号",
+    "label": "绑定码已复制，请在小程序绑定页粘贴使用。",
+    "defaultText": "绑定码已复制，请在小程序绑定页粘贴使用。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/discord/change/import/route.ts:6"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:241"
   },
   {
-    "key": "site.app.api.discord.change.route.28023cbe1088",
-    "group": "网站 · 操作反馈",
-    "label": "授权已过期，请重新验证两个账号",
-    "defaultText": "授权已过期，请重新验证两个账号",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.5fc5e28ee6a9",
+    "group": "网站 · 登录绑定与换号",
+    "label": "解绑微信",
+    "defaultText": "解绑微信",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/discord/change/route.ts:51"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:309"
   },
   {
-    "key": "site.app.api.discord.change.route.71ec2312b34c",
-    "group": "网站 · 操作反馈",
-    "label": "请先登录要保留资产的原账户",
-    "defaultText": "请先登录要保留资产的原账户",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.6069a4c1f182",
+    "group": "网站 · 登录绑定与换号",
+    "label": "请使用微信扫一扫识别这个小程序码，进入 DLMClub 小程序绑定页。",
+    "defaultText": "请使用微信扫一扫识别这个小程序码，进入 DLMClub 小程序绑定页。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/discord/change/route.ts:31"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:398"
   },
   {
-    "key": "site.app.api.discord.change.route.8d432e0dae29",
-    "group": "网站 · 操作反馈",
-    "label": "请先查看预览并确认",
-    "defaultText": "请先查看预览并确认",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.6185219b669e",
+    "group": "网站 · 登录绑定与换号",
+    "label": "在手机端打开 DLMClub 微信小程序，进入绑定页。",
+    "defaultText": "在手机端打开 DLMClub 微信小程序，进入绑定页。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/discord/change/route.ts:52"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:325"
   },
   {
-    "key": "site.app.api.discord.change.start.route.55b34029d5e0",
-    "group": "网站 · 操作反馈",
-    "label": "请重新登录后换号",
-    "defaultText": "请重新登录后换号",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.6856607ceb4a",
+    "group": "网站 · 登录绑定与换号",
+    "label": "当前账号已经绑定微信，不需要再扫码。",
+    "defaultText": "当前账号已经绑定微信，不需要再扫码。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/discord/change/start/route.ts:32"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:363"
   },
   {
-    "key": "site.app.api.discord.change.start.route.b5ca2b95697a",
-    "group": "网站 · 操作反馈",
-    "label": "绑定链接已失效，请重新生成",
-    "defaultText": "绑定链接已失效，请重新生成",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.70ef99b814f2",
+    "group": "网站 · 登录绑定与换号",
+    "label": "绑定状态加载失败。",
+    "defaultText": "绑定状态加载失败。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/discord/change/start/route.ts:40"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:160"
   },
   {
-    "key": "site.app.api.discord.change.start.route.e736df8ea9a7",
-    "group": "网站 · 操作反馈",
-    "label": "登录状态已变化，请重新生成绑定链接",
-    "defaultText": "登录状态已变化，请重新生成绑定链接",
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.7140156d9563",
+    "group": "网站 · 登录绑定与换号",
+    "label": "微信扫一扫",
+    "defaultText": "微信扫一扫",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/discord/change/start/route.ts:42"
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:360"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.72c2ebfbc37f",
+    "group": "网站 · 登录绑定与换号",
+    "label": "详细流程",
+    "defaultText": "详细流程",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:315"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.74e465997cb4",
+    "group": "网站 · 登录绑定与换号",
+    "label": "提交成功后，当前网站账号和微信账号会合并成同一个 DLMClub 业务用户。",
+    "defaultText": "提交成功后，当前网站账号和微信账号会合并成同一个 DLMClub 业务用户。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:327"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.85596547efae",
+    "group": "网站 · 登录绑定与换号",
+    "label": "Bind WeChat",
+    "defaultText": "Bind WeChat",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:251"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.88965a117581",
+    "group": "网站 · 登录绑定与换号",
+    "label": "渠道状态",
+    "defaultText": "渠道状态",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:283"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.8a2d19c1bcbc",
+    "group": "网站 · 登录绑定与换号",
+    "label": "至少还要保留一种登录方式，不能解绑最后一个渠道。",
+    "defaultText": "至少还要保留一种登录方式，不能解绑最后一个渠道。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:63"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.9accb5e7f3ad",
+    "group": "网站 · 登录绑定与换号",
+    "label": "在小程序里确认绑定当前微信账号。",
+    "defaultText": "在小程序里确认绑定当前微信账号。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:333"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.9b98a53ad926",
+    "group": "网站 · 登录绑定与换号",
+    "label": "生成后显示",
+    "defaultText": "生成后显示",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:288"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.9c3e92a3b2e2",
+    "group": "网站 · 登录绑定与换号",
+    "label": "当前账号还没有绑定微信。",
+    "defaultText": "当前账号还没有绑定微信。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:65"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.9dc996f996be",
+    "group": "网站 · 登录绑定与换号",
+    "label": "当前页面只支持网站端发起绑定微信。",
+    "defaultText": "当前页面只支持网站端发起绑定微信。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:44"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.a43fbc9984ad",
+    "group": "网站 · 登录绑定与换号",
+    "label": "网站端绑定微信",
+    "defaultText": "网站端绑定微信",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:252"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.a4467b1e77bc",
+    "group": "网站 · 登录绑定与换号",
+    "label": "当前登录态无效，请重新登录后再试。",
+    "defaultText": "当前登录态无效，请重新登录后再试。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:42"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.a6631f9f7375",
+    "group": "网站 · 登录绑定与换号",
+    "label": "正在生成二维码...",
+    "defaultText": "正在生成二维码...",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:413"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.ad6aa0801548",
+    "group": "网站 · 登录绑定与换号",
+    "label": "网站绑定配置缺失，请联系管理员检查登录密钥配置。",
+    "defaultText": "网站绑定配置缺失，请联系管理员检查登录密钥配置。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:48"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.b3addb5e3f54",
+    "group": "网站 · 登录绑定与换号",
+    "label": "已绑定",
+    "defaultText": "已绑定",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:284"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.b4adad277367",
+    "group": "网站 · 登录绑定与换号",
+    "label": "已绑定微信{value1}",
+    "defaultText": "已绑定微信{value1}",
+    "variables": [
+      "value1"
+    ],
+    "maxLength": 300,
+    "requiredVariables": [
+      "value1"
+    ],
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:270"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.b7bc66c3b948",
+    "group": "网站 · 登录绑定与换号",
+    "label": "解绑失败。",
+    "defaultText": "解绑失败。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:230"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.c59d41ebd99b",
+    "group": "网站 · 登录绑定与换号",
+    "label": "使用微信扫描右侧二维码。",
+    "defaultText": "使用微信扫描右侧二维码。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:338"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.ce7ab931f04a",
+    "group": "网站 · 登录绑定与换号",
+    "label": "微信已绑定成功。",
+    "defaultText": "微信已绑定成功。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:186"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.d025b3482d75",
+    "group": "网站 · 登录绑定与换号",
+    "label": "使用微信扫一扫右侧小程序码。",
+    "defaultText": "使用微信扫一扫右侧小程序码。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:331"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.d0d802fc8a47",
+    "group": "网站 · 登录绑定与换号",
+    "label": "当前小程序无法直接扫码拉起，请复制右侧绑定码，在手机端打开小程序绑定页后粘贴完成关联。",
+    "defaultText": "当前小程序无法直接扫码拉起，请复制右侧绑定码，在手机端打开小程序绑定页后粘贴完成关联。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:274"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.d6274c2b7533",
+    "group": "网站 · 登录绑定与换号",
+    "label": "当前已绑定微信",
+    "defaultText": "当前已绑定微信",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:268"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.d634221cd4cc",
+    "group": "网站 · 登录绑定与换号",
+    "label": "WeChat bind QR",
+    "defaultText": "WeChat bind QR",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:389"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.d895a7e54cd3",
+    "group": "网站 · 登录绑定与换号",
+    "label": "如需切换微信账号，可先解绑后重新发起绑定。",
+    "defaultText": "如需切换微信账号，可先解绑后重新发起绑定。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:320"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.e0d20a7a0e48",
+    "group": "网站 · 登录绑定与换号",
+    "label": "当前网站账号已经和微信账号完成绑定。",
+    "defaultText": "当前网站账号已经和微信账号完成绑定。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:318"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.e7b03c58db34",
+    "group": "网站 · 登录绑定与换号",
+    "label": "重新生成绑定信息",
+    "defaultText": "重新生成绑定信息",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:300"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.ea646417f61a",
+    "group": "网站 · 登录绑定与换号",
+    "label": "绑定码复制失败，请手动复制。",
+    "defaultText": "绑定码复制失败，请手动复制。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:244"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.f34c92ef0d86",
+    "group": "网站 · 登录绑定与换号",
+    "label": "后续你可以继续使用网站端或微信小程序登录同一个 DLMClub 用户。",
+    "defaultText": "后续你可以继续使用网站端或微信小程序登录同一个 DLMClub 用户。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:319"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.f5a18a88c2c3",
+    "group": "网站 · 登录绑定与换号",
+    "label": "如果微信无法直接识别二维码，也可以复制下面的链接在手机微信里打开。",
+    "defaultText": "如果微信无法直接识别二维码，也可以复制下面的链接在手机微信里打开。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:397"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.f834bc216f31",
+    "group": "网站 · 登录绑定与换号",
+    "label": "请使用微信扫一扫右侧小程序码，进入 DLMClub 小程序绑定页后确认绑定。",
+    "defaultText": "请使用微信扫一扫右侧小程序码，进入 DLMClub 小程序绑定页后确认绑定。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:276"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.f96046ad89f9",
+    "group": "网站 · 登录绑定与换号",
+    "label": "二维码有效期",
+    "defaultText": "二维码有效期",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:287"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.fb931fafb133",
+    "group": "网站 · 登录绑定与换号",
+    "label": "点击右侧“复制绑定码”。",
+    "defaultText": "点击右侧“复制绑定码”。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:324"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.fc30db41b09e",
+    "group": "网站 · 登录绑定与换号",
+    "label": "当前小程序没有 URL Link 权限，不能直接扫码拉起。请在手机端打开 DLMClub 小程序绑定页，并粘贴上面的绑定码完",
+    "defaultText": "当前小程序没有 URL Link 权限，不能直接扫码拉起。请在手机端打开 DLMClub 小程序绑定页，并粘贴上面的绑定码完成关联。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:374"
+  },
+  {
+    "key": "site.app.accounts.wechat.bind.bindwechatclient.fdcf5017ce18",
+    "group": "网站 · 登录绑定与换号",
+    "label": "网站端尚未完成微信小程序配置，请联系管理员。",
+    "defaultText": "网站端尚未完成微信小程序配置，请联系管理员。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/accounts/wechat/bind/BindWechatClient.tsx:50"
+  },
+  {
+    "key": "site.app.api.admin.wechat.bosses.cashback.route.1f323e4eedfb",
+    "group": "网站 · 通知与动态",
+    "label": "余额已调整",
+    "defaultText": "余额已调整",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/api/admin/wechat-bosses/cashback/route.ts:26"
+  },
+  {
+    "key": "site.app.api.admin.wechat.bosses.cashback.route.591ba151fd10",
+    "group": "网站 · 通知与动态",
+    "label": "客服已向你的账户发放 {value1} 币{value2}。",
+    "defaultText": "客服已向你的账户发放 {value1} 币{value2}。",
+    "variables": [
+      "value1",
+      "value2"
+    ],
+    "maxLength": 300,
+    "requiredVariables": [
+      "value1",
+      "value2"
+    ],
+    "source": "app/api/admin/wechat-bosses/cashback/route.ts:27"
+  },
+  {
+    "key": "site.app.api.admin.wechat.bosses.recharge.route.333c89553678",
+    "group": "网站 · 通知与动态",
+    "label": "余额已人工充值",
+    "defaultText": "余额已人工充值",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/api/admin/wechat-bosses/recharge/route.ts:30"
+  },
+  {
+    "key": "site.app.api.admin.wechat.bosses.recharge.route.3f58c4e9a04d",
+    "group": "网站 · 通知与动态",
+    "label": "客服已为你的账户入账 {value1} 币。",
+    "defaultText": "客服已为你的账户入账 {value1} 币。",
+    "variables": [
+      "value1"
+    ],
+    "maxLength": 300,
+    "requiredVariables": [
+      "value1"
+    ],
+    "source": "app/api/admin/wechat-bosses/recharge/route.ts:31"
   },
   {
     "key": "site.app.api.dlm.login.route.10884bb3009e",
@@ -753,7 +777,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "app/api/farm/route.ts:185"
+    "source": "app/api/farm/route.ts:165"
   },
   {
     "key": "site.app.api.farm.route.a323ce0e3b6d",
@@ -762,7 +786,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "请先登录",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/farm/route.ts:45"
+    "source": "app/api/farm/route.ts:26"
   },
   {
     "key": "site.app.api.farm.route.c88562b671ff",
@@ -771,7 +795,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "缺少目标庄园",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/farm/route.ts:180"
+    "source": "app/api/farm/route.ts:160"
   },
   {
     "key": "site.app.api.farm.route.f8934e337ef6",
@@ -780,7 +804,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "未知种子",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/farm/route.ts:157"
+    "source": "app/api/farm/route.ts:137"
   },
   {
     "key": "site.app.api.farm.route.fedca63099e7",
@@ -789,17 +813,16 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "未知操作",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/farm/route.ts:210"
+    "source": "app/api/farm/route.ts:172"
   },
   {
-    "key": "site.app.api.lottery.fuse.route.34247b87b596",
+    "key": "site.app.api.lottery.fuse.route.88ed6351387b",
     "group": "网站 · 操作反馈",
     "label": "所选奖品不可用、已过期或属于旧主体",
     "defaultText": "所选奖品不可用、已过期或属于旧主体",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/fuse/route.ts:160",
-    "requiredVariables": []
+    "source": "app/api/lottery/fuse/route.ts:157"
   },
   {
     "key": "site.app.api.lottery.fuse.route.e675865c7663",
@@ -810,7 +833,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 300,
-    "source": "app/api/lottery/fuse/route.ts:153",
+    "source": "app/api/lottery/fuse/route.ts:150",
     "requiredVariables": [
       "fixed1"
     ],
@@ -825,16 +848,16 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "未登录",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/fuse/route.ts:142"
+    "source": "app/api/lottery/fuse/route.ts:139"
   },
   {
-    "key": "site.app.api.lottery.use.route.0b206884f138",
+    "key": "site.app.api.lottery.use.route.0e3f9841e498",
     "group": "网站 · 操作反馈",
-    "label": "账号绑定状态已变化，请刷新后重新确认用券对象。",
-    "defaultText": "账号绑定状态已变化，请刷新后重新确认用券对象。",
+    "label": "未找到目标用户",
+    "defaultText": "未找到目标用户",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:238"
+    "source": "app/api/lottery/use/route.ts:216"
   },
   {
     "key": "site.app.api.lottery.use.route.137a22b366cc",
@@ -843,7 +866,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "该功能需要先绑定 Discord 账号",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:200"
+    "source": "app/api/lottery/use/route.ts:221"
   },
   {
     "key": "site.app.api.lottery.use.route.1742c6e3eea5",
@@ -852,7 +875,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "券已使用或已过期",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:151"
+    "source": "app/api/lottery/use/route.ts:169"
   },
   {
     "key": "site.app.api.lottery.use.route.280d4a373cb6",
@@ -861,7 +884,16 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "已使用或已过期",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:182"
+    "source": "app/api/lottery/use/route.ts:200"
+  },
+  {
+    "key": "site.app.api.lottery.use.route.3d0e094eb097",
+    "group": "网站 · 操作反馈",
+    "label": "内部接口未配置",
+    "defaultText": "内部接口未配置",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/api/lottery/use/route.ts:263"
   },
   {
     "key": "site.app.api.lottery.use.route.3e64edf2ea33",
@@ -870,17 +902,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "参数错误",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:108"
-  },
-  {
-    "key": "site.app.api.lottery.use.route.3f8c5a6674cc",
-    "group": "网站 · 操作反馈",
-    "label": "内部接口未配置",
-    "defaultText": "内部接口未配置",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:207",
-    "requiredVariables": []
+    "source": "app/api/lottery/use/route.ts:126"
   },
   {
     "key": "site.app.api.lottery.use.route.4349e2c2af16",
@@ -889,7 +911,16 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "记录不存在",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:179"
+    "source": "app/api/lottery/use/route.ts:197"
+  },
+  {
+    "key": "site.app.api.lottery.use.route.643355c0f2cc",
+    "group": "网站 · 操作反馈",
+    "label": "余额不足888，请联系客服充值哦～",
+    "defaultText": "余额不足888，请联系客服充值哦～",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/api/lottery/use/route.ts:230"
   },
   {
     "key": "site.app.api.lottery.use.route.76d4b775c0a5",
@@ -898,7 +929,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "该券不支持在此处使用",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:130"
+    "source": "app/api/lottery/use/route.ts:148"
   },
   {
     "key": "site.app.api.lottery.use.route.a2073de04c24",
@@ -907,7 +938,16 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "不支持的操作",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:245"
+    "source": "app/api/lottery/use/route.ts:367"
+  },
+  {
+    "key": "site.app.api.lottery.use.route.d2d7d0af62f8",
+    "group": "网站 · 操作反馈",
+    "label": "非礼物代金券，无法赠送",
+    "defaultText": "非礼物代金券，无法赠送",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/api/lottery/use/route.ts:211"
   },
   {
     "key": "site.app.api.lottery.use.route.e8041a8c9358",
@@ -916,7 +956,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "未登录",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:99"
+    "source": "app/api/lottery/use/route.ts:117"
   },
   {
     "key": "site.app.api.lottery.use.route.e8b67071c282",
@@ -925,7 +965,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "非自用券，无法自用",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/lottery/use/route.ts:194"
+    "source": "app/api/lottery/use/route.ts:251"
   },
   {
     "key": "site.app.api.opening.benefits.claim.route.37412307c1b6",
@@ -964,14 +1004,13 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "source": "app/api/opening-benefits/route.ts:8"
   },
   {
-    "key": "site.app.api.orders.orderid.discount.route.c7af1c8eb3b6",
+    "key": "site.app.api.orders.orderid.discount.route.b679fd486d7c",
     "group": "网站 · 操作反馈",
     "label": "缺少或非法的 kind",
     "defaultText": "缺少或非法的 kind",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/orders/[orderId]/discount/route.ts:53",
-    "requiredVariables": []
+    "source": "app/api/orders/[orderId]/discount/route.ts:49"
   },
   {
     "key": "site.app.api.orders.orderid.discount.route.e8041a8c9358",
@@ -980,34 +1019,30 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "未登录",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/orders/[orderId]/discount/route.ts:40"
+    "source": "app/api/orders/[orderId]/discount/route.ts:36"
   },
   {
-    "key": "site.app.api.profile.account.migrations.route.4349e2c2af16",
+    "key": "site.app.api.payment.stripe.notify.route.62a89cc85f1f",
     "group": "网站 · 操作反馈",
-    "label": "记录不存在",
-    "defaultText": "记录不存在",
+    "label": "Stripe 充值已到账",
+    "defaultText": "Stripe 充值已到账",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/profile/account-migrations/route.ts:16"
+    "source": "app/api/payment/stripe/notify/route.ts:189"
   },
   {
-    "key": "site.app.api.profile.account.migrations.route.532b812a99bc",
+    "key": "site.app.api.payment.stripe.notify.route.c35e67fe2604",
     "group": "网站 · 操作反馈",
-    "label": "分页位置无效",
-    "defaultText": "分页位置无效",
-    "variables": [],
+    "label": "你的账户已到账 {value1} 币。",
+    "defaultText": "你的账户已到账 {value1} 币。",
+    "variables": [
+      "value1"
+    ],
     "maxLength": 300,
-    "source": "app/api/profile/account-migrations/route.ts:18"
-  },
-  {
-    "key": "site.app.api.profile.account.migrations.route.a323ce0e3b6d",
-    "group": "网站 · 操作反馈",
-    "label": "请先登录",
-    "defaultText": "请先登录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/profile/account-migrations/route.ts:7"
+    "requiredVariables": [
+      "value1"
+    ],
+    "source": "app/api/payment/stripe/notify/route.ts:190"
   },
   {
     "key": "site.app.api.profile.audition.invite.preference.route.3cdf0657c5ed",
@@ -1017,16 +1052,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/api/profile/audition-invite-preference/route.ts:19"
-  },
-  {
-    "key": "site.app.api.profile.audition.invite.preference.route.825d9c887174",
-    "group": "网站 · 操作反馈",
-    "label": "缺少有效的 enabled 参数",
-    "defaultText": "缺少有效的 enabled 参数",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/profile/audition-invite-preference/route.ts:46",
-    "requiredVariables": []
   },
   {
     "key": "site.app.api.profile.audition.invite.preference.route.9fa559a03ec9",
@@ -1054,6 +1079,15 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/api/profile/audition-invite-preference/route.ts:27"
+  },
+  {
+    "key": "site.app.api.profile.audition.invite.preference.route.ee23c5832beb",
+    "group": "网站 · 操作反馈",
+    "label": "缺少有效的 enabled 参数",
+    "defaultText": "缺少有效的 enabled 参数",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/api/profile/audition-invite-preference/route.ts:46"
   },
   {
     "key": "site.app.api.profile.blacklist.route.11d76c8a59f0",
@@ -1200,33 +1234,6 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "source": "app/api/profile/peiwan-search/route.ts:8"
   },
   {
-    "key": "site.app.api.profile.target.confirmation.route.345ef2a8ee26",
-    "group": "网站 · 操作反馈",
-    "label": "暂时无法查询目标，请稍后重新查询。",
-    "defaultText": "暂时无法查询目标，请稍后重新查询。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/profile/target-confirmation/route.ts:33"
-  },
-  {
-    "key": "site.app.api.profile.target.confirmation.route.a4eae9f405b7",
-    "group": "网站 · 操作反馈",
-    "label": "查询参数格式错误",
-    "defaultText": "查询参数格式错误",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/profile/target-confirmation/route.ts:31"
-  },
-  {
-    "key": "site.app.api.profile.target.confirmation.route.e8041a8c9358",
-    "group": "网站 · 操作反馈",
-    "label": "未登录",
-    "defaultText": "未登录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/profile/target-confirmation/route.ts:26"
-  },
-  {
     "key": "site.app.api.profile.vip.announcement.preference.route.3e64edf2ea33",
     "group": "网站 · 操作反馈",
     "label": "参数错误",
@@ -1296,7 +1303,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "试音文件不能超过 10MB",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/profile/voice-preview/route.ts:143"
+    "source": "app/api/profile/voice-preview/route.ts:142"
   },
   {
     "key": "site.app.api.profile.voice.preview.route.b013c9e09846",
@@ -1305,7 +1312,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "请上传试音文件",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/profile/voice-preview/route.ts:140"
+    "source": "app/api/profile/voice-preview/route.ts:139"
   },
   {
     "key": "site.app.api.profile.voice.preview.route.b70fed13cd3b",
@@ -1314,7 +1321,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "仅支持 mp3、m4a、wav、ogg、opus、webm、flac、aac 音频文件",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/profile/voice-preview/route.ts:150"
+    "source": "app/api/profile/voice-preview/route.ts:149"
   },
   {
     "key": "site.app.api.profile.voice.preview.route.dd32374a635d",
@@ -1353,14 +1360,13 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "source": "app/api/profile/voice-preview/route.ts:67"
   },
   {
-    "key": "site.app.api.stripe.recharge.order.route.92b2703596e5",
+    "key": "site.app.api.stripe.recharge.order.route.78607c98184b",
     "group": "网站 · 操作反馈",
     "label": "Stripe 最低付款金额约为 50 美分，当前金额无法创建支付页面。请改用更高测试金额。",
     "defaultText": "Stripe 最低付款金额约为 50 美分，当前金额无法创建支付页面。请改用更高测试金额。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/stripe/recharge/order/route.ts:161",
-    "requiredVariables": []
+    "source": "app/api/stripe/recharge/order/route.ts:161"
   },
   {
     "key": "site.app.api.voucher.use.route.00a68abb0983",
@@ -1369,7 +1375,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "请输入评语内容",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/voucher/use/route.ts:198"
+    "source": "app/api/voucher/use/route.ts:244"
   },
   {
     "key": "site.app.api.voucher.use.route.01f259fd1b8e",
@@ -1378,7 +1384,16 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "缺少 prizeName",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/voucher/use/route.ts:159"
+    "source": "app/api/voucher/use/route.ts:202"
+  },
+  {
+    "key": "site.app.api.voucher.use.route.0e3f9841e498",
+    "group": "网站 · 操作反馈",
+    "label": "未找到目标用户",
+    "defaultText": "未找到目标用户",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/api/voucher/use/route.ts:275"
   },
   {
     "key": "site.app.api.voucher.use.route.137a22b366cc",
@@ -1387,7 +1402,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "该功能需要先绑定 Discord 账号",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/voucher/use/route.ts:183"
+    "source": "app/api/voucher/use/route.ts:229"
   },
   {
     "key": "site.app.api.voucher.use.route.1cb97fdd4512",
@@ -1396,7 +1411,16 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "评语最多 500 字",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/voucher/use/route.ts:201"
+    "source": "app/api/voucher/use/route.ts:247"
+  },
+  {
+    "key": "site.app.api.voucher.use.route.3b811bf3a8e1",
+    "group": "网站 · 操作反馈",
+    "label": "未找到目标陪玩",
+    "defaultText": "未找到目标陪玩",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/api/voucher/use/route.ts:252"
   },
   {
     "key": "site.app.api.voucher.use.route.6354babc49ae",
@@ -1405,16 +1429,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "不支持的奖品",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/voucher/use/route.ts:163"
-  },
-  {
-    "key": "site.app.api.voucher.use.route.900ddd191d99",
-    "group": "网站 · 操作反馈",
-    "label": "暂时无法确认用券结果，请先核对券状态和权益，勿重复提交。",
-    "defaultText": "暂时无法确认用券结果，请先核对券状态和权益，勿重复提交。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/voucher/use/route.ts:246"
+    "source": "app/api/voucher/use/route.ts:206"
   },
   {
     "key": "site.app.api.voucher.use.route.e8041a8c9358",
@@ -1423,34 +1438,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "defaultText": "未登录",
     "variables": [],
     "maxLength": 300,
-    "source": "app/api/voucher/use/route.ts:149"
-  },
-  {
-    "key": "site.app.api.wechat.bind.start.route.752cb09403b2",
-    "group": "网站 · 操作反馈",
-    "label": "请先用要保留的 Discord 登录；微信账户可直接到账号换号页绑定 Discord。",
-    "defaultText": "请先用要保留的 Discord 登录；微信账户可直接到账号换号页绑定 Discord。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/wechat/bind/start/route.ts:11"
-  },
-  {
-    "key": "site.app.api.wechat.bind.start.route.f60f29219179",
-    "group": "网站 · 操作反馈",
-    "label": "网站微信授权暂未配置，请联系管理员。",
-    "defaultText": "网站微信授权暂未配置，请联系管理员。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/wechat/bind/start/route.ts:13"
-  },
-  {
-    "key": "site.app.api.wechat.pay.order.route.dd67d62748cf",
-    "group": "网站 · 操作反馈",
-    "label": "暂时无法确认充值订单，请先查看充值记录；如已付款，请勿重复支付并联系客服。",
-    "defaultText": "暂时无法确认充值订单，请先查看充值记录；如已付款，请勿重复支付并联系客服。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/api/wechat/pay/order/route.ts:109"
+    "source": "app/api/voucher/use/route.ts:192"
   },
   {
     "key": "site.app.console.guildconsole.03b53d95839f",
@@ -1753,10 +1741,7 @@ const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/console/GuildConsole.tsx:1238"
-  }
-];
-
-const SITE_COPY_PART_2: readonly EditableCopyEntry[] = [
+  },
   {
     "key": "site.app.console.guildconsole.4a40171aa6b8",
     "group": "网站 · 公会控制台与通知",
@@ -1855,7 +1840,10 @@ const SITE_COPY_PART_2: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/console/GuildConsole.tsx:1599"
-  },
+  }
+];
+
+const SITE_COPY_PART_1: readonly EditableCopyEntry[] = [
   {
     "key": "site.app.console.guildconsole.5e51e6fe8f22",
     "group": "网站 · 公会控制台与通知",
@@ -2903,7 +2891,7 @@ const SITE_COPY_PART_2: readonly EditableCopyEntry[] = [
     "defaultText": "点了么庄园",
     "variables": [],
     "maxLength": 300,
-    "source": "app/farm/page.tsx:10"
+    "source": "app/farm/page.tsx:9"
   },
   {
     "key": "site.app.join.applicationform.01fad157abdc",
@@ -3589,10 +3577,7 @@ const SITE_COPY_PART_2: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/join/ApplicationForm.tsx:262"
-  }
-];
-
-const SITE_COPY_PART_3: readonly EditableCopyEntry[] = [
+  },
   {
     "key": "site.app.join.applicationform.82ab38b963d6",
     "group": "网站 · 入会与活动",
@@ -3691,7 +3676,10 @@ const SITE_COPY_PART_3: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/join/ApplicationForm.tsx:321"
-  },
+  }
+];
+
+const SITE_COPY_PART_2: readonly EditableCopyEntry[] = [
   {
     "key": "site.app.join.applicationform.ad461aa9af5f",
     "group": "网站 · 入会与活动",
@@ -4083,6 +4071,35 @@ const SITE_COPY_PART_3: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/join/ApplicationForm.tsx:283"
+  },
+  {
+    "key": "site.app.join.applicationform.photo.instructions",
+    "group": "网站 · 入驻申请",
+    "label": "照片上传说明",
+    "defaultText": "请选择清晰的图片。如果是真人照，请使用本人照片。",
+    "variables": [],
+    "maxLength": 500,
+    "source": "app/join/ApplicationForm.tsx:photo-description"
+  },
+  {
+    "key": "site.app.join.applicationform.photo.penalty",
+    "group": "网站 · 入驻申请",
+    "label": "假照片处理说明",
+    "defaultText": "使用假照/网红照/网图会罚款{minimum}到{maximum}。",
+    "variables": [
+      "minimum",
+      "maximum"
+    ],
+    "requiredVariables": [
+      "minimum",
+      "maximum"
+    ],
+    "examples": {
+      "minimum": "50",
+      "maximum": "200"
+    },
+    "maxLength": 500,
+    "source": "app/join/ApplicationForm.tsx:photo-penalty"
   },
   {
     "key": "site.app.join.page.40e2bac81db9",
@@ -5409,70 +5426,13 @@ const SITE_COPY_PART_3: readonly EditableCopyEntry[] = [
     "source": "app/privacy/page.tsx:40"
   },
   {
-    "key": "site.app.profile.account.migrations.page.113413a04995",
-    "group": "网站 · 个人中心与资产",
-    "label": "没有账户迁移记录。",
-    "defaultText": "没有账户迁移记录。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/account-migrations/page.tsx:20"
-  },
-  {
-    "key": "site.app.profile.account.migrations.page.29fde0ce8b7e",
-    "group": "网站 · 个人中心与资产",
-    "label": "；角色状态：",
-    "defaultText": "；角色状态：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/account-migrations/page.tsx:21"
-  },
-  {
-    "key": "site.app.profile.account.migrations.page.4ab3251af877",
-    "group": "网站 · 个人中心与资产",
-    "label": "返回个人页",
-    "defaultText": "返回个人页",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/account-migrations/page.tsx:19"
-  },
-  {
-    "key": "site.app.profile.account.migrations.page.54ecbdefc114",
-    "group": "网站 · 个人中心与资产",
-    "label": "账户迁移历史",
-    "defaultText": "账户迁移历史",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/account-migrations/page.tsx:17"
-  },
-  {
-    "key": "site.app.profile.account.migrations.page.564363fdde27",
-    "group": "网站 · 个人中心与资产",
-    "label": "编号：",
-    "defaultText": "编号：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/account-migrations/page.tsx:21"
-  }
-];
-
-const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
-  {
-    "key": "site.app.profile.account.migrations.page.f3ee9186ea52",
-    "group": "网站 · 个人中心与资产",
-    "label": "下一页原始记录",
-    "defaultText": "下一页原始记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/account-migrations/page.tsx:23"
-  },
-  {
     "key": "site.app.profile.bag.page.004f7ff59bfb",
     "group": "网站 · 个人中心与资产",
     "label": "已使用",
     "defaultText": "已使用",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:210"
+    "source": "app/profile/bag/page.tsx:208"
   },
   {
     "key": "site.app.profile.bag.page.03b2f370ae5c",
@@ -5481,7 +5441,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "使用时间",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:352"
+    "source": "app/profile/bag/page.tsx:349"
   },
   {
     "key": "site.app.profile.bag.page.0945e42ac05d",
@@ -5490,7 +5450,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "My Bag",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:186"
+    "source": "app/profile/bag/page.tsx:184"
   },
   {
     "key": "site.app.profile.bag.page.0c8254689746",
@@ -5499,7 +5459,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "我的资产",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:200"
+    "source": "app/profile/bag/page.tsx:198"
   },
   {
     "key": "site.app.profile.bag.page.11e2b0e36bc4",
@@ -5508,7 +5468,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "记录。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:221"
+    "source": "app/profile/bag/page.tsx:219"
   },
   {
     "key": "site.app.profile.bag.page.12cf516d9659",
@@ -5517,7 +5477,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "暂无记录。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:205"
+    "source": "app/profile/bag/page.tsx:203"
   },
   {
     "key": "site.app.profile.bag.page.1354374f768e",
@@ -5526,7 +5486,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "已过期",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:211"
+    "source": "app/profile/bag/page.tsx:209"
   },
   {
     "key": "site.app.profile.bag.page.13cec83596e0",
@@ -5535,7 +5495,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "未使用",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:209"
+    "source": "app/profile/bag/page.tsx:207"
   },
   {
     "key": "site.app.profile.bag.page.3144a998f054",
@@ -5544,7 +5504,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "到期时间",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:352"
+    "source": "app/profile/bag/page.tsx:349"
   },
   {
     "key": "site.app.profile.bag.page.425652af65a9",
@@ -5553,7 +5513,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "返回个人主页",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:194"
+    "source": "app/profile/bag/page.tsx:192"
   },
   {
     "key": "site.app.profile.bag.page.497064be1f41",
@@ -5562,7 +5522,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "共 ",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:201"
+    "source": "app/profile/bag/page.tsx:199"
   },
   {
     "key": "site.app.profile.bag.page.5001c27f2bab",
@@ -5571,7 +5531,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "使用方式：在 Discord 频道发送 `!抽积木` 消耗该代金券。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:354"
+    "source": "app/profile/bag/page.tsx:351"
   },
   {
     "key": "site.app.profile.bag.page.5dbd015496af",
@@ -5580,7 +5540,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "暂无",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:221"
+    "source": "app/profile/bag/page.tsx:219"
   },
   {
     "key": "site.app.profile.bag.page.afc3a43e5b41",
@@ -5589,7 +5549,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "我的背包",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:187"
+    "source": "app/profile/bag/page.tsx:185"
   },
   {
     "key": "site.app.profile.bag.page.ca56351fd6c2",
@@ -5598,8 +5558,11 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "展示你在背包中的全部资产。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:188"
-  },
+    "source": "app/profile/bag/page.tsx:186"
+  }
+];
+
+const SITE_COPY_PART_3: readonly EditableCopyEntry[] = [
   {
     "key": "site.app.profile.bag.page.f7b2a6ee68ec",
     "group": "网站 · 个人中心与资产",
@@ -5607,7 +5570,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "个",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/bag/page.tsx:201"
+    "source": "app/profile/bag/page.tsx:199"
   },
   {
     "key": "site.app.profile.giftwall.page.04d7e6fc2cc7",
@@ -6075,7 +6038,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "页 · 共 ",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:655"
+    "source": "app/profile/personalPage.tsx:631"
   },
   {
     "key": "site.app.profile.personalpage.067503a5bf3e",
@@ -6084,7 +6047,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "已达到最高等级",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:829"
+    "source": "app/profile/personalPage.tsx:805"
   },
   {
     "key": "site.app.profile.personalpage.06bbcfc46c2a",
@@ -6093,7 +6056,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "心动值",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:207"
+    "source": "app/profile/personalPage.tsx:202"
   },
   {
     "key": "site.app.profile.personalpage.0a2dde4c65fb",
@@ -6102,7 +6065,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "充值中心",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:211"
+    "source": "app/profile/personalPage.tsx:206"
   },
   {
     "key": "site.app.profile.personalpage.0f1a2515abc3",
@@ -6111,7 +6074,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "当前累计：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:882"
+    "source": "app/profile/personalPage.tsx:858"
   },
   {
     "key": "site.app.profile.personalpage.10b10e5e7f6b",
@@ -6120,7 +6083,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "金额变动",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:628"
+    "source": "app/profile/personalPage.tsx:604"
   },
   {
     "key": "site.app.profile.personalpage.116933e3696f",
@@ -6129,7 +6092,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "消费额外额度",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:589"
+    "source": "app/profile/personalPage.tsx:566"
   },
   {
     "key": "site.app.profile.personalpage.11ee30062d3d",
@@ -6138,7 +6101,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "PEIWAN",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1022"
+    "source": "app/profile/personalPage.tsx:985"
   },
   {
     "key": "site.app.profile.personalpage.1354374f768e",
@@ -6147,7 +6110,16 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "已过期",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:88"
+    "source": "app/profile/personalPage.tsx:85"
+  },
+  {
+    "key": "site.app.profile.personalpage.14adb8a14bf9",
+    "group": "网站 · 个人中心与资产",
+    "label": "profile-info",
+    "defaultText": "profile-info",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/profile/personalPage.tsx:964"
   },
   {
     "key": "site.app.profile.personalpage.154b6700190e",
@@ -6156,7 +6128,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "暂无优惠券。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1105"
+    "source": "app/profile/personalPage.tsx:1068"
   },
   {
     "key": "site.app.profile.personalpage.1646bf2ec192",
@@ -6165,7 +6137,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "变动后余额",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:629"
+    "source": "app/profile/personalPage.tsx:605"
   },
   {
     "key": "site.app.profile.personalpage.1c5a3e03faf1",
@@ -6174,7 +6146,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "下一门槛：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:842"
+    "source": "app/profile/personalPage.tsx:818"
   },
   {
     "key": "site.app.profile.personalpage.1d9a8790ecf5",
@@ -6183,7 +6155,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "抽成比例",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1013"
+    "source": "app/profile/personalPage.tsx:976"
   },
   {
     "key": "site.app.profile.personalpage.1e972bb1a1ad",
@@ -6192,7 +6164,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "礼物墙",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:208"
+    "source": "app/profile/personalPage.tsx:203"
   },
   {
     "key": "site.app.profile.personalpage.20b6e2fcece9",
@@ -6201,7 +6173,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "返回主页",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:763"
+    "source": "app/profile/personalPage.tsx:739"
   },
   {
     "key": "site.app.profile.personalpage.21b089f693c7",
@@ -6210,7 +6182,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "累计流水",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:466"
+    "source": "app/profile/personalPage.tsx:448"
   },
   {
     "key": "site.app.profile.personalpage.25083e17b076",
@@ -6221,7 +6193,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:866",
+    "source": "app/profile/personalPage.tsx:842",
     "requiredVariables": [
       "fixed1"
     ],
@@ -6230,13 +6202,22 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     }
   },
   {
+    "key": "site.app.profile.personalpage.2db9fd3ca44b",
+    "group": "网站 · 个人中心与资产",
+    "label": "profile-sent-reviews",
+    "defaultText": "profile-sent-reviews",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/profile/personalPage.tsx:1008"
+  },
+  {
     "key": "site.app.profile.personalpage.343ea874e81a",
     "group": "网站 · 个人中心与资产",
     "label": "点击进入页面",
     "defaultText": "点击进入页面",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:904"
+    "source": "app/profile/personalPage.tsx:880"
   },
   {
     "key": "site.app.profile.personalpage.3b1b41c2da72",
@@ -6245,7 +6226,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "积分商城",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:210"
+    "source": "app/profile/personalPage.tsx:205"
   },
   {
     "key": "site.app.profile.personalpage.3d2b0543df8f",
@@ -6254,7 +6235,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "奖品重铸",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:206"
+    "source": "app/profile/personalPage.tsx:201"
   },
   {
     "key": "site.app.profile.personalpage.3d7c3fd5d46e",
@@ -6263,7 +6244,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "到期：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:945"
+    "source": "app/profile/personalPage.tsx:919"
   },
   {
     "key": "site.app.profile.personalpage.3e7beeb7a940",
@@ -6272,7 +6253,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "去提现",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:699"
+    "source": "app/profile/personalPage.tsx:675"
   },
   {
     "key": "site.app.profile.personalpage.41de4204b04a",
@@ -6281,7 +6262,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "个性化展示内容",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:973"
+    "source": "app/profile/personalPage.tsx:936"
   },
   {
     "key": "site.app.profile.personalpage.497064be1f41",
@@ -6290,7 +6271,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "共 ",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1054"
+    "source": "app/profile/personalPage.tsx:1017"
   },
   {
     "key": "site.app.profile.personalpage.51abd6d878b8",
@@ -6299,16 +6280,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "收到的评语",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1051"
-  },
-  {
-    "key": "site.app.profile.personalpage.54bc5b3c8e00",
-    "group": "网站 · 个人中心与资产",
-    "label": "查看各批额度与有效期",
-    "defaultText": "查看各批额度与有效期",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:947"
+    "source": "app/profile/personalPage.tsx:1014"
   },
   {
     "key": "site.app.profile.personalpage.573a35fddacf",
@@ -6317,16 +6289,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "已达标",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:548"
-  },
-  {
-    "key": "site.app.profile.personalpage.5973e83a84e4",
-    "group": "网站 · 个人中心与资产",
-    "label": "退回额度",
-    "defaultText": "退回额度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:951"
+    "source": "app/profile/personalPage.tsx:529"
   },
   {
     "key": "site.app.profile.personalpage.62c9aa371d93",
@@ -6335,7 +6298,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "游戏档位",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1021"
+    "source": "app/profile/personalPage.tsx:984"
   },
   {
     "key": "site.app.profile.personalpage.6478dde45436",
@@ -6344,7 +6307,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "时间未知",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:84"
+    "source": "app/profile/personalPage.tsx:81"
   },
   {
     "key": "site.app.profile.personalpage.667c954567ae",
@@ -6353,7 +6316,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "距离 VIP ",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:826"
+    "source": "app/profile/personalPage.tsx:802"
   },
   {
     "key": "site.app.profile.personalpage.67a246a344ae",
@@ -6362,7 +6325,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "下一页",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:676"
+    "source": "app/profile/personalPage.tsx:652"
   },
   {
     "key": "site.app.profile.personalpage.6d423aa04d58",
@@ -6371,16 +6334,16 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "使用积分",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:719"
+    "source": "app/profile/personalPage.tsx:695"
   },
   {
-    "key": "site.app.profile.personalpage.7776c1b4f720",
+    "key": "site.app.profile.personalpage.77ea1bbb4ded",
     "group": "网站 · 个人中心与资产",
-    "label": "账号绑定与换号",
-    "defaultText": "账号绑定与换号",
+    "label": "profile-buff",
+    "defaultText": "profile-buff",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:203"
+    "source": "app/profile/personalPage.tsx:886"
   },
   {
     "key": "site.app.profile.personalpage.78590270ab59",
@@ -6389,7 +6352,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "查看额度与到期时间",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:915"
+    "source": "app/profile/personalPage.tsx:891"
   },
   {
     "key": "site.app.profile.personalpage.79799fc6ec78",
@@ -6398,7 +6361,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "PROFILE",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:975"
+    "source": "app/profile/personalPage.tsx:938"
   },
   {
     "key": "site.app.profile.personalpage.7b703872538d",
@@ -6407,7 +6370,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "VIP ",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:856"
+    "source": "app/profile/personalPage.tsx:832"
   },
   {
     "key": "site.app.profile.personalpage.7ca84917a2e1",
@@ -6416,7 +6379,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "流水记录",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:617"
+    "source": "app/profile/personalPage.tsx:593"
   },
   {
     "key": "site.app.profile.personalpage.870c0ab88bd9",
@@ -6425,7 +6388,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "账户余额",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:463"
+    "source": "app/profile/personalPage.tsx:445"
   },
   {
     "key": "site.app.profile.personalpage.89b4aa6364ce",
@@ -6434,7 +6397,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "时间",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:625"
+    "source": "app/profile/personalPage.tsx:601"
   },
   {
     "key": "site.app.profile.personalpage.8b72cdeed06b",
@@ -6443,7 +6406,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "暂无 Buff 信息。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:963"
+    "source": "app/profile/personalPage.tsx:926"
   },
   {
     "key": "site.app.profile.personalpage.90e514a4b554",
@@ -6452,7 +6415,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "变动前余额",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:627"
+    "source": "app/profile/personalPage.tsx:603"
   },
   {
     "key": "site.app.profile.personalpage.9273cc90ea18",
@@ -6461,7 +6424,16 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "张",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1076"
+    "source": "app/profile/personalPage.tsx:1039"
+  },
+  {
+    "key": "site.app.profile.personalpage.94244aa6c6ad",
+    "group": "网站 · 个人中心与资产",
+    "label": "profile-personalisation",
+    "defaultText": "profile-personalisation",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/profile/personalPage.tsx:931"
   },
   {
     "key": "site.app.profile.personalpage.96aafce775c3",
@@ -6470,7 +6442,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "暂时没有流水记录。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:682"
+    "source": "app/profile/personalPage.tsx:658"
   },
   {
     "key": "site.app.profile.personalpage.975c61b3f8c8",
@@ -6479,7 +6451,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "评语",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:604"
+    "source": "app/profile/personalPage.tsx:580"
   },
   {
     "key": "site.app.profile.personalpage.97d9a08ccd40",
@@ -6488,16 +6460,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "累计消费：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:840"
-  },
-  {
-    "key": "site.app.profile.personalpage.97f42f9ab44f",
-    "group": "网站 · 个人中心与资产",
-    "label": "迁移历史与归档",
-    "defaultText": "迁移历史与归档",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:204"
+    "source": "app/profile/personalPage.tsx:816"
   },
   {
     "key": "site.app.profile.personalpage.9af2298dbec5",
@@ -6506,7 +6469,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "Buff 状态",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:602"
+    "source": "app/profile/personalPage.tsx:578"
   },
   {
     "key": "site.app.profile.personalpage.9ba8d391c59a",
@@ -6515,7 +6478,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "My Profile",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:733"
+    "source": "app/profile/personalPage.tsx:709"
   },
   {
     "key": "site.app.profile.personalpage.9dd0d5dcd086",
@@ -6524,7 +6487,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "有效期至 ",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1098"
+    "source": "app/profile/personalPage.tsx:1061"
   },
   {
     "key": "site.app.profile.personalpage.9e2f8bf3a735",
@@ -6533,7 +6496,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "还差 ",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:826"
+    "source": "app/profile/personalPage.tsx:802"
   },
   {
     "key": "site.app.profile.personalpage.a058296dde28",
@@ -6542,7 +6505,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "额外流水额度",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:579"
+    "source": "app/profile/personalPage.tsx:557"
   },
   {
     "key": "site.app.profile.personalpage.a471daf080b6",
@@ -6551,7 +6514,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "提现",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:209"
+    "source": "app/profile/personalPage.tsx:204"
   },
   {
     "key": "site.app.profile.personalpage.a915eccf00ee",
@@ -6560,7 +6523,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "点了么积分",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:467"
+    "source": "app/profile/personalPage.tsx:449"
   },
   {
     "key": "site.app.profile.personalpage.a9619c37b67c",
@@ -6569,7 +6532,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "消费 Buff",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:588"
+    "source": "app/profile/personalPage.tsx:565"
   },
   {
     "key": "site.app.profile.personalpage.aa9fe6bd2cc4",
@@ -6578,7 +6541,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "抽成/返佣加成",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:569"
+    "source": "app/profile/personalPage.tsx:548"
   },
   {
     "key": "site.app.profile.personalpage.aaf9c9ab96b9",
@@ -6587,16 +6550,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "选择是否展示到你的名片中",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1052"
-  },
-  {
-    "key": "site.app.profile.personalpage.af526b515416",
-    "group": "网站 · 个人中心与资产",
-    "label": "暂无有效额度",
-    "defaultText": "暂无有效额度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:924"
+    "source": "app/profile/personalPage.tsx:1015"
   },
   {
     "key": "site.app.profile.personalpage.afc3a43e5b41",
@@ -6605,7 +6559,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "我的背包",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:205"
+    "source": "app/profile/personalPage.tsx:200"
   },
   {
     "key": "site.app.profile.personalpage.b3a30e12e871",
@@ -6614,7 +6568,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "抽成 Buff",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:568"
+    "source": "app/profile/personalPage.tsx:547"
   },
   {
     "key": "site.app.profile.personalpage.b41561d80765",
@@ -6623,7 +6577,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "上一页",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:666"
+    "source": "app/profile/personalPage.tsx:642"
   },
   {
     "key": "site.app.profile.personalpage.b4c2c5bfe153",
@@ -6632,7 +6586,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "流水 Buff",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:578"
+    "source": "app/profile/personalPage.tsx:556"
   },
   {
     "key": "site.app.profile.personalpage.b608cf1b2121",
@@ -6641,7 +6595,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "查看心动值",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:902"
+    "source": "app/profile/personalPage.tsx:878"
   },
   {
     "key": "site.app.profile.personalpage.b6a30c352fcf",
@@ -6650,7 +6604,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "升级进度",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:601"
+    "source": "app/profile/personalPage.tsx:577"
   },
   {
     "key": "site.app.profile.personalpage.b903e2ade79b",
@@ -6659,7 +6613,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "实时同步",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:917"
+    "source": "app/profile/personalPage.tsx:893"
   },
   {
     "key": "site.app.profile.personalpage.bce2ef61514a",
@@ -6668,7 +6622,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "条",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:655"
+    "source": "app/profile/personalPage.tsx:631"
   },
   {
     "key": "site.app.profile.personalpage.bd94a6639088",
@@ -6677,7 +6631,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "累计消费",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:465"
+    "source": "app/profile/personalPage.tsx:447"
   },
   {
     "key": "site.app.profile.personalpage.c098616830c3",
@@ -6686,16 +6640,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "可提现余额",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:464"
-  },
-  {
-    "key": "site.app.profile.personalpage.c09cac686059",
-    "group": "网站 · 个人中心与资产",
-    "label": "· 到期：",
-    "defaultText": "· 到期：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:951"
+    "source": "app/profile/personalPage.tsx:446"
   },
   {
     "key": "site.app.profile.personalpage.c241ef1b935c",
@@ -6704,7 +6649,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "个人信息",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:605"
+    "source": "app/profile/personalPage.tsx:581"
   },
   {
     "key": "site.app.profile.personalpage.c3dacb1c2a59",
@@ -6713,7 +6658,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "暂无游戏档位",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1036"
+    "source": "app/profile/personalPage.tsx:999"
   },
   {
     "key": "site.app.profile.personalpage.c6cf7722be48",
@@ -6722,7 +6667,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "与账户关联的收支流水",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:618"
+    "source": "app/profile/personalPage.tsx:594"
   },
   {
     "key": "site.app.profile.personalpage.cc13fb8a957b",
@@ -6731,7 +6676,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "当前等级：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:823"
+    "source": "app/profile/personalPage.tsx:799"
   },
   {
     "key": "site.app.profile.personalpage.cd4994e50397",
@@ -6740,7 +6685,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "个性化",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:603"
+    "source": "app/profile/personalPage.tsx:579"
   },
   {
     "key": "site.app.profile.personalpage.d04c1f47483e",
@@ -6749,16 +6694,25 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "个人主页",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:202"
+    "source": "app/profile/personalPage.tsx:199"
   },
   {
-    "key": "site.app.profile.personalpage.d083aba29cec",
+    "key": "site.app.profile.personalpage.da93496c7af9",
     "group": "网站 · 个人中心与资产",
-    "label": "普通额度",
-    "defaultText": "普通额度",
+    "label": "profile-coupon",
+    "defaultText": "profile-coupon",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:951"
+    "source": "app/profile/personalPage.tsx:1035"
+  },
+  {
+    "key": "site.app.profile.personalpage.de3cdacf8969",
+    "group": "网站 · 个人中心与资产",
+    "label": "profile-level",
+    "defaultText": "profile-level",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/profile/personalPage.tsx:791"
   },
   {
     "key": "site.app.profile.personalpage.e0361480e3a5",
@@ -6767,7 +6721,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "备注",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:630"
+    "source": "app/profile/personalPage.tsx:606"
   },
   {
     "key": "site.app.profile.personalpage.e4501732e2af",
@@ -6776,7 +6730,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "我的优惠券",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1075"
+    "source": "app/profile/personalPage.tsx:1038"
   },
   {
     "key": "site.app.profile.personalpage.e4e46c7235d1",
@@ -6785,16 +6739,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "类型",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:626"
-  },
-  {
-    "key": "site.app.profile.personalpage.e91365cf9ed9",
-    "group": "网站 · 个人中心与资产",
-    "label": "可用",
-    "defaultText": "可用",
-    "variables": [],
-    "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:923"
+    "source": "app/profile/personalPage.tsx:602"
   },
   {
     "key": "site.app.profile.personalpage.f0da1c7b4ef1",
@@ -6803,7 +6748,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "统计时间：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:884"
+    "source": "app/profile/personalPage.tsx:860"
   },
   {
     "key": "site.app.profile.personalpage.f1ebc7eeb432",
@@ -6812,7 +6757,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "未激活",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:80"
+    "source": "app/profile/personalPage.tsx:77"
   },
   {
     "key": "site.app.profile.personalpage.f495347d6acf",
@@ -6821,7 +6766,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "第 ",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:655"
+    "source": "app/profile/personalPage.tsx:631"
   },
   {
     "key": "site.app.profile.personalpage.f787b08b6067",
@@ -6830,7 +6775,16 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "累计消费越多，等级越高",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:819"
+    "source": "app/profile/personalPage.tsx:795"
+  },
+  {
+    "key": "site.app.profile.personalpage.f9706d9d41d1",
+    "group": "网站 · 个人中心与资产",
+    "label": "profile-heart",
+    "defaultText": "profile-heart",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/profile/personalPage.tsx:867"
   },
   {
     "key": "site.app.profile.personalpage.fa03c4625313",
@@ -6839,7 +6793,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "充值",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:709"
+    "source": "app/profile/personalPage.tsx:685"
   },
   {
     "key": "site.app.profile.personalpage.ff65e0488282",
@@ -6848,7 +6802,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "defaultText": "陪玩等级",
     "variables": [],
     "maxLength": 300,
-    "source": "app/profile/personalPage.tsx:1008"
+    "source": "app/profile/personalPage.tsx:971"
   },
   {
     "key": "site.app.profile.point.shop.page.425652af65a9",
@@ -7322,10 +7276,7 @@ const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "app/recharge-policy/page.tsx:42"
-  }
-];
-
-const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
+  },
   {
     "key": "site.app.recharge.policy.page.e44bf78cba3e",
     "group": "网站 · 充值",
@@ -7405,7 +7356,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "付款页会显示所选币种对应的价格。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:374"
+    "source": "app/recharge/RechargeClient.tsx:372"
   },
   {
     "key": "site.app.recharge.rechargeclient.13a93c4be799",
@@ -7414,7 +7365,16 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "复制二维码链接",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:469"
+    "source": "app/recharge/RechargeClient.tsx:467"
+  },
+  {
+    "key": "site.app.recharge.rechargeclient.152544f67d2f",
+    "group": "网站 · 充值",
+    "label": "下单失败，请稍后再试",
+    "defaultText": "下单失败，请稍后再试",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/recharge/RechargeClient.tsx:202"
   },
   {
     "key": "site.app.recharge.rechargeclient.1693e9b2c7da",
@@ -7423,7 +7383,16 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "选择支付方式",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:243"
+    "source": "app/recharge/RechargeClient.tsx:241"
+  },
+  {
+    "key": "site.app.recharge.rechargeclient.1a95b6cbc404",
+    "group": "网站 · 充值",
+    "label": "创建订单失败",
+    "defaultText": "创建订单失败",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/recharge/RechargeClient.tsx:222"
   },
   {
     "key": "site.app.recharge.rechargeclient.209ceb5e5fa4",
@@ -7432,7 +7401,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "支付成功后，余额将自动增加。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:306"
+    "source": "app/recharge/RechargeClient.tsx:304"
   },
   {
     "key": "site.app.recharge.rechargeclient.34943c40c9af",
@@ -7441,7 +7410,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "金额",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:420"
+    "source": "app/recharge/RechargeClient.tsx:418"
   },
   {
     "key": "site.app.recharge.rechargeclient.37c34c99cb91",
@@ -7450,7 +7419,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "前往信用卡/银行卡支付",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:386"
+    "source": "app/recharge/RechargeClient.tsx:384"
   },
   {
     "key": "site.app.recharge.rechargeclient.37c49b192027",
@@ -7459,8 +7428,11 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "充值说明",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:302"
-  },
+    "source": "app/recharge/RechargeClient.tsx:300"
+  }
+];
+
+const SITE_COPY_PART_4: readonly EditableCopyEntry[] = [
   {
     "key": "site.app.recharge.rechargeclient.3b3587d4cf5e",
     "group": "网站 · 充值",
@@ -7468,7 +7440,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "生成微信支付二维码",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:388"
+    "source": "app/recharge/RechargeClient.tsx:386"
   },
   {
     "key": "site.app.recharge.rechargeclient.3b8b236acaca",
@@ -7477,7 +7449,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "充值金额 *",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:317"
+    "source": "app/recharge/RechargeClient.tsx:315"
   },
   {
     "key": "site.app.recharge.rechargeclient.459868e5cb99",
@@ -7486,7 +7458,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "订单号",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:416"
+    "source": "app/recharge/RechargeClient.tsx:414"
   },
   {
     "key": "site.app.recharge.rechargeclient.5efbad21bce7",
@@ -7495,7 +7467,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "英镑",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:32"
+    "source": "app/recharge/RechargeClient.tsx:30"
   },
   {
     "key": "site.app.recharge.rechargeclient.6045c3447a7b",
@@ -7504,7 +7476,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "支付币种 *",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:346"
+    "source": "app/recharge/RechargeClient.tsx:344"
   },
   {
     "key": "site.app.recharge.rechargeclient.62e951a692ff",
@@ -7513,7 +7485,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "状态",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:424"
+    "source": "app/recharge/RechargeClient.tsx:422"
   },
   {
     "key": "site.app.recharge.rechargeclient.64aeba8fbc56",
@@ -7522,7 +7494,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "微信支付",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:13"
+    "source": "app/recharge/RechargeClient.tsx:11"
   },
   {
     "key": "site.app.recharge.rechargeclient.65539cef986c",
@@ -7531,7 +7503,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "打开支付页面",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:461"
+    "source": "app/recharge/RechargeClient.tsx:459"
   },
   {
     "key": "site.app.recharge.rechargeclient.693a1f22ff1d",
@@ -7540,7 +7512,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "生成支付二维码",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:389"
+    "source": "app/recharge/RechargeClient.tsx:387"
   },
   {
     "key": "site.app.recharge.rechargeclient.69988de37b6d",
@@ -7549,7 +7521,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "创建订单中…",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:384"
+    "source": "app/recharge/RechargeClient.tsx:382"
   },
   {
     "key": "site.app.recharge.rechargeclient.6eeebac2b29c",
@@ -7558,7 +7530,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "微信支付二维码",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:403"
+    "source": "app/recharge/RechargeClient.tsx:401"
   },
   {
     "key": "site.app.recharge.rechargeclient.71843f49b3dc",
@@ -7567,7 +7539,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "请选择一项充值金额，暂不支持自定义金额。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:341"
+    "source": "app/recharge/RechargeClient.tsx:339"
   },
   {
     "key": "site.app.recharge.rechargeclient.755cf21f274c",
@@ -7576,7 +7548,16 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "可使用 Visa、Mastercard、American Express、银联卡等银行卡，也可使用 Apple Pay，系统确认成功后自动到账。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:20"
+    "source": "app/recharge/RechargeClient.tsx:18"
+  },
+  {
+    "key": "site.app.recharge.rechargeclient.75c76fa9a1aa",
+    "group": "网站 · 充值",
+    "label": "暂不支持该 Stripe 支付币种。",
+    "defaultText": "暂不支持该 Stripe 支付币种。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/recharge/RechargeClient.tsx:197"
   },
   {
     "key": "site.app.recharge.rechargeclient.8a4d6ea4a592",
@@ -7587,7 +7568,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:444",
+    "source": "app/recharge/RechargeClient.tsx:442",
     "requiredVariables": [
       "fixed1"
     ],
@@ -7604,7 +7585,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:276",
+    "source": "app/recharge/RechargeClient.tsx:274",
     "requiredVariables": [
       "fixed1"
     ],
@@ -7619,7 +7600,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "下方选择充值金额点击生成订单，系统会按支付方式生成二维码或支付链接。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:304"
+    "source": "app/recharge/RechargeClient.tsx:302"
   },
   {
     "key": "site.app.recharge.rechargeclient.a4b8bdc41b67",
@@ -7628,7 +7609,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "信用卡/银行卡",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:19"
+    "source": "app/recharge/RechargeClient.tsx:17"
   },
   {
     "key": "site.app.recharge.rechargeclient.abb22bd95c4a",
@@ -7637,7 +7618,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "复制链接",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:469"
+    "source": "app/recharge/RechargeClient.tsx:467"
   },
   {
     "key": "site.app.recharge.rechargeclient.b207f8a132b7",
@@ -7646,7 +7627,30 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "无法复制链接，请手动打开支付页面。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:234"
+    "source": "app/recharge/RechargeClient.tsx:232"
+  },
+  {
+    "key": "site.app.recharge.rechargeclient.b984143026a1",
+    "group": "网站 · 充值",
+    "label": "首次信用卡/银行卡充值仅支持 ¥{value1}。",
+    "defaultText": "首次信用卡/银行卡充值仅支持 ¥{value1}。",
+    "variables": [
+      "value1"
+    ],
+    "maxLength": 300,
+    "requiredVariables": [
+      "value1"
+    ],
+    "source": "app/recharge/RechargeClient.tsx:194"
+  },
+  {
+    "key": "site.app.recharge.rechargeclient.bfa2d46bd7b6",
+    "group": "网站 · 充值",
+    "label": "Stripe 最低付款金额约为 50 美分",
+    "defaultText": "Stripe 最低付款金额约为 50 美分",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/recharge/RechargeClient.tsx:197"
   },
   {
     "key": "site.app.recharge.rechargeclient.c1837f65af61",
@@ -7655,7 +7659,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "微信官方支付无需填写转账备注。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:279"
+    "source": "app/recharge/RechargeClient.tsx:277"
   },
   {
     "key": "site.app.recharge.rechargeclient.c6dbdc22b6d8",
@@ -7666,7 +7670,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:14",
+    "source": "app/recharge/RechargeClient.tsx:12",
     "requiredVariables": [
       "fixed1"
     ],
@@ -7681,7 +7685,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "微信扫码支付",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:399"
+    "source": "app/recharge/RechargeClient.tsx:397"
   },
   {
     "key": "site.app.recharge.rechargeclient.de32b6a95b88",
@@ -7690,7 +7694,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "请使用微信扫一扫完成支付，页面会自动刷新到账状态。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:411"
+    "source": "app/recharge/RechargeClient.tsx:409"
   },
   {
     "key": "site.app.recharge.rechargeclient.e20007e4ea37",
@@ -7699,7 +7703,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "欧元",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:33"
+    "source": "app/recharge/RechargeClient.tsx:31"
   },
   {
     "key": "site.app.recharge.rechargeclient.e529c74de69e",
@@ -7708,7 +7712,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "加币",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:35"
+    "source": "app/recharge/RechargeClient.tsx:33"
   },
   {
     "key": "site.app.recharge.rechargeclient.e90da359904c",
@@ -7717,7 +7721,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "到账时间：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:439"
+    "source": "app/recharge/RechargeClient.tsx:437"
   },
   {
     "key": "site.app.recharge.rechargeclient.f2bf63b8f9ec",
@@ -7726,7 +7730,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "美元",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:34"
+    "source": "app/recharge/RechargeClient.tsx:32"
   },
   {
     "key": "site.app.recharge.rechargeclient.f4c45010e6d7",
@@ -7735,7 +7739,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "二维码有效至：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/recharge/RechargeClient.tsx:449"
+    "source": "app/recharge/RechargeClient.tsx:447"
   },
   {
     "key": "site.app.recharge.result.rechargeresultclient.3e2080bdadd0",
@@ -8354,7 +8358,25 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "复制二维码链接",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:252"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:250"
+  },
+  {
+    "key": "site.app.wechat.pay.wechatnativepayclient.152544f67d2f",
+    "group": "网站 · 充值",
+    "label": "下单失败，请稍后再试",
+    "defaultText": "下单失败，请稍后再试",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:91"
+  },
+  {
+    "key": "site.app.wechat.pay.wechatnativepayclient.1a95b6cbc404",
+    "group": "网站 · 充值",
+    "label": "创建订单失败",
+    "defaultText": "创建订单失败",
+    "variables": [],
+    "maxLength": 300,
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:104"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.233165aee9bc",
@@ -8363,7 +8385,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "当前用户标识：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:131"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:129"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.34943c40c9af",
@@ -8372,7 +8394,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "金额",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:215"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:213"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.3b8b236acaca",
@@ -8381,7 +8403,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "充值金额 *",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:151"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:149"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.459868e5cb99",
@@ -8390,7 +8412,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "订单号",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:211"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:209"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.62e951a692ff",
@@ -8399,7 +8421,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "状态",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:219"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:217"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.69988de37b6d",
@@ -8408,7 +8430,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "创建订单中…",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:183"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:181"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.6eeebac2b29c",
@@ -8417,7 +8439,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "微信支付二维码",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:197"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:195"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.71843f49b3dc",
@@ -8426,7 +8448,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "请选择一项充值金额，暂不支持自定义金额。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:175"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:173"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.811988ca2a85",
@@ -8435,7 +8457,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "选择充值金额并创建订单。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:138"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:136"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.8a4d6ea4a592",
@@ -8446,7 +8468,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
       "fixed1"
     ],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:238",
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:236",
     "requiredVariables": [
       "fixed1"
     ],
@@ -8461,7 +8483,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "支付成功后页面会自动更新到账状态。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:140"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:138"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.97dd1933a05d",
@@ -8470,7 +8492,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "无法复制链接，请手动重试。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:116"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:114"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.a870784d0b6e",
@@ -8479,7 +8501,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "支付方式",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:125"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:123"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.a99f9b20258a",
@@ -8488,7 +8510,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "使用微信扫一扫页面二维码完成支付。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:139"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:137"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.b67221d19ae5",
@@ -8497,7 +8519,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "支付说明",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:136"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:134"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.c8715f381cf1",
@@ -8506,7 +8528,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "微信扫码支付",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:127"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:125"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.de32b6a95b88",
@@ -8515,7 +8537,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "请使用微信扫一扫完成支付，页面会自动刷新到账状态。",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:205"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:203"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.e8041a8c9358",
@@ -8524,7 +8546,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "未登录",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:131"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:129"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.e90da359904c",
@@ -8533,7 +8555,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "到账时间：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:234"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:232"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.f4c45010e6d7",
@@ -8542,7 +8564,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "二维码有效至：",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:242"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:240"
   },
   {
     "key": "site.app.wechat.pay.wechatnativepayclient.f5543e33e6c6",
@@ -8551,7 +8573,19 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "生成微信二维码",
     "variables": [],
     "maxLength": 300,
-    "source": "app/wechat/pay/WechatNativePayClient.tsx:183"
+    "source": "app/wechat/pay/WechatNativePayClient.tsx:181"
+  },
+  {
+    "key": "site.components.farm.farmclient.0096113d559f",
+    "group": "网站 · 农场",
+    "label": "改成服务器真实拜访记录，不再依赖本地缓存。",
+    "defaultText": "改成服务器真实拜访记录，不再依赖本地缓存。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
   },
   {
     "key": "site.components.farm.farmclient.0373ff923114",
@@ -8563,6 +8597,342 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/farm/FarmClient.tsx:298"
   },
   {
+    "key": "site.components.farm.farmclient.03901da73215",
+    "group": "网站 · 农场",
+    "label": "剩余时间：{value1}",
+    "defaultText": "剩余时间：{value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.044ad9e1ca97",
+    "group": "网站 · 农场",
+    "label": " 金币",
+    "defaultText": " 金币",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.050c11f35aa1",
+    "group": "网站 · 农场",
+    "label": "稀有",
+    "defaultText": "稀有",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.051a4eebc81a",
+    "group": "网站 · 农场",
+    "label": "不可偷",
+    "defaultText": "不可偷",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.064663ba9124",
+    "group": "网站 · 农场",
+    "label": "选择当前种子后，再点击农田格进行播种。",
+    "defaultText": "选择当前种子后，再点击农田格进行播种。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.07bcbf7b987f",
+    "group": "网站 · 农场",
+    "label": "种子袋",
+    "defaultText": "种子袋",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.07bd6ba6b527",
+    "group": "网站 · 农场",
+    "label": "已达到最大地块",
+    "defaultText": "已达到最大地块",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.08be14df26b5",
+    "group": "网站 · 农场",
+    "label": "Plot Detail",
+    "defaultText": "Plot Detail",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.08c20fd0c7e1",
+    "group": "网站 · 农场",
+    "label": "播种 {value1}",
+    "defaultText": "播种 {value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.08f5ae4059ca",
+    "group": "网站 · 农场",
+    "label": "展开工具栏",
+    "defaultText": "展开工具栏",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.091197e51660",
+    "group": "网站 · 农场",
+    "label": "个人页",
+    "defaultText": "个人页",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.0935d340f6ba",
+    "group": "网站 · 农场",
+    "label": "直接进入对方庄园",
+    "defaultText": "直接进入对方庄园",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.09b0def32249",
+    "group": "网站 · 农场",
+    "label": "回庄园",
+    "defaultText": "回庄园",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.0ac5cd88ba6f",
+    "group": "网站 · 农场",
+    "label": "偷到 +{value1} 金币",
+    "defaultText": "偷到 +{value1} 金币",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.0bc0491c5f46",
+    "group": "网站 · 农场",
+    "label": "本轮收获 {value1} 金币。",
+    "defaultText": "本轮收获 {value1} 金币。",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.0c3b4cf7aa25",
+    "group": "网站 · 农场",
+    "label": "操作失败",
+    "defaultText": "操作失败",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.0f1afd780afe",
+    "group": "网站 · 农场",
+    "label": "我的好友",
+    "defaultText": "我的好友",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.11ef9f7c4e9b",
+    "group": "网站 · 农场",
+    "label": "好友、常访和搜索都收进独立拜访台，强调暖红色和鎏金木牌风格，不再像普通后台列表。",
+    "defaultText": "好友、常访和搜索都收进独立拜访台，强调暖红色和鎏金木牌风格，不再像普通后台列表。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.12d308ec75a7",
+    "group": "网站 · 农场",
+    "label": "本轮已被偷：",
+    "defaultText": "本轮已被偷：",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.1a427f0ea798",
+    "group": "网站 · 农场",
+    "label": "访客模式仅可观察与偷菜",
+    "defaultText": "访客模式仅可观察与偷菜",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.1a60e3d50126",
+    "group": "网站 · 农场",
+    "label": "成熟时间",
+    "defaultText": "成熟时间",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.1bc81989de8f",
+    "group": "网站 · 农场",
+    "label": "收获中…",
+    "defaultText": "收获中…",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.1cfaa4c6ddcf",
+    "group": "网站 · 农场",
+    "label": "作物",
+    "defaultText": "作物",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.1decad6eb821",
+    "group": "网站 · 农场",
+    "label": "成长奖励",
+    "defaultText": "成长奖励",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.1f56bd992b74",
+    "group": "网站 · 农场",
+    "label": "兑换金币",
+    "defaultText": "兑换金币",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.1f8064f240f3",
+    "group": "网站 · 农场",
+    "label": "余额 ",
+    "defaultText": "余额 ",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
     "key": "site.components.farm.farmclient.211357d22f4d",
     "group": "网站 · 农场",
     "label": "离线",
@@ -8570,6 +8940,135 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/farm/FarmClient.tsx:298"
+  },
+  {
+    "key": "site.components.farm.farmclient.22a03b9975b6",
+    "group": "网站 · 农场",
+    "label": "庄园底图",
+    "defaultText": "庄园底图",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.261d0e20de88",
+    "group": "网站 · 农场",
+    "label": "访问记录",
+    "defaultText": "访问记录",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.2ac3e9a135a7",
+    "group": "网站 · 农场",
+    "label": "暂未选种",
+    "defaultText": "暂未选种",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.2ef750e5d8bb",
+    "group": "网站 · 农场",
+    "label": "收起工具栏",
+    "defaultText": "收起工具栏",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.2f0baebfe7ca",
+    "group": "网站 · 农场",
+    "label": "待解锁",
+    "defaultText": "待解锁",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.329417e3603e",
+    "group": "网站 · 农场",
+    "label": "嫩芽阶段",
+    "defaultText": "嫩芽阶段",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.337717173807",
+    "group": "网站 · 农场",
+    "label": "等级",
+    "defaultText": "等级",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.33d2b3e5ecd1",
+    "group": "网站 · 农场",
+    "label": "待解锁地块",
+    "defaultText": "待解锁地块",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.347a21d50ad9",
+    "group": "网站 · 农场",
+    "label": "立即收获",
+    "defaultText": "立即收获",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.37a09dac9269",
+    "group": "网站 · 农场",
+    "label": "{value1}分 {value2}秒",
+    "defaultText": "{value1}分 {value2}秒",
+    "variables": [
+      "value1",
+      "value2"
+    ],
+    "requiredVariables": [
+      "value1",
+      "value2"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例",
+      "value2": "示例"
+    }
   },
   {
     "key": "site.components.farm.farmclient.3853bd5c971a",
@@ -8581,6 +9080,132 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/farm/FarmClient.tsx:298"
   },
   {
+    "key": "site.components.farm.farmclient.38de25e52295",
+    "group": "网站 · 农场",
+    "label": "操作成功",
+    "defaultText": "操作成功",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.3c614d7896cc",
+    "group": "网站 · 农场",
+    "label": "抽枝阶段",
+    "defaultText": "抽枝阶段",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.3d195ae77c8e",
+    "group": "网站 · 农场",
+    "label": "访客观察：{value1} 后成熟",
+    "defaultText": "访客观察：{value1} 后成熟",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.3d8c023c951c",
+    "group": "网站 · 农场",
+    "label": "当前种子：{value1}",
+    "defaultText": "当前种子：{value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.3e5529ca2856",
+    "group": "网站 · 农场",
+    "label": "返回中…",
+    "defaultText": "返回中…",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.415511d04c15",
+    "group": "网站 · 农场",
+    "label": "当前不在辅助线区域内",
+    "defaultText": "当前不在辅助线区域内",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.4244bfce7a80",
+    "group": "网站 · 农场",
+    "label": "场景坐标",
+    "defaultText": "场景坐标",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.42a6bb595ff0",
+    "group": "网站 · 农场",
+    "label": "兑换积分",
+    "defaultText": "兑换积分",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.448e59ddc1c1",
+    "group": "网站 · 农场",
+    "label": "+{value1} 金币",
+    "defaultText": "+{value1} 金币",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
     "key": "site.components.farm.farmclient.44d5383c87ee",
     "group": "网站 · 农场",
     "label": "已成熟",
@@ -8588,6 +9213,114 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/farm/FarmClient.tsx:54"
+  },
+  {
+    "key": "site.components.farm.farmclient.44ee810161fa",
+    "group": "网站 · 农场",
+    "label": "等待成熟 · {value1}",
+    "defaultText": "等待成熟 · {value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.463ec16b909b",
+    "group": "网站 · 农场",
+    "label": "真实好友",
+    "defaultText": "真实好友",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.46fe7dbb8310",
+    "group": "网站 · 农场",
+    "label": "地块：{value1} 号",
+    "defaultText": "地块：{value1} 号",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.486f7fad70b8",
+    "group": "网站 · 农场",
+    "label": "扩地中…",
+    "defaultText": "扩地中…",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.48e5deb1198b",
+    "group": "网站 · 农场",
+    "label": "访客视角：这一轮可以偷菜。",
+    "defaultText": "访客视角：这一轮可以偷菜。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.4927a53bcc88",
+    "group": "网站 · 农场",
+    "label": "加载中…",
+    "defaultText": "加载中…",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.4952bcad62f5",
+    "group": "网站 · 农场",
+    "label": "经验 +",
+    "defaultText": "经验 +",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.4b4f3e601cf3",
+    "group": "网站 · 农场",
+    "label": "空地没有可以偷的东西。",
+    "defaultText": "空地没有可以偷的东西。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
   },
   {
     "key": "site.components.farm.farmclient.4de50894b8c1",
@@ -8599,6 +9332,54 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/farm/FarmClient.tsx:292"
   },
   {
+    "key": "site.components.farm.farmclient.4e2fe50f7fd4",
+    "group": "网站 · 农场",
+    "label": "转成金币",
+    "defaultText": "转成金币",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.4f6e6aff80ca",
+    "group": "网站 · 农场",
+    "label": "移动鼠标查看",
+    "defaultText": "移动鼠标查看",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.4f87c6a08ae0",
+    "group": "网站 · 农场",
+    "label": "余额兑换金币",
+    "defaultText": "余额兑换金币",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.4fb6d3456a9b",
+    "group": "网站 · 农场",
+    "label": "请选择种子",
+    "defaultText": "请选择种子",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
     "key": "site.components.farm.farmclient.51cc55073eb6",
     "group": "网站 · 农场",
     "label": "余额",
@@ -8606,6 +9387,48 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/farm/FarmClient.tsx:300"
+  },
+  {
+    "key": "site.components.farm.farmclient.522264e4b202",
+    "group": "网站 · 农场",
+    "label": "等待结算产出。",
+    "defaultText": "等待结算产出。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.52844c319230",
+    "group": "网站 · 农场",
+    "label": "访客视角 · 这块地目前空着",
+    "defaultText": "访客视角 · 这块地目前空着",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.53dfb6af4e44",
+    "group": "网站 · 农场",
+    "label": "下一块地：{value1} 金币",
+    "defaultText": "下一块地：{value1} 金币",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
   },
   {
     "key": "site.components.farm.farmclient.53e2db70167f",
@@ -8617,6 +9440,96 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/farm/FarmClient.tsx:292"
   },
   {
+    "key": "site.components.farm.farmclient.54c22e9bed51",
+    "group": "网站 · 农场",
+    "label": "点击地块直接播种。",
+    "defaultText": "点击地块直接播种。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.56e52cf18551",
+    "group": "网站 · 农场",
+    "label": "提示：按住 Shift 再点击场景，可以锁定当前位置参数。",
+    "defaultText": "提示：按住 Shift 再点击场景，可以锁定当前位置参数。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.58bd647c56a8",
+    "group": "网站 · 农场",
+    "label": "扩地",
+    "defaultText": "扩地",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.5cc5397bedf2",
+    "group": "网站 · 农场",
+    "label": "目标地块：{value1} 号",
+    "defaultText": "目标地块：{value1} 号",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.5e16b35d3051",
+    "group": "网站 · 农场",
+    "label": "地块 ",
+    "defaultText": "地块 ",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.5e70230a9631",
+    "group": "网站 · 农场",
+    "label": "进阶",
+    "defaultText": "进阶",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.5f7835978051",
+    "group": "网站 · 农场",
+    "label": "根据真实订单和打赏互动生成，可直接拜访对方庄园。",
+    "defaultText": "根据真实订单和打赏互动生成，可直接拜访对方庄园。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
     "key": "site.components.farm.farmclient.61f608b0d90e",
     "group": "网站 · 农场",
     "label": "金币",
@@ -8624,6 +9537,18 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/farm/FarmClient.tsx:300"
+  },
+  {
+    "key": "site.components.farm.farmclient.64af5a6f4026",
+    "group": "网站 · 农场",
+    "label": "按最近",
+    "defaultText": "按最近",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
   },
   {
     "key": "site.components.farm.farmclient.6593f7a1d5b7",
@@ -8635,6 +9560,369 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/farm/FarmClient.tsx:302"
   },
   {
+    "key": "site.components.farm.farmclient.6994b3e078d8",
+    "group": "网站 · 农场",
+    "label": "种植中…",
+    "defaultText": "种植中…",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  }
+];
+
+const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
+  {
+    "key": "site.components.farm.farmclient.6bd35afb2dba",
+    "group": "网站 · 农场",
+    "label": "收获结算",
+    "defaultText": "收获结算",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.6da6f86775c0",
+    "group": "网站 · 农场",
+    "label": "积分 ",
+    "defaultText": "积分 ",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.736cfd4510ba",
+    "group": "网站 · 农场",
+    "label": "最近：",
+    "defaultText": "最近：",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.746dd89a5c4e",
+    "group": "网站 · 农场",
+    "label": "已偷",
+    "defaultText": "已偷",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.77f2b583d06d",
+    "group": "网站 · 农场",
+    "label": "成长奖励：+{value1} EXP",
+    "defaultText": "成长奖励：+{value1} EXP",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.7b5be6952c7e",
+    "group": "网站 · 农场",
+    "label": "当前选中",
+    "defaultText": "当前选中",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.7c030da282cd",
+    "group": "网站 · 农场",
+    "label": "成熟完成，点击收获",
+    "defaultText": "成熟完成，点击收获",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.7c2e3edd7bab",
+    "group": "网站 · 农场",
+    "label": "成长进度 ",
+    "defaultText": "成长进度 ",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.7c7926aedff0",
+    "group": "网站 · 农场",
+    "label": "到手金币：{value1}",
+    "defaultText": "到手金币：{value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.7d47e19e0d47",
+    "group": "网站 · 农场",
+    "label": "辅助线 overlay：",
+    "defaultText": "辅助线 overlay：",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.8285054bf7b3",
+    "group": "网站 · 农场",
+    "label": "Farm Debug",
+    "defaultText": "Farm Debug",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.83923844cdae",
+    "group": "网站 · 农场",
+    "label": "准备播种 {value1}",
+    "defaultText": "准备播种 {value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.861f53f379cf",
+    "group": "网站 · 农场",
+    "label": "已有积分也能转成庄园货币。",
+    "defaultText": "已有积分也能转成庄园货币。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.87eecd840bdb",
+    "group": "网站 · 农场",
+    "label": "Jinli Manor",
+    "defaultText": "Jinli Manor",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.88d72ece7cf7",
+    "group": "网站 · 农场",
+    "label": "搜索结果",
+    "defaultText": "搜索结果",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.89e5e14c8db9",
+    "group": "网站 · 农场",
+    "label": "基础",
+    "defaultText": "基础",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.8a8542f69648",
+    "group": "网站 · 农场",
+    "label": "下一页",
+    "defaultText": "下一页",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.8c576c5c2576",
+    "group": "网站 · 农场",
+    "label": "解锁下一块地 · {value1} 金币",
+    "defaultText": "解锁下一块地 · {value1} 金币",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.8d8003194f1c",
+    "group": "网站 · 农场",
+    "label": "已播种 {value1}",
+    "defaultText": "已播种 {value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.8de7bf03ae7c",
+    "group": "网站 · 农场",
+    "label": "点了么庄园",
+    "defaultText": "点了么庄园",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.8eadeb65cbd5",
+    "group": "网站 · 农场",
+    "label": "访客视角 · 成熟完成，可偷菜",
+    "defaultText": "访客视角 · 成熟完成，可偷菜",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.916d679426b5",
+    "group": "网站 · 农场",
+    "label": "当前金币：{value1}",
+    "defaultText": "当前金币：{value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.9254338c3bf9",
+    "group": "网站 · 农场",
+    "label": "已达到地块上限",
+    "defaultText": "已达到地块上限",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.92b758824fed",
+    "group": "网站 · 农场",
+    "label": " 个庄园",
+    "defaultText": " 个庄园",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.935eb4251ab9",
+    "group": "网站 · 农场",
+    "label": "当前不可操作",
+    "defaultText": "当前不可操作",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.983bd852e71f",
+    "group": "网站 · 农场",
+    "label": "积分兑换金币",
+    "defaultText": "积分兑换金币",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
     "key": "site.components.farm.farmclient.99f42451a1ce",
     "group": "网站 · 农场",
     "label": "Lv.",
@@ -8642,6 +9930,288 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/farm/FarmClient.tsx:266"
+  },
+  {
+    "key": "site.components.farm.farmclient.9aaf756a4877",
+    "group": "网站 · 农场",
+    "label": "预计收益：{value1} ~ {value2} 金币",
+    "defaultText": "预计收益：{value1} ~ {value2} 金币",
+    "variables": [
+      "value1",
+      "value2"
+    ],
+    "requiredVariables": [
+      "value1",
+      "value2"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例",
+      "value2": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.9b49cca3c40d",
+    "group": "网站 · 农场",
+    "label": "搜索陪玩 ID / Discord ID / 名字",
+    "defaultText": "搜索陪玩 ID / Discord ID / 名字",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.9b7652cc1d0b",
+    "group": "网站 · 农场",
+    "label": "庄园操作台",
+    "defaultText": "庄园操作台",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.9d225164488a",
+    "group": "网站 · 农场",
+    "label": "播种完成",
+    "defaultText": "播种完成",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.9d70d449dde0",
+    "group": "网站 · 农场",
+    "label": "这一轮已经被偷过",
+    "defaultText": "这一轮已经被偷过",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.9f9cb8049dd9",
+    "group": "网站 · 农场",
+    "label": " EXP",
+    "defaultText": " EXP",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.a1b9c609eedf",
+    "group": "网站 · 农场",
+    "label": "点击种子袋切换当前播种作物",
+    "defaultText": "点击种子袋切换当前播种作物",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.a47ff1babcdd",
+    "group": "网站 · 农场",
+    "label": "史诗",
+    "defaultText": "史诗",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.a59a5d81f920",
+    "group": "网站 · 农场",
+    "label": "拜访模式",
+    "defaultText": "拜访模式",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.a5e29a76057a",
+    "group": "网站 · 农场",
+    "label": "收益：",
+    "defaultText": "收益：",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.a5f6cfa0ac78",
+    "group": "网站 · 农场",
+    "label": "成熟时间：{value1}",
+    "defaultText": "成熟时间：{value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.a69c11e6f9c8",
+    "group": "网站 · 农场",
+    "label": "已选：{value1}",
+    "defaultText": "已选：{value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.a7a5f6f554c2",
+    "group": "网站 · 农场",
+    "label": "实时 scene：",
+    "defaultText": "实时 scene：",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.a7c74fc65d8c",
+    "group": "网站 · 农场",
+    "label": "Koi Manor",
+    "defaultText": "Koi Manor",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.a93199bb69af",
+    "group": "网站 · 农场",
+    "label": "偷菜",
+    "defaultText": "偷菜",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.ad45be38b867",
+    "group": "网站 · 农场",
+    "label": "本轮净收 {value1} 金币，被偷走 {value2}。",
+    "defaultText": "本轮净收 {value1} 金币，被偷走 {value2}。",
+    "variables": [
+      "value1",
+      "value2"
+    ],
+    "requiredVariables": [
+      "value1",
+      "value2"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例",
+      "value2": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.ad8921f86dd3",
+    "group": "网站 · 农场",
+    "label": "可偷 {value1}",
+    "defaultText": "可偷 {value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.af827eed9db0",
+    "group": "网站 · 农场",
+    "label": "你从 {value1} 的 {value2} 号地块带走了 {value3} 金币。",
+    "defaultText": "你从 {value1} 的 {value2} 号地块带走了 {value3} 金币。",
+    "variables": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "requiredVariables": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "maxLength": 168,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例",
+      "value2": "示例",
+      "value3": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.b0529a50f8d4",
+    "group": "网站 · 农场",
+    "label": "成长进度：{value1}%",
+    "defaultText": "成长进度：{value1}%",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
   },
   {
     "key": "site.components.farm.farmclient.b3e2659e5f12",
@@ -8653,6 +10223,84 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/farm/FarmClient.tsx:300"
   },
   {
+    "key": "site.components.farm.farmclient.b4e7731fac19",
+    "group": "网站 · 农场",
+    "label": "偷菜成功",
+    "defaultText": "偷菜成功",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.b57626eaf117",
+    "group": "网站 · 农场",
+    "label": "正在拜访 ",
+    "defaultText": "正在拜访 ",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.b8467d5d40f6",
+    "group": "网站 · 农场",
+    "label": "偷菜中…",
+    "defaultText": "偷菜中…",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.b897b00b4b40",
+    "group": "网站 · 农场",
+    "label": "成熟完成",
+    "defaultText": "成熟完成",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.b949dd7ad210",
+    "group": "网站 · 农场",
+    "label": "偷这一块地",
+    "defaultText": "偷这一块地",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.b9f28dbbc9c9",
+    "group": "网站 · 农场",
+    "label": "下块 ¥{value1}",
+    "defaultText": "下块 ¥{value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
     "key": "site.components.farm.farmclient.bae7ed8c1fa6",
     "group": "网站 · 农场",
     "label": "种子背包",
@@ -8660,6 +10308,471 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/farm/FarmClient.tsx:296"
+  },
+  {
+    "key": "site.components.farm.farmclient.bba05bc59b0c",
+    "group": "网站 · 农场",
+    "label": "收菜后的金币也能换回点了么积分。",
+    "defaultText": "收菜后的金币也能换回点了么积分。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.bc7a87e6d4d8",
+    "group": "网站 · 农场",
+    "label": "丰产前夕",
+    "defaultText": "丰产前夕",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.bd3695c3d771",
+    "group": "网站 · 农场",
+    "label": "{value1}小时 {value2}分",
+    "defaultText": "{value1}小时 {value2}分",
+    "variables": [
+      "value1",
+      "value2"
+    ],
+    "requiredVariables": [
+      "value1",
+      "value2"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例",
+      "value2": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.bd544217e69e",
+    "group": "网站 · 农场",
+    "label": "本轮未被偷菜",
+    "defaultText": "本轮未被偷菜",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.bf4cedf76a4e",
+    "group": "网站 · 农场",
+    "label": "查询失败",
+    "defaultText": "查询失败",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.bf51c580bd87",
+    "group": "网站 · 农场",
+    "label": "拜访 {value1}",
+    "defaultText": "拜访 {value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.bfb8273f7ab9",
+    "group": "网站 · 农场",
+    "label": "庄园",
+    "defaultText": "庄园",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.bff7904be8e6",
+    "group": "网站 · 农场",
+    "label": "把 totalBalance 直接投进庄园。",
+    "defaultText": "把 totalBalance 直接投进庄园。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.c19aeac2f428",
+    "group": "网站 · 农场",
+    "label": "搜索庄园",
+    "defaultText": "搜索庄园",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.c1e5d4469f0e",
+    "group": "网站 · 农场",
+    "label": "等待播种",
+    "defaultText": "等待播种",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.c28b8fbdaafd",
+    "group": "网站 · 农场",
+    "label": "地图册",
+    "defaultText": "地图册",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.c2e3ac47f4a3",
+    "group": "网站 · 农场",
+    "label": "READY",
+    "defaultText": "READY",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.c3b9aae76aba",
+    "group": "网站 · 农场",
+    "label": "常访名单",
+    "defaultText": "常访名单",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.c457f0c3833c",
+    "group": "网站 · 农场",
+    "label": "访客视角下，这块地目前没有作物。",
+    "defaultText": "访客视角下，这块地目前没有作物。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.c514939265ad",
+    "group": "网站 · 农场",
+    "label": "坐标已复制",
+    "defaultText": "坐标已复制",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.c54caff2a1cb",
+    "group": "网站 · 农场",
+    "label": "访客视角：这一轮已经被偷过。",
+    "defaultText": "访客视角：这一轮已经被偷过。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.c9b9ae7a6144",
+    "group": "网站 · 农场",
+    "label": "上一页",
+    "defaultText": "上一页",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.cb078581b60f",
+    "group": "网站 · 农场",
+    "label": "还没有形成好友庄园名单。先和陪玩互动几次，再回来这里。",
+    "defaultText": "还没有形成好友庄园名单。先和陪玩互动几次，再回来这里。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.cb557c76d00d",
+    "group": "网站 · 农场",
+    "label": "空地",
+    "defaultText": "空地",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.cc50237edca2",
+    "group": "网站 · 农场",
+    "label": "搜索中…",
+    "defaultText": "搜索中…",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.cdee3186c79e",
+    "group": "网站 · 农场",
+    "label": "被偷：{value1} 金币",
+    "defaultText": "被偷：{value1} 金币",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.cf662fc92a5b",
+    "group": "网站 · 农场",
+    "label": "庄",
+    "defaultText": "庄",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.cf7b9e6cbd7d",
+    "group": "网站 · 农场",
+    "label": "成熟：",
+    "defaultText": "成熟：",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.cfa6207ec025",
+    "group": "网站 · 农场",
+    "label": "种植",
+    "defaultText": "种植",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.d28a36b20aa8",
+    "group": "网站 · 农场",
+    "label": "好友列表加载失败",
+    "defaultText": "好友列表加载失败",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.d2f864b529ff",
+    "group": "网站 · 农场",
+    "label": "兑换所",
+    "defaultText": "兑换所",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.d373a894e6b4",
+    "group": "网站 · 农场",
+    "label": "访客视角 · 本轮已被偷过",
+    "defaultText": "访客视角 · 本轮已被偷过",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.d3d21191f32e",
+    "group": "网站 · 农场",
+    "label": "处理中…",
+    "defaultText": "处理中…",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.d6378176866f",
+    "group": "网站 · 农场",
+    "label": "收获完成",
+    "defaultText": "收获完成",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.d7a336bc9e27",
+    "group": "网站 · 农场",
+    "label": "Visitor Mode",
+    "defaultText": "Visitor Mode",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.d7bbb35fc66e",
+    "group": "网站 · 农场",
+    "label": "经验：+",
+    "defaultText": "经验：+",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.d81ff9aa3579",
+    "group": "网站 · 农场",
+    "label": "作物已经成熟，点击收获。",
+    "defaultText": "作物已经成熟，点击收获。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.d932305085f7",
+    "group": "网站 · 农场",
+    "label": "打开种子袋选择种子",
+    "defaultText": "打开种子袋选择种子",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.da6aedb67f6e",
+    "group": "网站 · 农场",
+    "label": "我的庄园",
+    "defaultText": "我的庄园",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.dace736c32a6",
+    "group": "网站 · 农场",
+    "label": "播种成功",
+    "defaultText": "播种成功",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.db9561acbb35",
+    "group": "网站 · 农场",
+    "label": "先选一个种子",
+    "defaultText": "先选一个种子",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.dbc04130d07a",
+    "group": "网站 · 农场",
+    "label": "还没有常访庄园。先拜访一次别人的庄园，记录就会出现在这里。",
+    "defaultText": "还没有常访庄园。先拜访一次别人的庄园，记录就会出现在这里。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
   },
   {
     "key": "site.components.farm.farmclient.dd9beca883d7",
@@ -8671,6 +10784,87 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/farm/FarmClient.tsx:298"
   },
   {
+    "key": "site.components.farm.farmclient.def780a96f1b",
+    "group": "网站 · 农场",
+    "label": "输入数量",
+    "defaultText": "输入数量",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.dfdbc1605e63",
+    "group": "网站 · 农场",
+    "label": " 位好友",
+    "defaultText": " 位好友",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.e0432599cddf",
+    "group": "网站 · 农场",
+    "label": "{value1} 已种进 {value2} 号地块。",
+    "defaultText": "{value1} 已种进 {value2} 号地块。",
+    "variables": [
+      "value1",
+      "value2"
+    ],
+    "requiredVariables": [
+      "value1",
+      "value2"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例",
+      "value2": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.e0c1a2f2fba3",
+    "group": "网站 · 农场",
+    "label": "庄园仍可继续扩地。",
+    "defaultText": "庄园仍可继续扩地。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.e16545b22687",
+    "group": "网站 · 农场",
+    "label": "地块已全开",
+    "defaultText": "地块已全开",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.e241b20dffbd",
+    "group": "网站 · 农场",
+    "label": "拜访战利品",
+    "defaultText": "拜访战利品",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
     "key": "site.components.farm.farmclient.e44ddb6f2014",
     "group": "网站 · 农场",
     "label": "拜访",
@@ -8678,6 +10872,18 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/farm/FarmClient.tsx:260"
+  },
+  {
+    "key": "site.components.farm.farmclient.e4cdfb4318f9",
+    "group": "网站 · 农场",
+    "label": "回到我的庄园",
+    "defaultText": "回到我的庄园",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
   },
   {
     "key": "site.components.farm.farmclient.e51cce800cf2",
@@ -8689,6 +10895,105 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/farm/FarmClient.tsx:300"
   },
   {
+    "key": "site.components.farm.farmclient.e56bf735319a",
+    "group": "网站 · 农场",
+    "label": "收益区间",
+    "defaultText": "收益区间",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.ecc6d0173601",
+    "group": "网站 · 农场",
+    "label": "农地进度",
+    "defaultText": "农地进度",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.ee7d8654d583",
+    "group": "网站 · 农场",
+    "label": "庄园加载失败",
+    "defaultText": "庄园加载失败",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.f07bae0884a7",
+    "group": "网站 · 农场",
+    "label": "成本：",
+    "defaultText": "成本：",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.f1530240cab6",
+    "group": "网站 · 农场",
+    "label": "{value1}秒",
+    "defaultText": "{value1}秒",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.f195da5bd283",
+    "group": "网站 · 农场",
+    "label": "访客视角 · {value1} · {value2}",
+    "defaultText": "访客视角 · {value1} · {value2}",
+    "variables": [
+      "value1",
+      "value2"
+    ],
+    "requiredVariables": [
+      "value1",
+      "value2"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例",
+      "value2": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.f24746b0a4d7",
+    "group": "网站 · 农场",
+    "label": "点击查看扩地",
+    "defaultText": "点击查看扩地",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
     "key": "site.components.farm.farmclient.f27299e70090",
     "group": "网站 · 农场",
     "label": "积分 → 金币",
@@ -8698,6 +11003,42 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/farm/FarmClient.tsx:300"
   },
   {
+    "key": "site.components.farm.farmclient.f2c44edc322a",
+    "group": "网站 · 农场",
+    "label": "收获",
+    "defaultText": "收获",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.f34e4daa0ccb",
+    "group": "网站 · 农场",
+    "label": "金币 ",
+    "defaultText": "金币 ",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.f525bf813588",
+    "group": "网站 · 农场",
+    "label": "暂时还没有庄园记录。",
+    "defaultText": "暂时还没有庄园记录。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
     "key": "site.components.farm.farmclient.f7569b5652d6",
     "group": "网站 · 农场",
     "label": "金币 → 积分",
@@ -8705,6 +11046,123 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/farm/FarmClient.tsx:300"
+  },
+  {
+    "key": "site.components.farm.farmclient.f85473d9f29d",
+    "group": "网站 · 农场",
+    "label": "当前作物",
+    "defaultText": "当前作物",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.f8cb1e3b586d",
+    "group": "网站 · 农场",
+    "label": "按次数",
+    "defaultText": "按次数",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.fb4ff3c1cb3c",
+    "group": "网站 · 农场",
+    "label": "预计产出：{value1} ~ {value2} 金币",
+    "defaultText": "预计产出：{value1} ~ {value2} 金币",
+    "variables": [
+      "value1",
+      "value2"
+    ],
+    "requiredVariables": [
+      "value1",
+      "value2"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例",
+      "value2": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.fe2fecf83991",
+    "group": "网站 · 农场",
+    "label": "输入陪玩 ID、Discord ID 或展示名，找到后直接进入对方庄园。",
+    "defaultText": "输入陪玩 ID、Discord ID 或展示名，找到后直接进入对方庄园。",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.fe70876382b5",
+    "group": "网站 · 农场",
+    "label": "种子分页背包",
+    "defaultText": "种子分页背包",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
+  },
+  {
+    "key": "site.components.farm.farmclient.fed92d874d54",
+    "group": "网站 · 农场",
+    "label": "每页展示 2 个物品格，边框颜色表示稀有度。",
+    "defaultText": "每页展示 {fixed1} 个物品格，边框颜色表示稀有度。",
+    "variables": [
+      "fixed1"
+    ],
+    "requiredVariables": [
+      "fixed1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "fixed1": "2"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.ff89b1cda6fc",
+    "group": "网站 · 农场",
+    "label": "你的金币：{value1}",
+    "defaultText": "你的金币：{value1}",
+    "variables": [
+      "value1"
+    ],
+    "requiredVariables": [
+      "value1"
+    ],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {
+      "value1": "示例"
+    }
+  },
+  {
+    "key": "site.components.farm.farmclient.fff482b24028",
+    "group": "网站 · 农场",
+    "label": "金币兑换积分",
+    "defaultText": "金币兑换积分",
+    "variables": [],
+    "requiredVariables": [],
+    "maxLength": 160,
+    "singleLine": true,
+    "source": "components/farm/FarmClient.tsx",
+    "examples": {}
   },
   {
     "key": "site.components.footer.0399ad7167e0",
@@ -8815,6 +11273,15 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/home/DispatchTicker.tsx:39"
   },
   {
+    "key": "site.components.home.dlmhoverletters.545895affed6",
+    "group": "网站 · 登录绑定与换号",
+    "label": "League of Legends gameplay clip",
+    "defaultText": "League of Legends gameplay clip",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/home/DlmHoverLetters.tsx:33"
+  },
+  {
     "key": "site.components.home.dlmhoverletters.5aa3f89270af",
     "group": "网站 · 登录绑定与换号",
     "label": "鼠标划过每个字母会播放视频。正式版可以换成游戏片段、陪玩语音房或点了么社区视频。",
@@ -8822,6 +11289,15 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/home/DlmHoverLetters.tsx:208"
+  },
+  {
+    "key": "site.components.home.dlmhoverletters.68151b5e14b0",
+    "group": "网站 · 登录绑定与换号",
+    "label": "League of Legends mode clip",
+    "defaultText": "League of Legends mode clip",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/home/DlmHoverLetters.tsx:43"
   },
   {
     "key": "site.components.home.dlmhoverletters.76692f2c98d4",
@@ -8842,6 +11318,33 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/home/DlmHoverLetters.tsx:201"
   },
   {
+    "key": "site.components.home.dlmhoverletters.b96a797bd488",
+    "group": "网站 · 登录绑定与换号",
+    "label": "VALORANT agent clip",
+    "defaultText": "VALORANT agent clip",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/home/DlmHoverLetters.tsx:28"
+  },
+  {
+    "key": "site.components.home.dlmhoverletters.bb38affdf5f9",
+    "group": "网站 · 登录绑定与换号",
+    "label": "VALORANT media clip",
+    "defaultText": "VALORANT media clip",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/home/DlmHoverLetters.tsx:38"
+  },
+  {
+    "key": "site.components.home.dlmhoverletters.bd1c78766c15",
+    "group": "网站 · 登录绑定与换号",
+    "label": "VALORANT tactical clip",
+    "defaultText": "VALORANT tactical clip",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/home/DlmHoverLetters.tsx:18"
+  },
+  {
     "key": "site.components.home.dlmhoverletters.cbf1f4274d56",
     "group": "网站 · 登录绑定与换号",
     "label": "{value1}: hover to play video",
@@ -8856,13 +11359,22 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "source": "components/home/DlmHoverLetters.tsx:124"
   },
   {
+    "key": "site.components.home.dlmhoverletters.f3ed1ea7e079",
+    "group": "网站 · 登录绑定与换号",
+    "label": "League of Legends champion clip",
+    "defaultText": "League of Legends champion clip",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/home/DlmHoverLetters.tsx:23"
+  },
+  {
     "key": "site.components.home.openingbenefitsmodal.1af215a34764",
     "group": "网站 · 首页与公共导航",
     "label": "DLM OPENING PARTY",
     "defaultText": "DLM OPENING PARTY",
     "variables": [],
     "maxLength": 300,
-    "source": "components/home/OpeningBenefitsModal.tsx:121"
+    "source": "components/home/OpeningBenefitsModal.tsx:118"
   },
   {
     "key": "site.components.home.openingbenefitsmodal.304560764fdc",
@@ -8871,7 +11383,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "先逛逛，晚点再看",
     "variables": [],
     "maxLength": 300,
-    "source": "components/home/OpeningBenefitsModal.tsx:155"
+    "source": "components/home/OpeningBenefitsModal.tsx:152"
   },
   {
     "key": "site.components.home.openingbenefitsmodal.4a6305c65867",
@@ -8880,7 +11392,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "给你准备了一份",
     "variables": [],
     "maxLength": 300,
-    "source": "components/home/OpeningBenefitsModal.tsx:127"
+    "source": "components/home/OpeningBenefitsModal.tsx:124"
   },
   {
     "key": "site.components.home.openingbenefitsmodal.51502e5b67a1",
@@ -8889,7 +11401,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "开业小礼物",
     "variables": [],
     "maxLength": 300,
-    "source": "components/home/OpeningBenefitsModal.tsx:129"
+    "source": "components/home/OpeningBenefitsModal.tsx:126"
   },
   {
     "key": "site.components.home.openingbenefitsmodal.79b7844cfe1c",
@@ -8898,7 +11410,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "关闭开业福利提示",
     "variables": [],
     "maxLength": 300,
-    "source": "components/home/OpeningBenefitsModal.tsx:94"
+    "source": "components/home/OpeningBenefitsModal.tsx:91"
   },
   {
     "key": "site.components.home.openingbenefitsmodal.8fd8b9c4ee21",
@@ -8907,7 +11419,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "特殊九折券",
     "variables": [],
     "maxLength": 300,
-    "source": "components/home/OpeningBenefitsModal.tsx:137"
+    "source": "components/home/OpeningBenefitsModal.tsx:134"
   },
   {
     "key": "site.components.home.openingbenefitsmodal.a361f75fb10a",
@@ -8920,7 +11432,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
       "fixed3"
     ],
     "maxLength": 300,
-    "source": "components/home/OpeningBenefitsModal.tsx:132",
+    "source": "components/home/OpeningBenefitsModal.tsx:129",
     "requiredVariables": [
       "fixed1",
       "fixed2",
@@ -8939,7 +11451,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "抽奖角色插画",
     "variables": [],
     "maxLength": 300,
-    "source": "components/home/OpeningBenefitsModal.tsx:113"
+    "source": "components/home/OpeningBenefitsModal.tsx:110"
   },
   {
     "key": "site.components.home.openingbenefitsmodal.e1712901b6c6",
@@ -8948,7 +11460,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "defaultText": "打开开业福利",
     "variables": [],
     "maxLength": 300,
-    "source": "components/home/OpeningBenefitsModal.tsx:148"
+    "source": "components/home/OpeningBenefitsModal.tsx:145"
   },
   {
     "key": "site.components.home.openingbenefitsteaser.1dd02c54a3ac",
@@ -9248,10 +11760,7 @@ const SITE_COPY_PART_5: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/home/RankingPeriodCard.tsx:114"
-  }
-];
-
-const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
+  },
   {
     "key": "site.components.home.rankingperiodcard.e0fb77768c2e",
     "group": "网站 · 首页与公共导航",
@@ -9459,7 +11968,10 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/notifications/NotificationCenter.tsx:103"
-  },
+  }
+];
+
+const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.notifications.notificationcenter.9e636642d6d4",
     "group": "网站 · 公会控制台与通知",
@@ -10056,7 +12568,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "已开启真人试音邀请",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:41"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:39"
   },
   {
     "key": "site.components.profile.auditioninvitepreferencetoggle.0f9d42f6f3f1",
@@ -10065,7 +12577,16 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "请先上传试音音频，再开启真人试音邀请。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:23"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:21"
+  },
+  {
+    "key": "site.components.profile.auditioninvitepreferencetoggle.40525a732872",
+    "group": "网站 · 个人中心与资产",
+    "label": "保存失败",
+    "defaultText": "保存失败",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:37"
   },
   {
     "key": "site.components.profile.auditioninvitepreferencetoggle.8ab6fe337e3b",
@@ -10074,7 +12595,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "真人试音邀请",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:51"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:49"
   },
   {
     "key": "site.components.profile.auditioninvitepreferencetoggle.97cdc49e8916",
@@ -10083,7 +12604,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "开启真人试音邀请，允许老板通过名片邀请你进行真人试音，试音完成后您将会获得5块打赏。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:53"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:51"
   },
   {
     "key": "site.components.profile.auditioninvitepreferencetoggle.99f83883661d",
@@ -10092,7 +12613,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "关闭邀请",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:92"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:90"
   },
   {
     "key": "site.components.profile.auditioninvitepreferencetoggle.b9004e6f7bb1",
@@ -10101,7 +12622,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "未开启",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:66"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:64"
   },
   {
     "key": "site.components.profile.auditioninvitepreferencetoggle.d78cde076b67",
@@ -10110,7 +12631,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "已开启",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:66"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:64"
   },
   {
     "key": "site.components.profile.auditioninvitepreferencetoggle.e0e8a8b34079",
@@ -10119,7 +12640,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "请先上传试音音频，才能开启真人试音邀请。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:56"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:54"
   },
   {
     "key": "site.components.profile.auditioninvitepreferencetoggle.e2996777daab",
@@ -10128,7 +12649,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "开启邀请",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:80"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:78"
   },
   {
     "key": "site.components.profile.auditioninvitepreferencetoggle.ff2a3528dcde",
@@ -10137,7 +12658,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "已关闭真人试音邀请",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:41"
+    "source": "components/profile/AuditionInvitePreferenceToggle.tsx:39"
   },
   {
     "key": "site.components.profile.blacklistmanager.04eda59ff628",
@@ -10778,7 +13299,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "已使用",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:123"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:153"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.0e2d3a3c09c2",
@@ -10787,7 +13308,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "使用",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:68"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:65"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.17e519c5a6bd",
@@ -10796,7 +13317,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "提交中…",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:84"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:108"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.19b6a1bf9fca",
@@ -10805,44 +13326,21 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "确认使用",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:175"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:205"
   },
   {
-    "key": "site.components.profile.giftandselfusebuttons.1ec62b6f4968",
+    "key": "site.components.profile.giftandselfusebuttons.1c3c75d5fd79",
     "group": "网站 · 个人中心与资产",
-    "label": "陪玩ID 或 Discord ID",
-    "defaultText": "陪玩ID 或 Discord ID",
-    "variables": [],
+    "label": "已将 {value1} 送给目标用户",
+    "defaultText": "已将 {value1} 送给目标用户",
+    "variables": [
+      "value1"
+    ],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:77",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.components.profile.giftandselfusebuttons.2a677deef7f2",
-    "group": "网站 · 个人中心与资产",
-    "label": "无法保存已确认的打赏信息，本次未提交。请重新确认对象。",
-    "defaultText": "无法保存已确认的打赏信息，本次未提交。请重新确认对象。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:65"
-  },
-  {
-    "key": "site.components.profile.giftandselfusebuttons.2aba7a48cd86",
-    "group": "网站 · 个人中心与资产",
-    "label": "正在查找接收对象…",
-    "defaultText": "正在查找接收对象…",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:80"
-  },
-  {
-    "key": "site.components.profile.giftandselfusebuttons.2df8cf2b4633",
-    "group": "网站 · 个人中心与资产",
-    "label": "已赠送",
-    "defaultText": "已赠送",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:68"
+    "requiredVariables": [
+      "value1"
+    ],
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:47"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.4d0b4688c787",
@@ -10851,7 +13349,16 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "取消",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:167"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:105"
+  },
+  {
+    "key": "site.components.profile.giftandselfusebuttons.60cdc1cdcd70",
+    "group": "网站 · 个人中心与资产",
+    "label": "陪玩ID 或 Discord ID",
+    "defaultText": "陪玩ID 或 Discord ID",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:90"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.68ec92b4d10f",
@@ -10860,7 +13367,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "自用确认",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:149"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:179"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.6c14bd7f6f9e",
@@ -10869,16 +13376,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "关闭",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:74"
-  },
-  {
-    "key": "site.components.profile.giftandselfusebuttons.9b9dc1f09589",
-    "group": "网站 · 个人中心与资产",
-    "label": "重新查找对象",
-    "defaultText": "重新查找对象",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:88"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:85"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.bb51b50b9ec0",
@@ -10887,7 +13385,16 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "赠送礼物",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:71"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:77"
+  },
+  {
+    "key": "site.components.profile.giftandselfusebuttons.c623c8075c5b",
+    "group": "网站 · 个人中心与资产",
+    "label": "请输入陪玩ID或 Discord ID",
+    "defaultText": "请输入陪玩ID或 Discord ID",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:29"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.ce666e5c1f6e",
@@ -10896,7 +13403,16 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "确认赠送",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:84"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:108"
+  },
+  {
+    "key": "site.components.profile.giftandselfusebuttons.d5f9ad7f1e7e",
+    "group": "网站 · 个人中心与资产",
+    "label": "使用失败",
+    "defaultText": "使用失败",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:45"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.de2f8ef86e4d",
@@ -10905,7 +13421,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "确定要立即使用这张自用券吗？",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:160"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:190"
   },
   {
     "key": "site.components.profile.giftandselfusebuttons.defcd75a1443",
@@ -10914,309 +13430,7 @@ const SITE_COPY_PART_6: readonly EditableCopyEntry[] = [
     "defaultText": "如 51111 或 525770714574225408",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:78"
-  },
-  {
-    "key": "site.components.profile.giftandselfusebuttons.e9bff98c367e",
-    "group": "网站 · 个人中心与资产",
-    "label": "已将 {prizeName} 送给目标用户",
-    "defaultText": "已将 {prizeName} 送给目标用户",
-    "variables": [
-      "prizeName"
-    ],
-    "maxLength": 300,
-    "source": "components/profile/GiftAndSelfUseButtons.tsx:48",
-    "requiredVariables": [
-      "prizeName"
-    ]
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.04e036e0420e",
-    "group": "网站 · 个人中心与资产",
-    "label": "选择打赏记录",
-    "defaultText": "选择打赏记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:74"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.06ecbdc810fd",
-    "group": "网站 · 个人中心与资产",
-    "label": "加载记录中…",
-    "defaultText": "加载记录中…",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:65"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.12e9ea0616c9",
-    "group": "网站 · 个人中心与资产",
-    "label": "查询打赏进度",
-    "defaultText": "查询打赏进度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:96"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.15954fd62b4f",
-    "group": "网站 · 个人中心与资产",
-    "label": "查询中…",
-    "defaultText": "查询中…",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:96"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.183a0ed03d81",
-    "group": "网站 · 个人中心与资产",
-    "label": "接收对象：",
-    "defaultText": "接收对象：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:87"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.3355ba495a9a",
-    "group": "网站 · 个人中心与资产",
-    "label": "查看本次回执",
-    "defaultText": "查看本次回执",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:49"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.39b43c1c6d02",
-    "group": "网站 · 个人中心与资产",
-    "label": "所选原打赏已核实完成。",
-    "defaultText": "所选原打赏已核实完成。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:46"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.3d2bfe3f346c",
-    "group": "网站 · 个人中心与资产",
-    "label": "重新确认打赏",
-    "defaultText": "重新确认打赏",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:102"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.5441c5ecb46c",
-    "group": "网站 · 个人中心与资产",
-    "label": "暂无待查看的近期打赏。",
-    "defaultText": "暂无待查看的近期打赏。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:72"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.57edc6939d67",
-    "group": "网站 · 个人中心与资产",
-    "label": "代打赏已完成，余额、积分、礼物账本和操作审计均已更新。",
-    "defaultText": "代打赏已完成，余额、积分、礼物账本和操作审计均已更新。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:46",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.6b97a80891b2",
-    "group": "网站 · 个人中心与资产",
-    "label": "加载更早记录",
-    "defaultText": "加载更早记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:67"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.7bea9b6e966f",
-    "group": "网站 · 个人中心与资产",
-    "label": "取消这笔打赏",
-    "defaultText": "取消这笔打赏",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:103"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.7dba6e17396d",
-    "group": "网站 · 个人中心与资产",
-    "label": "打赏完成",
-    "defaultText": "打赏完成",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:45"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.8ac9b8893a2e",
-    "group": "网站 · 个人中心与资产",
-    "label": "原支付编号：",
-    "defaultText": "原支付编号：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:53"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.8e6e01f2d6a5",
-    "group": "网站 · 个人中心与资产",
-    "label": "付款账户：",
-    "defaultText": "付款账户：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:52"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.9223c55b32eb",
-    "group": "网站 · 个人中心与资产",
-    "label": "打赏请求恢复",
-    "defaultText": "打赏请求恢复",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:61"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.9cb2a6ad7447",
-    "group": "网站 · 个人中心与资产",
-    "label": "有 {value1} 笔打赏记录可查询",
-    "defaultText": "有 {value1} 笔打赏记录可查询",
-    "variables": [
-      "value1"
-    ],
-    "maxLength": 300,
-    "requiredVariables": [
-      "value1"
-    ],
-    "source": "components/profile/GiftExecutionRecovery.tsx:65"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.baa04d182f2d",
-    "group": "网站 · 个人中心与资产",
-    "label": "此浏览器无法缓存记录，请保留请求编号；已登记的打赏可从服务器查询。",
-    "defaultText": "此浏览器无法缓存记录，请保留请求编号；已登记的打赏可从服务器查询。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:71"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.be99317ce852",
-    "group": "网站 · 个人中心与资产",
-    "label": "打赏记录",
-    "defaultText": "打赏记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:62"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.c248c5a60f60",
-    "group": "网站 · 个人中心与资产",
-    "label": "开始下一笔打赏",
-    "defaultText": "开始下一笔打赏",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:102"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.c7b2652d41aa",
-    "group": "网站 · 个人中心与资产",
-    "label": "本次打赏已完成",
-    "defaultText": "本次打赏已完成",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:62"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.c9cbe84e862b",
-    "group": "网站 · 个人中心与资产",
-    "label": "确认取消",
-    "defaultText": "确认取消",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:107"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.cfa3a9a8876a",
-    "group": "网站 · 个人中心与资产",
-    "label": "本次打赏已取消",
-    "defaultText": "本次打赏已取消",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:62"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.d223b528d12a",
-    "group": "网站 · 个人中心与资产",
-    "label": "原打赏已有撤销记录，退款细节需另行核实。",
-    "defaultText": "原打赏已有撤销记录，退款细节需另行核实。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:54"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.d6077b82de1b",
-    "group": "网站 · 个人中心与资产",
-    "label": "礼物：",
-    "defaultText": "礼物：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:86"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.d8998c8b990f",
-    "group": "网站 · 个人中心与资产",
-    "label": "本次打赏尚未提交",
-    "defaultText": "本次打赏尚未提交",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:62"
-  }
-];
-
-const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
-  {
-    "key": "site.components.profile.giftexecutionrecovery.e27f10b4f372",
-    "group": "网站 · 个人中心与资产",
-    "label": "原打赏已有管理员人工调整；这不代表全部退款，实际金额与权益以人工处置回执为准。",
-    "defaultText": "原打赏已有管理员人工调整；这不代表全部退款，实际金额与权益以人工处置回执为准。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:55"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.e5a238b6eb6d",
-    "group": "网站 · 个人中心与资产",
-    "label": "开始新一笔，保留原记录",
-    "defaultText": "开始新一笔，保留原记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:99"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.ed8ef555fd50",
-    "group": "网站 · 个人中心与资产",
-    "label": "刷新最近打赏",
-    "defaultText": "刷新最近打赏",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:65"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.efeb9bc96fe9",
-    "group": "网站 · 个人中心与资产",
-    "label": "请求编号：",
-    "defaultText": "请求编号：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:51"
-  },
-  {
-    "key": "site.components.profile.giftexecutionrecovery.f717fe3f0123",
-    "group": "网站 · 个人中心与资产",
-    "label": "仅取消尚未完成的打赏，不会退款；已完成的打赏不会被取消。请先确认这笔打赏的处理结果，再决定是否重新赠送。确定继续？",
-    "defaultText": "仅取消尚未完成的打赏，不会退款；已完成的打赏不会被取消。请先确认这笔打赏的处理结果，再决定是否重新赠送。确定继续？",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/GiftExecutionRecovery.tsx:106"
+    "source": "components/profile/GiftAndSelfUseButtons.tsx:95"
   },
   {
     "key": "site.components.profile.lotteryfusionclient.001acffee723",
@@ -11738,7 +13952,10 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/LotteryFusionClient.tsx:395"
-  },
+  }
+];
+
+const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.lotteryfusionclient.afc3a43e5b41",
     "group": "网站 · 个人中心与资产",
@@ -11978,6 +14195,15 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "variables": [],
     "maxLength": 300,
     "source": "components/profile/LotteryFusionClient.tsx:1038"
+  },
+  {
+    "key": "site.components.profile.lotteryfusionclient.f83b18f36f03",
+    "group": "网站 · 个人中心与资产",
+    "label": "重铸结果异常，请稍后再试",
+    "defaultText": "重铸结果异常，请稍后再试",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/LotteryFusionClient.tsx:411"
   },
   {
     "key": "site.components.profile.lotteryfusionclient.ff3d08fd8c9d",
@@ -12731,69 +14957,6 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "source": "components/profile/SentPeiwanReviewHistory.tsx:18"
   },
   {
-    "key": "site.components.profile.targetconfirmation.1172ae061d75",
-    "group": "网站 · 个人中心与资产",
-    "label": "陪玩 ID",
-    "defaultText": "陪玩 ID",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/TargetConfirmation.tsx:38"
-  },
-  {
-    "key": "site.components.profile.targetconfirmation.3bf179d8d045",
-    "group": "网站 · 个人中心与资产",
-    "label": "未绑定",
-    "defaultText": "未绑定",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/TargetConfirmation.tsx:37"
-  },
-  {
-    "key": "site.components.profile.targetconfirmation.62b9c1195ca8",
-    "group": "网站 · 个人中心与资产",
-    "label": "使用券：",
-    "defaultText": "使用券：",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/TargetConfirmation.tsx:44"
-  },
-  {
-    "key": "site.components.profile.targetconfirmation.86c67464ba78",
-    "group": "网站 · 个人中心与资产",
-    "label": "DLM ID",
-    "defaultText": "DLM ID",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/TargetConfirmation.tsx:36"
-  },
-  {
-    "key": "site.components.profile.targetconfirmation.d5b4063434c8",
-    "group": "网站 · 个人中心与资产",
-    "label": "未设置名称",
-    "defaultText": "未设置名称",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/TargetConfirmation.tsx:34"
-  },
-  {
-    "key": "site.components.profile.targetconfirmation.de14c2aa9b39",
-    "group": "网站 · 个人中心与资产",
-    "label": "Discord ID",
-    "defaultText": "Discord ID",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/TargetConfirmation.tsx:37"
-  },
-  {
-    "key": "site.components.profile.targetconfirmation.fd5bf9119597",
-    "group": "网站 · 个人中心与资产",
-    "label": "对象确认信息",
-    "defaultText": "对象确认信息",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/TargetConfirmation.tsx:41"
-  },
-  {
     "key": "site.components.profile.vipannouncementpreferencetoggle.010ea12325ee",
     "group": "网站 · 个人中心与资产",
     "label": "在升级到新的 VIP 等级时是否允许进行频道播报",
@@ -12971,7 +15134,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "选择后会覆盖当前试音。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:177"
+    "source": "components/profile/VoicePreviewManager.tsx:175"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.1a11c2910390",
@@ -12980,7 +15143,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "当前文件：",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:145"
+    "source": "components/profile/VoicePreviewManager.tsx:143"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.1b5fe8dffa8c",
@@ -12989,7 +15152,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "请先选择一段试音音频。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:61"
+    "source": "components/profile/VoicePreviewManager.tsx:59"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.1f653dc91b3c",
@@ -12998,7 +15161,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "上传新试音",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:165"
+    "source": "components/profile/VoicePreviewManager.tsx:163"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.23d736fa86c8",
@@ -13007,7 +15170,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "试音音频",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:145"
+    "source": "components/profile/VoicePreviewManager.tsx:143"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.4ccbfde078dc",
@@ -13016,7 +15179,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "删除试音",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:153"
+    "source": "components/profile/VoicePreviewManager.tsx:151"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.551c32c1a83f",
@@ -13025,7 +15188,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "上传一段试音音频，机器人会在派单名片里一起发给老板。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:123"
+    "source": "components/profile/VoicePreviewManager.tsx:121"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.5c56955a5191",
@@ -13034,7 +15197,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "试音已保存，之后老板收到你的名片时会看到这段音频。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:84"
+    "source": "components/profile/VoicePreviewManager.tsx:82"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.60793243146e",
@@ -13043,7 +15206,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "删除中…",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:153"
+    "source": "components/profile/VoicePreviewManager.tsx:151"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.6414cdb2f0ee",
@@ -13052,7 +15215,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "你的浏览器暂不支持音频播放。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:141"
+    "source": "components/profile/VoicePreviewManager.tsx:139"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.670f6d264ca0",
@@ -13061,7 +15224,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "上传中…",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:185"
+    "source": "components/profile/VoicePreviewManager.tsx:183"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.6929e31e50c0",
@@ -13070,7 +15233,16 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "已删除当前试音。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:106"
+    "source": "components/profile/VoicePreviewManager.tsx:104"
+  },
+  {
+    "key": "site.components.profile.voicepreviewmanager.72250c5922f2",
+    "group": "网站 · 个人中心与资产",
+    "label": "删除失败",
+    "defaultText": "删除失败",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoicePreviewManager.tsx:103"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.7435e4045617",
@@ -13084,7 +15256,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "components/profile/VoicePreviewManager.tsx:175"
+    "source": "components/profile/VoicePreviewManager.tsx:173"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.7de1fabb79b4",
@@ -13093,7 +15265,16 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "试音文件不能超过 10MB。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:65"
+    "source": "components/profile/VoicePreviewManager.tsx:63"
+  },
+  {
+    "key": "site.components.profile.voicepreviewmanager.98dad5059784",
+    "group": "网站 · 个人中心与资产",
+    "label": "上传失败，请稍后再试",
+    "defaultText": "上传失败，请稍后再试",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoicePreviewManager.tsx:90"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.9cecf762a3d1",
@@ -13102,7 +15283,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "支持 mp3、m4a、wav、ogg、opus、webm、flac、aac，大小不超过 10MB。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:20"
+    "source": "components/profile/VoicePreviewManager.tsx:18"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.a23b0a713f88",
@@ -13111,7 +15292,16 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "暂未上传试音。",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:159"
+    "source": "components/profile/VoicePreviewManager.tsx:157"
+  },
+  {
+    "key": "site.components.profile.voicepreviewmanager.a6f805694be5",
+    "group": "网站 · 个人中心与资产",
+    "label": "上传失败",
+    "defaultText": "上传失败",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoicePreviewManager.tsx:81"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.becd1c33a95f",
@@ -13120,7 +15310,16 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "试音管理",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:122"
+    "source": "components/profile/VoicePreviewManager.tsx:120"
+  },
+  {
+    "key": "site.components.profile.voicepreviewmanager.da8080ee145d",
+    "group": "网站 · 个人中心与资产",
+    "label": "删除失败，请稍后再试",
+    "defaultText": "删除失败，请稍后再试",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoicePreviewManager.tsx:112"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.df61d8d5c5f6",
@@ -13129,7 +15328,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "当前试音",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:134"
+    "source": "components/profile/VoicePreviewManager.tsx:132"
   },
   {
     "key": "site.components.profile.voicepreviewmanager.f80a2b85f3bd",
@@ -13138,20 +15337,7 @@ const SITE_COPY_PART_7: readonly EditableCopyEntry[] = [
     "defaultText": "保存试音",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoicePreviewManager.tsx:185"
-  }
-];
-
-const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
-  {
-    "key": "site.components.profile.voucherusebuttons.0465742fe516",
-    "group": "网站 · 个人中心与资产",
-    "label": "选择陪玩（输入陪玩ID）",
-    "defaultText": "选择陪玩（输入陪玩ID）",
-    "variables": [],
-    "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:238",
-    "requiredVariables": []
+    "source": "components/profile/VoicePreviewManager.tsx:183"
   },
   {
     "key": "site.components.profile.voucherusebuttons.0c17d34b62a3",
@@ -13160,7 +15346,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "自定义评语",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:287"
+    "source": "components/profile/VoucherUseButtons.tsx:592"
   },
   {
     "key": "site.components.profile.voucherusebuttons.0e2d3a3c09c2",
@@ -13169,7 +15355,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "使用",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:63"
+    "source": "components/profile/VoucherUseButtons.tsx:60"
   },
   {
     "key": "site.components.profile.voucherusebuttons.13bf67032d4c",
@@ -13178,7 +15364,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "确认提交",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:308"
+    "source": "components/profile/VoucherUseButtons.tsx:644"
   },
   {
     "key": "site.components.profile.voucherusebuttons.17e519c5a6bd",
@@ -13187,7 +15373,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "提交中…",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:308"
+    "source": "components/profile/VoucherUseButtons.tsx:644"
   },
   {
     "key": "site.components.profile.voucherusebuttons.18f6eb88eef5",
@@ -13196,7 +15382,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "使用中…",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:89"
+    "source": "components/profile/VoucherUseButtons.tsx:86"
   },
   {
     "key": "site.components.profile.voucherusebuttons.19b6a1bf9fca",
@@ -13205,17 +15391,25 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "确认使用",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:89"
+    "source": "components/profile/VoucherUseButtons.tsx:86"
   },
   {
-    "key": "site.components.profile.voucherusebuttons.1ec62b6f4968",
+    "key": "site.components.profile.voucherusebuttons.1a976d91e7fd",
     "group": "网站 · 个人中心与资产",
-    "label": "陪玩ID 或 Discord ID",
-    "defaultText": "陪玩ID 或 Discord ID",
+    "label": "请输入评语",
+    "defaultText": "请输入评语",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:121",
-    "requiredVariables": []
+    "source": "components/profile/VoucherUseButtons.tsx:471"
+  },
+  {
+    "key": "site.components.profile.voucherusebuttons.1cb97fdd4512",
+    "group": "网站 · 个人中心与资产",
+    "label": "评语最多 500 字",
+    "defaultText": "评语最多 500 字",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:475"
   },
   {
     "key": "site.components.profile.voucherusebuttons.2dcf41705102",
@@ -13224,32 +15418,16 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "（陪玩ID ",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:273"
+    "source": "components/profile/VoucherUseButtons.tsx:578"
   },
   {
-    "key": "site.components.profile.voucherusebuttons.3f9246ebc904",
+    "key": "site.components.profile.voucherusebuttons.3a973174c15d",
     "group": "网站 · 个人中心与资产",
-    "label": "您给 {displayName} 陪玩的评语是： {reviewText}，确认后就不能修改了噢~",
-    "defaultText": "您给 {displayName} 陪玩的评语是： {reviewText}，确认后就不能修改了噢~",
-    "variables": [
-      "displayName",
-      "reviewText"
-    ],
-    "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:304",
-    "requiredVariables": [
-      "displayName",
-      "reviewText"
-    ]
-  },
-  {
-    "key": "site.components.profile.voucherusebuttons.4173b1450922",
-    "group": "网站 · 个人中心与资产",
-    "label": "正在核对对象和这张评语券…",
-    "defaultText": "正在核对对象和这张评语券…",
+    "label": "陪玩的评语是：",
+    "defaultText": "陪玩的评语是：",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:301"
+    "source": "components/profile/VoucherUseButtons.tsx:623"
   },
   {
     "key": "site.components.profile.voucherusebuttons.4d0b4688c787",
@@ -13258,16 +15436,25 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "取消",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:86"
+    "source": "components/profile/VoucherUseButtons.tsx:83"
   },
   {
-    "key": "site.components.profile.voucherusebuttons.51222d16bb8f",
+    "key": "site.components.profile.voucherusebuttons.51622365ee40",
     "group": "网站 · 个人中心与资产",
-    "label": "评语券",
-    "defaultText": "评语券",
+    "label": "下一步确认",
+    "defaultText": "下一步确认",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:221"
+    "source": "components/profile/VoucherUseButtons.tsx:610"
+  },
+  {
+    "key": "site.components.profile.voucherusebuttons.5cdf189b4408",
+    "group": "网站 · 个人中心与资产",
+    "label": "，确认后就不能修改了噢~",
+    "defaultText": "，确认后就不能修改了噢~",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:624"
   },
   {
     "key": "site.components.profile.voucherusebuttons.5f4a3eeae24f",
@@ -13276,7 +15463,16 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "最多 500 字",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:297"
+    "source": "components/profile/VoucherUseButtons.tsx:601"
+  },
+  {
+    "key": "site.components.profile.voucherusebuttons.60cdc1cdcd70",
+    "group": "网站 · 个人中心与资产",
+    "label": "陪玩ID 或 Discord ID",
+    "defaultText": "陪玩ID 或 Discord ID",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:166"
   },
   {
     "key": "site.components.profile.voucherusebuttons.6c14bd7f6f9e",
@@ -13285,25 +15481,34 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "关闭",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:80"
+    "source": "components/profile/VoucherUseButtons.tsx:77"
   },
   {
-    "key": "site.components.profile.voucherusebuttons.72073749ded7",
+    "key": "site.components.profile.voucherusebuttons.711363c42474",
     "group": "网站 · 个人中心与资产",
-    "label": "重新查询陪玩",
-    "defaultText": "重新查询陪玩",
+    "label": "查询",
+    "defaultText": "查询",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:258"
+    "source": "components/profile/VoucherUseButtons.tsx:562"
   },
   {
-    "key": "site.components.profile.voucherusebuttons.83e8ed097ae9",
+    "key": "site.components.profile.voucherusebuttons.71cfbe4c3806",
     "group": "网站 · 个人中心与资产",
-    "label": "正在查询对象…",
-    "defaultText": "正在查询对象…",
+    "label": "请先查询并选择陪玩",
+    "defaultText": "请先查询并选择陪玩",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:124"
+    "source": "components/profile/VoucherUseButtons.tsx:466"
+  },
+  {
+    "key": "site.components.profile.voucherusebuttons.76f9eb5e90a5",
+    "group": "网站 · 个人中心与资产",
+    "label": "查询中",
+    "defaultText": "查询中",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:562"
   },
   {
     "key": "site.components.profile.voucherusebuttons.892544ea486c",
@@ -13312,7 +15517,25 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "输入陪玩ID / 昵称 / Discord ID",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:253"
+    "source": "components/profile/VoucherUseButtons.tsx:558"
+  },
+  {
+    "key": "site.components.profile.voucherusebuttons.94f71f82e132",
+    "group": "网站 · 个人中心与资产",
+    "label": "请输入陪玩 ID",
+    "defaultText": "请输入陪玩 ID",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:439"
+  },
+  {
+    "key": "site.components.profile.voucherusebuttons.9a233f23b4ec",
+    "group": "网站 · 个人中心与资产",
+    "label": "返回修改",
+    "defaultText": "返回修改",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:636"
   },
   {
     "key": "site.components.profile.voucherusebuttons.9c5605840c67",
@@ -13321,7 +15544,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "已选择：",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:281"
+    "source": "components/profile/VoucherUseButtons.tsx:586"
   },
   {
     "key": "site.components.profile.voucherusebuttons.a01a58bf1a8f",
@@ -13330,16 +15553,25 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "使用礼物券",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:72"
+    "source": "components/profile/VoucherUseButtons.tsx:69"
   },
   {
-    "key": "site.components.profile.voucherusebuttons.ad5c0ece8720",
+    "key": "site.components.profile.voucherusebuttons.a2692f976e7f",
     "group": "网站 · 个人中心与资产",
-    "label": "重新查询",
-    "defaultText": "重新查询",
+    "label": "最终确认",
+    "defaultText": "最终确认",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:125"
+    "source": "components/profile/VoucherUseButtons.tsx:621"
+  },
+  {
+    "key": "site.components.profile.voucherusebuttons.b4df64d00ce6",
+    "group": "网站 · 个人中心与资产",
+    "label": "您给 ",
+    "defaultText": "您给 ",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:623"
   },
   {
     "key": "site.components.profile.voucherusebuttons.b7ec87b86f7c",
@@ -13348,16 +15580,16 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "请输入你想给这位陪玩的评语",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:294"
+    "source": "components/profile/VoucherUseButtons.tsx:598"
   },
   {
-    "key": "site.components.profile.voucherusebuttons.cb349e361949",
+    "key": "site.components.profile.voucherusebuttons.bf6b201a002f",
     "group": "网站 · 个人中心与资产",
-    "label": "重新核对对象",
-    "defaultText": "重新核对对象",
+    "label": "未找到该陪玩，请检查陪玩ID",
+    "defaultText": "未找到该陪玩，请检查陪玩ID",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:303"
+    "source": "components/profile/VoucherUseButtons.tsx:451"
   },
   {
     "key": "site.components.profile.voucherusebuttons.d5016b9e6b3f",
@@ -13366,17 +15598,16 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "（ID ",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:281"
+    "source": "components/profile/VoucherUseButtons.tsx:586"
   },
   {
-    "key": "site.components.profile.voucherusebuttons.d6e52550e701",
+    "key": "site.components.profile.voucherusebuttons.d5f9ad7f1e7e",
     "group": "网站 · 个人中心与资产",
-    "label": "查询中",
-    "defaultText": "查询中",
+    "label": "使用失败",
+    "defaultText": "使用失败",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:257",
-    "requiredVariables": []
+    "source": "components/profile/VoucherUseButtons.tsx:43"
   },
   {
     "key": "site.components.profile.voucherusebuttons.defcd75a1443",
@@ -13385,7 +15616,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "如 51111 或 525770714574225408",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:122"
+    "source": "components/profile/VoucherUseButtons.tsx:177"
   },
   {
     "key": "site.components.profile.voucherusebuttons.e8a77a40238b",
@@ -13394,7 +15625,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "使用优惠券",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:115"
+    "source": "components/profile/VoucherUseButtons.tsx:152"
   },
   {
     "key": "site.components.profile.voucherusebuttons.ebace2a234bb",
@@ -13403,7 +15634,16 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "确认使用这张礼物券吗？",
     "variables": [],
     "maxLength": 300,
-    "source": "components/profile/VoucherUseButtons.tsx:83"
+    "source": "components/profile/VoucherUseButtons.tsx:80"
+  },
+  {
+    "key": "site.components.profile.voucherusebuttons.f4b21d7254e3",
+    "group": "网站 · 个人中心与资产",
+    "label": "选择陪玩（输入陪玩ID）",
+    "defaultText": "选择陪玩（输入陪玩ID）",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:548"
   },
   {
     "key": "site.components.profile.withdrawaccountsmanager.03c588cf9eed",
@@ -13662,7 +15902,10 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
       "value1"
     ],
     "source": "components/profile/WithdrawForm.tsx:225"
-  },
+  }
+];
+
+const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
   {
     "key": "site.components.profile.withdrawform.4c751832ec79",
     "group": "网站 · 个人中心与资产",
@@ -13804,27 +16047,13 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "source": "components/profile/WithdrawForm.tsx:226"
   },
   {
-    "key": "site.components.siteannouncement.45916090d7d4",
-    "group": "网站 · 首页与公共导航",
-    "label": "{value1}（在新标签页打开）",
-    "defaultText": "{value1}（在新标签页打开）",
-    "variables": [
-      "value1"
-    ],
-    "maxLength": 300,
-    "requiredVariables": [
-      "value1"
-    ],
-    "source": "components/SiteAnnouncement.tsx:19"
-  },
-  {
     "key": "site.components.siteannouncement.45c06d7b84b7",
     "group": "网站 · 首页与公共导航",
     "label": "点了么娱乐公会链接：discord.gg/dlmclub · 点击加入公会",
     "defaultText": "点了么娱乐公会链接：discord.gg/dlmclub · 点击加入公会",
     "variables": [],
     "maxLength": 300,
-    "source": "components/SiteAnnouncement.tsx:10"
+    "source": "components/SiteAnnouncement.tsx:4"
   },
   {
     "key": "site.components.siteannouncement.9e344921f79a",
@@ -13833,7 +16062,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "新公会公告",
     "variables": [],
     "maxLength": 300,
-    "source": "components/SiteAnnouncement.tsx:13"
+    "source": "components/SiteAnnouncement.tsx:7"
   },
   {
     "key": "site.constants.peiwan.1a0966dd00c6",
@@ -14016,688 +16245,13 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "source": "constants/peiwan.ts:13"
   },
   {
-    "key": "site.lib.account.migration.labels.0924d068b4f5",
-    "group": "网站 · 登录绑定与换号",
-    "label": "VIP 福利领取记录",
-    "defaultText": "VIP 福利领取记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:6"
-  },
-  {
-    "key": "site.lib.account.migration.labels.10d0a42c1765",
-    "group": "网站 · 登录绑定与换号",
-    "label": "旧号进度仅保留历史",
-    "defaultText": "旧号进度仅保留历史",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:17"
-  },
-  {
-    "key": "site.lib.account.migration.labels.1485f090a713",
-    "group": "网站 · 登录绑定与换号",
-    "label": "心动关系",
-    "defaultText": "心动关系",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:3"
-  },
-  {
-    "key": "site.lib.account.migration.labels.1d36a069dd59",
-    "group": "网站 · 登录绑定与换号",
-    "label": "旧账号已删除",
-    "defaultText": "旧账号已删除",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:15"
-  },
-  {
-    "key": "site.lib.account.migration.labels.23cad5e96797",
-    "group": "网站 · 登录绑定与换号",
-    "label": "个人流水",
-    "defaultText": "个人流水",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:2"
-  },
-  {
-    "key": "site.lib.account.migration.labels.25f7677b7eb3",
-    "group": "网站 · 登录绑定与换号",
-    "label": "抽成券权益",
-    "defaultText": "抽成券权益",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:9"
-  },
-  {
-    "key": "site.lib.account.migration.labels.2b4ec33b1b5e",
-    "group": "网站 · 登录绑定与换号",
-    "label": "农场操作记录",
-    "defaultText": "农场操作记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:4"
-  },
-  {
-    "key": "site.lib.account.migration.labels.2d61a971d0a6",
-    "group": "网站 · 登录绑定与换号",
-    "label": "旧邀请关系已结束",
-    "defaultText": "旧邀请关系已结束",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:18"
-  },
-  {
-    "key": "site.lib.account.migration.labels.2d9365e1b933",
-    "group": "网站 · 登录绑定与换号",
-    "label": "抽奖进度",
-    "defaultText": "抽奖进度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:3"
-  },
-  {
-    "key": "site.lib.account.migration.labels.2faec64b3c56",
-    "group": "网站 · 登录绑定与换号",
-    "label": "黑名单",
-    "defaultText": "黑名单",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:3"
-  },
-  {
-    "key": "site.lib.account.migration.labels.30f810e77bd1",
-    "group": "网站 · 登录绑定与换号",
-    "label": "优惠券",
-    "defaultText": "优惠券",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:3"
-  },
-  {
-    "key": "site.lib.account.migration.labels.38ce53455cec",
-    "group": "网站 · 登录绑定与换号",
-    "label": "积木游戏进度",
-    "defaultText": "积木游戏进度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:11"
-  },
-  {
-    "key": "site.lib.account.migration.labels.48a7272f2fba",
-    "group": "网站 · 登录绑定与换号",
-    "label": "农场资产已合并",
-    "defaultText": "农场资产已合并",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:19"
-  },
-  {
-    "key": "site.lib.account.migration.labels.48badf7a1066",
-    "group": "网站 · 登录绑定与换号",
-    "label": "购物车商品",
-    "defaultText": "购物车商品",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:5"
-  },
-  {
-    "key": "site.lib.account.migration.labels.4b70f06e644c",
-    "group": "网站 · 登录绑定与换号",
-    "label": "兑换权益",
-    "defaultText": "兑换权益",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:6"
-  },
-  {
-    "key": "site.lib.account.migration.labels.4d3986e0952b",
-    "group": "网站 · 登录绑定与换号",
-    "label": "默认收款账户",
-    "defaultText": "默认收款账户",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:7"
-  },
-  {
-    "key": "site.lib.account.migration.labels.4e850224fe0b",
-    "group": "网站 · 登录绑定与换号",
-    "label": "陪玩游戏标签",
-    "defaultText": "陪玩游戏标签",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:9"
-  },
-  {
-    "key": "site.lib.account.migration.labels.5be94625909a",
-    "group": "网站 · 登录绑定与换号",
-    "label": "已转为独立到期额度",
-    "defaultText": "已转为独立到期额度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:18"
-  },
-  {
-    "key": "site.lib.account.migration.labels.5c81c6bc5cc0",
-    "group": "网站 · 登录绑定与换号",
-    "label": "购物车",
-    "defaultText": "购物车",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:5"
-  },
-  {
-    "key": "site.lib.account.migration.labels.5ceece8d5441",
-    "group": "网站 · 登录绑定与换号",
-    "label": "已合并，保留原始记录",
-    "defaultText": "已合并，保留原始记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:14"
-  },
-  {
-    "key": "site.lib.account.migration.labels.703ba0a87e82",
-    "group": "网站 · 登录绑定与换号",
-    "label": "积分商城订单",
-    "defaultText": "积分商城订单",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:6"
-  },
-  {
-    "key": "site.lib.account.migration.labels.70c0399ecdd6",
-    "group": "网站 · 登录绑定与换号",
-    "label": "普通双倍额度",
-    "defaultText": "普通双倍额度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:8"
-  },
-  {
-    "key": "site.lib.account.migration.labels.739d34039305",
-    "group": "网站 · 登录绑定与换号",
-    "label": "积木奖励记录",
-    "defaultText": "积木奖励记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:11"
-  },
-  {
-    "key": "site.lib.account.migration.labels.76257addf1ce",
-    "group": "网站 · 登录绑定与换号",
-    "label": "旧邀请规则已结束",
-    "defaultText": "旧邀请规则已结束",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:19"
-  },
-  {
-    "key": "site.lib.account.migration.labels.783a6b8d5332",
-    "group": "网站 · 登录绑定与换号",
-    "label": "重复状态已合并，原始记录保留",
-    "defaultText": "重复状态已合并，原始记录保留",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:16"
-  },
-  {
-    "key": "site.lib.account.migration.labels.7ae56ee85faa",
-    "group": "网站 · 登录绑定与换号",
-    "label": "邀请关系",
-    "defaultText": "邀请关系",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:7"
-  },
-  {
-    "key": "site.lib.account.migration.labels.81b3798bebc6",
-    "group": "网站 · 登录绑定与换号",
-    "label": "订单",
-    "defaultText": "订单",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:10"
-  },
-  {
-    "key": "site.lib.account.migration.labels.8e6cf522035b",
-    "group": "网站 · 登录绑定与换号",
-    "label": "历史邀请提成",
-    "defaultText": "历史邀请提成",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:7"
-  },
-  {
-    "key": "site.lib.account.migration.labels.9c4e8280ef1d",
-    "group": "网站 · 登录绑定与换号",
-    "label": "聊天消息",
-    "defaultText": "聊天消息",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:10"
-  },
-  {
-    "key": "site.lib.account.migration.labels.9c80b87bd6e7",
-    "group": "网站 · 登录绑定与换号",
-    "label": "农场资产",
-    "defaultText": "农场资产",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:4"
-  },
-  {
-    "key": "site.lib.account.migration.labels.9c8acd3d3021",
-    "group": "网站 · 登录绑定与换号",
-    "label": "已合并",
-    "defaultText": "已合并",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:19"
-  },
-  {
-    "key": "site.lib.account.migration.labels.a497a2cacd9d",
-    "group": "网站 · 登录绑定与换号",
-    "label": "充值记录",
-    "defaultText": "充值记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:7"
-  },
-  {
-    "key": "site.lib.account.migration.labels.a5ce1c934353",
-    "group": "网站 · 登录绑定与换号",
-    "label": "已过期，不重新生效",
-    "defaultText": "已过期，不重新生效",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:17"
-  },
-  {
-    "key": "site.lib.account.migration.labels.adf0b76225fb",
-    "group": "网站 · 登录绑定与换号",
-    "label": "双倍流水额度",
-    "defaultText": "双倍流水额度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:8"
-  },
-  {
-    "key": "site.lib.account.migration.labels.af29158a2dfb",
-    "group": "网站 · 登录绑定与换号",
-    "label": "农场访问",
-    "defaultText": "农场访问",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:5"
-  },
-  {
-    "key": "site.lib.account.migration.labels.b52f7a25fe25",
-    "group": "网站 · 登录绑定与换号",
-    "label": "提现记录",
-    "defaultText": "提现记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:7"
-  },
-  {
-    "key": "site.lib.account.migration.labels.b8c9c7aa13af",
-    "group": "网站 · 登录绑定与换号",
-    "label": "双倍消费额度",
-    "defaultText": "双倍消费额度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:8"
-  },
-  {
-    "key": "site.lib.account.migration.labels.b8f98fd165d1",
-    "group": "网站 · 登录绑定与换号",
-    "label": "刮刮卡",
-    "defaultText": "刮刮卡",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:3"
-  },
-  {
-    "key": "site.lib.account.migration.labels.bc8221db7982",
-    "group": "网站 · 登录绑定与换号",
-    "label": "农场照料记录",
-    "defaultText": "农场照料记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:4"
-  },
-  {
-    "key": "site.lib.account.migration.labels.c290f8fccf9d",
-    "group": "网站 · 登录绑定与换号",
-    "label": "合并后仅保留历史",
-    "defaultText": "合并后仅保留历史",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:14"
-  },
-  {
-    "key": "site.lib.account.migration.labels.c3d92b20c8a3",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账户",
-    "defaultText": "账户",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:2"
-  },
-  {
-    "key": "site.lib.account.migration.labels.c486f6380837",
-    "group": "网站 · 登录绑定与换号",
-    "label": "Stripe 支付记录",
-    "defaultText": "Stripe 支付记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:10"
-  },
-  {
-    "key": "site.lib.account.migration.labels.c5bab302c2a4",
-    "group": "网站 · 登录绑定与换号",
-    "label": "微信支付记录",
-    "defaultText": "微信支付记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:11"
-  },
-  {
-    "key": "site.lib.account.migration.labels.cbd2eed80315",
-    "group": "网站 · 登录绑定与换号",
-    "label": "待重试",
-    "defaultText": "待重试",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:21"
-  },
-  {
-    "key": "site.lib.account.migration.labels.d03e0f8d7e7e",
-    "group": "网站 · 登录绑定与换号",
-    "label": "聊天记录",
-    "defaultText": "聊天记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:10"
-  },
-  {
-    "key": "site.lib.account.migration.labels.d64b5e98d9de",
-    "group": "网站 · 登录绑定与换号",
-    "label": "语音积分记录",
-    "defaultText": "语音积分记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:5"
-  },
-  {
-    "key": "site.lib.account.migration.labels.d7abe36f4409",
-    "group": "网站 · 登录绑定与换号",
-    "label": "退回双倍额度",
-    "defaultText": "退回双倍额度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:8"
-  },
-  {
-    "key": "site.lib.account.migration.labels.d9f28b9b82ea",
-    "group": "网站 · 登录绑定与换号",
-    "label": "ZPay 支付记录",
-    "defaultText": "ZPay 支付记录",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:10"
-  },
-  {
-    "key": "site.lib.account.migration.labels.dac4fde18044",
-    "group": "网站 · 登录绑定与换号",
-    "label": "农场种植进度",
-    "defaultText": "农场种植进度",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:4"
-  },
-  {
-    "key": "site.lib.account.migration.labels.dbd2da0e76ab",
-    "group": "网站 · 登录绑定与换号",
-    "label": "Discord 钱包",
-    "defaultText": "Discord 钱包",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:2"
-  },
-  {
-    "key": "site.lib.account.migration.labels.dcaa69494bf1",
-    "group": "网站 · 登录绑定与换号",
-    "label": "语音计分活动",
-    "defaultText": "语音计分活动",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:5"
-  },
-  {
-    "key": "site.lib.account.migration.labels.e2657bf6c5b0",
-    "group": "网站 · 登录绑定与换号",
-    "label": "交易凭据",
-    "defaultText": "交易凭据",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:2"
-  },
-  {
-    "key": "site.lib.account.migration.labels.e6f4cc75690b",
-    "group": "网站 · 登录绑定与换号",
-    "label": "等待处理",
-    "defaultText": "等待处理",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:21"
-  },
-  {
-    "key": "site.lib.account.migration.labels.e99b48a29bdf",
-    "group": "网站 · 登录绑定与换号",
-    "label": "已完成",
-    "defaultText": "已完成",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:21"
-  },
-  {
-    "key": "site.lib.account.migration.labels.ea2c0023f646",
-    "group": "网站 · 登录绑定与换号",
-    "label": "旧钱包已合并",
-    "defaultText": "旧钱包已合并",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:15"
-  },
-  {
-    "key": "site.lib.account.migration.labels.ea693146623a",
-    "group": "网站 · 登录绑定与换号",
-    "label": "陪玩资料",
-    "defaultText": "陪玩资料",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:2"
-  },
-  {
-    "key": "site.lib.account.migration.labels.eaf16d59b063",
-    "group": "网站 · 登录绑定与换号",
-    "label": "福星权益",
-    "defaultText": "福星权益",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:9"
-  },
-  {
-    "key": "site.lib.account.migration.labels.f55256f36cfa",
-    "group": "网站 · 登录绑定与换号",
-    "label": "会话已合并，消息保留",
-    "defaultText": "会话已合并，消息保留",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:16"
-  },
-  {
-    "key": "site.lib.account.migration.labels.f9bed0fffa53",
-    "group": "网站 · 登录绑定与换号",
-    "label": "已发 VIP 福利",
-    "defaultText": "已发 VIP 福利",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:6"
-  },
-  {
-    "key": "site.lib.account.migration.labels.fb5431765edc",
-    "group": "网站 · 登录绑定与换号",
-    "label": "VIP 设置",
-    "defaultText": "VIP 设置",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:9"
-  },
-  {
-    "key": "site.lib.account.migration.labels.fcb979ef0b91",
-    "group": "网站 · 登录绑定与换号",
-    "label": "处理中",
-    "defaultText": "处理中",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/account-migration-labels.ts:21"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.3825650fbf8a",
-    "group": "网站 · 登录绑定与换号",
-    "label": "此登录方式已经解除关联，请刷新账号状态。",
-    "defaultText": "此登录方式已经解除关联，请刷新账号状态。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:5"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.3a7063110b4c",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号存在资产、消费记录或待处理业务，请联系客服核实归属后再解绑。",
-    "defaultText": "账号存在资产、消费记录或待处理业务，请联系客服核实归属后再解绑。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:14"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.3dd5c06d50c7",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账户已有解绑保管记录，需要先核实原记录。当前资产没有转移。",
-    "defaultText": "账户已有解绑保管记录，需要先核实原记录。当前资产没有转移。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:3"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.42a902f67324",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号有正在处理的管理员操作，请等待处理完成后再绑定。此次绑定未修改账号资料或余额。",
-    "defaultText": "账号有正在处理的管理员操作，请等待处理完成后再绑定。此次绑定未修改账号资料或余额。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:6"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.43703cf0b300",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号仍有未完成迁移的关联记录，本次绑定已撤回。请联系客服核实，原资料和余额已保留。",
-    "defaultText": "账号仍有未完成迁移的关联记录，本次绑定已撤回。请联系客服核实，原资料和余额已保留。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:12"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.4b1d7140484a",
-    "group": "网站 · 登录绑定与换号",
-    "label": "两个账号分别有人工维护的客户资料，请联系客服核实归属后再绑定。原资料和余额已保留。",
-    "defaultText": "两个账号分别有人工维护的客户资料，请联系客服核实归属后再绑定。原资料和余额已保留。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:7"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.5094241c532a",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号绑定状态已变化，请重新登录并刷新绑定状态后再试。",
-    "defaultText": "账号绑定状态已变化，请重新登录并刷新绑定状态后再试。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:15"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.51f271820993",
-    "group": "网站 · 登录绑定与换号",
-    "label": "两个账号的积分商城记录无法自动合并，请联系客服核实。原订单、权益和余额已保留。",
-    "defaultText": "两个账号的积分商城记录无法自动合并，请联系客服核实。原订单、权益和余额已保留。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:10"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.7ded02100450",
-    "group": "网站 · 登录绑定与换号",
-    "label": "此微信账号已关联 Discord，不能直接合并两个 Discord 账号。请联系客服核实账号与资产归属。",
-    "defaultText": "此微信账号已关联 Discord，不能直接合并两个 Discord 账号。请联系客服核实账号与资产归属。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:13"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.7ffe34a3e80f",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号包含无法自动合并的聊天记录，请联系客服核实后再绑定。原聊天记录和账号资料已保留。",
-    "defaultText": "账号包含无法自动合并的聊天记录，请联系客服核实后再绑定。原聊天记录和账号资料已保留。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:11"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.bdbf952a8477",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号仍有关联旧 Discord 的积分或收款资料，请联系客服核实归属后再绑定。",
-    "defaultText": "账号仍有关联旧 Discord 的积分或收款资料，请联系客服核实归属后再绑定。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:8"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.daedfa51a76b",
-    "group": "网站 · 登录绑定与换号",
-    "label": "请先关联微信，确保解除 Discord 后仍可登录原账户。",
-    "defaultText": "请先关联微信，确保解除 Discord 后仍可登录原账户。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:2"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.f1e17d8228bc",
-    "group": "网站 · 登录绑定与换号",
-    "label": "账号角色归属已变化，请刷新后重新操作。",
-    "defaultText": "账号角色归属已变化，请刷新后重新操作。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:4"
-  },
-  {
-    "key": "site.lib.discord.binding.feedback.f4629df122bc",
-    "group": "网站 · 登录绑定与换号",
-    "label": "两个账号存在同一活动周期的领取记录，需要客服核实后再绑定。原领取记录和已发权益已保留。",
-    "defaultText": "两个账号存在同一活动周期的领取记录，需要客服核实后再绑定。原领取记录和已发权益已保留。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/discord-binding-feedback.ts:9"
-  },
-  {
     "key": "site.lib.farmconfig.44bed509345d",
     "group": "网站 · 农场",
     "label": "小麦",
     "defaultText": "小麦",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/farmConfig.ts:51"
+    "source": "lib/farmConfig.ts:41"
   },
   {
     "key": "site.lib.farmconfig.54f1ba1f2ca0",
@@ -14706,7 +16260,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "长周期高回报，后期主力作物。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/farmConfig.ts:89"
+    "source": "lib/farmConfig.ts:79"
   },
   {
     "key": "site.lib.farmconfig.62e267b9e4f3",
@@ -14715,7 +16269,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "玫瑰",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/farmConfig.ts:63"
+    "source": "lib/farmConfig.ts:53"
   },
   {
     "key": "site.lib.farmconfig.96ddcb4c52d5",
@@ -14724,7 +16278,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "中周期作物，金币回报更高。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/farmConfig.ts:65"
+    "source": "lib/farmConfig.ts:55"
   },
   {
     "key": "site.lib.farmconfig.99fc54393914",
@@ -14733,7 +16287,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "适合开荒，成熟快，收益稳定。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/farmConfig.ts:53"
+    "source": "lib/farmConfig.ts:43"
   },
   {
     "key": "site.lib.farmconfig.9a45f90bd70d",
@@ -14742,7 +16296,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "高价值作物，适合长线收获。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/farmConfig.ts:77"
+    "source": "lib/farmConfig.ts:67"
   },
   {
     "key": "site.lib.farmconfig.d06db3916d64",
@@ -14751,7 +16305,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "神秘果",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/farmConfig.ts:87"
+    "source": "lib/farmConfig.ts:77"
   },
   {
     "key": "site.lib.farmconfig.dedf9e896ff9",
@@ -14760,7 +16314,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "锦鲤花",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/farmConfig.ts:75"
+    "source": "lib/farmConfig.ts:65"
   },
   {
     "key": "site.lib.home.page.data.16a22cb0e80d",
@@ -14769,7 +16323,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "点了么陪玩订单动态",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:782"
+    "source": "lib/home-page-data.ts:781"
   },
   {
     "key": "site.lib.home.page.data.1e8713532419",
@@ -14778,7 +16332,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "高价值打赏",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:811"
+    "source": "lib/home-page-data.ts:810"
   },
   {
     "key": "site.lib.home.page.data.2ae0266bfb90",
@@ -14792,7 +16346,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/home-page-data.ts:760"
+    "source": "lib/home-page-data.ts:759"
   },
   {
     "key": "site.lib.home.page.data.2e0671e5e425",
@@ -14806,7 +16360,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/home-page-data.ts:749"
+    "source": "lib/home-page-data.ts:748"
   },
   {
     "key": "site.lib.home.page.data.36ad16d9bfd0",
@@ -14815,7 +16369,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "本次服务已顺利结束，感谢板板选择点了么娱乐公会。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:739"
+    "source": "lib/home-page-data.ts:738"
   },
   {
     "key": "site.lib.home.page.data.41f2ad137370",
@@ -14824,7 +16378,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "匿名订单",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:752"
+    "source": "lib/home-page-data.ts:751"
   },
   {
     "key": "site.lib.home.page.data.48ca58d08c90",
@@ -14838,7 +16392,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/home-page-data.ts:727"
+    "source": "lib/home-page-data.ts:726"
   },
   {
     "key": "site.lib.home.page.data.4ec2f4044176",
@@ -14847,7 +16401,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "匿名订单已关闭，客服可协助重新安排。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:750"
+    "source": "lib/home-page-data.ts:749"
   },
   {
     "key": "site.lib.home.page.data.5180911d31fb",
@@ -14856,7 +16410,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "推荐图存在 · 资料缺失",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:445"
+    "source": "lib/home-page-data.ts:444"
   },
   {
     "key": "site.lib.home.page.data.55ccf47e2854",
@@ -14865,7 +16419,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "服务中",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:730"
+    "source": "lib/home-page-data.ts:729"
   },
   {
     "key": "site.lib.home.page.data.636f07079cb8",
@@ -14874,7 +16428,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "新的陪玩需求已发布",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:797"
+    "source": "lib/home-page-data.ts:796"
   },
   {
     "key": "site.lib.home.page.data.6c2186b30bc3",
@@ -14888,7 +16442,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/home-page-data.ts:738"
+    "source": "lib/home-page-data.ts:737"
   },
   {
     "key": "site.lib.home.page.data.7864df141bf7",
@@ -14897,7 +16451,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "订单状态已更新，客服会继续协助处理。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:783"
+    "source": "lib/home-page-data.ts:782"
   },
   {
     "key": "site.lib.home.page.data.917b0ecf10db",
@@ -14906,7 +16460,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "感谢板板对点了么陪玩的支持。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:809"
+    "source": "lib/home-page-data.ts:808"
   },
   {
     "key": "site.lib.home.page.data.9b268b9550c3",
@@ -14915,7 +16469,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "匿名订单已过期，客服可协助发起新的需求。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:772"
+    "source": "lib/home-page-data.ts:771"
   },
   {
     "key": "site.lib.home.page.data.a1772e75c146",
@@ -14924,7 +16478,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "这张推荐图存在，但后台陪玩资料没有匹配到。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:446"
+    "source": "lib/home-page-data.ts:445"
   },
   {
     "key": "site.lib.home.page.data.b1faeebb1bb3",
@@ -14933,7 +16487,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "匿名订单已取消，如有需要可重新联系点了么客服。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:761"
+    "source": "lib/home-page-data.ts:760"
   },
   {
     "key": "site.lib.home.page.data.c20e5e1f2729",
@@ -14947,7 +16501,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/home-page-data.ts:800"
+    "source": "lib/home-page-data.ts:799"
   },
   {
     "key": "site.lib.home.page.data.ca1342042200",
@@ -14961,7 +16515,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/home-page-data.ts:771"
+    "source": "lib/home-page-data.ts:770"
   },
   {
     "key": "site.lib.home.page.data.d26f68d79796",
@@ -14970,7 +16524,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "已由点了么娱乐公会安排，正在进行服务。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:728"
+    "source": "lib/home-page-data.ts:727"
   },
   {
     "key": "site.lib.home.page.data.da4ed2e4187c",
@@ -14979,7 +16533,7 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "新需求",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:719"
+    "source": "lib/home-page-data.ts:718"
   },
   {
     "key": "site.lib.home.page.data.e99b48a29bdf",
@@ -14988,11 +16542,8 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
     "defaultText": "已完成",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:741"
-  }
-];
-
-const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
+    "source": "lib/home-page-data.ts:740"
+  },
   {
     "key": "site.lib.home.page.data.ebc62c0c8c4b",
     "group": "网站 · 通知与动态",
@@ -15007,7 +16558,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
       "value1",
       "value2"
     ],
-    "source": "lib/home-page-data.ts:469"
+    "source": "lib/home-page-data.ts:468"
   },
   {
     "key": "site.lib.home.page.data.f692b6234e77",
@@ -15021,7 +16572,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/home-page-data.ts:808"
+    "source": "lib/home-page-data.ts:807"
   },
   {
     "key": "site.lib.home.page.data.f97134a3b709",
@@ -15035,7 +16586,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/home-page-data.ts:716"
+    "source": "lib/home-page-data.ts:715"
   },
   {
     "key": "site.lib.home.page.data.fd309453a911",
@@ -15044,109 +16595,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "订单动态",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/home-page-data.ts:785"
-  },
-  {
-    "key": "site.lib.manual.wechat.boss.1f323e4eedfb",
-    "group": "网站 · 通知与动态",
-    "label": "余额已调整",
-    "defaultText": "余额已调整",
-    "variables": [],
-    "maxLength": 160,
-    "source": "lib/manual-wechat-boss.ts:546",
-    "singleLine": true
-  },
-  {
-    "key": "site.lib.manual.wechat.boss.333c89553678",
-    "group": "网站 · 通知与动态",
-    "label": "余额已人工充值",
-    "defaultText": "余额已人工充值",
-    "variables": [],
-    "maxLength": 160,
-    "source": "lib/manual-wechat-boss.ts:215",
-    "singleLine": true
-  },
-  {
-    "key": "site.lib.manual.wechat.boss.70d9c17d5c0c",
-    "group": "网站 · 通知与动态",
-    "label": "客服已将 {value1} 币更正转入你的账户。变更后余额：{value2}。",
-    "defaultText": "客服已将 {value1} 币更正转入你的账户。变更后余额：{value2}。",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 300,
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "source": "lib/manual-wechat-boss.ts:435"
-  },
-  {
-    "key": "site.lib.manual.wechat.boss.a53c46d4da12",
-    "group": "网站 · 通知与动态",
-    "label": "客服已向你的账户发放 {value1} 币{value2}。",
-    "defaultText": "客服已向你的账户发放 {value1} 币{value2}。",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 300,
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "source": "lib/manual-wechat-boss.ts:547"
-  },
-  {
-    "key": "site.lib.manual.wechat.boss.ee3080c6807e",
-    "group": "网站 · 通知与动态",
-    "label": "充值归属已更正",
-    "defaultText": "充值归属已更正",
-    "variables": [],
-    "maxLength": 160,
-    "source": "lib/manual-wechat-boss.ts:434",
-    "singleLine": true
-  },
-  {
-    "key": "site.lib.manual.wechat.boss.f0c16910c207",
-    "group": "网站 · 通知与动态",
-    "label": "客服已为你的账户入账 {value1} 币。",
-    "defaultText": "客服已为你的账户入账 {value1} 币。",
-    "variables": [
-      "value1"
-    ],
-    "maxLength": 300,
-    "requiredVariables": [
-      "value1"
-    ],
-    "source": "lib/manual-wechat-boss.ts:216"
-  },
-  {
-    "key": "site.lib.manual.wechat.recharge.correction.70d9c17d5c0c",
-    "group": "网站 · 通知与动态",
-    "label": "客服已将 {value1} 币更正转入你的账户。变更后余额：{value2}。",
-    "defaultText": "客服已将 {value1} 币更正转入你的账户。变更后余额：{value2}。",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 300,
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "source": "lib/manual-wechat-recharge-correction.ts:114"
-  },
-  {
-    "key": "site.lib.manual.wechat.recharge.correction.ee3080c6807e",
-    "group": "网站 · 通知与动态",
-    "label": "充值归属已更正",
-    "defaultText": "充值归属已更正",
-    "variables": [],
-    "maxLength": 160,
-    "source": "lib/manual-wechat-recharge-correction.ts:113",
-    "singleLine": true
+    "source": "lib/home-page-data.ts:784"
   },
   {
     "key": "site.lib.mini.program.1211c69ea1e3",
@@ -15155,7 +16604,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "会话不存在。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:930"
+    "source": "lib/mini-program.ts:923"
   },
   {
     "key": "site.lib.mini.program.1a04757d8865",
@@ -15164,7 +16613,16 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "未找到聊天对象。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:797"
+    "source": "lib/mini-program.ts:790"
+  },
+  {
+    "key": "site.lib.mini.program.276bfd8f1632",
+    "group": "网站 · 通知与动态",
+    "label": "未找到陪玩。",
+    "defaultText": "未找到陪玩。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "lib/mini-program.ts:771"
   },
   {
     "key": "site.lib.mini.program.3609dd5b2141",
@@ -15173,7 +16631,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "未下单前聊天已通知管理员监控。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:821"
+    "source": "lib/mini-program.ts:814"
   },
   {
     "key": "site.lib.mini.program.3936495bb492",
@@ -15182,7 +16640,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "消息不能为空。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:922"
+    "source": "lib/mini-program.ts:915"
   },
   {
     "key": "site.lib.mini.program.3a065da4e327",
@@ -15191,7 +16649,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "需要先完善陪玩资料后才能抢单。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:361"
+    "source": "lib/mini-program.ts:360"
   },
   {
     "key": "site.lib.mini.program.5998ae0a745a",
@@ -15200,7 +16658,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "你已经抢过这条派单。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:464"
+    "source": "lib/mini-program.ts:463"
   },
   {
     "key": "site.lib.mini.program.62654406bef2",
@@ -15209,7 +16667,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "你有进行中订单，系统已强制显示忙碌。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:378"
+    "source": "lib/mini-program.ts:377"
   },
   {
     "key": "site.lib.mini.program.73a6d5ca9a24",
@@ -15218,17 +16676,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "无法发起该聊天。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:789"
-  },
-  {
-    "key": "site.lib.mini.program.96c347102cfd",
-    "group": "网站 · 通知与动态",
-    "label": "未找到陪玩。",
-    "defaultText": "未找到陪玩。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/mini-program.ts:778",
-    "requiredVariables": []
+    "source": "lib/mini-program.ts:782"
   },
   {
     "key": "site.lib.mini.program.account.2976c8101251",
@@ -15242,7 +16690,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/mini-program-account.ts:280"
+    "source": "lib/mini-program-account.ts:304"
   },
   {
     "key": "site.lib.mini.program.account.352879e3aadc",
@@ -15251,7 +16699,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "老板已经选择你，请确认接单或拒绝。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program-account.ts:281"
+    "source": "lib/mini-program-account.ts:305"
   },
   {
     "key": "site.lib.mini.program.account.75cf4e020143",
@@ -15265,7 +16713,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/mini-program-account.ts:303"
+    "source": "lib/mini-program-account.ts:327"
   },
   {
     "key": "site.lib.mini.program.account.c09f04a55ddc",
@@ -15279,7 +16727,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/mini-program-account.ts:323"
+    "source": "lib/mini-program-account.ts:347"
   },
   {
     "key": "site.lib.mini.program.account.ff8e77d2f0c6",
@@ -15288,16 +16736,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "订单正在计时，完成后由老板或陪玩手动结束。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program-account.ts:304"
-  },
-  {
-    "key": "site.lib.mini.program.b5bdca8f7459",
-    "group": "网站 · 通知与动态",
-    "label": "这段会话已随账号合并归档，仅供查看历史。",
-    "defaultText": "这段会话已随账号合并归档，仅供查看历史。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/mini-program.ts:934"
+    "source": "lib/mini-program-account.ts:328"
   },
   {
     "key": "site.lib.mini.program.b957d6787ad5",
@@ -15306,7 +16745,16 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "老板已选中你，请尽快确认接单。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:593"
+    "source": "lib/mini-program.ts:587"
+  },
+  {
+    "key": "site.lib.mini.program.be58fe467597",
+    "group": "网站 · 通知与动态",
+    "label": "抢单失败。",
+    "defaultText": "抢单失败。",
+    "variables": [],
+    "maxLength": 300,
+    "source": "lib/mini-program.ts:466"
   },
   {
     "key": "site.lib.mini.program.d3cbf5422972",
@@ -15315,7 +16763,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "陪玩资料审核通过并可展示后才能抢单。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:366"
+    "source": "lib/mini-program.ts:365"
   },
   {
     "key": "site.lib.mini.program.dd6f43c04bcf",
@@ -15324,7 +16772,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "请填写派单要求。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:312"
+    "source": "lib/mini-program.ts:311"
   },
   {
     "key": "site.lib.mini.program.e3a97d4749e3",
@@ -15333,7 +16781,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "缺少候选陪玩。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:483"
+    "source": "lib/mini-program.ts:477"
   },
   {
     "key": "site.lib.mini.program.f5663df6ff1c",
@@ -15342,7 +16790,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "请选择男生或女生，至少选择一个。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:307"
+    "source": "lib/mini-program.ts:306"
   },
   {
     "key": "site.lib.mini.program.f773ec73dfe0",
@@ -15356,7 +16804,7 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "requiredVariables": [
       "value1"
     ],
-    "source": "lib/mini-program.ts:592"
+    "source": "lib/mini-program.ts:586"
   },
   {
     "key": "site.lib.mini.program.f95050a48426",
@@ -15365,298 +16813,79 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "defaultText": "已接入公会客服。请描述你的订单、充值、余额或提现问题，管理人员会在此回复。",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/mini-program.ts:862"
+    "source": "lib/mini-program.ts:855"
   },
   {
-    "key": "site.lib.public.error.messages.125b9db0e4a7",
-    "group": "网站 · 首页与公共导航",
-    "label": "invalid_amount",
-    "defaultText": "invalid_amount",
+    "key": "site.lib.pointshop.25712bf98392",
+    "group": "网站 · 个人中心与资产",
+    "label": "自动发放（积木游戏代金券）",
+    "defaultText": "自动发放（积木游戏代金券）",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:44",
-    "requiredVariables": []
+    "source": "lib/pointShop.ts:490"
   },
   {
-    "key": "site.lib.public.error.messages.20d730c7886e",
-    "group": "网站 · 首页与公共导航",
-    "label": "user_not_found",
-    "defaultText": "user_not_found",
+    "key": "site.lib.pointshop.4a3b309513cc",
+    "group": "网站 · 个人中心与资产",
+    "label": "配置错误：未设置券类型",
+    "defaultText": "配置错误：未设置券类型",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:14",
-    "requiredVariables": []
+    "source": "lib/pointShop.ts:592"
   },
   {
-    "key": "site.lib.public.error.messages.22965d14e8eb",
-    "group": "网站 · 首页与公共导航",
-    "label": "amount_too_small",
-    "defaultText": "amount_too_small",
+    "key": "site.lib.pointshop.5ea8e0ba0f95",
+    "group": "网站 · 个人中心与资产",
+    "label": "配置错误：未设置到账金额",
+    "defaultText": "配置错误：未设置到账金额",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:45",
-    "requiredVariables": []
+    "source": "lib/pointShop.ts:623"
   },
   {
-    "key": "site.lib.public.error.messages.26a9d077cbeb",
-    "group": "网站 · 首页与公共导航",
-    "label": "no_card",
-    "defaultText": "no_card",
+    "key": "site.lib.pointshop.7e42f0984396",
+    "group": "网站 · 个人中心与资产",
+    "label": "积分商城兑换",
+    "defaultText": "积分商城兑换",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:13",
-    "requiredVariables": []
+    "source": "lib/pointShop.ts:914"
   },
   {
-    "key": "site.lib.public.error.messages.312b9647b2f3",
-    "group": "网站 · 首页与公共导航",
-    "label": "当前账号未找到，请重新登录后再试。",
-    "defaultText": "当前账号未找到，请重新登录后再试。",
+    "key": "site.lib.pointshop.8c959927abdc",
+    "group": "网站 · 个人中心与资产",
+    "label": "自动发放（积分商城券）",
+    "defaultText": "自动发放（积分商城券）",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:27",
-    "requiredVariables": []
+    "source": "lib/pointShop.ts:525"
   },
   {
-    "key": "site.lib.public.error.messages.589b325db1c9",
-    "group": "网站 · 首页与公共导航",
-    "label": "账号状态已变化，请刷新后重新确认用券对象。",
-    "defaultText": "账号状态已变化，请刷新后重新确认用券对象。",
+    "key": "site.lib.pointshop.91e976c28e3d",
+    "group": "网站 · 个人中心与资产",
+    "label": "自动发放（积分商城礼物券）",
+    "defaultText": "自动发放（积分商城礼物券）",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:20"
+    "source": "lib/pointShop.ts:561"
   },
   {
-    "key": "site.lib.public.error.messages.5e4f22bc1ad9",
-    "group": "网站 · 首页与公共导航",
-    "label": "review_too_long",
-    "defaultText": "review_too_long",
+    "key": "site.lib.pointshop.abc59b84681d",
+    "group": "网站 · 个人中心与资产",
+    "label": "积分商城余额兑换",
+    "defaultText": "积分商城余额兑换",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:19",
-    "requiredVariables": []
+    "source": "lib/pointShop.ts:655"
   },
   {
-    "key": "site.lib.public.error.messages.5f63d4c8e86d",
-    "group": "网站 · 首页与公共导航",
-    "label": "unauthorized",
-    "defaultText": "unauthorized",
+    "key": "site.lib.pointshop.c5b5a1e0c570",
+    "group": "网站 · 个人中心与资产",
+    "label": "需人工发放",
+    "defaultText": "需人工发放",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/public-error-messages.ts:42",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.609e3671fcfc",
-    "group": "网站 · 首页与公共导航",
-    "label": "券状态已变化，请刷新后重新确认。",
-    "defaultText": "券状态已变化，请刷新后重新确认。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:21"
-  },
-  {
-    "key": "site.lib.public.error.messages.61968605cceb",
-    "group": "网站 · 首页与公共导航",
-    "label": "当前页面只支持网站端发起绑定微信。",
-    "defaultText": "当前页面只支持网站端发起绑定微信。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:26",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.70cfff94ffc5",
-    "group": "网站 · 首页与公共导航",
-    "label": "当前登录态无效，请重新登录后再试。",
-    "defaultText": "当前登录态无效，请重新登录后再试。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:25",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.7d01425e8b64",
-    "group": "网站 · 首页与公共导航",
-    "label": "no_voucher",
-    "defaultText": "no_voucher",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:12",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.8ae971be9456",
-    "group": "网站 · 首页与公共导航",
-    "label": "打赏结果仍需核实，请查询进度或联系客服，勿重复打赏。",
-    "defaultText": "打赏结果仍需核实，请查询进度或联系客服，勿重复打赏。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:39"
-  },
-  {
-    "key": "site.lib.public.error.messages.8cb61e287cc0",
-    "group": "网站 · 首页与公共导航",
-    "label": "暂不支持该 Stripe 支付币种。",
-    "defaultText": "暂不支持该 Stripe 支付币种。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:47",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.92b2703596e5",
-    "group": "网站 · 首页与公共导航",
-    "label": "Stripe 最低付款金额约为 50 美分",
-    "defaultText": "Stripe 最低付款金额约为 50 美分",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:48",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.9bed1591086e",
-    "group": "网站 · 首页与公共导航",
-    "label": "invalid_json",
-    "defaultText": "invalid_json",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:43",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.9c3e92a3b2e2",
-    "group": "网站 · 首页与公共导航",
-    "label": "当前账号还没有绑定微信。",
-    "defaultText": "当前账号还没有绑定微信。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:29"
-  },
-  {
-    "key": "site.lib.public.error.messages.9de511b917a6",
-    "group": "网站 · 首页与公共导航",
-    "label": "missing_user",
-    "defaultText": "missing_user",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:16",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.a1addb280f20",
-    "group": "网站 · 首页与公共导航",
-    "label": "unsupported_stripe_recharge_amount",
-    "defaultText": "unsupported_stripe_recharge_amount",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:46",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.c47460e42f5d",
-    "group": "网站 · 首页与公共导航",
-    "label": "这笔打赏已取消。本次操作不退款；如需再次打赏，请重新确认。",
-    "defaultText": "这笔打赏已取消。本次操作不退款；如需再次打赏，请重新确认。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:38"
-  },
-  {
-    "key": "site.lib.public.error.messages.cddc6b104550",
-    "group": "网站 · 首页与公共导航",
-    "label": "missing_target",
-    "defaultText": "missing_target",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:17",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.cf9312e6c7de",
-    "group": "网站 · 首页与公共导航",
-    "label": "至少还要保留一种登录方式，不能解绑最后一个渠道。",
-    "defaultText": "至少还要保留一种登录方式，不能解绑最后一个渠道。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:28",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.d003f2d35ea1",
-    "group": "网站 · 首页与公共导航",
-    "label": "discord_required",
-    "defaultText": "discord_required",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:15",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.d6ee913e2aca",
-    "group": "网站 · 首页与公共导航",
-    "label": "missing_fields",
-    "defaultText": "missing_fields",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:18",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.public.error.messages.f7af82cff3c4",
-    "group": "网站 · 首页与公共导航",
-    "label": "解绑失败，请稍后再试。",
-    "defaultText": "解绑失败，请稍后再试。",
-    "variables": [],
-    "maxLength": 300,
-    "source": "lib/public-error-messages.ts:30",
-    "requiredVariables": []
-  },
-  {
-    "key": "site.lib.recharge.order.transaction.00a17e777b24",
-    "group": "网站 · 通知与动态",
-    "label": "微信充值已到账",
-    "defaultText": "微信充值已到账",
-    "variables": [],
-    "maxLength": 160,
-    "source": "lib/recharge-order-transaction.ts:125",
-    "singleLine": true
-  },
-  {
-    "key": "site.lib.recharge.order.transaction.133a41b10227",
-    "group": "网站 · 通知与动态",
-    "label": "充值已到账",
-    "defaultText": "充值已到账",
-    "variables": [],
-    "maxLength": 160,
-    "source": "lib/recharge-order-transaction.ts:125",
-    "singleLine": true
-  },
-  {
-    "key": "site.lib.recharge.order.transaction.62a89cc85f1f",
-    "group": "网站 · 通知与动态",
-    "label": "Stripe 充值已到账",
-    "defaultText": "Stripe 充值已到账",
-    "variables": [],
-    "maxLength": 160,
-    "source": "lib/recharge-order-transaction.ts:125",
-    "singleLine": true
-  },
-  {
-    "key": "site.lib.recharge.order.transaction.eb6422730363",
-    "group": "网站 · 通知与动态",
-    "label": "你的账户已到账 {value1} 币。到账后余额：{value2}。",
-    "defaultText": "你的账户已到账 {value1} 币。到账后余额：{value2}。",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 300,
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "source": "lib/recharge-order-transaction.ts:126"
+    "source": "lib/pointShop.ts:702"
   },
   {
     "key": "site.lib.recharge.result.31c7f2fc32f2",
@@ -16529,33 +17758,13 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "source": "lib/withdrawAccounts.ts:110"
   },
   {
-    "key": "site.app.join.applicationform.photo.instructions",
-    "group": "网站 · 入驻申请",
-    "label": "照片上传说明",
-    "defaultText": "请选择清晰的图片。如果是真人照，请使用本人照片。",
+    "key": "site.lib.withdrawaccounts.failed",
+    "group": "网站 · 提现",
+    "label": "提现操作失败",
+    "defaultText": "操作失败，请稍后重试",
     "variables": [],
-    "maxLength": 500,
-    "source": "app/join/ApplicationForm.tsx:photo-description"
-  },
-  {
-    "key": "site.app.join.applicationform.photo.penalty",
-    "group": "网站 · 入驻申请",
-    "label": "假照片处理说明",
-    "defaultText": "使用假照/网红照/网图会罚款{minimum}到{maximum}。",
-    "variables": [
-      "minimum",
-      "maximum"
-    ],
-    "requiredVariables": [
-      "minimum",
-      "maximum"
-    ],
-    "examples": {
-      "minimum": "50",
-      "maximum": "200"
-    },
-    "maxLength": 500,
-    "source": "app/join/ApplicationForm.tsx:photo-penalty"
+    "maxLength": 300,
+    "source": "lib/withdrawAccounts.ts:getWithdrawErrorMessage"
   },
   {
     "key": "site.lib.withdrawaccounts.invalid.host",
@@ -16572,2578 +17781,44 @@ const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
     "source": "lib/withdrawAccounts.ts:getWithdrawErrorMessage"
   },
   {
-    "key": "site.lib.withdrawaccounts.failed",
-    "group": "网站 · 提现",
-    "label": "提现操作失败",
-    "defaultText": "操作失败，请稍后重试",
+    "key": "site.components.profile.voucherusebuttons.22c12eb135e7",
+    "group": "网站 · 个人中心与资产",
+    "label": "请输入陪玩ID或Discord ID",
+    "defaultText": "请输入陪玩ID或Discord ID",
     "variables": [],
     "maxLength": 300,
-    "source": "lib/withdrawAccounts.ts:getWithdrawErrorMessage"
+    "source": "components/profile/VoucherUseButtons.tsx:104"
   },
   {
-    "key": "site.components.home.dlmhoverletters.video.letter",
-    "group": "网站 · 首页",
-    "label": "字母视频说明",
-    "defaultText": "DLMClub 视频字 {value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 300,
-    "source": "components/home/DlmHoverLetters.tsx:HoverLetter"
-  },
-  {
-    "key": "site.components.farm.farmclient.4f87c6a08ae0",
-    "group": "网站 · 农场",
-    "label": "余额兑换金币",
-    "defaultText": "余额兑换金币",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.983bd852e71f",
-    "group": "网站 · 农场",
-    "label": "积分兑换金币",
-    "defaultText": "积分兑换金币",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.fff482b24028",
-    "group": "网站 · 农场",
-    "label": "金币兑换积分",
-    "defaultText": "金币兑换积分",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.cfa6207ec025",
-    "group": "网站 · 农场",
-    "label": "种植",
-    "defaultText": "种植",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.f2c44edc322a",
-    "group": "网站 · 农场",
-    "label": "收获",
-    "defaultText": "收获",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.58bd647c56a8",
-    "group": "网站 · 农场",
-    "label": "扩地",
-    "defaultText": "扩地",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.a93199bb69af",
-    "group": "网站 · 农场",
-    "label": "偷菜",
-    "defaultText": "偷菜",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.07bcbf7b987f",
-    "group": "网站 · 农场",
-    "label": "种子袋",
-    "defaultText": "种子袋",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.d2f864b529ff",
-    "group": "网站 · 农场",
-    "label": "兑换所",
-    "defaultText": "兑换所",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.329417e3603e",
-    "group": "网站 · 农场",
-    "label": "嫩芽阶段",
-    "defaultText": "嫩芽阶段",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.3c614d7896cc",
-    "group": "网站 · 农场",
-    "label": "抽枝阶段",
-    "defaultText": "抽枝阶段",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.bc7a87e6d4d8",
-    "group": "网站 · 农场",
-    "label": "丰产前夕",
-    "defaultText": "丰产前夕",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.b897b00b4b40",
-    "group": "网站 · 农场",
-    "label": "成熟完成",
-    "defaultText": "成熟完成",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.a47ff1babcdd",
-    "group": "网站 · 农场",
-    "label": "史诗",
-    "defaultText": "史诗",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.050c11f35aa1",
-    "group": "网站 · 农场",
-    "label": "稀有",
-    "defaultText": "稀有",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.5e70230a9631",
-    "group": "网站 · 农场",
-    "label": "进阶",
-    "defaultText": "进阶",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.89e5e14c8db9",
-    "group": "网站 · 农场",
-    "label": "基础",
-    "defaultText": "基础",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.a7c74fc65d8c",
-    "group": "网站 · 农场",
-    "label": "Koi Manor",
-    "defaultText": "Koi Manor",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.bd3695c3d771",
-    "group": "网站 · 农场",
-    "label": "{value1}小时 {value2}分",
-    "defaultText": "{value1}小时 {value2}分",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例",
-      "value2": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.37a09dac9269",
-    "group": "网站 · 农场",
-    "label": "{value1}分 {value2}秒",
-    "defaultText": "{value1}分 {value2}秒",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例",
-      "value2": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.f1530240cab6",
-    "group": "网站 · 农场",
-    "label": "{value1}秒",
-    "defaultText": "{value1}秒",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.d28a36b20aa8",
-    "group": "网站 · 农场",
-    "label": "好友列表加载失败",
-    "defaultText": "好友列表加载失败",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.bf4cedf76a4e",
-    "group": "网站 · 农场",
-    "label": "查询失败",
-    "defaultText": "查询失败",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.33d2b3e5ecd1",
-    "group": "网站 · 农场",
-    "label": "待解锁地块",
-    "defaultText": "待解锁地块",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.cb557c76d00d",
-    "group": "网站 · 农场",
-    "label": "空地",
-    "defaultText": "空地",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.1cfaa4c6ddcf",
-    "group": "网站 · 农场",
-    "label": "作物",
-    "defaultText": "作物",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.f24746b0a4d7",
-    "group": "网站 · 农场",
-    "label": "点击查看扩地",
-    "defaultText": "点击查看扩地",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.83923844cdae",
-    "group": "网站 · 农场",
-    "label": "准备播种 {value1}",
-    "defaultText": "准备播种 {value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.db9561acbb35",
-    "group": "网站 · 农场",
-    "label": "先选一个种子",
-    "defaultText": "先选一个种子",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.52844c319230",
-    "group": "网站 · 农场",
-    "label": "访客视角 · 这块地目前空着",
-    "defaultText": "访客视角 · 这块地目前空着",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.7c030da282cd",
-    "group": "网站 · 农场",
-    "label": "成熟完成，点击收获",
-    "defaultText": "成熟完成，点击收获",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.8eadeb65cbd5",
-    "group": "网站 · 农场",
-    "label": "访客视角 · 成熟完成，可偷菜",
-    "defaultText": "访客视角 · 成熟完成，可偷菜",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.d373a894e6b4",
-    "group": "网站 · 农场",
-    "label": "访客视角 · 本轮已被偷过",
-    "defaultText": "访客视角 · 本轮已被偷过",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.f195da5bd283",
-    "group": "网站 · 农场",
-    "label": "访客视角 · {value1} · {value2}",
-    "defaultText": "访客视角 · {value1} · {value2}",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例",
-      "value2": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.e0c1a2f2fba3",
-    "group": "网站 · 农场",
-    "label": "庄园仍可继续扩地。",
-    "defaultText": "庄园仍可继续扩地。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.53dfb6af4e44",
-    "group": "网站 · 农场",
-    "label": "下一块地：{value1} 金币",
-    "defaultText": "下一块地：{value1} 金币",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.07bd6ba6b527",
-    "group": "网站 · 农场",
-    "label": "已达到最大地块",
-    "defaultText": "已达到最大地块",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.3d8c023c951c",
-    "group": "网站 · 农场",
-    "label": "当前种子：{value1}",
-    "defaultText": "当前种子：{value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.c457f0c3833c",
-    "group": "网站 · 农场",
-    "label": "访客视角下，这块地目前没有作物。",
-    "defaultText": "访客视角下，这块地目前没有作物。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.54c22e9bed51",
-    "group": "网站 · 农场",
-    "label": "点击地块直接播种。",
-    "defaultText": "点击地块直接播种。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.4b4f3e601cf3",
-    "group": "网站 · 农场",
-    "label": "空地没有可以偷的东西。",
-    "defaultText": "空地没有可以偷的东西。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.d81ff9aa3579",
-    "group": "网站 · 农场",
-    "label": "作物已经成熟，点击收获。",
-    "defaultText": "作物已经成熟，点击收获。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.48e5deb1198b",
-    "group": "网站 · 农场",
-    "label": "访客视角：这一轮可以偷菜。",
-    "defaultText": "访客视角：这一轮可以偷菜。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.c54caff2a1cb",
-    "group": "网站 · 农场",
-    "label": "访客视角：这一轮已经被偷过。",
-    "defaultText": "访客视角：这一轮已经被偷过。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.fb4ff3c1cb3c",
-    "group": "网站 · 农场",
-    "label": "预计产出：{value1} ~ {value2} 金币",
-    "defaultText": "预计产出：{value1} ~ {value2} 金币",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例",
-      "value2": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.522264e4b202",
-    "group": "网站 · 农场",
-    "label": "等待结算产出。",
-    "defaultText": "等待结算产出。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.03901da73215",
-    "group": "网站 · 农场",
-    "label": "剩余时间：{value1}",
-    "defaultText": "剩余时间：{value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.3d195ae77c8e",
-    "group": "网站 · 农场",
-    "label": "访客观察：{value1} 后成熟",
-    "defaultText": "访客观察：{value1} 后成熟",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.b0529a50f8d4",
-    "group": "网站 · 农场",
-    "label": "成长进度：{value1}%",
-    "defaultText": "成长进度：{value1}%",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.c514939265ad",
-    "group": "网站 · 农场",
-    "label": "坐标已复制",
-    "defaultText": "坐标已复制",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.ee7d8654d583",
-    "group": "网站 · 农场",
-    "label": "庄园加载失败",
-    "defaultText": "庄园加载失败",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.0c3b4cf7aa25",
-    "group": "网站 · 农场",
-    "label": "操作失败",
-    "defaultText": "操作失败",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.8d8003194f1c",
-    "group": "网站 · 农场",
-    "label": "已播种 {value1}",
-    "defaultText": "已播种 {value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.9d225164488a",
-    "group": "网站 · 农场",
-    "label": "播种完成",
-    "defaultText": "播种完成",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  }
-];
-
-const SITE_COPY_PART_10: readonly EditableCopyEntry[] = [
-  {
-    "key": "site.components.farm.farmclient.e0432599cddf",
-    "group": "网站 · 农场",
-    "label": "{value1} 已种进 {value2} 号地块。",
-    "defaultText": "{value1} 已种进 {value2} 号地块。",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例",
-      "value2": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.dace736c32a6",
-    "group": "网站 · 农场",
-    "label": "播种成功",
-    "defaultText": "播种成功",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.a5f6cfa0ac78",
-    "group": "网站 · 农场",
-    "label": "成熟时间：{value1}",
-    "defaultText": "成熟时间：{value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.9aaf756a4877",
-    "group": "网站 · 农场",
-    "label": "预计收益：{value1} ~ {value2} 金币",
-    "defaultText": "预计收益：{value1} ~ {value2} 金币",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例",
-      "value2": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.77f2b583d06d",
-    "group": "网站 · 农场",
-    "label": "成长奖励：+{value1} EXP",
-    "defaultText": "成长奖励：+{value1} EXP",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.448e59ddc1c1",
-    "group": "网站 · 农场",
-    "label": "+{value1} 金币",
-    "defaultText": "+{value1} 金币",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.d6378176866f",
-    "group": "网站 · 农场",
-    "label": "收获完成",
-    "defaultText": "收获完成",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.ad45be38b867",
-    "group": "网站 · 农场",
-    "label": "本轮净收 {value1} 金币，被偷走 {value2}。",
-    "defaultText": "本轮净收 {value1} 金币，被偷走 {value2}。",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例",
-      "value2": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.0bc0491c5f46",
-    "group": "网站 · 农场",
-    "label": "本轮收获 {value1} 金币。",
-    "defaultText": "本轮收获 {value1} 金币。",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.6bd35afb2dba",
-    "group": "网站 · 农场",
-    "label": "收获结算",
-    "defaultText": "收获结算",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.46fe7dbb8310",
-    "group": "网站 · 农场",
-    "label": "地块：{value1} 号",
-    "defaultText": "地块：{value1} 号",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.cdee3186c79e",
-    "group": "网站 · 农场",
-    "label": "被偷：{value1} 金币",
-    "defaultText": "被偷：{value1} 金币",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.bd544217e69e",
-    "group": "网站 · 农场",
-    "label": "本轮未被偷菜",
-    "defaultText": "本轮未被偷菜",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.916d679426b5",
-    "group": "网站 · 农场",
-    "label": "当前金币：{value1}",
-    "defaultText": "当前金币：{value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.0ac5cd88ba6f",
-    "group": "网站 · 农场",
-    "label": "偷到 +{value1} 金币",
-    "defaultText": "偷到 +{value1} 金币",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.b4e7731fac19",
-    "group": "网站 · 农场",
-    "label": "偷菜成功",
-    "defaultText": "偷菜成功",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.af827eed9db0",
-    "group": "网站 · 农场",
-    "label": "你从 {value1} 的 {value2} 号地块带走了 {value3} 金币。",
-    "defaultText": "你从 {value1} 的 {value2} 号地块带走了 {value3} 金币。",
-    "variables": [
-      "value1",
-      "value2",
-      "value3"
-    ],
-    "requiredVariables": [
-      "value1",
-      "value2",
-      "value3"
-    ],
-    "maxLength": 168,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例",
-      "value2": "示例",
-      "value3": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.e241b20dffbd",
-    "group": "网站 · 农场",
-    "label": "拜访战利品",
-    "defaultText": "拜访战利品",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.5cc5397bedf2",
-    "group": "网站 · 农场",
-    "label": "目标地块：{value1} 号",
-    "defaultText": "目标地块：{value1} 号",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.7c7926aedff0",
-    "group": "网站 · 农场",
-    "label": "到手金币：{value1}",
-    "defaultText": "到手金币：{value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.ff89b1cda6fc",
-    "group": "网站 · 农场",
-    "label": "你的金币：{value1}",
-    "defaultText": "你的金币：{value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.38de25e52295",
-    "group": "网站 · 农场",
-    "label": "操作成功",
-    "defaultText": "操作成功",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.8c576c5c2576",
-    "group": "网站 · 农场",
-    "label": "解锁下一块地 · {value1} 金币",
-    "defaultText": "解锁下一块地 · {value1} 金币",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.9254338c3bf9",
-    "group": "网站 · 农场",
-    "label": "已达到地块上限",
-    "defaultText": "已达到地块上限",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.08c20fd0c7e1",
-    "group": "网站 · 农场",
-    "label": "播种 {value1}",
-    "defaultText": "播种 {value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.4fb6d3456a9b",
-    "group": "网站 · 农场",
-    "label": "请选择种子",
-    "defaultText": "请选择种子",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.347a21d50ad9",
-    "group": "网站 · 农场",
-    "label": "立即收获",
-    "defaultText": "立即收获",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.b949dd7ad210",
-    "group": "网站 · 农场",
-    "label": "偷这一块地",
-    "defaultText": "偷这一块地",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.9d70d449dde0",
-    "group": "网站 · 农场",
-    "label": "这一轮已经被偷过",
-    "defaultText": "这一轮已经被偷过",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.44ee810161fa",
-    "group": "网站 · 农场",
-    "label": "等待成熟 · {value1}",
-    "defaultText": "等待成熟 · {value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.935eb4251ab9",
-    "group": "网站 · 农场",
-    "label": "当前不可操作",
-    "defaultText": "当前不可操作",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.4927a53bcc88",
-    "group": "网站 · 农场",
-    "label": "加载中…",
-    "defaultText": "加载中…",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.cf662fc92a5b",
-    "group": "网站 · 农场",
-    "label": "庄",
-    "defaultText": "庄",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.bfb8273f7ab9",
-    "group": "网站 · 农场",
-    "label": "庄园",
-    "defaultText": "庄园",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.ad8921f86dd3",
-    "group": "网站 · 农场",
-    "label": "可偷 {value1}",
-    "defaultText": "可偷 {value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.051a4eebc81a",
-    "group": "网站 · 农场",
-    "label": "不可偷",
-    "defaultText": "不可偷",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.736cfd4510ba",
-    "group": "网站 · 农场",
-    "label": "最近：",
-    "defaultText": "最近：",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.22a03b9975b6",
-    "group": "网站 · 农场",
-    "label": "庄园底图",
-    "defaultText": "庄园底图",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.87eecd840bdb",
-    "group": "网站 · 农场",
-    "label": "Jinli Manor",
-    "defaultText": "Jinli Manor",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.8de7bf03ae7c",
-    "group": "网站 · 农场",
-    "label": "点了么庄园",
-    "defaultText": "点了么庄园",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.bf51c580bd87",
-    "group": "网站 · 农场",
-    "label": "拜访 {value1}",
-    "defaultText": "拜访 {value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.da6aedb67f6e",
-    "group": "网站 · 农场",
-    "label": "我的庄园",
-    "defaultText": "我的庄园",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.337717173807",
-    "group": "网站 · 农场",
-    "label": "等级",
-    "defaultText": "等级",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.ecc6d0173601",
-    "group": "网站 · 农场",
-    "label": "农地进度",
-    "defaultText": "农地进度",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.a69c11e6f9c8",
-    "group": "网站 · 农场",
-    "label": "已选：{value1}",
-    "defaultText": "已选：{value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.2ac3e9a135a7",
-    "group": "网站 · 农场",
-    "label": "暂未选种",
-    "defaultText": "暂未选种",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.b9f28dbbc9c9",
-    "group": "网站 · 农场",
-    "label": "下块 ¥{value1}",
-    "defaultText": "下块 ¥{value1}",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.components.farm.farmclient.e16545b22687",
-    "group": "网站 · 农场",
-    "label": "地块已全开",
-    "defaultText": "地块已全开",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.3e5529ca2856",
-    "group": "网站 · 农场",
-    "label": "返回中…",
-    "defaultText": "返回中…",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.e4cdfb4318f9",
-    "group": "网站 · 农场",
-    "label": "回到我的庄园",
-    "defaultText": "回到我的庄园",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.d7a336bc9e27",
-    "group": "网站 · 农场",
-    "label": "Visitor Mode",
-    "defaultText": "Visitor Mode",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.b57626eaf117",
-    "group": "网站 · 农场",
-    "label": "正在拜访 ",
-    "defaultText": "正在拜访 ",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.8285054bf7b3",
-    "group": "网站 · 农场",
-    "label": "Farm Debug",
-    "defaultText": "Farm Debug",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.4244bfce7a80",
-    "group": "网站 · 农场",
-    "label": "场景坐标",
-    "defaultText": "场景坐标",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.a7a5f6f554c2",
-    "group": "网站 · 农场",
-    "label": "实时 scene：",
-    "defaultText": "实时 scene：",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.4f6e6aff80ca",
-    "group": "网站 · 农场",
-    "label": "移动鼠标查看",
-    "defaultText": "移动鼠标查看",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.7d47e19e0d47",
-    "group": "网站 · 农场",
-    "label": "辅助线 overlay：",
-    "defaultText": "辅助线 overlay：",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.415511d04c15",
-    "group": "网站 · 农场",
-    "label": "当前不在辅助线区域内",
-    "defaultText": "当前不在辅助线区域内",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.56e52cf18551",
-    "group": "网站 · 农场",
-    "label": "提示：按住 Shift 再点击场景，可以锁定当前位置参数。",
-    "defaultText": "提示：按住 Shift 再点击场景，可以锁定当前位置参数。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.c2e3ac47f4a3",
-    "group": "网站 · 农场",
-    "label": "READY",
-    "defaultText": "READY",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.746dd89a5c4e",
-    "group": "网站 · 农场",
-    "label": "已偷",
-    "defaultText": "已偷",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.5e16b35d3051",
-    "group": "网站 · 农场",
-    "label": "地块 ",
-    "defaultText": "地块 ",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.d3d21191f32e",
-    "group": "网站 · 农场",
-    "label": "处理中…",
-    "defaultText": "处理中…",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.064663ba9124",
-    "group": "网站 · 农场",
-    "label": "选择当前种子后，再点击农田格进行播种。",
-    "defaultText": "选择当前种子后，再点击农田格进行播种。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.f85473d9f29d",
-    "group": "网站 · 农场",
-    "label": "当前作物",
-    "defaultText": "当前作物",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.1a427f0ea798",
-    "group": "网站 · 农场",
-    "label": "访客模式仅可观察与偷菜",
-    "defaultText": "访客模式仅可观察与偷菜",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.a1b9c609eedf",
-    "group": "网站 · 农场",
-    "label": "点击种子袋切换当前播种作物",
-    "defaultText": "点击种子袋切换当前播种作物",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.09b0def32249",
-    "group": "网站 · 农场",
-    "label": "回庄园",
-    "defaultText": "回庄园",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.091197e51660",
-    "group": "网站 · 农场",
-    "label": "个人页",
-    "defaultText": "个人页",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.2ef750e5d8bb",
-    "group": "网站 · 农场",
-    "label": "收起工具栏",
-    "defaultText": "收起工具栏",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.08f5ae4059ca",
-    "group": "网站 · 农场",
-    "label": "展开工具栏",
-    "defaultText": "展开工具栏",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.7b5be6952c7e",
-    "group": "网站 · 农场",
-    "label": "当前选中",
-    "defaultText": "当前选中",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.f07bae0884a7",
-    "group": "网站 · 农场",
-    "label": "成本：",
-    "defaultText": "成本：",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.044ad9e1ca97",
-    "group": "网站 · 农场",
-    "label": " 金币",
-    "defaultText": " 金币",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.cf7b9e6cbd7d",
-    "group": "网站 · 农场",
-    "label": "成熟：",
-    "defaultText": "成熟：",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.a5e29a76057a",
-    "group": "网站 · 农场",
-    "label": "收益：",
-    "defaultText": "收益：",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.d7bbb35fc66e",
-    "group": "网站 · 农场",
-    "label": "经验：+",
-    "defaultText": "经验：+",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.fe70876382b5",
-    "group": "网站 · 农场",
-    "label": "种子分页背包",
-    "defaultText": "种子分页背包",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.fed92d874d54",
-    "group": "网站 · 农场",
-    "label": "每页展示 2 个物品格，边框颜色表示稀有度。",
-    "defaultText": "每页展示 {fixed1} 个物品格，边框颜色表示稀有度。",
+    "key": "site.components.profile.voucherusebuttons.706da551b2d4",
+    "group": "网站 · 个人中心与资产",
+    "label": "使用成功，生效期 30 天",
+    "defaultText": "使用成功，生效期 {fixed1}",
     "variables": [
       "fixed1"
     ],
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:117",
     "requiredVariables": [
       "fixed1"
     ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
     "examples": {
-      "fixed1": "2"
+      "fixed1": "30 天"
     }
   },
   {
-    "key": "site.components.farm.farmclient.c9b9ae7a6144",
-    "group": "网站 · 农场",
-    "label": "上一页",
-    "defaultText": "上一页",
+    "key": "site.components.profile.voucherusebuttons.bd1f9ccbb559",
+    "group": "网站 · 个人中心与资产",
+    "label": "使用成功",
+    "defaultText": "使用成功",
     "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.8a8542f69648",
-    "group": "网站 · 农场",
-    "label": "下一页",
-    "defaultText": "下一页",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.bff7904be8e6",
-    "group": "网站 · 农场",
-    "label": "把 totalBalance 直接投进庄园。",
-    "defaultText": "把 totalBalance 直接投进庄园。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.1f56bd992b74",
-    "group": "网站 · 农场",
-    "label": "兑换金币",
-    "defaultText": "兑换金币",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.861f53f379cf",
-    "group": "网站 · 农场",
-    "label": "已有积分也能转成庄园货币。",
-    "defaultText": "已有积分也能转成庄园货币。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.4e2fe50f7fd4",
-    "group": "网站 · 农场",
-    "label": "转成金币",
-    "defaultText": "转成金币",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.bba05bc59b0c",
-    "group": "网站 · 农场",
-    "label": "收菜后的金币也能换回点了么积分。",
-    "defaultText": "收菜后的金币也能换回点了么积分。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.42a6bb595ff0",
-    "group": "网站 · 农场",
-    "label": "兑换积分",
-    "defaultText": "兑换积分",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.def780a96f1b",
-    "group": "网站 · 农场",
-    "label": "输入数量",
-    "defaultText": "输入数量",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.f34e4daa0ccb",
-    "group": "网站 · 农场",
-    "label": "金币 ",
-    "defaultText": "金币 ",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.6da6f86775c0",
-    "group": "网站 · 农场",
-    "label": "积分 ",
-    "defaultText": "积分 ",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.1f8064f240f3",
-    "group": "网站 · 农场",
-    "label": "余额 ",
-    "defaultText": "余额 ",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.4952bcad62f5",
-    "group": "网站 · 农场",
-    "label": "经验 +",
-    "defaultText": "经验 +",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.f525bf813588",
-    "group": "网站 · 农场",
-    "label": "暂时还没有庄园记录。",
-    "defaultText": "暂时还没有庄园记录。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.11ef9f7c4e9b",
-    "group": "网站 · 农场",
-    "label": "好友、常访和搜索都收进独立拜访台，强调暖红色和鎏金木牌风格，不再像普通后台列表。",
-    "defaultText": "好友、常访和搜索都收进独立拜访台，强调暖红色和鎏金木牌风格，不再像普通后台列表。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.0f1afd780afe",
-    "group": "网站 · 农场",
-    "label": "我的好友",
-    "defaultText": "我的好友",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.c3b9aae76aba",
-    "group": "网站 · 农场",
-    "label": "常访名单",
-    "defaultText": "常访名单",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.c19aeac2f428",
-    "group": "网站 · 农场",
-    "label": "搜索庄园",
-    "defaultText": "搜索庄园",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.463ec16b909b",
-    "group": "网站 · 农场",
-    "label": "真实好友",
-    "defaultText": "真实好友",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.5f7835978051",
-    "group": "网站 · 农场",
-    "label": "根据真实订单和打赏互动生成，可直接拜访对方庄园。",
-    "defaultText": "根据真实订单和打赏互动生成，可直接拜访对方庄园。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.dfdbc1605e63",
-    "group": "网站 · 农场",
-    "label": " 位好友",
-    "defaultText": " 位好友",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.cb078581b60f",
-    "group": "网站 · 农场",
-    "label": "还没有形成好友庄园名单。先和陪玩互动几次，再回来这里。",
-    "defaultText": "还没有形成好友庄园名单。先和陪玩互动几次，再回来这里。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.261d0e20de88",
-    "group": "网站 · 农场",
-    "label": "访问记录",
-    "defaultText": "访问记录",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.0096113d559f",
-    "group": "网站 · 农场",
-    "label": "改成服务器真实拜访记录，不再依赖本地缓存。",
-    "defaultText": "改成服务器真实拜访记录，不再依赖本地缓存。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.f8cb1e3b586d",
-    "group": "网站 · 农场",
-    "label": "按次数",
-    "defaultText": "按次数",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.64af5a6f4026",
-    "group": "网站 · 农场",
-    "label": "按最近",
-    "defaultText": "按最近",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.92b758824fed",
-    "group": "网站 · 农场",
-    "label": " 个庄园",
-    "defaultText": " 个庄园",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.dbc04130d07a",
-    "group": "网站 · 农场",
-    "label": "还没有常访庄园。先拜访一次别人的庄园，记录就会出现在这里。",
-    "defaultText": "还没有常访庄园。先拜访一次别人的庄园，记录就会出现在这里。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.c28b8fbdaafd",
-    "group": "网站 · 农场",
-    "label": "地图册",
-    "defaultText": "地图册",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.fe2fecf83991",
-    "group": "网站 · 农场",
-    "label": "输入陪玩 ID、Discord ID 或展示名，找到后直接进入对方庄园。",
-    "defaultText": "输入陪玩 ID、Discord ID 或展示名，找到后直接进入对方庄园。",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.a59a5d81f920",
-    "group": "网站 · 农场",
-    "label": "拜访模式",
-    "defaultText": "拜访模式",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.9b49cca3c40d",
-    "group": "网站 · 农场",
-    "label": "搜索陪玩 ID / Discord ID / 名字",
-    "defaultText": "搜索陪玩 ID / Discord ID / 名字",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.cc50237edca2",
-    "group": "网站 · 农场",
-    "label": "搜索中…",
-    "defaultText": "搜索中…",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.88d72ece7cf7",
-    "group": "网站 · 农场",
-    "label": "搜索结果",
-    "defaultText": "搜索结果",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.0935d340f6ba",
-    "group": "网站 · 农场",
-    "label": "直接进入对方庄园",
-    "defaultText": "直接进入对方庄园",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.9b7652cc1d0b",
-    "group": "网站 · 农场",
-    "label": "庄园操作台",
-    "defaultText": "庄园操作台",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.c1e5d4469f0e",
-    "group": "网站 · 农场",
-    "label": "等待播种",
-    "defaultText": "等待播种",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.2f0baebfe7ca",
-    "group": "网站 · 农场",
-    "label": "待解锁",
-    "defaultText": "待解锁",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.08be14df26b5",
-    "group": "网站 · 农场",
-    "label": "Plot Detail",
-    "defaultText": "Plot Detail",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.7c2e3edd7bab",
-    "group": "网站 · 农场",
-    "label": "成长进度 ",
-    "defaultText": "成长进度 ",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.12d308ec75a7",
-    "group": "网站 · 农场",
-    "label": "本轮已被偷：",
-    "defaultText": "本轮已被偷：",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.1a60e3d50126",
-    "group": "网站 · 农场",
-    "label": "成熟时间",
-    "defaultText": "成熟时间",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.e56bf735319a",
-    "group": "网站 · 农场",
-    "label": "收益区间",
-    "defaultText": "收益区间",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.1decad6eb821",
-    "group": "网站 · 农场",
-    "label": "成长奖励",
-    "defaultText": "成长奖励",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.9f9cb8049dd9",
-    "group": "网站 · 农场",
-    "label": " EXP",
-    "defaultText": " EXP",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.6994b3e078d8",
-    "group": "网站 · 农场",
-    "label": "种植中…",
-    "defaultText": "种植中…",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.1bc81989de8f",
-    "group": "网站 · 农场",
-    "label": "收获中…",
-    "defaultText": "收获中…",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.b8467d5d40f6",
-    "group": "网站 · 农场",
-    "label": "偷菜中…",
-    "defaultText": "偷菜中…",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.486f7fad70b8",
-    "group": "网站 · 农场",
-    "label": "扩地中…",
-    "defaultText": "扩地中…",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.components.farm.farmclient.d932305085f7",
-    "group": "网站 · 农场",
-    "label": "打开种子袋选择种子",
-    "defaultText": "打开种子袋选择种子",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "components/farm/FarmClient.tsx",
-    "examples": {}
-  },
-  {
-    "key": "site.app.api.farm.route.38de25e52295",
-    "group": "网站 · 农场",
-    "label": "操作成功",
-    "defaultText": "操作成功",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "app/api/farm/route.ts",
-    "examples": {}
-  },
-  {
-    "key": "site.app.api.farm.route.60c5d7cda522",
-    "group": "网站 · 农场",
-    "label": "已将余额兑换为金币",
-    "defaultText": "已将余额兑换为金币",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "app/api/farm/route.ts",
-    "examples": {}
-  },
-  {
-    "key": "site.app.api.farm.route.3bd0931f43e4",
-    "group": "网站 · 农场",
-    "label": "已将积分兑换为金币",
-    "defaultText": "已将积分兑换为金币",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "app/api/farm/route.ts",
-    "examples": {}
-  },
-  {
-    "key": "site.app.api.farm.route.21c33813a469",
-    "group": "网站 · 农场",
-    "label": "已将金币兑换为积分",
-    "defaultText": "已将金币兑换为积分",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "app/api/farm/route.ts",
-    "examples": {}
-  },
-  {
-    "key": "site.app.api.farm.route.ed30810ab9c9",
-    "group": "网站 · 农场",
-    "label": "种植成功",
-    "defaultText": "种植成功",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "app/api/farm/route.ts",
-    "examples": {}
-  },
-  {
-    "key": "site.app.api.farm.route.996a77a3615b",
-    "group": "网站 · 农场",
-    "label": "收获成功，获得 {value1} 金币（被偷 {value2}）",
-    "defaultText": "收获成功，获得 {value1} 金币（被偷 {value2}）",
-    "variables": [
-      "value1",
-      "value2"
-    ],
-    "requiredVariables": [
-      "value1",
-      "value2"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "app/api/farm/route.ts",
-    "examples": {
-      "value1": "示例",
-      "value2": "示例"
-    }
-  },
-  {
-    "key": "site.app.api.farm.route.1d1a28f63cbb",
-    "group": "网站 · 农场",
-    "label": "收获成功，获得 {value1} 金币",
-    "defaultText": "收获成功，获得 {value1} 金币",
-    "variables": [
-      "value1"
-    ],
-    "requiredVariables": [
-      "value1"
-    ],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "app/api/farm/route.ts",
-    "examples": {
-      "value1": "示例"
-    }
-  },
-  {
-    "key": "site.app.api.farm.route.c3be0dcc4aae",
-    "group": "网站 · 农场",
-    "label": "扩地成功",
-    "defaultText": "扩地成功",
-    "variables": [],
-    "requiredVariables": [],
-    "maxLength": 160,
-    "singleLine": true,
-    "source": "app/api/farm/route.ts",
-    "examples": {}
+    "maxLength": 300,
+    "source": "components/profile/VoucherUseButtons.tsx:217"
   }
 ];
 
 export const SITE_COPY_CATALOG: readonly EditableCopyEntry[] = [
+  ...SITE_COPY_PART_0,
   ...SITE_COPY_PART_1,
   ...SITE_COPY_PART_2,
   ...SITE_COPY_PART_3,
@@ -19152,11 +17827,9 @@ export const SITE_COPY_CATALOG: readonly EditableCopyEntry[] = [
   ...SITE_COPY_PART_6,
   ...SITE_COPY_PART_7,
   ...SITE_COPY_PART_8,
-  ...SITE_COPY_PART_9,
-  ...SITE_COPY_PART_10,
 ];
 
-export const SITE_COPY_FIXED_VALUES: Readonly<Record<string, Readonly<Record<string, string | number>>>> = {
+export const SITE_COPY_FIXED_VALUES: Readonly<Record<string, Readonly<Record<string,string>>>> = {
   "site.app.api.lottery.fuse.route.e675865c7663": {
     "fixed1": "6 个"
   },
@@ -19281,6 +17954,9 @@ export const SITE_COPY_FIXED_VALUES: Readonly<Record<string, Readonly<Record<str
   "site.lib.site.1f26a4fad242": {
     "fixed1": "24 小时"
   },
+  "site.lib.vouchercatalog.099adc792b9f": {
+    "quota": "5000"
+  },
   "site.lib.vouchercatalog.195c3635d4a5": {
     "fixed1": "92折"
   },
@@ -19301,6 +17977,9 @@ export const SITE_COPY_FIXED_VALUES: Readonly<Record<string, Readonly<Record<str
   },
   "site.lib.vouchercatalog.57a825b543a4": {
     "fixed1": "1%"
+  },
+  "site.lib.vouchercatalog.60e8eed3a2d1": {
+    "quota": "5000"
   },
   "site.lib.vouchercatalog.65f3c1bee9bf": {
     "fixed1": "3位"
@@ -19339,13 +18018,10 @@ export const SITE_COPY_FIXED_VALUES: Readonly<Record<string, Readonly<Record<str
     "minimum": "50",
     "maximum": "200"
   },
-  "site.lib.vouchercatalog.099adc792b9f": {
-    "quota": "5000"
-  },
-  "site.lib.vouchercatalog.60e8eed3a2d1": {
-    "quota": "5000"
-  },
   "site.components.farm.farmclient.fed92d874d54": {
     "fixed1": "2"
+  },
+  "site.components.profile.voucherusebuttons.706da551b2d4": {
+    "fixed1": "30 天"
   }
 };

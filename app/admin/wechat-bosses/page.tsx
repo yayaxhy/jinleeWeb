@@ -24,7 +24,6 @@ export default async function WechatBossesAdminPage() {
       orderBy: { GiftName: 'asc' },
     }),
     prisma.pEIWAN.findMany({
-      where: { NOT: { discordUserId: { startsWith: 'detached:' } } },
       select: { PEIWANID: true, discordUserId: true, quotation_Q1: true, lolPrice: true, valPrice: true, deltaPrice: true, csgoPrice: true, narakaPrice: true, apexPrice: true, owPrice: true, tftPrice: true, steamPrice: true },
       orderBy: { PEIWANID: 'asc' },
     }),

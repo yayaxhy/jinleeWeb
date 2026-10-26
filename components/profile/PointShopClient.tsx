@@ -249,9 +249,9 @@ export function PointShopClient({ initialData }: PointShopClientProps) {
                   <div key={item.id} className="h-[220px] rounded-2xl border border-black/10 bg-white p-4 shadow-sm flex flex-col justify-between">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-lg font-semibold">{item.name}</p>
+                        <p className="text-lg font-semibold"><SiteText namespace="site.components.profile.pointshopclient" value={item.name} /></p>
                         {item.description ? (
-                          <p className="mt-1 h-12 overflow-hidden text-sm leading-6 text-gray-600">{item.description}</p>
+                          <p className="mt-1 h-12 overflow-hidden text-sm leading-6 text-gray-600"><SiteText namespace="site.components.profile.pointshopclient" value={item.description} /></p>
                         ) : (
                           <p className="h-12" />
                         )}

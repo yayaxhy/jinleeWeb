@@ -119,7 +119,7 @@ export function SentPeiwanReviewHistory({ reviews }: Props) {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${statusMeta.badgeClass}`}>
-                  <SiteText namespace="site.components.profile.sentpeiwanreviewhistory" value={statusMeta.label} />
+                  {statusMeta.label}
                 </span>
                 <button
                   type="button"

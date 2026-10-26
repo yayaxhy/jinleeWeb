@@ -2,12 +2,25 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
-import { createWithdrawalTx, WithdrawError } from '@/lib/withdrawal-transaction';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
 import { parseStoredWithdrawAccount } from '@/lib/withdrawAccounts';
 import {
   validateWithdrawAccountDetail,
   WithdrawAccountValidationError,
 } from '@/lib/withdrawAccountValidation';
+
+class WithdrawError extends Error {
+  code: string;
+  status: number;
+  meta?: Record<string, unknown>;
+
+  constructor(code: string, status = 400, meta?: Record<string, unknown>) {
+    super(code);
+    this.code = code;
+    this.status = status;
+    this.meta = meta;
+  }
+}
 
 const MIN_WITHDRAW_AMOUNT = 100;
 const WITHDRAW_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
@@ -192,13 +205,82 @@ export async function POST(request: Request) {
         throw error;
       }
 
-      return createWithdrawalTx(tx, {
+      const lastWithdraw = await tx.withdraw.findFirst({
+        where: { dlmId: currentUser.dlmId },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      });
+
+      if (lastWithdraw?.createdAt) {
+        const nextAvailableAt = new Date(lastWithdraw.createdAt.getTime() + WITHDRAW_COOLDOWN_MS);
+        if (nextAvailableAt.getTime() > Date.now()) {
+          throw new WithdrawError('withdraw_cooldown', 429, {
+            nextAvailableAt: nextAvailableAt.toISOString(),
+          });
+        }
+      }
+
+      const amountDecimal = new Prisma.Decimal(amountNumber);
+      const walletSnapshot = await getDlmWalletSnapshotTx(tx, {
         dlmId: currentUser.dlmId,
         discordUserId: currentUser.discordUserId,
-        amount: new Prisma.Decimal(amountNumber),
-        method,
-        cooldownMs: WITHDRAW_COOLDOWN_MS,
       });
+      const incomeDecimal = new Prisma.Decimal(walletSnapshot.income);
+      const balanceDecimal = new Prisma.Decimal(walletSnapshot.totalBalance);
+
+      if (incomeDecimal.lt(amountDecimal) || balanceDecimal.lt(amountDecimal)) {
+        throw new WithdrawError('insufficient_balance');
+      }
+
+      const updatedWallet = await applyDlmWalletDeltaTx(tx, {
+        dlmId: currentUser.dlmId,
+        discordUserId: currentUser.discordUserId,
+        incomeDelta: amountDecimal.negated(),
+        totalBalanceDelta: amountDecimal.negated(),
+      });
+
+      const withdrawRecord = await tx.withdraw.create({
+        data: {
+          discordId: currentUser.discordUserId,
+          dlmId: currentUser.dlmId,
+          amount: amountDecimal,
+          method,
+        },
+        select: {
+          id: true,
+          createdAt: true,
+          method: true,
+        },
+      });
+
+      const balanceAfter = new Prisma.Decimal(updatedWallet.totalBalance ?? 0);
+
+      await tx.individualTransaction.create({
+        data: {
+          discordId: currentUser.discordUserId,
+          dlmId: currentUser.dlmId,
+          thirdPartydiscordId: method,
+          balanceBefore: balanceDecimal,
+          amountChange: amountDecimal.mul(-1),
+          balanceAfter,
+          typeOfTransaction: '提现',
+        },
+      });
+
+      return {
+        withdrawalId: withdrawRecord.id,
+        remainingIncome: updatedWallet.income?.toString() ?? '0',
+        remainingBalance: updatedWallet.totalBalance?.toString() ?? '0',
+        nextAvailableAt: new Date(Date.now() + WITHDRAW_COOLDOWN_MS).toISOString(),
+        notificationPayload: {
+          userDiscordId: currentUser.discordUserId ?? undefined,
+          amount: amountDecimal.toFixed(2),
+          requestedAt: withdrawRecord.createdAt.toISOString(),
+          withdrawalId: withdrawRecord.id,
+          note: withdrawRecord.method,
+          remainingIncome: updatedWallet.income?.toString() ?? '0',
+        },
+      };
     });
 
     let notificationStatus: 'sent' | 'duplicate' | 'failed' | 'skipped' = 'skipped';

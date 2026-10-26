@@ -1,6 +1,6 @@
 
-import { SiteText } from "@/components/SiteCopyProvider";
 import { getSiteCopy } from "@/lib/site-copy-server";
+import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
@@ -9,7 +9,6 @@ import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { DiscountUsageButton } from '@/components/profile/DiscountUsageButton';
 import { GiftUsageButton, SelfUseButton } from '@/components/profile/GiftAndSelfUseButtons';
-import { GiftExecutionRecovery } from '@/components/profile/GiftExecutionRecovery';
 import {
   CommissionVoucherButton,
   FlowVoucherButton,
@@ -183,7 +182,6 @@ export default async function BagPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#171717] px-6 py-16">
-      <div className="mx-auto mb-6 max-w-6xl"><GiftExecutionRecovery actor={{ dlmId: currentUser.dlmId, discordId: currentUser.discordUserId }} kind="VOUCHER_GIFT" /></div>
       <section className="max-w-5xl mx-auto space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -215,12 +213,12 @@ export default async function BagPage() {
                 <div key={title} className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-[#171717]"><SiteText namespace="site.app.profile.bag.page" value={title} /></h3>
+                      <h3 className="text-lg font-semibold text-[#171717]">{title}</h3>
                       <span className="text-xs uppercase tracking-[0.3em] text-gray-400">{list.length}<SiteText copyKey="site.app.profile.bag.page.f7b2a6ee68ec" /></span>
                     </div>
                   </div>
                   {list.length === 0 ? (
-                    <p className="text-sm text-gray-400"><SiteText copyKey="site.app.profile.bag.page.5dbd015496af" /><SiteText namespace="site.app.profile.bag.page" value={title} /><SiteText copyKey="site.app.profile.bag.page.11e2b0e36bc4" /></p>
+                    <p className="text-sm text-gray-400"><SiteText copyKey="site.app.profile.bag.page.5dbd015496af" />{title}<SiteText copyKey="site.app.profile.bag.page.11e2b0e36bc4" /></p>
                   ) : (
                     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                       {list.map((item) => {
@@ -244,7 +242,7 @@ export default async function BagPage() {
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
                                 <span className="px-3 py-1 rounded-full border border-black/10 bg-white/60 text-xs uppercase tracking-[0.3em] text-gray-600">
-                                  <SiteText namespace="site.app.profile.bag.page" value={status} />
+                                  {status}
                                 </span>
                                 {item.status === 'UNUSED' ? (
                                   (() => {
@@ -319,7 +317,6 @@ export default async function BagPage() {
                                     if (prizeType === 'GIFT') {
                                       return (
                                         <GiftUsageButton
-                                          actor={{ dlmId: currentUser.dlmId, discordId: currentUser.discordUserId }}
                                           lotteryId={item.lotteryId}
                                           couponId={item.couponId}
                                           prizeName={prizeName}

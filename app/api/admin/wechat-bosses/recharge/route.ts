@@ -3,9 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isAdminDiscordId } from '@/lib/admin';
 import { postInternalBot } from '@/lib/internal-bot';
 import { rechargeManualWechatBoss } from '@/lib/manual-wechat-boss';
+import { GuildNotificationEvent } from '@prisma/client';
+import { publishGuildNotification } from '@/lib/notification-center';
 import { getServerSession } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
+  const copy = await getSiteCopy();
   const session = await getServerSession();
   if (!session?.discordId || !isAdminDiscordId(session.discordId)) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
@@ -20,9 +23,22 @@ export async function POST(request: NextRequest) {
       amount: body?.amount,
       receiptAccount: typeof body?.receiptAccount === 'string' ? body.receiptAccount : null,
       note: typeof body?.note === 'string' ? body.note : null,
-    }, await getSiteCopy());
+    });
     let notificationWarning: string | null = null;
-    // Recipient DM is queued atomically by rechargeManualWechatBoss.
+    try {
+      await publishGuildNotification({
+        dlmId: String(result.result.dlmId ?? body?.dlmId ?? ''),
+        event: GuildNotificationEvent.BALANCE_ADJUSTED,
+        title: copy("site.app.api.admin.wechat.bosses.recharge.route.333c89553678"),
+        body: copy("site.app.api.admin.wechat.bosses.recharge.route.3f58c4e9a04d", {value1: String(String(result.result.amount ?? body?.amount ?? ''))}),
+        href: '/console?tab=wallet',
+        dedupeKey: `manual-recharge:${result.result.rechargeRequestId ?? requestId}`,
+        details: { requestId, source: 'manual_wechat_recharge' },
+      });
+    } catch (deliveryError) {
+      console.error('[wechat-boss-recharge] notification center failed', deliveryError);
+      notificationWarning = '充值已入账，但通知中心写入失败。';
+    }
     try {
       await postInternalBot('/internal/admin/wechat-boss-recharge-notify', {
         rechargeRequestId: result.result.rechargeRequestId ?? requestId,

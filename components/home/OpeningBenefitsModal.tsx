@@ -32,10 +32,7 @@ export function OpeningBenefitsModal() {
     const effectKey = `${checkKey}:${pathname}`;
     let shouldShow = false;
 
-    if (pathname === "/farm/lab") {
-      // The isolated game lab must not be covered by unrelated promotions.
-      return;
-    } else if (pathname === "/opening-benefits") {
+    if (pathname === "/opening-benefits") {
       try {
         window.localStorage.setItem(storageKey, dayKey);
       } catch {
@@ -83,7 +80,7 @@ export function OpeningBenefitsModal() {
     };
   }, [open]);
 
-  if (!mounted || !open || pathname === "/opening-benefits" || pathname === "/farm/lab") return null;
+  if (!mounted || !open || pathname === "/opening-benefits") return null;
 
   return createPortal(
     <div

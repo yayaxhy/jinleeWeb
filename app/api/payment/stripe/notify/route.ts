@@ -1,4 +1,5 @@
-import { Prisma } from '@prisma/client';
+import { renderSiteCopy } from "@/lib/site-copy-server";
+import { GuildNotificationEvent, Prisma } from '@prisma/client';
 import {
   getStripePaymentIntentId,
   getStripeSecretKey,
@@ -14,6 +15,7 @@ import {
   recordStripePaymentSuccess,
   recordStripeRefund,
 } from '@/lib/stripe-payment';
+import { publishGuildNotification } from '@/lib/notification-center';
 
 export const runtime = 'nodejs';
 
@@ -181,7 +183,17 @@ export async function POST(request: Request) {
       return successResponse();
     }
 
-    // The credit transaction durably queued its Discord-only notification.
+    if (settlement.kind === 'paid' && stripePayment.dlmId) {
+      await publishGuildNotification({
+        dlmId: stripePayment.dlmId,
+        event: GuildNotificationEvent.BALANCE_ADJUSTED,
+        title: await renderSiteCopy("site.app.api.payment.stripe.notify.route.62a89cc85f1f"),
+        body: await renderSiteCopy("site.app.api.payment.stripe.notify.route.c35e67fe2604", {value1: String(new Prisma.Decimal(rechargeAmount).toFixed(2))}),
+        href: '/console?tab=wallet',
+        dedupeKey: `stripe-recharge:${outTradeNo}`,
+        details: { outTradeNo, paymentIntentId, source: 'stripe' },
+      }).catch((notificationError) => console.error('[stripe.notify] notification center failed', notificationError));
+    }
 
     console.log('[stripe.notify] success', { outTradeNo, sessionId: session.id });
     return successResponse();

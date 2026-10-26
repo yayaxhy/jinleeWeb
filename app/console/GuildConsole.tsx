@@ -344,7 +344,7 @@ export function GuildConsole() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [siteCopy]);
+  }, []);
 
   useEffect(() => {
     void load();

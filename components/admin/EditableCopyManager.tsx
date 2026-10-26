@@ -217,7 +217,7 @@ export function EditableCopyManager() {
 
   return <div className="mx-auto max-w-6xl space-y-6 text-white" aria-busy={Boolean(operation)}>
     <header className="space-y-3"><Link href="/admin" className="text-sm text-white/55 hover:text-white">← 返回管理后台</Link><h1 className="text-2xl font-semibold">文案管理</h1>
-      <nav aria-label="其他内容编辑入口" className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-cyan-200"><Link href="/admin/bot" className="hover:underline">派单、欢迎文案与 Bot 展示设置 ↗</Link><Link href="/admin/gifts" className="hover:underline">礼物名称与分类 ↗</Link></nav>
+      <nav aria-label="其他内容编辑入口" className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-cyan-200"><Link href="/admin/gifts" className="hover:underline">礼物名称与分类 ↗</Link></nav>
     </header>
     <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5" aria-label="搜索和筛选文案">
       <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex gap-2" aria-label="文案范围">{(['bot', 'site'] as const).map((value) => <button type="button" key={value} disabled={Boolean(operation)} aria-pressed={scope === value} className={`${buttonClass} ${scope === value ? 'border-cyan-300/60 bg-cyan-300/10 text-cyan-100' : ''}`} onClick={() => { if (value !== scope) { setScope(value); setCategory('all'); setPage(0); setConflictsOnly(false); } }}>{scopeLabels[value]}{editors[value] && changedCopyKeys(editors[value]!.server.overrides, editors[value]!.draft).length ? ' · 待发布' : ''}</button>)}</div><button type="button" disabled={Boolean(operation)} className={buttonClass} onClick={() => void refresh(scope)}>刷新并保留修改</button></div>

@@ -8,6 +8,8 @@ export type EditableCopyEntry = {
   requiredVariables?: readonly string[];
   maxLength: number;
   singleLine?: boolean;
+  allowEmpty?: boolean;
+  preserveDefault?: boolean;
   source?: string;
   examples?: Readonly<Record<string, string | number>>;
 };
@@ -21,7 +23,7 @@ export const COPY_MAX_BYTES = 2 * 1024 * 1024;
 function mentions(text: string): string[] { return [...text.matchAll(MENTION)].map(match => match[0]).sort(); }
 
 export function validateCopyTemplate(entry: EditableCopyEntry, text: unknown): string {
-  if (typeof text !== 'string' || text.length > entry.maxLength || !text.trim()) throw new Error(`${entry.label}：请填写不超过 ${entry.maxLength} 字的文案`);
+  if (typeof text !== 'string' || text.length > entry.maxLength || (!text.trim() && !(entry.allowEmpty && text === ''))) throw new Error(`${entry.label}：请填写不超过 ${entry.maxLength} 字的文案`);
   if (UNSAFE_CONTROL.test(text) || /[\uD800-\uDFFF]/u.test(text)) throw new Error(`${entry.label}：含有无效字符`);
   if (entry.singleLine && /[\r\n]/.test(text)) throw new Error(`${entry.label}：只能填写一行`);
   const variables = [...text.matchAll(VARIABLE)].map(match => match[1]);
@@ -43,7 +45,7 @@ export function validateCopyOverrides(catalog: readonly EditableCopyEntry[], val
     const entry = entries.get(key);
     if (!entry) throw new Error(`不支持的文案：${key}`);
     const checked = validateCopyTemplate(entry, text);
-    if (checked !== entry.defaultText) result[key] = checked;
+    if (entry.preserveDefault || checked !== entry.defaultText) result[key] = checked;
   }
   if (new TextEncoder().encode(JSON.stringify(result)).length > COPY_MAX_BYTES) throw new Error('文案修改总量超过限制');
   return result;
@@ -60,7 +62,7 @@ export function compatibleCopyOverrides(catalog: readonly EditableCopyEntry[], v
     try {
       if (!entry) throw new Error('removed');
       const checked = validateCopyTemplate(entry, text);
-      if (checked !== entry.defaultText) overrides[key] = checked;
+      if (entry.preserveDefault || checked !== entry.defaultText) overrides[key] = checked;
     } catch { ignoredKeys.push(key); }
   }
   return { overrides, ignoredKeys };

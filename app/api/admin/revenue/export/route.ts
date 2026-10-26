@@ -1,17 +1,16 @@
+import { loadHistoricalManualRevenue } from '@/lib/admin/historical-manual-revenue';
 import ExcelJS from 'exceljs';
 import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { canViewRevenue } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
-import { loadRevenueFacts } from '@/lib/admin/revenue-facts';
-import { reportStatusRows, reportIssueRows } from '@/lib/admin/report-facts';
 import { getServerSession } from '@/lib/session';
 import {
   formatDateTimeTextCentralEuropean,
   formatFileTimestampCentralEuropean,
   parseCentralEuropeanDateRange,
 } from '@/lib/centralEuropeanDateRange';
-import { newEntityOnlyTime, newEntityReportStart } from '@/lib/operating-entity-cutover';
+import { newEntityReportStart } from '@/lib/operating-entity-cutover';
 import {
   buildRevenueCouponIdentityExclusion,
   parseRevenueIdentityList,
@@ -21,8 +20,10 @@ import {
   buildGiftReferralExpenseSummaryFromRows,
   buildRevenueExpenseBreakdown,
   getRevenueInviteRewardRows,
+  getRevenueOrderReferralRows,
   normalizeExpenseGroupRows,
   summarizeInviteRewardExpenseRows,
+  summarizeOrderReferralExpenseRows,
 } from '@/lib/admin/revenue-expense';
 import {
   countLotteryRevenueDraws,
@@ -200,7 +201,7 @@ function addKeyValueSheet(
 
 const toFileName = (prefix: string, date = new Date()) => `${prefix}_${formatFileTimestampCentralEuropean(date)}.xlsx`;
 
-async function exportRevenue(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const session = await getServerSession();
   if (!session?.discordId || !canViewRevenue(session.discordId)) {
     return NextResponse.json({ error: '无权访问' }, { status: 403 });
@@ -221,8 +222,8 @@ async function exportRevenue(request: NextRequest) {
   );
   const start = newEntityReportStart(range.start);
   const { end } = range;
-  const facts = await loadRevenueFacts(prisma, { start, end, excludeDiscordIds: excludeMemberResolved.excludeDiscordIds, excludeDlmIds: excludeMemberResolved.excludeDlmIds });
-  const { orderRevenue, voucherReversals } = facts;
+  const historicalManual = await loadHistoricalManualRevenue(prisma, { start, end, excludeDlmIds: excludeMemberResolved.excludeDlmIds });
+  const manualVoucherCost = (lottery: boolean) => historicalManual.voucherRows.reduce((sum, row) => (row.kind === 'lottery') === lottery ? sum.add(row.amount) : sum, new Prisma.Decimal(0));
 
   const excludeMembers = [...excludeRechargeResolved.preview, ...excludeMemberResolved.preview];
   const rechargeWhere: Prisma.RechargeWhereInput = {
@@ -288,15 +289,23 @@ async function exportRevenue(request: NextRequest) {
   ) as Prisma.DlmUserWhereInput;
 
   const commissionWhere: Prisma.CommissionWhereInput = {
-    ...facts.commissionWhere,
     createdAt: { gte: start, lt: end },
   };
 
+  const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
+    typeOfTransaction: '优惠返利',
+    timeCreatedAt: { gte: start, lt: end },
+  };
   const couponWhere: Prisma.CouponWhereInput = {
-    ...facts.voucherWhere('coupon'),
     status: CouponStatus.USED,
-    source: { in: Object.values(CouponSource) },
-    issuedAt: newEntityOnlyTime(),
+    source: {
+      in: [
+        CouponSource.MANUAL_GRANT,
+        CouponSource.VIP_BENEFIT,
+        CouponSource.CHAT_DROP,
+        CouponSource.OPENING_CAMPAIGN,
+      ],
+    },
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...buildRevenueCouponIdentityExclusion(
@@ -315,14 +324,17 @@ async function exportRevenue(request: NextRequest) {
     memberRows,
     commissionRows,
     giftAuditRows,
+    orderRows,
+    referralPayoutRows,
     inviteRewardRows,
+    discountRebateRows,
     lotteryCreatedRows,
     lotteryConsumeRows,
     scratchRows,
     expenseRows,
     revertedGiftRows,
+    revertedOrderRows,
     couponConsumedBySource,
-    pointShopCouponRows,
   ] = await Promise.all([
     prisma.blockStackGame.findMany({
       where: { createdAt: { gte: start, lt: end } },
@@ -349,10 +361,26 @@ async function exportRevenue(request: NextRequest) {
     }),
     prisma.commission.findMany({ where: commissionWhere, orderBy: { createdAt: 'desc' } }),
     prisma.giftAudit.findMany({ where: { createdAt: { gte: start, lt: end } }, orderBy: { createdAt: 'desc' } }),
+    prisma.order.findMany({
+      where: {
+        status: 'ENDED',
+        endedAt: { gte: start, lt: end },
+      },
+      orderBy: { endedAt: 'desc' },
+    }),
+    getRevenueOrderReferralRows({
+      start,
+      end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
     getRevenueInviteRewardRows({
       start,
       end,
       excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
+    prisma.individualTransaction.findMany({
+      where: discountRebateWhere,
+      orderBy: { timeCreatedAt: 'desc' },
     }),
     prisma.lotteryDraw.findMany({
       where: {
@@ -369,8 +397,6 @@ async function exportRevenue(request: NextRequest) {
     prisma.lotteryDraw.findMany({
       where: {
         consumeAt: { gte: start, lt: end },
-        ...facts.voucherWhere('lottery'),
-        createdAt: newEntityOnlyTime(),
         ...(buildIdentityExclusion(
           'dlmId',
           'userId',
@@ -407,27 +433,24 @@ async function exportRevenue(request: NextRequest) {
         AND ga."createdAt" < ${end}
       ORDER BY ga."createdAt" DESC
     `),
+    prisma.$queryRaw<{ revertedOrderGross: Prisma.Decimal | null }[]>(Prisma.sql`
+      SELECT COALESCE(SUM(oa."gross"), 0) AS "revertedOrderGross"
+      FROM "order_audit" oa
+      JOIN "Order" o
+        ON o."id" = oa."orderId"
+      JOIN "revert" r
+        ON r."originalTransactionId" = CONCAT('ORDER:', oa."orderId")
+      WHERE r."status" = 'SUCCESS'
+        AND o."endedAt" >= ${start}
+        AND o."endedAt" < ${end}
+    `),
     prisma.coupon.groupBy({
       by: ['source'],
       _sum: { consumeAmount: true },
       _count: { id: true },
       where: couponWhere,
     }),
-    prisma.pointShopGrant.findMany({
-      where: {
-        ...facts.voucherWhere('pointshop'),
-        deliveryType: 'COUPON', deliveryStatus: 'DELIVERED', couponStatus: CouponStatus.USED,
-        issuedAt: newEntityOnlyTime(), consumedAt: { gte: start, lt: end }, consumeAmount: { not: null },
-        ...(buildIdentityExclusion('dlmId', 'discordUserId', excludeMemberResolved.excludeDlmIds,
-          excludeMemberResolved.excludeDiscordIds) as Prisma.PointShopGrantWhereInput),
-      }, orderBy: { consumedAt: 'desc' },
-    }),
   ]);
-
-  const { orderRows, revertedOrderRows, referralRows: referralPayoutRows,
-    orderGross, orderNet, orderFee, orderGrossNet, orderNetNet, orderFeeNet,
-    revertedOrderGross, revertedOrderNet, revertedOrderFee,
-  } = orderRevenue;
 
   const blockTotalRevenue = decimalSum(blockStackRows, 'totalRevenue');
   const blockSettled = decimalSum(blockStackRows, 'settledAmount');
@@ -445,7 +468,7 @@ async function exportRevenue(request: NextRequest) {
   const memberRechargeTotal = decimalSum(memberRows, 'recharge');
   const memberIncomeTotal = decimalSum(memberRows, 'income');
   const memberBalanceTotal = decimalSum(memberRows, 'totalBalance');
-  const commissionRecordedTotal = decimalSum(commissionRows, 'feeAmount');
+  const commissionTotal = decimalSum(commissionRows, 'feeAmount');
 
   const giftGross = decimalSum(giftAuditRows, 'gross');
   const giftPaid = decimalSum(giftAuditRows, 'payable');
@@ -454,6 +477,7 @@ async function exportRevenue(request: NextRequest) {
   const revertedGiftPaid = decimalSum(revertedGiftRows, 'payable');
   const revertedGiftSubsidy = decimalSum(revertedGiftRows, 'subsidyAmount');
   const revertedGiftFee = decimalSum(revertedGiftRows, 'feeAmount');
+  const revertedOrderGross = decimalSum(revertedOrderRows, 'revertedOrderGross');
   const giftGrossNet = giftGross.sub(revertedGiftGross);
   const giftPaidNet = giftPaid.sub(revertedGiftPaid);
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
@@ -465,22 +489,23 @@ async function exportRevenue(request: NextRequest) {
     excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
   });
   const giftReferralNet = giftReferralExpenseRow.amount;
-  const orderReferralExpenseRow = orderRevenue.referralExpense;
+  const orderReferralExpenseRow = summarizeOrderReferralExpenseRows(referralPayoutRows);
   const orderReferral = orderReferralExpenseRow.amount;
-  const totalPaidFlow = giftPaidNet.add(orderGrossNet);
-  const totalFaceFlow = giftGrossNet.add(orderGrossNet);
+  const orderGross = decimalSum(orderRows, 'grossAmount');
+  const orderNet = decimalSum(orderRows, 'netAmount');
+  const orderFee = orderGross.sub(orderNet);
+  const totalPaidFlow = giftPaidNet.add(orderGross);
+  const totalFaceFlow = giftGrossNet.add(orderGross);
   const rawFeeFromOrderAndGiftModel = giftFee.add(orderFee);
-  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFeeNet);
-  const commissionTotal = facts.commissionUnattributed ? rawFeeFromOrderAndGiftModel : commissionRecordedTotal;
-  const commissionOtherSources = facts.commissionUnattributed ? null : commissionTotal.sub(rawFeeFromOrderAndGiftModel);
-  const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee).sub(revertedOrderFee);
-  const { discountRebateRows, discountOriginalAmount, discountRecoveredAmount } = voucherReversals;
-  const discountDeductionTotal = voucherReversals.discountNetAmount;
+  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee);
+  const commissionOtherSources = commissionTotal.sub(rawFeeFromOrderAndGiftModel);
+  const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee);
+  const discountDeductionTotal = decimalSum(discountRebateRows, 'amountChange');
 
   // Keep fusion outputs in the detail sheet, but do not count them as lottery draws.
   const drawCount = countLotteryRevenueDraws(lotteryCreatedRows);
   const grossIncome = new Prisma.Decimal(drawCount).mul(29);
-  const consumeTotal = decimalSum(lotteryConsumeRows, 'consumeAmount').add(voucherReversals.lotteryAdjustment);
+  const consumeTotal = decimalSum(lotteryConsumeRows, 'consumeAmount').add(manualVoucherCost(true));
   const netProfit = grossIncome.sub(consumeTotal);
   const fusionRevenue = await getLotteryFusionRevenueSummary({
     start,
@@ -563,21 +588,22 @@ async function exportRevenue(request: NextRequest) {
     ),
     syntheticRows: [giftReferralExpenseRow, orderReferralExpenseRow, inviteRewardExpenseRow],
   });
-  const pointShopCouponAmount = decimalSum(pointShopCouponRows, 'consumeAmount');
-  const couponExpenseAmount = couponConsumedBySource.reduce((total, row) => total.add(dec(row._sum.consumeAmount)), dec(0))
-    .add(pointShopCouponAmount).add(voucherReversals.couponAdjustment).add(voucherReversals.pointShopAdjustment);
-  const couponExpenseCount = couponConsumedBySource.reduce((total, row) => total + row._count.id, 0)
-    + pointShopCouponRows.length + voucherReversals.rows.filter(row => row.kind !== 'lottery').length;
+  const couponExpenseAmount = manualGrantCouponAmount
+    .add(vipBenefitCouponAmount)
+    .add(chatDropCouponAmount)
+    .add(openingCampaignCouponAmount)
+    .add(manualVoucherCost(false));
+  const couponExpenseCount =
+    manualGrantCouponCount +
+    vipBenefitCouponCount +
+    chatDropCouponCount +
+    openingCampaignCouponCount + historicalManual.voucherRows.filter(row => row.kind !== 'lottery').length;
   const totalExpenseAmount = expenseBreakdown.totalAmount.add(couponExpenseAmount);
   const totalExpenseCount = expenseBreakdown.totalCount + couponExpenseCount;
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'DLMClub admin';
   workbook.created = new Date();
-
-  addKeyValueSheet(workbook, '完整度', reportStatusRows(facts.completeness));
-  addObjectRowsSheet(workbook, '待核实', reportIssueRows(facts.completeness));
-  addObjectRowsSheet(workbook, '人工调整', facts.manualAdjustments.rows);
 
   addKeyValueSheet(workbook, '导出参数', [
     { section: 'filters', key: 'start', value: formatDateTimeTextCentralEuropean(start) },
@@ -597,8 +623,8 @@ async function exportRevenue(request: NextRequest) {
     { section: 'rows', key: 'DlmUser(filtered)', value: memberRows.length },
     { section: 'rows', key: 'Commission(all)', value: commissionRows.length },
     { section: 'rows', key: 'GiftAudit', value: giftAuditRows.length },
-    { section: 'rows', key: 'OrderAudit(original postings)', value: orderRows.length },
-    { section: 'rows', key: 'OrderAudit + Revert(referral postings)', value: referralPayoutRows.length },
+    { section: 'rows', key: 'Order(ENDED all)', value: orderRows.length },
+    { section: 'rows', key: 'ReferralPayout(filtered ENDED)', value: referralPayoutRows.length },
     { section: 'rows', key: 'InviteLinkUsage(filtered)', value: inviteRewardRows.length },
     { section: 'rows', key: 'IndividualTransaction(优惠返利 all)', value: discountRebateRows.length },
     { section: 'rows', key: 'LotteryDraw(createdAt window)', value: lotteryCreatedRows.length },
@@ -608,7 +634,7 @@ async function exportRevenue(request: NextRequest) {
     { section: 'rows', key: 'ScratchTicket(REVEALED)', value: scratchRows.length },
     { section: 'rows', key: 'Expense', value: expenseRows.length },
     { section: 'rows', key: 'RevertedGiftSubsidy(join)', value: revertedGiftRows.length },
-    { section: 'rows', key: 'Revert(SUCCESS order postings)', value: revertedOrderRows.length },
+    { section: 'rows', key: 'RevertedOrder(join)', value: revertedOrderRows.length },
     { section: 'rows', key: 'Coupon(used MANUAL_GRANT)', value: manualGrantCouponCount },
     { section: 'rows', key: 'Coupon(used VIP_BENEFIT)', value: vipBenefitCouponCount },
     { section: 'rows', key: 'Coupon(used CHAT_DROP)', value: chatDropCouponCount },
@@ -616,9 +642,10 @@ async function exportRevenue(request: NextRequest) {
   ]);
 
   addKeyValueSheet(workbook, '收益汇总', [
-    ...reportStatusRows(facts.completeness),
-    { section: '人工调整', key: '用户钱包净变动（非现金流）', value: facts.manualAdjustments.walletNetDelta.toString() },
-    { section: '人工调整', key: '净收益影响（独立列示一次）', value: facts.manualAdjustments.profitDelta.toString() },
+    ...(historicalManual.manualAdjustments.rows.length ? [
+      { section: '人工调整', key: '用户钱包净变动（非现金流）', value: historicalManual.manualAdjustments.walletNetDelta.toString() },
+      { section: '人工调整', key: '净收益影响（独立列示一次）', value: historicalManual.manualAdjustments.profitDelta.toString() },
+    ] : []),
     { section: '当月充值提现', key: 'Recharge 充值总额', value: rechargeTotal.toString() },
     { section: '当月充值提现', key: 'ZPay 已支付', value: zpayTotal.toString() },
     { section: '当月充值提现', key: '微信原生已支付', value: wechatNativeTotal.toString() },
@@ -678,10 +705,6 @@ async function exportRevenue(request: NextRequest) {
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（彩蛋）', value: chatDropCouponCount },
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格金额（开业活动）', value: openingCampaignCouponAmount.toString() },
     { section: '支出记录(Expense + 邀请)', key: 'Coupon表格笔数（开业活动）', value: openingCampaignCouponCount },
-    { section: '券成本审计', key: '积分商城券已使用', value: pointShopCouponAmount.toString() },
-    { section: '券成本审计', key: 'Coupon 原使用保留及当期冲回', value: voucherReversals.couponAdjustment.toString() },
-    { section: '券成本审计', key: '积分商城券原使用保留及当期冲回', value: voucherReversals.pointShopAdjustment.toString() },
-    { section: '券成本审计', key: '抽奖券原使用保留及当期冲回', value: voucherReversals.lotteryAdjustment.toString() },
     { section: '支出记录(Expense + 邀请)', key: '总支出', value: totalExpenseAmount.toString() },
     { section: '支出记录(Expense + 邀请)', key: '总支出笔数', value: totalExpenseCount },
 
@@ -695,23 +718,16 @@ async function exportRevenue(request: NextRequest) {
     { section: '抽成详情', key: '打赏补贴(代金券原始)', value: giftSubsidy.toString() },
     { section: '抽成详情', key: '打赏补贴回退(打赏撤销)', value: revertedGiftSubsidy.toString() },
     { section: '抽成详情', key: '打赏补贴(代金券净额)', value: giftSubsidyNet.toString() },
-    { section: '抽成详情', key: '原优惠返利', value: discountOriginalAmount.toString() },
-    { section: '抽成详情', key: '当期优惠返利追回', value: discountRecoveredAmount.toString() },
-    { section: '抽成详情', key: '打折券抵扣净额', value: discountDeductionTotal.toString() },
+    { section: '抽成详情', key: '打折券抵扣金额', value: discountDeductionTotal.toString() },
     { section: '抽成详情', key: '单子总数', value: orderRows.length },
-    { section: '抽成详情', key: '订单原流水', value: orderGross.toString() },
-    { section: '抽成详情', key: '订单原结算', value: orderNet.toString() },
-    { section: '抽成详情', key: '订单原抽成', value: orderFee.toString() },
-    { section: '抽成详情', key: '订单当期冲销结算', value: revertedOrderNet.toString() },
-    { section: '抽成详情', key: '订单当期冲销抽成', value: revertedOrderFee.toString() },
-    { section: '抽成详情', key: '订单净流水', value: orderGrossNet.toString() },
-    { section: '抽成详情', key: '订单净结算', value: orderNetNet.toString() },
-    { section: '抽成详情', key: '订单净抽成', value: orderFeeNet.toString() },
+    { section: '抽成详情', key: '订单流水', value: orderGross.toString() },
+    { section: '抽成详情', key: '订单结算', value: orderNet.toString() },
+    { section: '抽成详情', key: '订单抽成', value: orderFee.toString() },
     { section: '抽成详情', key: '总抽成', value: commissionTotalNetAll.toString() },
     { section: '抽成详情', key: '总面值原价流水', value: totalFaceFlow.toString() },
     { section: '抽成详情', key: '总实付流水', value: totalPaidFlow.toString() },
     { section: '抽成详情', key: '模型抽成合计（订单+打赏）', value: feeFromOrderAndGiftModel.toString() },
-    { section: '抽成详情', key: '其他来源抽成', value: commissionOtherSources?.toString() ?? '暂未计入（来源待核实）' },
+    { section: '抽成详情', key: '其他来源抽成', value: commissionOtherSources.toString() },
   ]);
 
   addObjectRowsSheet(
@@ -761,16 +777,15 @@ async function exportRevenue(request: NextRequest) {
   addObjectRowsSheet(workbook, '微信原生已支付明细', wechatNativeRows);
   addObjectRowsSheet(workbook, 'Stripe已支付明细', stripeRows);
   addObjectRowsSheet(workbook, '会员汇总明细', memberRows);
-  addObjectRowsSheet(workbook, facts.commissionUnattributed ? '抽成原记录_待归属' : '抽成明细_Commission', commissionRows);
+  addObjectRowsSheet(workbook, '抽成明细_Commission', commissionRows);
+  if (historicalManual.manualAdjustments.rows.length) addObjectRowsSheet(workbook, '人工钱包调整', historicalManual.manualAdjustments.rows);
+  if (historicalManual.voucherRows.length) addObjectRowsSheet(workbook, '券撤销调整明细', historicalManual.voucherRows);
   addObjectRowsSheet(workbook, '打赏审计明细', giftAuditRows);
   addObjectRowsSheet(workbook, '打赏补贴回退明细', revertedGiftRows);
-  addObjectRowsSheet(workbook, '订单原结算审计', orderRows);
-  addObjectRowsSheet(workbook, '订单当期撤销明细', revertedOrderRows);
+  addObjectRowsSheet(workbook, '订单明细_ENDED', orderRows);
   addObjectRowsSheet(workbook, '订单返利明细', referralPayoutRows);
   addObjectRowsSheet(workbook, '邀请进服奖励明细', inviteRewardRows);
   addObjectRowsSheet(workbook, '优惠返利流水', discountRebateRows);
-  addObjectRowsSheet(workbook, '券撤销审计调整', voucherReversals.rows);
-  addObjectRowsSheet(workbook, '积分商城券核销', pointShopCouponRows);
   addObjectRowsSheet(workbook, '抽奖明细_创建时间', lotteryCreatedRows);
   addObjectRowsSheet(workbook, '抽奖明细_消耗时间', lotteryConsumeRows);
   addObjectRowsSheet(workbook, '重铸明细_创建时间', fusionCreatedRows);
@@ -793,8 +808,4 @@ async function exportRevenue(request: NextRequest) {
       'Cache-Control': 'no-store',
     },
   });
-}
-
-export async function GET(request: NextRequest) {
-  return exportRevenue(request);
 }

@@ -1,4 +1,3 @@
-import { WechatIdentityError } from '@/lib/wechat-identity-transaction';
 import { NextResponse } from 'next/server';
 import { AccountProvider, Prisma } from '@prisma/client';
 import { ensureDlmUserForWechatProgram, summarizeDlmUser } from '@/lib/dlm-user';
@@ -97,14 +96,12 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    if (error instanceof WechatIdentityError) return NextResponse.json({ ok: false, error: error.code, message: error.code === 'wechat_unionid_required' ? '微信暂未返回跨端身份，请检查开放平台关联后重试。' : '微信已有关联账户或身份已变化，请重新登录；历史归属冲突请联系客服核实。' }, { status: 409 });
     if (error instanceof WeChatMiniProgramAuthError) {
-      console.error('[wechat.mini-program.login] authorization failed', error);
       return NextResponse.json(
         {
           ok: false,
           error: error.code,
-          message: '微信登录暂不可用，请重新登录或联系客服。',
+          message: error.message,
         },
         { status: error.status },
       );

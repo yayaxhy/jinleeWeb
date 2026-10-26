@@ -2,7 +2,6 @@
 import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
 
 
-import { PublicMessageError, publicMessage } from '@/lib/public-error-messages';
 
 /* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
@@ -404,12 +403,12 @@ export function LotteryFusionClient({
           return;
         }
 
-        throw new PublicMessageError(errorMessage);
+        throw new Error(errorMessage);
       }
 
       const fusionResult = data?.result as FusionResultView | undefined;
       if (!fusionResult?.drawId || !fusionResult?.prizeName) {
-        throw new PublicMessageError('暂时无法确认重铸结果，请先查看背包，勿重复提交。');
+        throw new Error(siteCopy("site.components.profile.lotteryfusionclient.f83b18f36f03"));
       }
 
       startAnimation({
@@ -419,7 +418,7 @@ export function LotteryFusionClient({
     } catch (error) {
       setNotice({
         level: 'error',
-        text: publicMessage(error, '暂时无法确认重铸结果，请先查看背包，勿重复提交。'),
+        text: error instanceof Error ? error.message : siteCopy("site.components.profile.lotteryfusionclient.caf8b74906d6"),
       });
     } finally {
       setLoading(false);

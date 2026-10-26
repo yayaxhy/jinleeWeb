@@ -20,7 +20,6 @@ export async function GET(request: Request) {
 
   const rows = await prisma.pEIWAN.findMany({
     where: {
-      NOT: { discordUserId: { startsWith: 'detached:' } },
       OR: [
         Number.isInteger(parsedId) ? { PEIWANID: parsedId } : undefined,
         { discordUserId: { contains: keyword, mode: 'insensitive' } },

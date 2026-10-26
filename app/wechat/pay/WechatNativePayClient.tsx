@@ -2,8 +2,6 @@
 import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
 
 
-import { PublicMessageError, publicMessage, rechargeErrorMessage, RECHARGE_UNCONFIRMED } from '@/lib/public-error-messages';
-
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
 
@@ -90,7 +88,7 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
       });
       const payload = await response.json();
       if (!response.ok) {
-        throw new PublicMessageError(rechargeErrorMessage(payload?.error));
+        throw new Error(payload?.error ?? siteCopy("site.app.wechat.pay.wechatnativepayclient.152544f67d2f"));
       }
       setOrder({
         id: payload.orderId,
@@ -103,7 +101,7 @@ export default function WechatNativePayClient({ username }: WechatNativePayClien
       });
       setHint('订单已创建，请在 1 小时内使用微信扫一扫完成支付，系统会自动更新余额。');
     } catch (err: unknown) {
-      const message = siteCopy.text(publicMessage(err, RECHARGE_UNCONFIRMED), "site.lib.public.error.messages");
+      const message = err instanceof Error ? err.message : siteCopy("site.app.wechat.pay.wechatnativepayclient.1a95b6cbc404");
       setError(message);
     } finally {
       setLoading(false);

@@ -33,6 +33,7 @@ function DiscordEmoji({
   name: string;
   animated?: boolean;
 }) {
+  const siteCopy = useSiteCopy();
   return (
     <img
       src={`https://cdn.discordapp.com/emojis/${id}.${animated ? 'gif' : 'webp'}?size=64&quality=lossless`}

@@ -1,9 +1,7 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { loadRevenueFacts } from '@/lib/admin/revenue-facts';
-import { ReportCompletenessNotice } from '@/components/admin/ReportCompletenessNotice';
 import { getServerSession } from '@/lib/session';
 import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
@@ -19,8 +17,10 @@ import {
   buildRevenueExpenseBreakdown,
   getGiftReferralExpenseSummary,
   getRevenueInviteRewardRows,
+  getRevenueOrderReferralRows,
   normalizeExpenseGroupRows,
   summarizeInviteRewardExpenseRows,
+  summarizeOrderReferralExpenseRows,
 } from '@/lib/admin/revenue-expense';
 import {
   LOTTERY_REVENUE_DRAW_WHERE,
@@ -29,6 +29,7 @@ import {
   LOTTERY_FUSION_SOURCE_KIND_LABEL,
   type LotteryFusionCountBucket,
 } from '@/lib/admin/lottery-fusion-revenue';
+import { getVoucherReversalAdjustments } from '@/lib/admin/voucher-reversal';
 
 export const metadata = {
   title: '查看收益',
@@ -140,9 +141,9 @@ export default async function AdminRevenuePage(props: PageProps) {
   const start = newEntityReportStart(range.start);
   const { end, endValue } = range;
   const startValue = formatDateTimeInputCentralEuropean(start);
-  const facts = await loadRevenueFacts(prisma, { start, end, excludeDiscordIds: excludeMemberResolved.excludeDiscordIds, excludeDlmIds: excludeMemberResolved.excludeDlmIds });
-  const { orderRevenue, voucherReversals } = facts;
-
+  const voucherReversals = await getVoucherReversalAdjustments({
+    start, end, excludeDlmIds: excludeMemberResolved.excludeDlmIds,
+  });
 
   const blockStackAgg = await prisma.blockStackGame.aggregate({
     _sum: {
@@ -268,9 +269,9 @@ export default async function AdminRevenuePage(props: PageProps) {
 
   const commissionAggAll = await prisma.commission.aggregate({
     _sum: { feeAmount: true },
-    where: { createdAt: { gte: start, lt: end }, ...facts.commissionWhere },
+    where: { createdAt: { gte: start, lt: end } },
   });
-  const commissionRecordedTotal = dec(commissionAggAll._sum.feeAmount);
+  const commissionTotalAll = dec(commissionAggAll._sum.feeAmount);
 
   const giftAgg = await prisma.giftAudit.aggregate({
     _sum: {
@@ -282,9 +283,18 @@ export default async function AdminRevenuePage(props: PageProps) {
       createdAt: { gte: start, lt: end },
     },
   });
-  const orderCount = orderRevenue.orderRows.length;
-  const { orderGross, orderNet, orderFee, orderGrossNet, orderNetNet, orderFeeNet,
-    revertedOrderGross, revertedOrderNet, revertedOrderFee } = orderRevenue;
+  const orderWhere: Prisma.OrderWhereInput = {
+    status: 'ENDED',
+    endedAt: { gte: start, lt: end },
+  };
+  const orderAgg = await prisma.order.aggregate({
+    _sum: {
+      grossAmount: true,
+      netAmount: true,
+    },
+    where: orderWhere,
+  });
+  const orderCount = await prisma.order.count({ where: orderWhere });
 
   const giftGross = dec(giftAgg._sum.gross);
   const giftPaid = dec(giftAgg._sum.payable);
@@ -322,25 +332,53 @@ export default async function AdminRevenuePage(props: PageProps) {
         AND r."createdAt" < ${end}
     `,
   );
+  const revertedOrderRows = await prisma.$queryRaw<{ reverted_order_gross: Prisma.Decimal | null; reverted_order_fee: Prisma.Decimal | null }[]>(
+    Prisma.sql`
+      SELECT
+        COALESCE(SUM(oa."gross"), 0) AS reverted_order_gross,
+        COALESCE(SUM(oa."gross" - oa."netAmount"), 0) AS reverted_order_fee
+      FROM "order_audit" oa
+      JOIN "Order" o
+        ON o."id" = oa."orderId"
+      JOIN "revert" r
+        ON r."originalTransactionId" = CONCAT('ORDER:', oa."orderId")
+      WHERE r."status" = 'SUCCESS'
+        AND o."endedAt" > ${NEW_ENTITY_OPERATIONS_STARTED_AT}
+        AND r."createdAt" >= ${start}
+        AND r."createdAt" < ${end}
+    `,
+  );
   const revertedGiftSubsidy = dec(revertedGiftRows[0]?.reverted_subsidy);
   const revertedGiftAgg = revertedGiftAggRows[0] ?? {};
   const revertedGiftGross = dec(revertedGiftAgg.reverted_gross);
   const revertedGiftPaid = dec(revertedGiftAgg.reverted_payable);
   const revertedGiftFee = dec(revertedGiftAgg.reverted_fee);
+  const revertedOrderGross = dec(revertedOrderRows[0]?.reverted_order_gross);
+  const revertedOrderFee = dec(revertedOrderRows[0]?.reverted_order_fee);
   const giftGrossNet = giftGross.sub(revertedGiftGross);
   const giftPaidNet = giftPaid.sub(revertedGiftPaid);
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = dec(giftAgg._sum.feeAmount);
   const giftFeeNet = giftFee.sub(revertedGiftFee);
-  const totalPaidFlow = giftPaidNet.add(orderGrossNet);
-  const totalFaceFlow = giftGrossNet.add(orderGrossNet);
+  const orderGross = dec(orderAgg._sum.grossAmount);
+  const orderNet = dec(orderAgg._sum.netAmount);
+  const orderFee = orderGross.sub(orderNet);
+  const totalPaidFlow = giftPaidNet.add(orderGross);
+  const totalFaceFlow = giftGrossNet.add(orderGross);
   const rawFeeFromOrderAndGiftModel = giftFee.add(orderFee);
-  const commissionTotalAll = facts.commissionUnattributed ? rawFeeFromOrderAndGiftModel : commissionRecordedTotal;
-  const commissionOtherSources = facts.commissionUnattributed ? null : commissionTotalAll.sub(rawFeeFromOrderAndGiftModel);
-  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFeeNet);
+  const commissionOtherSources = commissionTotalAll.sub(rawFeeFromOrderAndGiftModel);
+  const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee).sub(revertedOrderFee);
   const commissionTotalNet = commissionTotalAll.sub(revertedGiftFee).sub(revertedOrderFee);
   const commissionTotalNetAll = commissionTotalAll.sub(revertedGiftFee).sub(revertedOrderFee);
-  const discountDeductionTotal = voucherReversals.discountNetAmount;
+  const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
+    typeOfTransaction: '优惠返利',
+    timeCreatedAt: { gte: start, lt: end },
+  };
+  const discountRebateAgg = await prisma.individualTransaction.aggregate({
+    _sum: { amountChange: true },
+    where: discountRebateWhere,
+  });
+  const discountDeductionTotal = dec(discountRebateAgg._sum.amountChange);
 
   const lotteryWhere: Prisma.LotteryDrawWhereInput = {
     createdAt: { gte: start, lt: end },
@@ -357,7 +395,6 @@ export default async function AdminRevenuePage(props: PageProps) {
     _sum: { consumeAmount: true },
     where: {
       consumeAt: { gte: start, lt: end },
-      ...facts.voucherWhere('lottery'),
       createdAt: newEntityOnlyTime(),
       ...(buildIdentityExclusion(
         'dlmId',
@@ -408,7 +445,6 @@ export default async function AdminRevenuePage(props: PageProps) {
     createdAt: { gte: start, lt: end },
   };
   const couponWhere: Prisma.CouponWhereInput = {
-    ...facts.voucherWhere('coupon'),
     status: CouponStatus.USED,
     source: { in: Object.values(CouponSource) },
     issuedAt: newEntityOnlyTime(),
@@ -424,6 +460,7 @@ export default async function AdminRevenuePage(props: PageProps) {
     pureProfitAgg,
     expenseByReason,
     couponConsumedBySource,
+    orderReferralRows,
     inviteRewardRows,
     giftReferralExpenseRow,
   ] = await Promise.all([
@@ -448,6 +485,11 @@ export default async function AdminRevenuePage(props: PageProps) {
       _count: { id: true },
       where: couponWhere,
     }),
+    getRevenueOrderReferralRows({
+      start,
+      end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
     getRevenueInviteRewardRows({
       start,
       end,
@@ -459,7 +501,7 @@ export default async function AdminRevenuePage(props: PageProps) {
       excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
     }),
   ]);
-  const orderReferralExpenseRow = orderRevenue.referralExpense;
+  const orderReferralExpenseRow = summarizeOrderReferralExpenseRows(orderReferralRows);
   const inviteRewardExpenseRow = summarizeInviteRewardExpenseRows(inviteRewardRows);
   const expenseBreakdown = buildRevenueExpenseBreakdown({
     expenseCount: expenseAgg._count.id,
@@ -525,7 +567,6 @@ export default async function AdminRevenuePage(props: PageProps) {
         _sum: { consumeAmount: true },
         _count: { id: true },
         where: {
-          ...facts.voucherWhere('pointshop'),
           deliveryType: 'COUPON',
           deliveryStatus: 'DELIVERED',
           couponStatus: CouponStatus.USED,
@@ -613,8 +654,6 @@ export default async function AdminRevenuePage(props: PageProps) {
           返回管理首页
         </Link>
       </div>
-
-      <ReportCompletenessNotice completeness={facts.completeness} />
 
       <form className="grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 md:grid-cols-2" method="get">
         <label className="space-y-2 text-sm">
@@ -809,24 +848,16 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>打赏补贴(代金券原始)：¥{formatNumber(giftSubsidy, 4)}</p>
             <p>打赏补贴回退(打赏撤销)：¥{formatNumber(revertedGiftSubsidy, 4)}</p>
             <p>打赏补贴(代金券净额)：¥{formatNumber(giftSubsidyNet, 4)}</p>
-            <p>原优惠返利：¥{formatNumber(voucherReversals.discountOriginalAmount, 4)}</p>
-            <p>当期优惠返利追回：¥{formatNumber(voucherReversals.discountRecoveredAmount, 4)}</p>
-            <p>打折券抵扣净额：¥{formatNumber(discountDeductionTotal, 4)}</p>
+            <p>打折券抵扣金额：¥{formatNumber(discountDeductionTotal, 4)}</p>
             <p>单子总数：{orderCount}</p>
-            <p>订单原流水：¥{formatNumber(orderGross, 4)}</p>
-            <p>订单原结算：¥{formatNumber(orderNet, 4)}</p>
-            <p>订单原抽成：¥{formatNumber(orderFee, 4)}</p>
-            <p>订单当期冲销结算：¥{formatNumber(revertedOrderNet, 4)}</p>
-            <p>订单当期冲销抽成：¥{formatNumber(revertedOrderFee, 4)}</p>
-            <p>订单净流水：¥{formatNumber(orderGrossNet, 4)}</p>
-            <p>订单净结算：¥{formatNumber(orderNetNet, 4)}</p>
-            <p>订单净抽成：¥{formatNumber(orderFeeNet, 4)}</p>
-
+            <p>订单流水：¥{formatNumber(orderGross, 4)}</p>
+            <p>订单结算：¥{formatNumber(orderNet, 4)}</p>
+            <p>订单抽成：¥{formatNumber(orderFee, 4)}</p>
             <p>总抽成：¥{formatNumber(commissionTotalNet, 4)}</p>
             <p>总面值原价流水：¥{formatNumber(totalFaceFlow, 4)}</p>
             <p>总实付流水：¥{formatNumber(totalPaidFlow, 4)}</p>
             <p>模型抽成合计（订单+打赏）：¥{formatNumber(feeFromOrderAndGiftModel, 4)}</p>
-            <p className="text-white">其他来源抽成：{commissionOtherSources === null ? '暂未计入（来源待核实）' : `¥${formatNumber(commissionOtherSources, 4)}`}</p>
+            <p className="text-white">其他来源抽成：¥{formatNumber(commissionOtherSources, 4)}</p>
           </div>
         </div>
 

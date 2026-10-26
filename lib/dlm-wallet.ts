@@ -1,3 +1,4 @@
+import { resolveAccountOwnerTx } from './account-ownership';
 import { Prisma } from '@prisma/client';
 
 const DEC = (value: Prisma.Decimal | number | string | null | undefined) =>
@@ -22,6 +23,8 @@ export const getDlmWalletSnapshotTx = async (
   tx: WalletTx,
   identity: DlmWalletIdentity,
 ) => {
+  const owner = await resolveAccountOwnerTx(tx, identity.dlmId);
+  identity = { dlmId: owner.dlmId, discordUserId: owner.memberKey };
   const dlmUser = await tx.dlmUser.findUnique({
     where: { dlmId: identity.dlmId },
     select: {
@@ -70,6 +73,8 @@ export const applyDlmWalletDeltaTx = async (
   tx: WalletTx,
   params: WalletDeltaInput,
 ) => {
+  const owner = await resolveAccountOwnerTx(tx, params.dlmId);
+  params = { ...params, dlmId: owner.dlmId, discordUserId: owner.memberKey };
   const totalBalanceDelta = DEC(params.totalBalanceDelta);
   const incomeDelta = DEC(params.incomeDelta);
   const rechargeDelta = DEC(params.rechargeDelta);

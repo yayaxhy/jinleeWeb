@@ -33,13 +33,7 @@ function DispatchCard({ item }: { item: RecentDispatchItem }) {
 
 export function DispatchTicker({ dispatches }: { dispatches: RecentDispatchItem[] }) {
   const siteCopy = useSiteCopy();
-  const items = dispatches.length > 0 ? dispatches : fallbackItems.map((item) => ({
-    ...item,
-    title: siteCopy.text(item.title, "site.components.home.dispatchticker"),
-    detail: siteCopy.text(item.detail, "site.components.home.dispatchticker"),
-    timeLabel: siteCopy.text(item.timeLabel, "site.components.home.dispatchticker"),
-    statusLabel: siteCopy.text(item.statusLabel, "site.components.home.dispatchticker"),
-  }));
+  const items = dispatches.length > 0 ? dispatches : fallbackItems;
   const animationSeconds = Math.max(20, items.length * 8);
 
   return (

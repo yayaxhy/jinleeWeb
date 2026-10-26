@@ -1,6 +1,7 @@
 import { localizeSiteMetadata } from "@/lib/site-copy-metadata";
 import { getSiteCopy } from "@/lib/site-copy-server";
 
+import { SiteText } from "@/components/SiteCopyProvider";
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 

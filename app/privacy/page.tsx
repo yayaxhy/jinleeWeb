@@ -148,7 +148,6 @@ const sections = [
 export default function PrivacyPage() {
   return (
     <LegalDocument
-      copyNamespace="site.app.privacy.page"
       eyebrow="Privacy"
       title="隐私政策"
       description="本政策说明我们在提供账户、陪玩、充值和售后服务时如何收集、使用、保存和保护个人信息，以及您如何行使相关权利。"

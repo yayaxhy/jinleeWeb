@@ -131,8 +131,8 @@ export default async function DiscordMigrationPage({ searchParams }: MigrationPa
 
           {message ? (
             <div className={`mt-6 rounded-2xl border px-5 py-4 ${toneClasses[message.tone]}`}>
-              <h2 className="font-semibold"><SiteText namespace="site.app.discord.migration.page" value={message.title} /></h2>
-              <p className="mt-1 text-sm leading-6 opacity-85"><SiteText namespace="site.app.discord.migration.page" value={message.body} /></p>
+              <h2 className="font-semibold">{message.title}</h2>
+              <p className="mt-1 text-sm leading-6 opacity-85">{message.body}</p>
             </div>
           ) : null}
 

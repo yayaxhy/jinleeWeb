@@ -1,4 +1,3 @@
-import { getSiteCopy } from "@/lib/site-copy-server";
 import { NextRequest, NextResponse } from 'next/server';
 
 import { isAdminDiscordId } from '@/lib/admin';
@@ -19,7 +18,7 @@ export async function POST(request: NextRequest) {
       sourceOperationId: String(body?.sourceOperationId ?? ''),
       targetDlmId: String(body?.targetDlmId ?? ''),
       reason: String(body?.reason ?? ''),
-    }, await getSiteCopy());
+    });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : '充值更正失败' }, { status: 400 });

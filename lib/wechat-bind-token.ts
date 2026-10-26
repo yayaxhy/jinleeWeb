@@ -4,8 +4,7 @@ type WechatBindTokenPayload = {
   dlmId: string;
   issuedAt: number;
   expiresAt: number;
-  sessionVersion: number;
-  version: 2;
+  version: 1;
 };
 
 const WECHAT_BIND_TOKEN_TTL_MS = 1000 * 60 * 10;
@@ -31,13 +30,12 @@ const encodeToken = (payload: WechatBindTokenPayload) => {
   return `${encoded}.${signature}`;
 };
 
-export const createWechatBindToken = (dlmId: string, sessionVersion: number) => {
+export const createWechatBindToken = (dlmId: string) => {
   const payload: WechatBindTokenPayload = {
     dlmId,
     issuedAt: Date.now(),
     expiresAt: Date.now() + WECHAT_BIND_TOKEN_TTL_MS,
-    sessionVersion,
-    version: 2,
+    version: 1,
   };
 
   return {
@@ -51,16 +49,14 @@ export const verifyWechatBindToken = (token?: string | null): WechatBindTokenPay
     return null;
   }
 
-  const parts = token.split('.');
-  if (parts.length !== 2) return null;
-  const [encoded, signature] = parts;
+  const [encoded, signature] = token.split('.');
   if (!encoded || !signature) {
     return null;
   }
 
   const expected = signPayload(encoded);
   const valid =
-    Buffer.byteLength(expected) === Buffer.byteLength(signature) &&
+    expected.length === signature.length &&
     crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 
   if (!valid) {
@@ -69,7 +65,7 @@ export const verifyWechatBindToken = (token?: string | null): WechatBindTokenPay
 
   try {
     const payload = JSON.parse(base64UrlDecode(encoded).toString()) as WechatBindTokenPayload;
-    if (payload.version !== 2 || !Number.isFinite(payload.expiresAt) || payload.expiresAt <= Date.now() || !payload.dlmId || !Number.isSafeInteger(payload.sessionVersion) || payload.sessionVersion < 1) {
+    if (payload.version !== 1 || payload.expiresAt < Date.now() || !payload.dlmId) {
       return null;
     }
 

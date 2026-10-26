@@ -1,11 +1,7 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { TargetConfirmationCard, useTargetConfirmation } from '@/components/profile/TargetConfirmation';
-import { GiftExecutionRecovery, useGiftExecutionRecovery } from '@/components/profile/GiftExecutionRecovery';
-import { giftIntentForConfirmation, type GiftActor } from '@/lib/gift-execution-client';
-import type { TargetConfirmation } from '@/lib/target-confirmation-client';
 
 const GIFT_REASONS = ['充值返现', '公会成本', 'VIP福利', '老板赔偿', '其他'] as const;
 
@@ -21,8 +17,7 @@ type Boss = {
 type Gift = { name: string; price: string };
 type Peiwan = { id: number; discordId: string; label: string; prices: Partial<Record<string, string>> };
 type Operation = { id: string; dlmId: string; type: string; status: string; operatorDiscordId: string; createdAt: string; details: string; result: string };
-type ManualRecharge = { operationId: string; sourceDlmId: string; bossLabel: string; rechargeId: string; amount: string; createdAt: string };
-type MessagePlacement = 'createBoss' | 'recharge' | 'rechargeCorrection' | 'giftBalance' | 'delegatedGift' | 'delegatedOrder';
+type MessagePlacement = 'createBoss' | 'recharge' | 'giftBalance' | 'delegatedGift' | 'delegatedOrder';
 
 const newRequestId = () => globalThis.crypto.randomUUID();
 
@@ -37,65 +32,21 @@ async function postJson(path: string, body: Record<string, unknown>) {
   return data;
 }
 
-export function WechatBossManager({ bosses, gifts, peiwans, manualRecharges = [], operations, actor = { dlmId: '', discordId: null } }: { bosses: Boss[]; gifts: Gift[]; peiwans: Peiwan[]; manualRecharges?: ManualRecharge[]; operations: Operation[]; actor?: GiftActor }) {
+export function WechatBossManager({ bosses, gifts, peiwans, operations }: { bosses: Boss[]; gifts: Gift[]; peiwans: Peiwan[]; operations: Operation[] }) {
   const router = useRouter();
   const giftOptions = [
     ...gifts.filter((gift) => gift.name === '冰淇淋'),
     ...gifts.filter((gift) => gift.name !== '冰淇淋'),
   ];
   const [selectedDlmId, setSelectedDlmId] = useState(bosses[0]?.dlmId ?? '');
-  const [correctionSourceOperationId, setCorrectionSourceOperationId] = useState(manualRecharges[0]?.operationId ?? '');
-  const [correctionTargetDlmId, setCorrectionTargetDlmId] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [messagePlacement, setMessagePlacement] = useState<MessagePlacement>('createBoss');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [giftName, setGiftName] = useState(giftOptions[0]?.name ?? '');
-  const [giftTarget, setGiftTarget] = useState('');
-  const [giftQuantity, setGiftQuantity] = useState('1');
-  const giftScope = { purpose: 'delegated-gift' as const, target: giftTarget, payerDlmId: selectedDlmId, giftName, quantity: Number(giftQuantity) };
-  const giftRecovery = useGiftExecutionRecovery(actor, 'DELEGATED_GIFT');
-  const giftConfirmation = useTargetConfirmation(giftScope, { autoLookup: !giftRecovery.blocked && !busy });
-  const submittedGiftConfirmation = useRef<TargetConfirmation | null>(null);
-  const handledGiftCompletion = useRef<string | null>(null);
-  useEffect(() => {
-    let previousDraftVersion = giftRecovery.controller.getSnapshot().draftVersion;
-    return giftRecovery.controller.subscribe(() => {
-      const snapshot = giftRecovery.controller.getSnapshot();
-      if (snapshot.draftVersion !== previousDraftVersion) {
-        previousDraftVersion = snapshot.draftVersion;
-        giftConfirmation.controller.invalidate();
-        setGiftTarget(''); setGiftQuantity('1');
-      }
-      const result = snapshot.completed;
-      if (!result || handledGiftCompletion.current === result.record.requestId) return;
-      handledGiftCompletion.current = result.record.requestId;
-      if (result.prepareNext) {
-        giftConfirmation.controller.invalidate();
-        setGiftTarget(''); setGiftQuantity('1'); setError(null);
-      }
-      router.refresh();
-    });
-  }, [giftRecovery.controller, giftConfirmation.controller, router]);
   const [giftReason, setGiftReason] = useState<(typeof GIFT_REASONS)[number]>('充值返现');
   const [peiwanReference, setPeiwanReference] = useState('');
   const [quotationCode, setQuotationCode] = useState('Q1');
-  const correctionSource = useMemo(
-    () => manualRecharges.find((recharge) => recharge.operationId === correctionSourceOperationId) ?? null,
-    [correctionSourceOperationId, manualRecharges],
-  );
-
-  useEffect(() => {
-    if (!manualRecharges.some((recharge) => recharge.operationId === correctionSourceOperationId)) {
-      setCorrectionSourceOperationId(manualRecharges[0]?.operationId ?? '');
-    }
-  }, [correctionSourceOperationId, manualRecharges]);
-
-  useEffect(() => {
-    if (!correctionSource) return;
-    if (correctionTargetDlmId && correctionTargetDlmId !== correctionSource.sourceDlmId) return;
-    setCorrectionTargetDlmId(bosses.find((boss) => boss.dlmId !== correctionSource.sourceDlmId)?.dlmId ?? '');
-  }, [bosses, correctionSource, correctionTargetDlmId]);
 
   const selectedPeiwan = useMemo(() => {
     const reference = peiwanReference.trim();
@@ -123,19 +74,15 @@ export function WechatBossManager({ bosses, gifts, peiwans, manualRecharges = []
     setMessage(null);
     setMessagePlacement(placement);
     try {
-      const outcome = await action() as { notificationWarning?: unknown; replayed?: unknown; result?: { amount?: unknown; balanceAfter?: unknown; currentBalance?: unknown; rechargeId?: unknown; sourceBalanceAfter?: unknown; targetBalanceAfter?: unknown } } | undefined;
+      const outcome = await action() as { notificationWarning?: unknown; replayed?: unknown; result?: { amount?: unknown; balanceAfter?: unknown; currentBalance?: unknown; rechargeId?: unknown } } | undefined;
       const notificationWarning = typeof outcome?.notificationWarning === 'string' ? outcome.notificationWarning : null;
       const replayed = outcome?.replayed === true;
       const amount = typeof outcome?.result?.amount === 'string' ? outcome.result.amount : null;
       const balanceAfter = typeof outcome?.result?.balanceAfter === 'string' ? outcome.result.balanceAfter : null;
       const currentBalance = typeof outcome?.result?.currentBalance === 'string' ? outcome.result.currentBalance : balanceAfter;
       const rechargeId = typeof outcome?.result?.rechargeId === 'string' ? outcome.result.rechargeId : null;
-      const sourceBalanceAfter = typeof outcome?.result?.sourceBalanceAfter === 'string' ? outcome.result.sourceBalanceAfter : null;
-      const targetBalanceAfter = typeof outcome?.result?.targetBalanceAfter === 'string' ? outcome.result.targetBalanceAfter : null;
       const successMessage = replayed
         ? `该次提交此前已完成，本次未重复增加余额${currentBalance ? `。当前余额：${currentBalance} 点点券` : '。'}`
-        : placement === 'rechargeCorrection'
-          ? `充值更正已完成：已转移 ¥${amount ?? '—'}。原老板余额：${sourceBalanceAfter ?? '—'} 点点券；正确老板余额：${targetBalanceAfter ?? '—'} 点点券。`
         : placement === 'giftBalance'
           ? `余额赠送已发放：${amount ?? '—'}（${balanceGiftReason ?? '余额赠送'}）。${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}`
           : `${success}${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}${rechargeId ? ` 充值记录编号：${rechargeId}。` : ''}`;
@@ -178,21 +125,6 @@ export function WechatBossManager({ bosses, gifts, peiwans, manualRecharges = []
     );
   };
 
-  const correctRecharge = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    void run(
-      () => postJson('/api/admin/wechat-bosses/recharge-correction', {
-        requestId: newRequestId(),
-        sourceOperationId: correctionSourceOperationId,
-        targetDlmId: correctionTargetDlmId,
-        reason: form.get('reason'),
-      }),
-      '充值更正已完成。',
-      'rechargeCorrection',
-    );
-  };
-
   const giftBalance = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -209,16 +141,20 @@ export function WechatBossManager({ bosses, gifts, peiwans, manualRecharges = []
     );
   };
 
-  const delegatedGift = async () => {
-    if (!giftConfirmation.ready || !giftConfirmation.confirmation || busy || giftRecovery.blocked || submittedGiftConfirmation.current === giftConfirmation.confirmation) return;
-    submittedGiftConfirmation.current = giftConfirmation.confirmation;
-    setBusy(true); setError(null); setMessage(null); setMessagePlacement('delegatedGift');
-    try {
-      await giftRecovery.controller.submit({ scope: giftScope, confirmation: giftConfirmation.confirmation,
-        intent: giftIntentForConfirmation(actor, giftScope, giftConfirmation.confirmation, giftName), path: '/api/admin/wechat-bosses/delegated-gift',
-        body: { dlmId: selectedDlmId, peiwanId: giftTarget.trim(), giftName, quantity: Number(giftQuantity) } });
-    } catch { setError('无法保存已确认的代赠信息，本次未提交。请重新确认对象。'); }
-    finally { setBusy(false); }
+  const delegatedGift = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    void run(
+      () => postJson('/api/admin/wechat-bosses/delegated-gift', {
+        requestId: newRequestId(),
+        dlmId: selectedDlmId,
+        peiwanId: form.get('peiwanId'),
+        giftName,
+        quantity: form.get('quantity'),
+      }),
+      '代打赏已完成，余额、积分、礼物账本和操作审计均已更新。',
+      'delegatedGift',
+    );
   };
 
   const delegatedOrder = (event: FormEvent<HTMLFormElement>) => {
@@ -239,7 +175,6 @@ export function WechatBossManager({ bosses, gifts, peiwans, manualRecharges = []
 
   return (
     <div className="space-y-6">
-      <GiftExecutionRecovery actor={actor} kind="DELEGATED_GIFT" dark onNew={() => { giftConfirmation.controller.invalidate(); setGiftTarget(''); }} />
       {error ? <p className="rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-100">{error}</p> : null}
 
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
@@ -252,43 +187,10 @@ export function WechatBossManager({ bosses, gifts, peiwans, manualRecharges = []
         </form>
       </section>
 
-      {manualRecharges.length > 0 && bosses.length > 1 ? (
-        <section className="rounded-3xl border border-amber-300/20 bg-amber-300/5 p-5 space-y-4">
-          <div>
-            <h2 className="text-xl font-semibold">充值更正</h2>
-
-          </div>
-          <form onSubmit={correctRecharge} className="grid gap-3 lg:grid-cols-2">
-            <label className="space-y-1 text-sm text-white/70">
-              原充值记录
-              <select value={correctionSourceOperationId} onChange={(event) => setCorrectionSourceOperationId(event.target.value)} required className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-amber-300">
-                {manualRecharges.map((recharge) => (
-                  <option key={recharge.operationId} value={recharge.operationId}>
-                    {recharge.bossLabel} · ¥{recharge.amount} · {recharge.rechargeId} · {new Date(recharge.createdAt).toLocaleString('zh-CN', { hour12: false })}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 text-sm text-white/70">
-              正确老板
-              <select value={correctionTargetDlmId} onChange={(event) => setCorrectionTargetDlmId(event.target.value)} required className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-amber-300">
-                <option value="">请选择正确老板</option>
-                {bosses.filter((boss) => boss.dlmId !== correctionSource?.sourceDlmId).map((boss) => (
-                  <option key={boss.dlmId} value={boss.dlmId}>{boss.displayName || boss.wechatContact} · {boss.dlmId} · 当前余额 ¥{boss.totalBalance}</option>
-                ))}
-              </select>
-            </label>
-            <textarea name="reason" required maxLength={500} placeholder="更正原因，例如：误选了老板 A，实际付款人为老板 B" className="min-h-24 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-amber-300 lg:col-span-2" />
-            <button disabled={busy || !correctionSource || !correctionTargetDlmId} className="rounded-xl bg-amber-300 px-4 py-3 text-sm font-medium text-black disabled:opacity-60 lg:col-span-2">确认更正并转移余额</button>
-            {message && messagePlacement === 'rechargeCorrection' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100 lg:col-span-2">{message}</p> : null}
-          </form>
-        </section>
-      ) : null}
-
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5 sm:p-6">
         <div className="space-y-4 border-b border-white/10 pb-6">
           <div><h2 className="text-xl font-semibold">选择老板</h2><p className="mt-1 text-sm text-white/60">以下仅列出客服创建的微信老板账户。</p></div>
-          <select value={selectedDlmId} disabled={giftRecovery.state.busy} onChange={(event) => { giftConfirmation.controller.invalidate(); setSelectedDlmId(event.target.value); }} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
+          <select value={selectedDlmId} onChange={(event) => setSelectedDlmId(event.target.value)} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
             <option value="">请选择老板账户</option>
             {bosses.map((boss) => <option key={boss.dlmId} value={boss.dlmId}>{boss.displayName || boss.wechatContact} · {boss.dlmId} · 余额 ¥{boss.totalBalance}</option>)}
           </select>
@@ -315,21 +217,14 @@ export function WechatBossManager({ bosses, gifts, peiwans, manualRecharges = []
           {message && messagePlacement === 'giftBalance' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
         </form>
 
-        <form onSubmit={(event) => { event.preventDefault(); void delegatedGift(); }} className="space-y-3 border-t border-white/10 pt-8 lg:border-r lg:pr-8">
+        <form onSubmit={delegatedGift} className="space-y-3 border-t border-white/10 pt-8 lg:border-r lg:pr-8">
           <div><h2 className="text-xl font-semibold">代打赏</h2><p className="mt-1 text-sm text-white/60">直接走 Bot 的真实礼物、余额与积分账本。</p></div>
-          <input aria-label="代打赏陪玩" value={giftTarget} disabled={giftRecovery.blocked} onChange={(event) => { giftConfirmation.controller.invalidate(); setGiftTarget(event.target.value); }} required inputMode="numeric" placeholder="陪玩 Discord ID 或数字 ID" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <select aria-label="代打赏礼物" value={giftName} disabled={giftRecovery.blocked} onChange={(event) => { giftConfirmation.controller.invalidate(); setGiftName(event.target.value); }} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
+          <input name="peiwanId" required inputMode="numeric" placeholder="陪玩 Discord ID 或数字 ID" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <select value={giftName} onChange={(event) => setGiftName(event.target.value)} className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]">
             {giftOptions.map((gift) => <option key={gift.name} value={gift.name}>{gift.name} · ¥{gift.price}</option>)}
           </select>
-          <label className="block space-y-1 text-sm text-white/70">礼物数量
-            <input aria-label="代打赏数量" value={giftQuantity} disabled={giftRecovery.blocked} onChange={(event) => { giftConfirmation.controller.invalidate(); setGiftQuantity(event.target.value); }} required type="number" min="0" step="any" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          </label>
-          {giftConfirmation.lookingUp ? <p role="status" className="text-sm text-white/60">正在查找付款老板和接收陪玩…</p> : null}
-          <TargetConfirmationCard confirmation={giftConfirmation.confirmation} dark />
-          {giftConfirmation.ready ? <p className="text-sm text-white/70">礼物：{giftName} × {giftQuantity}</p> : null}
-          <button type="submit" disabled={busy || giftRecovery.blocked || !giftConfirmation.ready} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">{giftRecovery.state.busy ? '提交中…' : '确认代打赏'}</button>
-          {giftConfirmation.state.message ? <p role="status" className="break-words rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">{giftConfirmation.state.message}</p> : null}
-          {giftConfirmation.state.phase === 'error' && !giftRecovery.blocked && !busy ? <button type="button" onClick={() => void giftConfirmation.lookup()} className="text-sm text-violet-200 underline">重新查找对象</button> : null}
+          <input name="quantity" required type="number" min="1" step="1" defaultValue="1" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <button disabled={busy || !gifts.length} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认代打赏</button>
           {message && messagePlacement === 'delegatedGift' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
         </form>
 

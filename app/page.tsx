@@ -440,8 +440,8 @@ function HowItWorks() {
               const content = (
                 <>
                   <p className="text-sm font-black text-orange-600">{step}</p>
-                  <h3 className="mt-3 font-semibold md:mt-8"><SiteText namespace="site.app.page" value={title} /></h3>
-                  <p className="mt-2 text-sm leading-6 text-neutral-600"><SiteText namespace="site.app.page" value={text} /></p>
+                  <h3 className="mt-3 font-semibold md:mt-8">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-neutral-600">{text}</p>
                 </>
               );
               const className = `block rounded-[1.7rem] bg-white p-5 shadow-sm transition hover:shadow-md md:min-h-[210px] ${index % 2 === 0 ? '' : 'md:translate-y-6'}`;
@@ -494,7 +494,6 @@ function FaqSection() {
 }
 
 export default async function Home() {
-  const siteCopy = await getSiteCopy();
   const homeData = await loadHomePageData();
 
   return (
@@ -514,7 +513,7 @@ export default async function Home() {
       <HeroPanel dispatches={homeData.recentDispatches} />
       <RankingRail
         eyebrow="老板榜单"
-        title={siteCopy("site.app.page.67c503479f4c")}
+        title="点了么老板榜"
         data={homeData.bossRankings}
         accent="bg-orange-300"
         showTag={false}
@@ -523,7 +522,7 @@ export default async function Home() {
       />
       <RankingRail
         eyebrow="陪玩榜单"
-        title={siteCopy("site.app.page.f113eb4bb7b4")}
+        title="陪玩人气榜"
         data={homeData.companionRankings}
         accent="bg-orange-300"
       />

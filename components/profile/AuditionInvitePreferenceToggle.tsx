@@ -2,8 +2,6 @@
 import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
 
 
-import { PublicMessageError, publicMessage } from '@/lib/public-error-messages';
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -36,12 +34,12 @@ export function AuditionInvitePreferenceToggle({ enabled, hasVoicePreview }: Pro
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new PublicMessageError(typeof data?.error === 'string' ? data.error : '保存失败');
+        throw new Error(typeof data?.error === 'string' ? data.error : siteCopy("site.components.profile.auditioninvitepreferencetoggle.40525a732872"));
       }
       setMessage(nextEnabled ? siteCopy("site.components.profile.auditioninvitepreferencetoggle.0482396d5f71") : siteCopy("site.components.profile.auditioninvitepreferencetoggle.ff2a3528dcde"));
       router.refresh();
     } catch (err) {
-      setMessage(publicMessage(err, '暂时无法保存设置，请刷新查看当前状态或联系客服。'));
+      setMessage((err as Error).message);
     } finally {
       setPending(false);
     }

@@ -1,4 +1,4 @@
-import { getSiteCopy } from "./site-copy-server";
+import { getSiteCopy } from "@/lib/site-copy-server";
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -432,8 +432,7 @@ async function loadRecommendedCompanions(issues: string[]) {
     : [];
 
   const rowById = new Map(rows.map((row) => [row.PEIWANID, row]));
-  const activeImages = images.filter(image => !rowById.get(image.id)?.discordUserId.startsWith('detached:'));
-  const recommended = activeImages.map((image, index): RecommendedCompanion => {
+  const recommended = images.map((image, index): RecommendedCompanion => {
     const row = rowById.get(image.id);
 
     if (!row) {

@@ -1,64 +1,100 @@
-import { listOutboxDeliveries } from '@/lib/notification-outbox-monitor';
-import { postInternalBot } from '@/lib/internal-bot';
+import { GuildNotificationDeliveryStatus, type Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
-import { canViewKefuWorkspace, canManageGuildOperations } from "@/lib/admin";
+import { canViewKefuWorkspace } from "@/lib/admin";
 import { retryGuildNotificationDeliveries } from "@/lib/notification-center";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/session";
-import { listNotificationDeliveries, parseDeliveryPagination } from "@/lib/notification-delivery-list";
-import { notificationRetryLimit, readAdminJsonWrite } from "@/lib/admin-write-request";
+
+const FAILURE_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_ROWS = 100;
+
+const notificationUser = {
+  select: {
+    dlmId: true,
+    discordDisplayName: true,
+    wechatDisplayName: true,
+    member: { select: { serverDisplayName: true } },
+  },
+} satisfies Prisma.DlmUserDefaultArgs;
+
+const userName = (user: {
+  dlmId: string;
+  discordDisplayName: string | null;
+  wechatDisplayName: string | null;
+  member: { serverDisplayName: string | null } | null;
+}) =>
+  user.discordDisplayName ||
+  user.member?.serverDisplayName ||
+  user.wechatDisplayName ||
+  user.dlmId;
 
 async function requireKefuAccess() {
   const session = await getServerSession();
-  return session?.discordId && canViewKefuWorkspace(session.discordId) ? session : null;
+  return Boolean(session?.discordId && canViewKefuWorkspace(session.discordId));
 }
 
-/** Paginated recent failures and unresolved holds; no internal claim tokens are exposed. */
-export async function GET(request: Request) {
-  const session = await requireKefuAccess();
-  if (!session) {
+/** Recent provider failures for the customer-service inbox; no secrets are exposed. */
+export async function GET() {
+  if (!(await requireKefuAccess())) {
     return NextResponse.json(
       { ok: false, error: "forbidden" },
       { status: 403 },
     );
   }
 
-  const pagination = parseDeliveryPagination(new URL(request.url).searchParams);
-  if (!pagination) {
-    return NextResponse.json({ ok: false, error: "invalid_pagination" }, { status: 400 });
-  }
-  const source = new URL(request.url).searchParams.get('source');
-  if (source && !['center', 'outbox'].includes(source)) return NextResponse.json({ ok: false, error: 'invalid_source' }, { status: 400 });
-  if (source === 'outbox' && !canManageGuildOperations(session.discordId)) {
-    return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
-  }
-  return NextResponse.json({ ok: true, ...await (source === 'outbox' ? listOutboxDeliveries(prisma, pagination) : listNotificationDeliveries(prisma, pagination)) });
+  const rows = await prisma.guildNotificationDelivery.findMany({
+    where: {
+      status: {
+        in: [
+          GuildNotificationDeliveryStatus.PENDING,
+          GuildNotificationDeliveryStatus.FAILED,
+        ],
+      },
+      updatedAt: { gte: new Date(Date.now() - FAILURE_WINDOW_MS) },
+    },
+    include: {
+      notification: {
+        include: { dlmUser: notificationUser },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: MAX_ROWS,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    deliveries: rows.map((row) => ({
+      id: row.id,
+      notificationId: row.notificationId,
+      title: row.notification.title,
+      event: row.notification.event,
+      userName: userName(row.notification.dlmUser),
+      userDlmId: row.notification.dlmId,
+      channel: row.channel,
+      status: row.status,
+      attempts: row.attempts,
+      error: row.error,
+      updatedAt: row.updatedAt.toISOString(),
+    })),
+  });
 }
 
 /** Lets staff request the same bounded retry used by the protected scheduler. */
 export async function POST(request: Request) {
-  const session = await requireKefuAccess();
-  if (!session) {
+  if (!(await requireKefuAccess())) {
     return NextResponse.json(
       { ok: false, error: "forbidden" },
       { status: 403 },
     );
   }
-  const parsed = await readAdminJsonWrite(request);
-  if (!parsed.ok) return parsed.response;
-  const requestedLimit = notificationRetryLimit(parsed.body);
-  if (requestedLimit === null) return NextResponse.json({ ok: false, error: "请明确填写有效的重试数量" }, { status: 400 });
-  if (parsed.body.source && !['center', 'outbox'].includes(String(parsed.body.source))) return NextResponse.json({ ok: false, error: 'invalid_source' }, { status: 400 });
-  if (parsed.body.source === 'outbox') {
-    if (!canManageGuildOperations(session.discordId)) {
-      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
-    }
-    try {
-      const result = await postInternalBot<{ ok: boolean; attempted: number; uncertain: number; processingErrors: number }>('/internal/notifications/outbox-retry', { limit: requestedLimit });
-      return NextResponse.json(result, { status: result.ok ? 200 : 503 });
-    } catch { return NextResponse.json({ ok: false, error: '通知任务处理暂不可用，请稍后刷新状态。' }, { status: 503 }); }
-  }
+  const body = (await request.json().catch(() => null)) as {
+    limit?: unknown;
+  } | null;
+  const requestedLimit =
+    typeof body?.limit === "number" && Number.isFinite(body.limit)
+      ? body.limit
+      : 100;
   const result = await retryGuildNotificationDeliveries(requestedLimit);
-  return NextResponse.json(result, { status: result.ok ? 200 : 503 });
+  return NextResponse.json({ ok: true, ...result });
 }

@@ -35,8 +35,8 @@ type ApiResponse = {
 };
 
 const PAGE_SIZE = 6;
-const formatPrice = (value: PeiwanItem['price'], fallback: string) => {
-  if (value === null || value === undefined) return fallback;
+const formatPrice = (value: PeiwanItem['price']) => {
+  if (value === null || value === undefined) return '未设置';
   const formatted = formatAmountDown2(value);
   if (formatted === '—') return String(value);
   return `${formatted} 币/H`;
@@ -134,7 +134,7 @@ export function PeiwanListClient() {
     };
     fetchData();
     return () => controller.abort();
-  }, [queryString, siteCopy]);
+  }, [queryString]);
 
   const toggleGame = (tag: PeiwanGameCodeValue) => {
     setPage(1);
@@ -180,7 +180,7 @@ export function PeiwanListClient() {
           <div className="flex flex-wrap gap-2">
             {PEIWAN_GAME_OPTIONS.map((tag) => (
               <FilterChip key={tag.code} active={games.has(tag.code)} onClick={() => toggleGame(tag.code)}>
-                <SiteText namespace="site.constants.peiwan" value={tag.label} />
+                {tag.label}
               </FilterChip>
             ))}
             <FilterChip
@@ -274,7 +274,7 @@ export function PeiwanListClient() {
                 <div className="flex flex-wrap gap-2 text-xs text-gray-600">
                   <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">{item.level}</span>
                   <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5">{item.sex}</span>
-                  <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.d2c1bb7046b5" />{formatPrice(item.price, siteCopy("site.app.peiwanlist.peiwanlistclient.55a04b58cd2c"))}
+                  <span className="px-2 py-1 rounded-full bg-gray-100 border border-black/5"><SiteText copyKey="site.app.peiwanlist.peiwanlistclient.d2c1bb7046b5" />{formatPrice(item.price)}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-2">

@@ -52,7 +52,7 @@ export function refreshCopyEditor(current: CopyEditor | undefined, server: CopyS
 
 export function updateCopyDraft(editor: CopyEditor, entry: EditableCopyEntry, template: string): CopyEditor {
   const draft = { ...editor.draft };
-  if (template === entry.defaultText) delete draft[entry.key];
+  if (template === entry.defaultText && !entry.preserveDefault) delete draft[entry.key];
   else draft[entry.key] = template;
   return { ...editor, draft };
 }

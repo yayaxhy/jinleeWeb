@@ -1,4 +1,4 @@
-import { getSiteCopy } from "./site-copy-server";
+import { getSiteCopy } from "@/lib/site-copy-server";
 import { MiniAvailabilityStatus, OrderStatus, PeiwanStatus, Prisma } from '@prisma/client';
 import type { CurrentDlmUser } from '@/lib/current-dlm-user';
 import { postInternalBot } from '@/lib/internal-bot';
@@ -234,10 +234,14 @@ export async function listMiniTransactions(currentUser: CurrentDlmUser) {
   }));
 }
 
-/** Effective settings only: stored choices remain intact while external subscriptions are disabled. */
 export function getMiniNotificationSettings(currentUser: CurrentDlmUser) {
   void currentUser;
   return { critical: false, messages: false, dispatches: false };
+}
+
+export async function setMiniNotificationSettings(currentUser: CurrentDlmUser, payload: Record<string, unknown>) {
+  void payload;
+  return getMiniNotificationSettings(currentUser);
 }
 
 export async function getOwnPeiwanCard(currentUser: CurrentDlmUser) {
