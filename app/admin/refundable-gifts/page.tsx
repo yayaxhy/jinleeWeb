@@ -252,7 +252,7 @@ export default async function RefundableGiftsPage(props: PageProps) {
                     <td className="px-3 py-3 font-mono text-[11px] text-white/80 whitespace-normal break-words">
                       {record.individualTransactionId}
                       {manualByOriginal.has(record.individualTransactionId) && <p className="mt-2 text-amber-200">已人工处置，不能再次自动撤销</p>}
-                      {canManageGuildOperations(session?.discordId) && <Link className="mt-2 block text-cyan-200 hover:underline" href={manualByOriginal.has(record.individualTransactionId) ? `/admin/legacy-adjustments?requestId=${encodeURIComponent(manualByOriginal.get(record.individualTransactionId)!)}` : `/admin/legacy-adjustments?kind=GIFT&id=${encodeURIComponent(record.individualTransactionId)}`}>{manualByOriginal.has(record.individualTransactionId) ? '查看人工处置回执' : '人工核实后调整'}</Link>}
+                      {canManageGuildOperations(session?.discordId) && manualByOriginal.has(record.individualTransactionId) && <Link className="mt-2 block text-cyan-200 hover:underline" href={`/admin/legacy-adjustments?requestId=${encodeURIComponent(manualByOriginal.get(record.individualTransactionId)!)}`}>查看人工处置回执</Link>}
                     </td>
                     <td className="px-3 py-3 text-white/70 whitespace-normal break-words">{formatDate(record.createdAt)}</td>
                     <td className="px-3 py-3 whitespace-normal break-words">
