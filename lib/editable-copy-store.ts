@@ -4,7 +4,7 @@ import { BOT_COPY_CATALOG } from './bot-editable-copy-catalog';
 import { SITE_COPY_CATALOG } from './editable-copy-catalog';
 import { createEditableCopyService, type CopyDb, type CopyScope } from './editable-copy-service';
 
-export const editableCopyEnabled = () => process.env.EDITABLE_COPY_ENABLED === 'true';
+export const editableCopyEnabled = () => process.env.EDITABLE_COPY_ENABLED !== 'false';
 export const getEditableCopyCatalog = (scope: CopyScope) => scope === 'bot' ? BOT_COPY_CATALOG : SITE_COPY_CATALOG;
 export function getEditableCopyService(scope: CopyScope) {
   return createEditableCopyService(prisma as unknown as CopyDb, scope, getEditableCopyCatalog(scope));
