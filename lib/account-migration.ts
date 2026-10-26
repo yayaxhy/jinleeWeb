@@ -11,7 +11,7 @@ import {
 } from './account-migration-records';
 import {
   latestMigrationExpiry, mergeMigrationPeiwan, migrationCanonical, migrationDecimal as dec,
-  migrationPlanFingerprint, migrationSum, nonemptyMigrationValue, preferMigrationTarget,
+  migrationHash, migrationPlanFingerprint, migrationSum, nonemptyMigrationValue, preferMigrationTarget,
 } from './account-migration-policy';
 
 export type AccountMigrationRoleSnapshot = {
@@ -145,11 +145,23 @@ function projection(state: State, now: Date) {
   return { totals, base, commissionRate, peiwan, inherited, vipLevel, suppressedVipLevels };
 }
 
+function migrationRequestFingerprint(input: AccountMigrationInput, state: State) {
+  return migrationHash({
+    version: 2,
+    sourceDlmId: input.sourceDlmId,
+    targetDlmId: input.targetDlmId,
+    actorDlmId: input.actorDlmId ?? null,
+    actorDiscordId: input.actorDiscordId ?? null,
+    mode: input.mode,
+    plan: migrationPlanFingerprint(state.rows, input.roleSnapshot),
+  });
+}
+
 export async function previewAccountMigrationTx(tx: Prisma.TransactionClient, input: AccountMigrationInput, now = new Date()) {
   const state = await loadState(tx, input);
   assertState(input, state, now);
   const plan = projection(state, now);
-  const previewHash = migrationPlanFingerprint(state.rows, input.roleSnapshot);
+  const previewHash = migrationRequestFingerprint(input, state);
   const conflicts: Array<{ model: string; recordKey: string; policy: string }> = [];
   if (state.sourceKey && state.targetKey) for (const name of ['FarmPlot', 'LotteryPity', 'VoicePointSession', 'BlockStackPlayer', 'PointShopCart']) {
     const fields = migrationOwnerFields(name);
@@ -451,7 +463,7 @@ export async function executeAccountMigrationTx(tx: Prisma.TransactionClient, in
   await lockManualQuotaOwnersTx(tx, identityIds(before));
   const state = await loadState(tx, input);
   assertState(input, state, now);
-  if (migrationPlanFingerprint(state.rows, input.roleSnapshot) !== input.expectedPreviewHash) fail('身份、资料或权益已变化，请重新预览；本次未迁移', 'migration_preview_changed');
+  if (migrationRequestFingerprint(input, state) !== input.expectedPreviewHash) fail('身份、资料或权益已变化，请重新预览；本次未迁移', 'migration_preview_changed');
   const plan = projection(state, now);
   // Do not let database change-listeners mislabel a wallet move as recharge.
   await tx.$queryRaw`SELECT set_config('bot.skip_recharge_notify', 'true', true), set_config('app.suppress_peiwan_notifications', 'on', true)`;

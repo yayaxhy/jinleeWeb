@@ -1,3 +1,4 @@
+import { orderAuditIdentityFilter } from '@/lib/account-audit-history';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Prisma } from '@prisma/client';
@@ -47,18 +48,8 @@ export default async function RefundableOrdersPage(props: PageProps) {
   const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (currentPage - 1) * PAGE_SIZE;
 
-  const filters: Prisma.OrderAuditWhereInput[] = [{ createdAt: newEntityOnlyTime() }];
-  if (hostId) {
-    filters.push({
-      OR: [{ hostId }, { hostDlmId: hostId }],
-    });
-  }
-  if (workerId) {
-    filters.push({
-      OR: [{ workerId }, { workerDlmId: workerId }],
-    });
-  }
-  const whereClause: Prisma.OrderAuditWhereInput = filters.length ? { AND: filters } : {};
+  const whereClause: Prisma.OrderAuditWhereInput = await orderAuditIdentityFilter(prisma, { hostId, workerId });
+  whereClause.createdAt = newEntityOnlyTime();
 
   const [totalCount, records] = await Promise.all([
     prisma.orderAudit.count({ where: whereClause }),

@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+import { loadAccountMigrationBenefits, inheritedAutoCommissionExpiry } from '@/lib/account-migration-benefits';
 import { summarizeManualQuota } from '@/lib/manual-quota-view';
 
 import { SiteText } from "@/components/SiteCopyProvider";
@@ -422,13 +424,15 @@ export default async function Profile(props: ProfilePageProps) {
     peiwanId: entry.blocked.peiwan?.PEIWANID ?? null,
     createdAtLabel: formatUtcDate(entry.createdAt),
   }));
-  const autoCommissionActiveUntil = autoCommissionBuff?.activeUntil ?? null;
+  const migrationBenefits = await loadAccountMigrationBenefits(prisma, { dlmId }, now);
+  const autoCommissionActiveUntil = inheritedAutoCommissionExpiry(autoCommissionBuff?.activeUntil ?? null, migrationBenefits, now);
+  const ownQualificationActive = !!autoCommissionBuff?.lastQualifiedAt && new Date(autoCommissionBuff.lastQualifiedAt).getTime() + AUTO_COMMISSION_WINDOW_DAYS * 86400000 > now.getTime();
   const autoCommissionActive =
     isPeiwanMember &&
     !!autoCommissionActiveUntil &&
     new Date(autoCommissionActiveUntil).getTime() > now.getTime();
   const { windowStart: autoCommissionWindowStart, windowEnd: autoCommissionWindowEnd } =
-    isPeiwanMember && autoCommissionActive
+    isPeiwanMember && ownQualificationActive
       ? getAutoCommissionRetentionWindow(autoCommissionBuff?.lastQualifiedAt, now)
       : getAutoCommissionWindow(now);
   const autoCommissionIncomeRows = isPeiwanMember
@@ -441,7 +445,7 @@ export default async function Profile(props: ProfilePageProps) {
           },
           typeOfTransaction: { in: [...AUTO_COMMISSION_INCOME_TYPES] },
         },
-        select: { typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
+        select: { transactionId: true, typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
       })
     : [];
   const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
@@ -517,6 +521,7 @@ export default async function Profile(props: ProfilePageProps) {
 
   const autoCommissionCurrentAmount = isPeiwanMember
     ? autoCommissionIncomeRows.reduce((sum, row) => {
+        if (migrationBenefits.excludedIncomeIds.has(row.transactionId)) return sum;
         const rowType = String((row as { typeOfTransaction?: unknown }).typeOfTransaction ?? '');
         const before = parseNumeric(row.balanceBefore) ?? 0;
         const after = parseNumeric(row.balanceAfter) ?? 0;
@@ -536,22 +541,22 @@ export default async function Profile(props: ProfilePageProps) {
   );
   const autoCommissionWindowLabel = `${formatUtcDate(autoCommissionWindowStart)} ~ ${formatUtcDate(autoCommissionWindowEnd)}`;
   const autoCommissionEligibleNow =
-    isPeiwanMember && !autoCommissionActive && autoCommissionCurrentAmount >= AUTO_COMMISSION_THRESHOLD;
+    isPeiwanMember && !ownQualificationActive && autoCommissionCurrentAmount >= AUTO_COMMISSION_THRESHOLD;
   const autoCommissionStatusMeta = autoCommissionEligibleNow
     ? { label: '已达标', badgeClass: 'bg-amber-50 text-amber-600' }
     : getBuffStatusMeta(autoCommissionActiveUntil);
-  const autoCommissionCardTitle = autoCommissionActive ? '点了么福星陪玩保级进度' : '点了么福星陪玩进度';
+  const autoCommissionCardTitle = ownQualificationActive ? '点了么福星陪玩保级进度' : '点了么福星陪玩进度';
   const autoCommissionDeadlineLabel = formatUtcDate(autoCommissionWindowEnd);
   const autoCommissionShortfall = Math.max(0, AUTO_COMMISSION_THRESHOLD - autoCommissionCurrentAmount);
-  const autoCommissionHint = autoCommissionActive
+  const autoCommissionHint = ownQualificationActive
     ? `在 ${autoCommissionDeadlineLabel} 前累计收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，当前还差 ${formatNumber(autoCommissionShortfall)} 完成保级`
     : autoCommissionEligibleNow
       ? `最近30天累计实际收入已达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)}，福星状态等待同步`
     : `最近30天累计实际收入达到 ${formatNumber(AUTO_COMMISSION_THRESHOLD)} 即可晋升点了么福星陪玩`;
-  const profileCommissionRate =
-    autoCommissionActive && autoCommissionBuff?.targetShare != null
-      ? autoCommissionBuff.targetShare
-      : member?.commissionRate ?? null;
+  const profileCommissionBase = peiwan?.baseCommissionRate ?? member?.baseCommissionRate ?? peiwan?.commissionRate ?? member?.commissionRate ?? 0.75;
+  const profileCommissionRate = autoCommissionActive
+    ? Prisma.Decimal.max(profileCommissionBase, autoCommissionBuff?.targetShare ?? 0.91)
+    : member?.commissionRate ?? null;
 
   const flowQuota = summarizeManualQuota(flowBuff, quotaRows[1].filter(row => row.kind === 'flow'), new Date(), quotaRows[0].filter(row => row.kind === 'flow'));
   const spendQuota = summarizeManualQuota(spendBuff, quotaRows[1].filter(row => row.kind === 'spend'), new Date(), quotaRows[0].filter(row => row.kind === 'spend'));

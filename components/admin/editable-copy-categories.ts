@@ -249,6 +249,7 @@ const NAMESPACE_CATEGORIES: readonly { category: CopyCategoryId; prefixes: reado
     'site.lib.farmconfig.',
   ] },
   { category: 'account', prefixes: [
+    'site.components.admin.assettransferclient.',
     'site.app.accounts.',
     'site.app.api.discord.',
     'site.app.api.dlm.login.',

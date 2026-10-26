@@ -1,3 +1,4 @@
+import { giftAuditIdentityFilter } from '@/lib/account-audit-history';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
@@ -97,10 +98,8 @@ export default async function RefundableGiftsPage(props: PageProps) {
   const currentPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (currentPage - 1) * PAGE_SIZE;
 
-  const where: Prisma.GiftAuditWhereInput = {};
+  const where: Prisma.GiftAuditWhereInput = await giftAuditIdentityFilter(prisma, { giverId, receiverId });
   where.createdAt = newEntityOnlyTime();
-  if (giverId) where.giverId = giverId;
-  if (receiverId) where.receiverId = receiverId;
   const [totalCount, records] = await Promise.all([
     prisma.giftAudit.count({ where }),
     prisma.giftAudit.findMany({

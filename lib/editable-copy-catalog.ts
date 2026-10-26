@@ -17817,6 +17817,234 @@ const SITE_COPY_PART_8: readonly EditableCopyEntry[] = [
   }
 ];
 
+const SITE_COPY_PART_9: readonly EditableCopyEntry[] = [
+  {
+    "key": "site.components.admin.assettransferclient.756d73d0a099",
+    "group": "网站 · 个人中心与资产",
+    "label": "完整账号合并",
+    "defaultText": "完整账号合并",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:112"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.a24a62f1b8e2",
+    "group": "网站 · 个人中心与资产",
+    "label": "旧账号 DLM／Discord 编号",
+    "defaultText": "旧账号 DLM／Discord 编号",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:115"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.d6cac4d7e062",
+    "group": "网站 · 个人中心与资产",
+    "label": "新账号 DLM／Discord 编号",
+    "defaultText": "新账号 DLM／Discord 编号",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:117"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.80373aa01a9c",
+    "group": "网站 · 个人中心与资产",
+    "label": "预览合并方案",
+    "defaultText": "预览合并方案",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:120"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.1a842ba940f9",
+    "group": "网站 · 个人中心与资产",
+    "label": "合并后的预计资产",
+    "defaultText": "合并后的预计资产",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:128"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.de89e6d6377a",
+    "group": "网站 · 个人中心与资产",
+    "label": "确认合并并删除旧账号",
+    "defaultText": "确认合并并删除旧账号",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:131"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.65cdc83d84e5",
+    "group": "网站 · 个人中心与资产",
+    "label": "归档后跳过",
+    "defaultText": "归档后跳过",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:24"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.0587366cbd05",
+    "group": "网站 · 个人中心与资产",
+    "label": "重新查询结果",
+    "defaultText": "重新查询结果",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:134"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.494c68d01d71",
+    "group": "网站 · 个人中心与资产",
+    "label": "转移中…",
+    "defaultText": "转移中…",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:120"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.e531a367b5db",
+    "group": "网站 · 个人中心与资产",
+    "label": "资产转移完成",
+    "defaultText": "资产转移完成",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:136"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.c9e1217876aa",
+    "group": "网站 · 个人中心与资产",
+    "label": "源账号预览",
+    "defaultText": "源账号预览",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:123"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.4c8e25de5058",
+    "group": "网站 · 个人中心与资产",
+    "label": "目标账号预览",
+    "defaultText": "目标账号预览",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:123"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.24ea0eba5bc0",
+    "group": "网站 · 个人中心与资产",
+    "label": "总余额",
+    "defaultText": "总余额",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:15"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.e76c2a54f00e",
+    "group": "网站 · 个人中心与资产",
+    "label": "可提现",
+    "defaultText": "可提现",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:15"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.4a1813868ca6",
+    "group": "网站 · 个人中心与资产",
+    "label": "充值池",
+    "defaultText": "充值池",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:15"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.7a8ee319ada9",
+    "group": "网站 · 个人中心与资产",
+    "label": "累计消费",
+    "defaultText": "累计消费",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:15"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.10939f548645",
+    "group": "网站 · 个人中心与资产",
+    "label": "积分",
+    "defaultText": "积分",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:15"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.99ab7d9ab56a",
+    "group": "网站 · 个人中心与资产",
+    "label": "陪玩档案",
+    "defaultText": "陪玩档案",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:129"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.b71419a32522",
+    "group": "网站 · 个人中心与资产",
+    "label": "返回后台首页",
+    "defaultText": "返回后台首页",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:139"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.1cc07bb9d055",
+    "group": "网站 · 个人中心与资产",
+    "label": "资产转移失败，请稍后再试",
+    "defaultText": "资产转移失败，请稍后再试",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:14"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.287d5c664712",
+    "group": "网站 · 个人中心与资产",
+    "label": "无权访问",
+    "defaultText": "无权访问",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:51"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.f92e4d96a46a",
+    "group": "网站 · 个人中心与资产",
+    "label": "请求体不是合法 JSON",
+    "defaultText": "请求体不是合法 JSON",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:1"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.d5de70e4aca3",
+    "group": "网站 · 个人中心与资产",
+    "label": "源账号不存在，或尚未建立 DLMClub 身份",
+    "defaultText": "源账号不存在，或尚未建立 DLMClub 身份",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:1"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.835510003950",
+    "group": "网站 · 个人中心与资产",
+    "label": "目标账号不存在，或尚未建立 DLMClub 身份",
+    "defaultText": "目标账号不存在，或尚未建立 DLMClub 身份",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:1"
+  },
+  {
+    "key": "site.components.admin.assettransferclient.9cb8a1cf8f50",
+    "group": "网站 · 个人中心与资产",
+    "label": "源账号和目标账号不能相同",
+    "defaultText": "源账号和目标账号不能相同",
+    "variables": [],
+    "maxLength": 300,
+    "source": "components/admin/AssetTransferClient.tsx:1"
+  }
+];
+
 export const SITE_COPY_CATALOG: readonly EditableCopyEntry[] = [
   ...SITE_COPY_PART_0,
   ...SITE_COPY_PART_1,
@@ -17827,6 +18055,7 @@ export const SITE_COPY_CATALOG: readonly EditableCopyEntry[] = [
   ...SITE_COPY_PART_6,
   ...SITE_COPY_PART_7,
   ...SITE_COPY_PART_8,
+  ...SITE_COPY_PART_9,
 ];
 
 export const SITE_COPY_FIXED_VALUES: Readonly<Record<string, Readonly<Record<string,string>>>> = {
