@@ -8,7 +8,7 @@ const root = new URL('../', import.meta.url);
 const at = (relative) => fileURLToPath(new URL(relative, root));
 const source = await readFile(at('public/DLMLOGO.png'));
 const png = (width, height = width) => sharp(source)
-  .resize(width, height, { fit: 'contain', background: '#ffffff' })
+  .resize(width, height, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
   .png({ compressionLevel: 9 })
   .toBuffer();
 
