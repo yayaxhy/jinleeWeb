@@ -27,7 +27,7 @@ export function NavBar() {
             aria-label={siteCopy("site.components.navbar.4411bd10cf03", {value1: String(SITE_NAME)})}
             className="mr-4 flex shrink-0 items-center gap-2 leading-tight transition-colors duration-150 hover:text-neutral-600"
           >
-            <Image src={SITE_LOGO} alt={siteCopy("site.lib.site.7a183c580075")} width={52} height={52} className="rounded-xl object-contain" />
+            <Image src={siteCopy.image('site.image.brand.logo', SITE_LOGO)} alt={siteCopy("site.lib.site.7a183c580075")} width={52} height={52} className="rounded-xl object-contain" />
             <span className="flex flex-col gap-1">
               <span className="text-xl sm:text-2xl font-bold normal-case tracking-[0.08em]"><SiteText copyKey="site.lib.site.0b3df39130a2" /></span>
               <span className="text-[10px] sm:text-xs tracking-[0.12em]"><SiteText copyKey="site.lib.site.7a183c580075" /></span>

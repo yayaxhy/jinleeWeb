@@ -5,7 +5,8 @@ import { COPY_CATEGORIES, classifyCopyEntry, type CopyCategoryId } from './edita
 import { CopyUnitEditor } from './CopyUnitEditor';
 import { filterCopyUnits, getCopyUnits, type CopyUnit } from '@/lib/editable-copy-units';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { validateCopyOverrides } from '@/lib/editable-copy-contract';
+import { isUploadedCopyImage, validateCopyOverrides, type EditableCopyEntry } from '@/lib/editable-copy-contract';
+import { COPY_IMAGE_MAX_BYTES, copyImageFailureMessage } from '@/lib/editable-copy-image-policy';
 import {
   appendCopyHistory, changedCopyKeys, createCopyEditor,
   refreshCopyEditor, resolveCopyConflict, updateCopyDraft,
@@ -13,7 +14,9 @@ import {
 } from './editable-copy-editor';
 
 const PAGE_SIZE = 10;
-const categoryTabs = [{ id: 'all' as const, label: '全部' }, ...COPY_CATEGORIES];
+type CategoryTab = CopyCategoryId | 'all' | 'images';
+type ImageUpload = { pending: boolean; error?: string; success?: boolean };
+const categoryTabs = [{ id: 'all' as const, label: '全部' }, { id: 'images' as const, label: '带图片' }, ...COPY_CATEGORIES];
 const categoryLabels = Object.fromEntries(COPY_CATEGORIES.map(({ id, label }) => [id, label]));
 const scopeLabels: Record<CopyScope, string> = { bot: 'Discord Bot', site: '网站' };
 const inputClass = 'w-full rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300/70 disabled:opacity-50';
@@ -22,6 +25,7 @@ const buttonClass = 'rounded-full border border-white/20 px-4 py-2 text-sm hover
 class CopyRequestError extends Error {
   constructor(message: string, readonly status: number) { super(message); }
 }
+class CopyImageUploadError extends Error {}
 
 async function requestCopy(scope: CopyScope, init?: RequestInit, beforeVersion?: number): Promise<CopyState> {
   const params = new URLSearchParams({ scope });
@@ -59,13 +63,23 @@ function unitSummary(unit: CopyUnit) {
   }).join(' ');
 }
 
+function UnitThumbnail({ unit, overrides }: { unit: CopyUnit; overrides: Record<string, string> }) {
+  const slot = unit.images.find(image => image.placement === 'image') ?? unit.images[0];
+  if (!slot) return null;
+  const entry = unit.entries.find(item => item.key === slot.key);
+  const src = overrides[slot.key] ?? entry?.defaultText ?? slot.defaultSrc;
+  // Uploaded media and registered defaults are validated before reaching here.
+  // eslint-disable-next-line @next/next/no-img-element
+  return src ? <img src={src} alt="" loading="lazy" className="mt-2 h-20 w-full rounded-lg bg-black/20 object-contain" /> : null;
+}
+
 export function EditableCopyManager() {
   const [scope, setScope] = useState<CopyScope>('bot');
   const [editors, setEditors] = useState<Partial<Record<CopyScope, CopyEditor>>>({});
   const [busy, setBusy] = useState<Partial<Record<CopyScope, string>>>({});
   const [messages, setMessages] = useState<Partial<Record<CopyScope, { text: string; failed?: boolean }>>>({});
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<CopyCategoryId | 'all'>('all');
+  const [category, setCategory] = useState<CategoryTab>('all');
   const [modifiedOnly, setModifiedOnly] = useState(false);
   const [conflictsOnly, setConflictsOnly] = useState(false);
   const [page, setPage] = useState(0);
@@ -74,10 +88,15 @@ export function EditableCopyManager() {
   const [rollbackTarget, setRollbackTarget] = useState<{ scope: CopyScope; value: CopyVersion } | null>(null);
   const [rollbackReason, setRollbackReason] = useState('');
   const requests = useRef<Record<CopyScope, number>>({ bot: 0, site: 0 });
+  const [imageUploads, setImageUploads] = useState<Partial<Record<CopyScope, Record<string, ImageUpload>>>>({});
+  const uploadRequests = useRef<Record<string, number>>({});
+  const pendingUploads = useRef(new Set<string>());
   const editor = editors[scope];
   const operation = busy[scope];
   const message = messages[scope];
   const reason = reasons[scope] ?? '';
+  const scopeUploads = imageUploads[scope] ?? {};
+  const uploading = Object.values(scopeUploads).some(upload => upload.pending);
   const updateEditor = (target: CopyScope, update: (current: CopyEditor) => CopyEditor) => setEditors((current) => current[target] ? { ...current, [target]: update(current[target]!) } : current);
 
   const refresh = useCallback(async (target: CopyScope, signal?: AbortSignal) => {
@@ -116,16 +135,17 @@ export function EditableCopyManager() {
     query, modifiedOnly, conflictsOnly, overrides: editor.draft, conflicts: editor.conflicts,
   }) : [], [units, editor, query, modifiedOnly, conflictsOnly]);
   const categoryCounts = useMemo(() => {
-    const counts: Partial<Record<CopyCategoryId | 'all', number>> = { all: matchingUnits.length };
+    const counts: Partial<Record<CategoryTab, number>> = { all: matchingUnits.length, images: matchingUnits.filter(unit => unit.images.length).length };
     for (const unit of matchingUnits) {
+      if (unit.images.length) continue;
       const id = unitCategory(unit);
       counts[id] = (counts[id] ?? 0) + 1;
     }
     return counts;
   }, [matchingUnits]);
   const filtered = useMemo(() => category === 'all' ? matchingUnits
-    : matchingUnits.filter(unit => unitCategory(unit) === category), [matchingUnits, category]);
-  const categoryLabel = category === 'all' ? '全部文案' : categoryLabels[category];
+    : matchingUnits.filter(unit => category === 'images' ? unit.images.length > 0 : !unit.images.length && unitCategory(unit) === category), [matchingUnits, category]);
+  const categoryLabel = category === 'all' ? '全部文案' : category === 'images' ? '带图片' : categoryLabels[category];
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pages - 1);
   const visible = filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
@@ -138,11 +158,11 @@ export function EditableCopyManager() {
     try { return { error: '', overrides: validateCopyOverrides(editor.server.catalog, editor.draft) }; }
     catch (error) { return { error: errorText(error), overrides: null }; }
   }, [editor]);
-  const writable = Boolean(editor?.server.enabled && !operation && !editor.needsRefresh && !editor.conflicts.length);
+  const writable = Boolean(editor?.server.enabled && !operation && !uploading && !editor.needsRefresh && !editor.conflicts.length);
   const canPublish = writable && dirtyKeys.length > 0 && Boolean(validation.overrides) && reason.trim().length <= 300;
 
   const mutate = async (action: 'publish' | 'rollback') => {
-    if (!editor || !writable) return;
+    if (!editor || !writable || [...pendingUploads.current].some(key => key.startsWith(`${scope}:`))) return;
     const target = rollbackTarget?.scope === scope ? rollbackTarget.value : null;
     if (action === 'publish' && !canPublish) return;
     if (action === 'rollback' && (!target || dirtyKeys.length || rollbackReason.trim().length > 300)) return;
@@ -150,11 +170,12 @@ export function EditableCopyManager() {
     setBusy((current) => ({ ...current, [targetScope]: action }));
     try {
       const data = await requestCopy(targetScope, {
-        method: 'POST', body: JSON.stringify({ scope: targetScope, action, expectedRevision: editor.server.revision,
+        method: 'POST', body: JSON.stringify({ scope: targetScope, action, expectedRevision: editor.server.revision, imageSchemaVersion: 1,
           ...(action === 'publish' ? { overrides: validation.overrides, reason: reason.trim() } : { targetVersion: target!.version, reason: rollbackReason.trim() }),
         }),
       });
       setEditors((current) => ({ ...current, [targetScope]: createCopyEditor(data) }));
+      setImageUploads(current => ({ ...current, [targetScope]: {} }));
       setMessages((current) => ({ ...current, [targetScope]: { text: `${action === 'publish' ? '已保存并发布' : '已将历史内容发布为新版本'} ${versionLabel(data.activeVersion)}。${targetScope === 'bot' ? 'Bot 正常运行时约 15 秒加载新文案' : '网站后续读取时使用新文案'}，历史消息不会批量重写。` } }));
       if (action === 'publish') setReasons((current) => ({ ...current, [targetScope]: '' }));
       else { setRollbackTarget(null); setRollbackReason(''); }
@@ -163,6 +184,61 @@ export function EditableCopyManager() {
       if (mustRefresh) updateEditor(targetScope, (current) => ({ ...current, needsRefresh: true }));
       setMessages((current) => ({ ...current, [targetScope]: { text: `${errorText(error)}${mustRefresh ? ' 输入已保留；请先刷新核对，再继续发布。' : ''}`, failed: true } }));
     } finally { setBusy((current) => ({ ...current, [targetScope]: undefined })); }
+  };
+
+  const clearImageUpload = (target: CopyScope, key: string) => {
+    const requestKey = `${target}:${key}`;
+    uploadRequests.current[requestKey] = (uploadRequests.current[requestKey] ?? 0) + 1;
+    pendingUploads.current.delete(requestKey);
+    setImageUploads(current => {
+      const next = { ...current[target] };
+      delete next[key];
+      return { ...current, [target]: next };
+    });
+  };
+
+  const uploadImage = async (entry: EditableCopyEntry, file: File) => {
+    if (!editor || operation || entry.kind !== 'image') return;
+    const target = scope;
+    const requestKey = `${target}:${entry.key}`;
+    if (pendingUploads.current.has(requestKey)) return;
+    const request = (uploadRequests.current[requestKey] ?? 0) + 1;
+    uploadRequests.current[requestKey] = request;
+    const initialPublished = editor.server.overrides[entry.key];
+    const setUpload = (upload: ImageUpload) => {
+      if (uploadRequests.current[requestKey] !== request) return;
+      setImageUploads(current => ({ ...current, [target]: { ...current[target], [entry.key]: upload } }));
+    };
+    if (!file.size || file.size > COPY_IMAGE_MAX_BYTES) {
+      setUpload({ pending: false, error: copyImageFailureMessage(file.size ? 'too_large' : 'unreadable') });
+      return;
+    }
+    pendingUploads.current.add(requestKey);
+    setUpload({ pending: true });
+    try {
+      const response = await fetch(`/api/admin/copy/images?${new URLSearchParams({ scope: target, key: entry.key })}`, {
+        method: 'POST', body: file, cache: 'no-store',
+      });
+      const payload: { ok?: boolean; url?: string; error?: string } = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.ok) throw new CopyImageUploadError(copyImageFailureMessage(payload.error ?? (response.status === 413 ? 'too_large' : response.status === 403 ? 'forbidden' : undefined)));
+      if (!isUploadedCopyImage(payload.url)) throw new CopyImageUploadError(copyImageFailureMessage('missing'));
+      if (uploadRequests.current[requestKey] !== request) return;
+      const url = payload.url;
+      updateEditor(target, current => {
+        const next = updateCopyDraft(current, entry, url);
+        // A refresh may have loaded another publication while this file was
+        // uploading. Preserve both choices through the existing conflict UI.
+        if (current.server.overrides[entry.key] !== initialPublished && current.server.overrides[entry.key] !== url) {
+          next.conflicts = [...new Set([...next.conflicts, entry.key])];
+        }
+        return next;
+      });
+      setUpload({ pending: false, success: true });
+    } catch (error) {
+      setUpload({ pending: false, error: error instanceof CopyImageUploadError ? error.message : copyImageFailureMessage('upload_failed') });
+    } finally {
+      if (uploadRequests.current[requestKey] === request) pendingUploads.current.delete(requestKey);
+    }
   };
 
   const loadMoreHistory = async () => {
@@ -222,20 +298,29 @@ export function EditableCopyManager() {
             onClick={() => setSelectedUnitId(`${scope}:${unit.id}`)}>
             <span className="block text-xs text-white/40">{categoryLabels[unitCategory(unit)]}</span>
             <span className="mt-1 line-clamp-3 break-words text-sm leading-6">{unit.title}</span>
+            <UnitThumbnail unit={unit} overrides={editor.draft} />
             <span className="mt-1 line-clamp-2 break-words text-xs leading-5 text-white/40">{unitSummary(unit)}</span>
             {unit.keys.some(key => dirty.has(key)) && <span className="mt-2 inline-block text-xs text-amber-200">待发布</span>}
           </button>)}
         </nav>
         <CopyUnitEditor key={`${scope}:${selectedUnit.id}`} unit={selectedUnit} editor={editor} categoryLabel={categoryLabels[unitCategory(selectedUnit)]}
           disabled={Boolean(operation)} onEdit={(item, value) => updateEditor(scope, current => updateCopyDraft(current, item, value))}
-          onReset={() => updateEditor(scope, current => selectedUnit.entries.reduce((next, entry) => updateCopyDraft(next, entry, entry.defaultText), current))}
-          onResolve={use => updateEditor(scope, current => selectedUnit.keys.filter(key => current.conflicts.includes(key)).reduce((next, key) => resolveCopyConflict(next, key, use), current))} />
+          imageUploads={scopeUploads} onUpload={uploadImage}
+          onResetImage={entry => { clearImageUpload(scope, entry.key); updateEditor(scope, current => updateCopyDraft(current, entry, entry.defaultText)); }}
+          onReset={() => {
+            for (const image of selectedUnit.images) clearImageUpload(scope, image.key);
+            updateEditor(scope, current => selectedUnit.entries.reduce((next, entry) => updateCopyDraft(next, entry, entry.defaultText), current));
+          }}
+          onResolve={use => {
+            if (use === 'published') for (const image of selectedUnit.images) clearImageUpload(scope, image.key);
+            updateEditor(scope, current => selectedUnit.keys.filter(key => current.conflicts.includes(key)).reduce((next, key) => resolveCopyConflict(next, key, use), current));
+          }} />
       </div>}
       {editor && !filtered.length && <p className="rounded-xl border border-dashed border-white/20 p-8 text-center text-sm text-white/50">{editor.server.catalog.length ? '没有匹配的文案，请调整搜索或筛选。' : '当前范围暂无可编辑文案。'}</p>}
     </section>
     {filtered.length > PAGE_SIZE && <nav aria-label="文案分页" className="flex items-center justify-center gap-4"><button type="button" className={buttonClass} disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>上一页</button><span className="text-sm text-white/60">{currentPage + 1} / {pages} · {filtered.length} 项</span><button type="button" className={buttonClass} disabled={currentPage === pages - 1} onClick={() => setPage(currentPage + 1)}>下一页</button></nav>}
     <section className="sticky bottom-3 z-10 space-y-3 rounded-2xl border border-white/20 bg-slate-950/95 p-4 shadow-xl backdrop-blur" aria-label="发布文案">
-      <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm">{scopeLabels[scope]} · {dirtyKeys.length ? `${dirtyUnitCount} 项修改待发布` : '没有待发布修改'}</p><div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={!editor || Boolean(operation) || !dirtyKeys.length || editor.needsRefresh} onClick={() => { if (editor) { setEditors((current) => ({ ...current, [scope]: createCopyEditor(editor.server) })); setRollbackTarget(null); } }}>放弃修改，载入已发布文案</button><button type="button" disabled={!canPublish} onClick={() => void mutate('publish')} className="rounded-full bg-cyan-200 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-40">{operation === 'publish' ? '正在发布…' : '保存并发布'}</button></div></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm">{scopeLabels[scope]} · {dirtyKeys.length ? `${dirtyUnitCount} 项修改待发布` : '没有待发布修改'}</p><div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={!editor || Boolean(operation) || uploading || !dirtyKeys.length || editor.needsRefresh} onClick={() => { if (editor && ![...pendingUploads.current].some(key => key.startsWith(`${scope}:`))) { setEditors((current) => ({ ...current, [scope]: createCopyEditor(editor.server) })); setImageUploads(current => ({ ...current, [scope]: {} })); setRollbackTarget(null); } }}>放弃修改，载入已发布文案</button><button type="button" disabled={!canPublish} onClick={() => void mutate('publish')} className="rounded-full bg-cyan-200 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-40">{operation === 'publish' ? '正在发布…' : '保存并发布'}</button></div></div>
       <label className="flex flex-col gap-2 sm:flex-row sm:items-center"><span className="shrink-0 text-xs text-white/50">修改原因（选填）</span><input value={reason} maxLength={300} disabled={Boolean(operation)} className={inputClass} placeholder="例如：更新活动欢迎语" onChange={(event) => setReasons((current) => ({ ...current, [scope]: event.target.value }))} /></label>
     </section>
     <section className="space-y-4 rounded-2xl border border-white/10 p-4 sm:p-5" aria-label="文案历史版本"><div><h2 className="font-semibold">{scopeLabels[scope]}历史版本</h2></div>

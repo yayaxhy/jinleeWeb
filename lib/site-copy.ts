@@ -1,5 +1,6 @@
 import { SITE_COPY_CATALOG, SITE_COPY_FIXED_VALUES } from './editable-copy-catalog';
-import { renderCopyTemplate } from './editable-copy-contract';
+import { isUploadedCopyImage, renderCopyTemplate } from './editable-copy-contract';
+import { SITE_IMAGE_CATALOG } from './editable-image-catalog';
 
 export type SiteCopySnapshot = { version: number; overrides: Record<string, string> };
 /** Published versions are immutable; polling the same version must retain callback identity. */
@@ -7,6 +8,7 @@ export function newerSiteCopySnapshot(current: SiteCopySnapshot, next: SiteCopyS
   return next.version > current.version ? next : current;
 }
 export type SiteCopyValues = Record<string, string | number>;
+const imageKeys = new Set(SITE_IMAGE_CATALOG.map(entry => entry.key));
 const entries = new Map(SITE_COPY_CATALOG.map((entry) => [entry.key, entry]));
 const byDefault = new Map<string, typeof SITE_COPY_CATALOG[number][]>();
 for (const entry of SITE_COPY_CATALOG) {
@@ -33,6 +35,9 @@ export function createSiteCopy(overrides: Record<string, string> = {}) {
     const entry = matches.find((item) => namespace && item.key.startsWith(namespace + '.'));
     return entry ? copy(entry.key) : value;
   };
+  /** Missing or invalid image overrides preserve the caller’s exact original source. */
+  copy.image = (key: string, fallback: string): string =>
+    imageKeys.has(key) && isUploadedCopyImage(overrides[key]) ? overrides[key] : fallback;
   return copy;
 }
 export type SiteCopyRenderer = ReturnType<typeof createSiteCopy>;

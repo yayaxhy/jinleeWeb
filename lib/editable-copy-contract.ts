@@ -1,6 +1,7 @@
 /** Presentation-only templates. No evaluation, markup injection or business data mutation. */
 export type EditableCopyEntry = {
   key: string;
+  kind?: 'image';
   group: string;
   label: string;
   defaultText: string;
@@ -19,10 +20,19 @@ const VARIABLE = /\{([a-zA-Z][a-zA-Z0-9_]*)\}/g;
 const UNSAFE_CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u202a-\u202e\u2066-\u2069]/;
 const MENTION = /<[@#][^>]*>|@everyone|@here/gi;
 export const COPY_MAX_BYTES = 2 * 1024 * 1024;
+export const isUploadedCopyImage = (value: unknown): value is string => typeof value === 'string'
+  && /^\/api\/copy\/images\/[a-f0-9]{64}\.(png|jpg|webp|gif)$/.test(value);
+export class CopyImageReferenceError extends Error {
+  constructor() { super('图片未找到，请重新上传。'); }
+}
 
 function mentions(text: string): string[] { return [...text.matchAll(MENTION)].map(match => match[0]).sort(); }
 
 export function validateCopyTemplate(entry: EditableCopyEntry, text: unknown): string {
+  if (entry.kind === 'image') {
+    if (typeof text !== 'string' || text.length > entry.maxLength || (text !== entry.defaultText && !isUploadedCopyImage(text))) throw new CopyImageReferenceError();
+    return text;
+  }
   if (typeof text !== 'string' || text.length > entry.maxLength || (!text.trim() && !(entry.allowEmpty && text === ''))) throw new Error(`${entry.label}：请填写不超过 ${entry.maxLength} 字的文案`);
   if (UNSAFE_CONTROL.test(text) || /[\uD800-\uDFFF]/u.test(text)) throw new Error(`${entry.label}：含有无效字符`);
   if (entry.singleLine && /[\r\n]/.test(text)) throw new Error(`${entry.label}：只能填写一行`);

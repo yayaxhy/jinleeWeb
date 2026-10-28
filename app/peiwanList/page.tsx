@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { getSiteCopy } from '@/lib/site-copy-server';
+import { withSiteImageMetadata } from '@/lib/site-copy-metadata';
 
 import { Footer } from '@/components/Footer';
 import {
@@ -9,7 +11,7 @@ import {
 
 import { PeiwanListClient } from './PeiwanListClient';
 
-export const metadata: Metadata = {
+const defaultMetadata: Metadata = {
   title: '欧服陪玩列表｜点了么娱乐公会',
   description: '查看点了么娱乐公会欧服最智能的陪玩公会推荐、擅长游戏与服务价格，寻找合适的欧服游戏伙伴。',
   alternates: {
@@ -37,6 +39,10 @@ export const metadata: Metadata = {
     images: [SITE_OG_IMAGE],
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  return withSiteImageMetadata(defaultMetadata, await getSiteCopy());
+}
 
 export default function PartnersPage() {
   return (

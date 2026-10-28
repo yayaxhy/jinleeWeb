@@ -28,6 +28,8 @@ import {
   type LotteryFusionSourceKind,
 } from '@/lib/lottery-fusion';
 import { resolveLocalVoucherArt, resolveVoucherDisplayArt } from '@/lib/local-voucher-art';
+import { SITE_FIXED_IMAGE_KEYS, SITE_PRIZE_IMAGE_KEYS } from '@/lib/editable-image-catalog';
+import type { SiteCopyRenderer } from '@/lib/site-copy';
 
 export type FusionItemView = {
   id: string;
@@ -206,8 +208,13 @@ const resolvePrizeFallbackArt = (prizeName: string) => {
   return null;
 };
 
-const getPrizeArt = (item: Pick<FusionItemView, 'prizeName' | 'imageUrl'> | Pick<FusionResultView, 'prizeName' | 'imageUrl'>) => {
-  return resolveVoucherDisplayArt(item.prizeName, item.imageUrl) ?? resolvePrizeFallbackArt(item.prizeName);
+const getPrizeArt = (item: Pick<FusionItemView, 'prizeName' | 'imageUrl'> | Pick<FusionResultView, 'prizeName' | 'imageUrl'>, image: SiteCopyRenderer['image']) => {
+  const approvedArt = resolveLocalVoucherArt(item.prizeName);
+  if (approvedArt) return image(SITE_PRIZE_IMAGE_KEYS[item.prizeName.trim()] ?? '', approvedArt);
+  const existingArt = resolveVoucherDisplayArt(item.prizeName, item.imageUrl);
+  if (existingArt) return existingArt;
+  const fallback = resolvePrizeFallbackArt(item.prizeName);
+  return fallback ? image(SITE_FIXED_IMAGE_KEYS[fallback] ?? '', fallback) : null;
 };
 
 const getPoolText = (value?: string | null) => {
@@ -502,7 +509,7 @@ export function LotteryFusionClient({
             <div className="space-y-6 lg:space-y-10">
               <div className="flex justify-center lg:justify-center">
                 <img
-                  src="/DLMLOGO.png"
+                  src={siteCopy.image('site.image.brand.logo', '/DLMLOGO.png')}
                   alt={siteCopy("site.components.profile.lotteryfusionclient.0b3df39130a2")}
                   className="h-[72px] w-auto object-contain lg:h-[108px]"
                 />
@@ -676,7 +683,7 @@ export function LotteryFusionClient({
                       }`}
                     >
                       {selectedSlots.map((item, index) => {
-                        const art = item ? getPrizeArt(item) : null;
+                        const art = item ? getPrizeArt(item, siteCopy.image) : null;
 
                         return (
                           <div
@@ -745,9 +752,9 @@ export function LotteryFusionClient({
                             <div className="flex h-full w-full max-w-[400px] flex-col overflow-hidden rounded-[22px] border border-[#f2d0b0]/45 bg-[radial-gradient(circle_at_top,_rgba(95,45,34,0.84),_rgba(69,30,23,0.98)_68%)] px-3 py-3 sm:rounded-[24px] sm:px-4 sm:py-4">
                               <div className="flex min-h-[118px] flex-1 items-center justify-center sm:min-h-[146px]">
                                 <div className="flex h-full w-full items-center justify-center overflow-hidden">
-                                  {getPrizeArt(completedResult) ? (
+                                  {getPrizeArt(completedResult, siteCopy.image) ? (
                                     <img
-                                      src={getPrizeArt(completedResult) ?? undefined}
+                                      src={getPrizeArt(completedResult, siteCopy.image) ?? undefined}
                                       alt={siteCopy.text(completedResult.prizeName, "site.lib.vouchercatalog")}
                                       className="max-h-[94px] object-contain drop-shadow-[0_0_20px_rgba(255,226,186,0.46)] sm:max-h-[122px]"
                                     />
@@ -901,7 +908,7 @@ export function LotteryFusionClient({
                 <div className={`mt-6 ${inventoryView === 'grid' ? 'grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6' : 'space-y-3'}`}>
                   {filteredItems.map((item) => {
                     const selected = selectedIds.includes(item.id);
-                    const art = getPrizeArt(item);
+                    const art = getPrizeArt(item, siteCopy.image);
 
                     if (inventoryView === 'compact') {
                       return (
@@ -1042,7 +1049,7 @@ export function LotteryFusionClient({
                 </ul>
 
                 <img
-                  src="/lottery-fusion/reference/fusion-rose-corner.png"
+                  src={siteCopy.image('site.image.fusion.rose-corner', '/lottery-fusion/reference/fusion-rose-corner.png')}
                   alt={""}
                   aria-hidden="true"
                   className="pointer-events-none absolute bottom-0 right-0 w-[112px] sm:w-[168px]"

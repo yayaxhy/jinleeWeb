@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MAX_PLOTS, getFarmSeedDurationLabel, type FarmSeedTypeValue } from '@/lib/farmConfig';
 import { FARM_CROP_ASSETS, FARM_SCENE_ASSETS } from '@/lib/farmArt';
+import { SITE_FIXED_IMAGE_KEYS } from '@/lib/editable-image-catalog';
 import {
   SCENE_BASE_WIDTH,
   SCENE_BASE_HEIGHT,
@@ -410,6 +411,7 @@ function OverlayDrawer({ title, open, onClose, children }: { title: string; open
 
 export function FarmClient({ initialDashboard }: Props) {
   const siteCopy = useSiteCopy();
+  const publicFarmArt = (source: string) => siteCopy.image(SITE_FIXED_IMAGE_KEYS[source] ?? '', source);
   const formatRemaining = useCallback((remainingSeconds: number) => {
     if (remainingSeconds <= 0) return siteCopy("site.components.farm.farmclient.44d5383c87ee");
     const hours = Math.floor(remainingSeconds / 3600);
@@ -1040,12 +1042,12 @@ export function FarmClient({ initialDashboard }: Props) {
           <div className="pointer-events-none absolute inset-[8px] rounded-[10px] border-[2px] border-[#ffeeb7]/42" />
           <div className="pointer-events-none absolute -left-[8%] top-[16%] h-[62%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(130,41,28,0.18),_rgba(130,41,28,0.02)_68%,_transparent_74%)] blur-2xl" />
           <div className="pointer-events-none absolute -right-[8%] top-[18%] h-[60%] w-[16%] rounded-[50%] bg-[radial-gradient(circle,_rgba(220,181,92,0.2),_rgba(220,181,92,0.02)_68%,_transparent_74%)] blur-2xl" />
-          <Image src={FARM_SCENE_ASSETS.manorBase} alt={siteCopy("site.components.farm.farmclient.22a03b9975b6")} fill priority unoptimized className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+          <Image src={publicFarmArt(FARM_SCENE_ASSETS.manorBase)} alt={siteCopy("site.components.farm.farmclient.22a03b9975b6")} fill priority unoptimized className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,_rgba(127,20,17,0.38),_rgba(127,20,17,0.06),_transparent)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[44%] bg-[radial-gradient(circle_at_50%_8%,_rgba(255,248,224,0.88),_rgba(255,248,224,0.12)_46%,_transparent_62%)]" />
           <div className="pointer-events-none absolute inset-x-[12%] bottom-[5%] h-[26%] rounded-[50%] bg-[radial-gradient(circle,_rgba(245,223,159,0.14),_rgba(245,223,159,0.01)_72%,_transparent_76%)]" />
-          <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={58} height={58} className="pointer-events-none absolute left-[34%] top-[26%] w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
-          <Image src={FARM_SCENE_ASSETS.butterfly} alt="" width={52} height={52} className="pointer-events-none absolute left-[62%] top-[34%] w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
+          <Image src={publicFarmArt(FARM_SCENE_ASSETS.butterfly)} alt="" width={58} height={58} className="pointer-events-none absolute left-[34%] top-[26%] w-[58px] opacity-90 [animation:farmButterflyFloat_7s_ease-in-out_infinite]" />
+          <Image src={publicFarmArt(FARM_SCENE_ASSETS.butterfly)} alt="" width={52} height={52} className="pointer-events-none absolute left-[62%] top-[34%] w-[52px] opacity-85 [animation:farmButterflyFloat_8.5s_ease-in-out_infinite_reverse]" />
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute left-[17%] top-[31%] h-16 w-24 rounded-full border border-[#d8f8ff]/45 [animation:farmRippleFloat_6.5s_ease-in-out_infinite]" />
             <div className="absolute left-[21%] top-[33%] h-12 w-20 rounded-full border border-[#e7fbff]/42 [animation:farmRippleFloat_7.2s_ease-in-out_infinite_reverse]" />
@@ -1185,13 +1187,13 @@ export function FarmClient({ initialDashboard }: Props) {
             <div className="absolute inset-0">
                   <div className="pointer-events-none absolute inset-0 z-[1]">
                     <Image
-                      src={FARM_SCENE_ASSETS.fieldSurface}
+                      src={publicFarmArt(FARM_SCENE_ASSETS.fieldSurface)}
                       alt=""
                       fill
                       className="object-cover opacity-100"
                     />
                     <Image
-                      src={FARM_SCENE_ASSETS.fieldRim}
+                      src={publicFarmArt(FARM_SCENE_ASSETS.fieldRim)}
                       alt=""
                       fill
                       className="object-cover opacity-100"
@@ -1325,7 +1327,7 @@ export function FarmClient({ initialDashboard }: Props) {
                           {(tooltipVisible || activePlotIndex === entry.plotIndex) ? (
                             <div className="pointer-events-none absolute inset-x-[12%] -top-4 flex justify-center">
                               <div className="relative h-8 w-8 sm:h-9 sm:w-9">
-                                <Image src={FARM_SCENE_ASSETS.woodSign} alt="" fill className="object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.16)]" />
+                                <Image src={publicFarmArt(FARM_SCENE_ASSETS.woodSign)} alt="" fill className="object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.16)]" />
                                 <span className="absolute inset-x-0 top-[28%] text-center text-[9px] font-black tracking-[0.16em] text-[#583514] sm:text-[10px]">{String(entry.plotIndex).padStart(2, '0')}</span>
                               </div>
                             </div>
@@ -1337,11 +1339,11 @@ export function FarmClient({ initialDashboard }: Props) {
                             {harvestTransition ? (
                               <>
                                 <div className="absolute inset-0">
-                                  <Image src={FARM_SCENE_ASSETS.plotHarvested} alt="" fill className="object-contain opacity-0 scale-[0.82]" style={{ animation: 'farmHarvestFieldReset 0.8s ease-out forwards' }} />
+                                  <Image src={publicFarmArt(FARM_SCENE_ASSETS.plotHarvested)} alt="" fill className="object-contain opacity-0 scale-[0.82]" style={{ animation: 'farmHarvestFieldReset 0.8s ease-out forwards' }} />
                                 </div>
                                 <div className="absolute inset-0">
                                   <Image
-                                    src={harvestTransition.previousAsset}
+                                    src={publicFarmArt(harvestTransition.previousAsset)}
                                     alt={entry.title}
                                     fill
                                     className={`object-contain ${harvestTransition.previousClassName}`}
@@ -1354,11 +1356,11 @@ export function FarmClient({ initialDashboard }: Props) {
                               <>
                                 <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,_rgba(188,255,165,0.38),_rgba(188,255,165,0.02)_72%)] opacity-0" style={{ animation: 'farmPlantBurst 0.9s ease-out forwards' }} />
                                 <div className="absolute inset-0">
-                                  <Image src={plantTransition.asset} alt="" fill className="object-contain opacity-0 scale-[0.45]" style={{ animation: 'farmHarvestFieldReset 0.75s ease-out forwards' }} />
+                                  <Image src={publicFarmArt(plantTransition.asset)} alt="" fill className="object-contain opacity-0 scale-[0.45]" style={{ animation: 'farmHarvestFieldReset 0.75s ease-out forwards' }} />
                                 </div>
                               </>
                             ) : null}
-                            {preview.asset ? <Image src={preview.asset} alt={entry.title} fill className={`object-contain ${preview.className}`} /> : null}
+                            {preview.asset ? <Image src={publicFarmArt(preview.asset)} alt={entry.title} fill className={`object-contain ${preview.className}`} /> : null}
                           </div>
                         </button>
                         <div className={`pointer-events-none absolute bottom-[calc(100%+14px)] left-1/2 w-52 -translate-x-1/2 rounded-[20px] border border-[#e4ca8f]/40 bg-[linear-gradient(180deg,_rgba(52,29,9,0.94),_rgba(31,16,6,0.94))] px-4 py-3 text-left text-[#fff3d1] shadow-[0_18px_36px_rgba(17,9,3,0.28)] transition ${tooltipVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}>
@@ -1427,7 +1429,7 @@ export function FarmClient({ initialDashboard }: Props) {
                       <button key={seed.code} type="button" disabled={!seed.unlocked} title={siteCopy.text(seed.name, "site.lib.farmconfig")} aria-label={siteCopy.text(seed.name, "site.lib.farmconfig")} onClick={() => setSelectedSeed(seed.code)} className={`group relative flex h-[96px] w-[96px] items-center justify-center rounded-[10px] border-[3px] transition ${selected ? 'border-[#7a3f15] bg-[#ffd86d] shadow-[0_4px_0_#b87521,0_18px_28px_rgba(105,74,22,0.18)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-[#fff7dc] hover:border-[#efca78]/70 shadow-[0_4px_0_#d8b06d]` : 'border-dashed border-[#e2c48d]/35 bg-white/20 opacity-45'}`}>
                         <span className="absolute inset-[5px] rounded-[6px] border border-[#fff7dc]/75" />
                         {seed.unlocked ? <span className={`absolute right-2 top-2 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.14em] ${rarity.badge}`}>{siteCopy.text(rarity.label, "site.components.farm.farmclient")}</span> : null}
-                        <div className="relative h-12 w-12"><Image src={FARM_CROP_ASSETS[seed.code].READY} alt={siteCopy.text(seed.name, "site.lib.farmconfig")} fill className="object-contain" /></div>
+                        <div className="relative h-12 w-12"><Image src={publicFarmArt(FARM_CROP_ASSETS[seed.code].READY)} alt={siteCopy.text(seed.name, "site.lib.farmconfig")} fill className="object-contain" /></div>
                         <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.16em] text-[#775722]">{siteCopy.text(seed.name, "site.lib.farmconfig")}</span>
                         {!seed.unlocked ? <span className="absolute inset-0 flex items-center justify-center rounded-[26px] bg-[rgba(92,66,26,0.26)] text-xs font-semibold text-[#7c5b24]"><SiteText copyKey="site.components.farm.farmclient.99f42451a1ce" />{seed.unlockLevel}</span> : null}
                         {selected ? <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-[#fff0a4] shadow-[0_0_12px_rgba(255,240,164,0.9)]" /> : null}
@@ -1444,7 +1446,7 @@ export function FarmClient({ initialDashboard }: Props) {
                   <div className="flex items-end gap-4 rounded-[12px] border-[4px] border-[#6e4316] bg-[#8f5a22] px-6 py-4 shadow-[0_6px_0_#56300d,0_22px_40px_rgba(43,24,7,0.28)]">
                     <div className="flex min-w-[196px] items-center gap-3 rounded-[10px] border-[3px] border-[#e2c27f]/45 bg-[#6d4317] px-4 py-3 text-[#fff2cb]">
                       <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[8px] border-[3px] border-[#7b4c18] bg-[#fff4d2] shadow-[0_3px_0_#c8943f]">
-                        {currentSeed ? <Image src={FARM_CROP_ASSETS[currentSeed.code].READY} alt={siteCopy.text(currentSeed.name, "site.lib.farmconfig")} fill className="object-contain p-2" /> : <span className="text-2xl">🌱</span>}
+                        {currentSeed ? <Image src={publicFarmArt(FARM_CROP_ASSETS[currentSeed.code].READY)} alt={siteCopy.text(currentSeed.name, "site.lib.farmconfig")} fill className="object-contain p-2" /> : <span className="text-2xl">🌱</span>}
                       </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-[0.12em] text-[#f4d38a]"><SiteText copyKey="site.components.farm.farmclient.f85473d9f29d" /></p>
@@ -1503,7 +1505,7 @@ export function FarmClient({ initialDashboard }: Props) {
               <div className="rounded-[26px] border border-[#d8bf87]/38 bg-[linear-gradient(145deg,_rgba(255,250,236,0.95),_rgba(252,235,194,0.95))] p-5 shadow-[0_16px_30px_rgba(79,53,19,0.08)]">
                 <p className="text-[11px] uppercase tracking-[0.28em] text-[#9c7416]"><SiteText copyKey="site.components.farm.farmclient.7b5be6952c7e" /></p>
                 <div className="mt-3 flex items-start gap-4">
-                  <div className="relative h-20 w-20 shrink-0"><Image src={FARM_CROP_ASSETS[currentSeed.code].READY} alt={siteCopy.text(currentSeed.name, "site.lib.farmconfig")} fill className="object-contain" /></div>
+                  <div className="relative h-20 w-20 shrink-0"><Image src={publicFarmArt(FARM_CROP_ASSETS[currentSeed.code].READY)} alt={siteCopy.text(currentSeed.name, "site.lib.farmconfig")} fill className="object-contain" /></div>
                   <div>
                     <h3 className="text-2xl font-semibold tracking-[0.05em] text-[#35210a]">{siteCopy.text(currentSeed.name, "site.lib.farmconfig")}</h3>
                     <p className="mt-2 text-sm leading-7 text-[#705529]">{currentSeed.description}</p>
@@ -1537,7 +1539,7 @@ export function FarmClient({ initialDashboard }: Props) {
                   <button key={seed.code} type="button" disabled={!seed.unlocked} onClick={() => setSelectedSeed(seed.code)} className={`w-full rounded-[26px] border p-4 text-left transition ${selected ? 'border-[#d39916] bg-[linear-gradient(145deg,_#fff3c7,_#ffe19a)] shadow-[0_16px_32px_rgba(211,153,22,0.12)]' : seed.unlocked ? `${rarity.border} ${rarity.glow} bg-white/72 hover:border-[#d39916]/50 hover:bg-[#fff8e7]` : 'border-dashed border-[#cbb68d]/35 bg-[#efe8d7] text-[#9d8e71]'}`}>
                     <div className="flex items-start gap-4">
                       <div className="relative h-16 w-16 shrink-0 rounded-[20px] border border-white/40 bg-[linear-gradient(180deg,_rgba(255,248,234,0.95),_rgba(249,233,194,0.95))] p-2">
-                        <Image src={FARM_CROP_ASSETS[seed.code].READY} alt={siteCopy.text(seed.name, "site.lib.farmconfig")} fill className="object-contain p-2" />
+                        <Image src={publicFarmArt(FARM_CROP_ASSETS[seed.code].READY)} alt={siteCopy.text(seed.name, "site.lib.farmconfig")} fill className="object-contain p-2" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-3">
@@ -1728,8 +1730,8 @@ export function FarmClient({ initialDashboard }: Props) {
                 <div className="relative flex h-full min-h-[300px] flex-col items-center justify-center text-center">
                   <div className="rounded-full border border-white/35 bg-white/18 px-3 py-1 text-xs uppercase tracking-[0.28em] text-[#8d6509]"><SiteText copyKey="site.components.farm.farmclient.5e16b35d3051" />{activePlot.plotIndex}</div>
                   <div className="relative mt-5 flex h-56 w-56 items-center justify-center">
-                    {activePlotBase ? <Image src={activePlotBase.asset} alt="" fill className={activePlotBase.className} /> : null}
-                    {activePlotPreview?.asset ? <Image src={activePlotPreview.asset} alt={activePlot.title} fill className={`object-contain ${activePlotPreview.className}`} /> : null}
+                    {activePlotBase ? <Image src={publicFarmArt(activePlotBase.asset)} alt="" fill className={activePlotBase.className} /> : null}
+                    {activePlotPreview?.asset ? <Image src={publicFarmArt(activePlotPreview.asset)} alt={activePlot.title} fill className={`object-contain ${activePlotPreview.className}`} /> : null}
                   </div>
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <span className="rounded-full border border-white/38 bg-white/24 px-4 py-2 text-sm font-semibold tracking-[0.16em] text-[#5f3b0d]">{activePlot.status === 'READY' ? siteCopy("site.components.farm.farmclient.b897b00b4b40") : activePlot.status === 'GROWING' && activePlot.plot ? siteCopy.text(stageLabelMap[activePlot.plot.growthStage], "site.components.farm.farmclient") : activePlot.status === 'EMPTY' ? siteCopy("site.components.farm.farmclient.c1e5d4469f0e") : siteCopy("site.components.farm.farmclient.2f0baebfe7ca")}</span>
@@ -1814,7 +1816,7 @@ export function FarmClient({ initialDashboard }: Props) {
                     <span className="absolute left-[14%] top-[18%] text-2xl text-white/80">✦</span>
                     <span className="absolute right-[14%] top-[26%] text-xl text-white/70">✦</span>
                     <span className="absolute left-1/2 bottom-[8%] -translate-x-1/2 text-2xl text-white/80">✦</span>
-                  <Image src={actionResult.asset} alt={actionResult.title} fill className="object-contain drop-shadow-[0_16px_24px_rgba(0,0,0,0.15)]" />
+                  <Image src={publicFarmArt(actionResult.asset)} alt={actionResult.title} fill className="object-contain drop-shadow-[0_16px_24px_rgba(0,0,0,0.15)]" />
                   </div>
                 </div>
               </div>

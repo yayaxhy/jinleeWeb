@@ -243,7 +243,7 @@ export function ApplicationForm({ discordId }: { discordId: string | null }) {
   return <ValidationContext.Provider value={errors}><div className={styles.page}>
     <header className={styles.header}>
       <div className={styles.headerInner}>
-        <Link href="/" prefetch={false} className={styles.brand} aria-label={siteCopy("site.app.join.applicationform.b7f4b9462cd0")}><Image src={SITE_LOGO} width={40} height={40} alt={""} /><span><SiteText copyKey="site.app.join.applicationform.fa228b4727d6" /><span className={styles.brandLight}><SiteText copyKey="site.app.join.applicationform.bdb3c096791a" /></span><small><SiteText copyKey="site.app.join.applicationform.7a183c580075" /></small></span></Link>
+        <Link href="/" prefetch={false} className={styles.brand} aria-label={siteCopy("site.app.join.applicationform.b7f4b9462cd0")}><Image src={siteCopy.image('site.image.brand.logo', SITE_LOGO)} width={40} height={40} alt={""} /><span><SiteText copyKey="site.app.join.applicationform.fa228b4727d6" /><span className={styles.brandLight}><SiteText copyKey="site.app.join.applicationform.bdb3c096791a" /></span><small><SiteText copyKey="site.app.join.applicationform.7a183c580075" /></small></span></Link>
         <div className={styles.headerRight}><span className={styles.previewBadge}><span /><SiteText copyKey="site.app.join.applicationform.0612bfe2360d" /></span><Link href="/" prefetch={false}><ArrowLeftIcon /><SiteText copyKey="site.app.join.applicationform.2f0018b92363" /></Link></div>
       </div>
     </header>

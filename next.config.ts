@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   distDir: '.next',
   images: {
     localPatterns: [
+      { pathname: '/api/copy/images/**' },
       { pathname: '/DLMLOGO.png' },
       { pathname: '/brand/**' },
       {

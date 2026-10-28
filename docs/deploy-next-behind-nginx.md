@@ -92,7 +92,7 @@ server {
     listen 443 ssl http2;
     server_name your-domain.example.com;
 
-    client_max_body_size 20m;
+    client_max_body_size 50m;
 
     ssl_certificate     /www/server/panel/vhost/cert/your-domain/fullchain.pem;
     ssl_certificate_key /www/server/panel/vhost/cert/your-domain/privkey.pem;
@@ -116,6 +116,20 @@ server {
 ```
 
 If Nginx is behind Cloudflare or another proxy, configure Nginx's real-IP module so `$remote_addr` is first replaced with the trusted proxy's client IP before forwarding `X-Real-IP` to Next.js.
+
+### Editable copy images
+
+The copy console accepts JPG, PNG, WebP and GIF files up to 50 MiB each. The
+upload is a raw file body, so Nginx and any other proxy in front of Next.js must
+allow at least `50m` request bodies. The application enforces the same limit.
+
+Uploads are stored in `storage/copy-images` under the app working directory by
+default; no additional environment variable is required. Keep this directory
+across deployments and include it in server backups. Files have immutable
+content-based names, and older published versions continue to reference them;
+resetting an image or rolling back a publication does not delete these files.
+An optional `COPY_IMAGE_STORAGE_DIR` can point to a persistent shared directory
+if the website is deployed to multiple instances or changing release folders.
 
 If you use Baota/BT Panel, put the same reverse proxy target in the site config:
 

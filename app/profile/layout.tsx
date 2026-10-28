@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { getSiteCopy } from '@/lib/site-copy-server';
+import { withSiteImageMetadata } from '@/lib/site-copy-metadata';
 import type { ReactNode } from 'react';
 
 import {
@@ -9,7 +11,7 @@ import {
   SITE_OG_IMAGE_WIDTH,
 } from '@/lib/site';
 
-export const metadata: Metadata = {
+const defaultMetadata: Metadata = {
   title: SITE_NAME,
   description: SITE_DESCRIPTION,
   openGraph: {
@@ -39,6 +41,10 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  return withSiteImageMetadata(defaultMetadata, await getSiteCopy());
+}
 
 export default function ProfileLayout({ children }: { children: ReactNode }) {
   return children;

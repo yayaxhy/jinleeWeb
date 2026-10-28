@@ -25,8 +25,12 @@ export function parseCopyScope(value: unknown): CopyScope {
   return value;
 }
 
-export function createEditableCopyService(db: CopyDb, scope: CopyScope, catalog: readonly EditableCopyEntry[]) {
+export function createEditableCopyService(db: CopyDb, scope: CopyScope, catalog: readonly EditableCopyEntry[], options: {
+  validateImages?: (overrides: Record<string, string>) => Promise<void>;
+} = {}) {
   const compatible = (value: unknown) => compatibleCopyOverrides(catalog, value);
+  const imageKeys = new Set(catalog.filter(entry => entry.kind === 'image').map(entry => entry.key));
+  const isImageKey = (key: string) => imageKeys.has(key) || key.startsWith(`${scope}.image.`);
   async function loadPublished() {
     const config = await db.editableCopyConfig.findUnique({ where: { scope } });
     if (!config?.activeVersion) return { version: 0, overrides: {}, ignoredKeys: [] as string[] };
@@ -51,8 +55,9 @@ export function createEditableCopyService(db: CopyDb, scope: CopyScope, catalog:
   async function execute(value: unknown, actorId: string) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new EditableCopyError(400, '请求格式错误');
     const body = value as Record<string, unknown>;
-    const keys = ['scope', 'action', 'expectedRevision', 'reason', ...(body.action === 'publish' ? ['overrides'] : ['targetVersion'])];
+    const keys = ['scope', 'action', 'expectedRevision', 'reason', 'imageSchemaVersion', ...(body.action === 'publish' ? ['overrides'] : ['targetVersion'])];
     if (Object.keys(body).some(key => !keys.includes(key)) || body.scope !== scope) throw new EditableCopyError(400, '请求字段无效');
+    if (body.imageSchemaVersion !== undefined && body.imageSchemaVersion !== 1) throw new EditableCopyError(400, '请求字段无效');
     if (body.action !== 'publish' && body.action !== 'rollback') throw new EditableCopyError(400, '未知文案操作');
     if (!Number.isSafeInteger(body.expectedRevision) || Number(body.expectedRevision) < 0 || Number(body.expectedRevision) >= Number.MAX_SAFE_INTEGER) throw new EditableCopyError(400, '缺少有效修订号');
     if (!actorId || actorId.length > 255) throw new EditableCopyError(403, '操作身份无效');
@@ -72,10 +77,22 @@ export function createEditableCopyService(db: CopyDb, scope: CopyScope, catalog:
       await tx.editableCopyConfig.createMany({ data: [{ scope }], skipDuplicates: true });
       const current = await tx.editableCopyConfig.findUnique({ where: { scope } });
       if (!current || current.revision !== body.expectedRevision) throw new EditableCopyError(409, '文案已被其他管理员修改，请刷新核对');
+      let published = overrides;
+      // Older editor tabs only manage text. Their full-replacement payload must
+      // not reset images they never loaded or offered controls for.
+      if (body.imageSchemaVersion !== 1) {
+        published = Object.fromEntries(Object.entries(overrides).filter(([key]) => !isImageKey(key)));
+        const active = current.activeVersion ? await tx.editableCopyVersion.findUnique({ where: { scope_version: { scope, version: current.activeVersion } } }) : null;
+        if (current.activeVersion && !active) throw new EditableCopyError(503, '已发布的文案版本缺失');
+        if (active?.overrides && typeof active.overrides === 'object' && !Array.isArray(active.overrides)) {
+          for (const [key, value] of Object.entries(active.overrides)) if (isImageKey(key) && typeof value === 'string') published[key] = value;
+        }
+      }
+      await options.validateImages?.(published);
       const version = current.activeVersion + 1;
       const result = await tx.editableCopyConfig.updateMany({ where: { scope, revision: current.revision, activeVersion: current.activeVersion }, data: { revision: { increment: 1 }, activeVersion: version } });
       if (result.count !== 1) throw new EditableCopyError(409, '文案已被其他管理员修改，请刷新核对');
-      await tx.editableCopyVersion.create({ data: { scope, version, overrides, actorId, reason, rollbackOf: body.action === 'rollback' ? Number(body.targetVersion) : null } });
+      await tx.editableCopyVersion.create({ data: { scope, version, overrides: published, actorId, reason, rollbackOf: body.action === 'rollback' ? Number(body.targetVersion) : null } });
     });
     return inspect();
   }

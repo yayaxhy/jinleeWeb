@@ -2,12 +2,27 @@ import { prisma } from './prisma';
 import { loadLegacyBotCopyOverrides } from './legacy-bot-copy';
 import { BOT_COPY_CATALOG } from './bot-editable-copy-catalog';
 import { SITE_COPY_CATALOG } from './editable-copy-catalog';
-import { createEditableCopyService, type CopyDb, type CopyScope } from './editable-copy-service';
+import { BOT_IMAGE_CATALOG } from './bot-editable-image-catalog';
+import { SITE_IMAGE_CATALOG } from './editable-image-catalog';
+import { assertCopyImagesExist, CopyImageStorageError } from './editable-copy-image-storage';
+import { copyImageFailureMessage } from './editable-copy-image-policy';
+import { createEditableCopyService, EditableCopyError, type CopyDb, type CopyScope } from './editable-copy-service';
 
 export const editableCopyEnabled = () => process.env.EDITABLE_COPY_ENABLED !== 'false';
-export const getEditableCopyCatalog = (scope: CopyScope) => scope === 'bot' ? BOT_COPY_CATALOG : SITE_COPY_CATALOG;
+const catalogs = { bot: [...BOT_COPY_CATALOG, ...BOT_IMAGE_CATALOG], site: [...SITE_COPY_CATALOG, ...SITE_IMAGE_CATALOG] };
+export const getEditableCopyCatalog = (scope: CopyScope) => catalogs[scope];
 export function getEditableCopyService(scope: CopyScope) {
-  return createEditableCopyService(prisma as unknown as CopyDb, scope, getEditableCopyCatalog(scope));
+  const catalog = getEditableCopyCatalog(scope);
+  const images = new Set(catalog.filter(entry => entry.kind === 'image').map(entry => entry.key));
+  return createEditableCopyService(prisma as unknown as CopyDb, scope, catalog, {
+    validateImages: async overrides => {
+      try { await assertCopyImagesExist(overrides, images); }
+      catch (error) {
+        if (error instanceof CopyImageStorageError) throw new EditableCopyError(400, copyImageFailureMessage(error.code));
+        throw error;
+      }
+    },
+  });
 }
 export async function loadPublishedCopy(scope: CopyScope): Promise<{ version: number; overrides: Record<string, string> }> {
   if (!editableCopyEnabled()) return { version: 0, overrides: {} };

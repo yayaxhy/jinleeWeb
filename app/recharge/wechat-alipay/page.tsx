@@ -1,5 +1,6 @@
 
 import { SiteText } from "@/components/SiteCopyProvider";
+import { getSiteCopy } from '@/lib/site-copy-server';
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -11,12 +12,14 @@ const PAYMENT_CODES = [
   {
     name: '微信收款码',
     image: '/recharge/wechat-payment-qr.png',
+    imageKey: 'site.image.recharge.wechat-qr',
     width: 828,
     height: 1124,
   },
   {
     name: '支付宝收款码',
     image: '/recharge/alipay-payment-qr.png',
+    imageKey: 'site.image.recharge.alipay-qr',
     width: 1280,
     height: 1919,
   },
@@ -28,6 +31,7 @@ export default async function WechatAlipayRechargePage() {
     redirect('/accounts/login?callbackUrl=%2Frecharge%2Fwechat-alipay');
   }
 
+  const siteCopy = await getSiteCopy();
   return (
     <main className="min-h-screen bg-[#f7f3ef] px-6 py-12 text-[#171717]">
       <section className="mx-auto max-w-5xl space-y-8">
@@ -55,7 +59,7 @@ export default async function WechatAlipayRechargePage() {
               <h2 className="mb-4 text-center text-lg font-semibold">{code.name}</h2>
               <div className="rounded-[20px] bg-[#f8fafc] p-3">
                 <Image
-                  src={code.image}
+                  src={siteCopy.image(code.imageKey, code.image)}
                   alt={code.name}
                   width={code.width}
                   height={code.height}

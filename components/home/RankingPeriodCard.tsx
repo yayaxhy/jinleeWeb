@@ -27,7 +27,7 @@ function AvatarBadge({
 }) {
   const siteCopy = useSiteCopy();
   const initial = name.replace(/^神秘老板\s*/, '').trim().charAt(0) || '点';
-  const resolvedAvatar = anonymous ? DEFAULT_RANKING_AVATAR : avatarUrl;
+  const resolvedAvatar = anonymous ? siteCopy.image('site.image.ranking.anonymous-avatar', DEFAULT_RANKING_AVATAR) : avatarUrl;
   const sizeClass = {
     default: 'h-14 w-14 text-lg',
     featured: 'h-20 w-20 text-2xl',

@@ -18,6 +18,7 @@ import {
 } from '@/components/profile/VoucherUseButtons';
 import { resolveSpecialVoucher } from '@/lib/voucher';
 import { resolveLocalVoucherArt } from '@/lib/local-voucher-art';
+import { SITE_PRIZE_IMAGE_KEYS } from '@/lib/editable-image-catalog';
 import {
   COUPON_VOUCHER_META,
   DISCOUNT_COUPON_PRIZE_NAMES,
@@ -224,7 +225,8 @@ export default async function BagPage() {
                       {list.map((item) => {
                         const prizeName = item.prizeName.trim();
                         const prizeType = item.prizeType ?? LotteryPrizeType.COUPON;
-                        const localArt = resolveLocalVoucherArt(prizeName);
+                        const originalArt = resolveLocalVoucherArt(prizeName);
+                        const localArt = originalArt ? siteCopy.image(SITE_PRIZE_IMAGE_KEYS[prizeName] ?? '', originalArt) : null;
                         const isUsed = item.status === 'USED';
                         const isVanityCard = VANITY_CARD_PRIZE_NAMES.has(prizeName);
                         const isBlockStackVoucher = BLOCK_STACK_PRIZE_NAMES.has(prizeName);
