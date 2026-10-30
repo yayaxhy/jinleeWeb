@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+import { Prisma, SettlementCashExpenseStatus } from '@prisma/client';
 import { canViewRevenue } from '@/lib/admin';
 import { generateStoredMonthlyFinancialReports, getMonthlyReportStorageDir, readConfirmedMonthlyReport, withMonthlyReportLocks } from '@/lib/admin/monthly-financial-reports';
 import {
@@ -82,8 +82,14 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Rou
   const operatorId = session.discordId;
 
   const { id } = await context.params;
-  const current = await prisma.monthlyManualExpense.findUnique({ where: { id } });
+  const current = await prisma.monthlyManualExpense.findUnique({
+    where: { id },
+    include: { settlementCashExpense: true },
+  });
   if (!current) return NextResponse.json({ error: '支出记录不存在' }, { status: 404 });
+  if (current.voidedAt || current.settlementCashExpense?.status === SettlementCashExpenseStatus.VOIDED) {
+    return NextResponse.json({ error: '支出记录不存在' }, { status: 404 });
+  }
   if (!isNewEntityReportMonth(current.monthKey)) {
     return NextResponse.json({ error: '旧主体月份不能修改支出' }, { status: 400 });
   }
@@ -143,12 +149,36 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Rou
           },
         });
         if (updatedCount.count !== 1) throw new Error('记录已被其他人修改，请刷新后重试。');
+        if (current.settlementCashExpense) {
+          const amountChanged = !delta.isZero();
+          const cashUpdated = await tx.settlementCashExpense.updateMany({
+            where: {
+              id: current.settlementCashExpense.id,
+              status: { not: SettlementCashExpenseStatus.VOIDED },
+              amount: current.settlementCashExpense.amount,
+            },
+            data: {
+              amount,
+              note,
+              ...(amountChanged ? {
+                status: SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION,
+                ownerConfirmedBy: null,
+                ownerConfirmedAt: null,
+                ownerDisputedBy: null,
+                ownerDisputedAt: null,
+                disputeReason: null,
+              } : {}),
+            },
+          });
+          if (cashUpdated.count !== 1) throw new Error('记录已被其他人修改，请刷新后重试。');
+        }
         if (confirmed && !delta.isZero()) {
           await tx.monthlyManualExpense.create({
             data: {
               monthKey: bookedMonthKey,
               amount: delta,
               note: priorPeriodAdjustmentNote(current.monthKey, note, id),
+              cashFlowCorrection: Boolean(current.settlementCashExpense),
               operatorId,
             },
           });

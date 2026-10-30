@@ -80,8 +80,10 @@ export const calculateRecordedBankCash = (
   withdrawalOutflow: Prisma.Decimal,
   manualExpenseOutflow: Prisma.Decimal,
   dividendPaymentOutflow = new Prisma.Decimal(0),
+  priorPeriodCashCorrectionOutflow = new Prisma.Decimal(0),
 ) => {
-  const movement = rechargeNetInflow.sub(withdrawalOutflow).sub(manualExpenseOutflow).sub(dividendPaymentOutflow);
+  const movement = rechargeNetInflow.sub(withdrawalOutflow).sub(manualExpenseOutflow)
+    .sub(dividendPaymentOutflow).sub(priorPeriodCashCorrectionOutflow);
   return { movement, closing: opening.add(movement) };
 };
 
@@ -96,6 +98,24 @@ export const summarizeRechargeCashFlow = (rows: ReadonlyArray<{ amount: Prisma.D
   );
   return { positive, negative, net: positive.sub(negative) };
 };
+
+export const summarizeManualCashExpenses = (
+  rows: ReadonlyArray<{ amount: Prisma.Decimal; note: string; cashFlowCorrection: boolean }>,
+) => rows.reduce((totals, row) => {
+  if (row.note.startsWith(PRIOR_PERIOD_ADJUSTMENT_PREFIX)) {
+    totals.priorPeriodAdjustment = totals.priorPeriodAdjustment.add(row.amount);
+  } else if (!row.cashFlowCorrection) {
+    totals.currentCashOutflow = totals.currentCashOutflow.add(row.amount);
+  }
+  if (row.cashFlowCorrection) {
+    totals.priorPeriodCashCorrection = totals.priorPeriodCashCorrection.add(row.amount);
+  }
+  return totals;
+}, {
+  currentCashOutflow: new Prisma.Decimal(0),
+  priorPeriodAdjustment: new Prisma.Decimal(0),
+  priorPeriodCashCorrection: new Prisma.Decimal(0),
+});
 
 type RevertedGiftRow = {
   revertId: string;
@@ -615,9 +635,10 @@ async function loadMonthlyRevenueData(params: {
     }),
     prisma.expense.findMany({ where: { createdAt: { gte: start, lt: end } }, orderBy: { createdAt: 'desc' } }),
     prisma.monthlyManualExpense.findMany({
-      where: { monthKey },
+      where: { monthKey, voidedAt: null },
       orderBy: { updatedAt: 'desc' },
       include: {
+        settlementCashExpense: { select: { actualPaidOn: true } },
         operator: {
           select: {
             discordUserId: true,
@@ -818,11 +839,10 @@ async function loadMonthlyRevenueData(params: {
 
   const expenseTotal = decimalSum(expenseRows, 'amount');
   const manualExpenseTotal = decimalSum(manualExpenseRows, 'amount');
-  const manualCashExpenseTotal = manualExpenseRows.reduce(
-    (sum, row) => row.note.startsWith(PRIOR_PERIOD_ADJUSTMENT_PREFIX) ? sum : sum.add(row.amount),
-    new Prisma.Decimal(0),
-  );
-  const priorPeriodExpenseAdjustmentTotal = manualExpenseTotal.sub(manualCashExpenseTotal);
+  const manualCash = summarizeManualCashExpenses(manualExpenseRows);
+  const manualCashExpenseTotal = manualCash.currentCashOutflow;
+  const priorPeriodCashCorrectionTotal = manualCash.priorPeriodCashCorrection;
+  const priorPeriodExpenseAdjustmentTotal = manualCash.priorPeriodAdjustment;
   const inviteRewardExpenseRow = summarizeInviteRewardExpenseRows(inviteRewardRows);
   const manualGrantCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.MANUAL_GRANT);
   const vipBenefitCouponRow = couponConsumedBySource.find((row) => row.source === CouponSource.VIP_BENEFIT);
@@ -985,6 +1005,7 @@ async function loadMonthlyRevenueData(params: {
       expenseTotal,
       manualExpenseTotal,
       manualCashExpenseTotal,
+      priorPeriodCashCorrectionTotal,
       priorPeriodExpenseAdjustmentTotal,
       expenseBreakdown,
       manualGrantCouponAmount,
@@ -1236,7 +1257,8 @@ const getManualExpenseOperatorLabel = (row: Awaited<ReturnType<typeof loadMonthl
 const buildManualExpenseRows = (data: Awaited<ReturnType<typeof loadMonthlyRevenueData>>) =>
   data.rows.manualExpenseRows.map((row) => ({
     source: '人工支出',
-    date: formatDateTimeTextCentralEuropean(row.updatedAt),
+    date: row.settlementCashExpense?.actualPaidOn?.toISOString().slice(0, 10)
+      ?? formatDateTimeTextCentralEuropean(row.updatedAt),
     description: row.note,
     amount: row.amount,
     count: 1,
@@ -1364,6 +1386,7 @@ function buildFinancialStatementWorkbook(params: {
   const recordedBankCash = calculateRecordedBankCash(
     cashOpeningBalance, data.totals.rechargeCashNetInflow,
     data.totals.withdrawTotal, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
+    data.totals.priorPeriodCashCorrectionTotal,
   );
 
   const profitSheet = workbook.addWorksheet('利润表', {
@@ -1551,6 +1574,7 @@ function buildFinancialStatementWorkbook(params: {
     { section: '现金余额推算', key: 'Recharge 净额', value: data.totals.rechargeCashNetInflow.toString() },
     { section: '实际现金流出', key: '提现（按已打款口径）', value: data.totals.withdrawTotal.toString() },
     { section: '实际现金流出', key: '人工记录支出（不含前期调整）', value: data.totals.manualCashExpenseTotal.toString() },
+    { section: '现金余额推算', key: '现金支出调整（补录）', value: data.totals.priorPeriodCashCorrectionTotal.toString() },
     { section: '实际现金流出', key: '已支付股东分红', value: dividendLedger.paidThisMonth.toString() },
     { section: '利润分配', key: '当月决定分红', value: dividendLedger.declaredThisMonth.toString() },
     { section: '利润分配', key: '期末应付分红', value: dividendLedger.payableAtMonthEnd.toString() },
@@ -1840,7 +1864,8 @@ const getRecordedBankOpeningBalance = async (monthKey: string) => {
       balance = balance
         .add(dec(cashFlow.rechargeInflow))
         .sub(dec(cashFlow.withdrawalOutflow))
-        .sub(dec(cashFlow.manualExpenseOutflow));
+        .sub(dec(cashFlow.manualExpenseOutflow))
+        .sub(dec(cashFlow.priorPeriodCashCorrectionOutflow));
     } else {
       const [recharges, withdrawals, manualExpenses] = await Promise.all([
         prisma.recharge.findMany({
@@ -1852,14 +1877,16 @@ const getRecordedBankOpeningBalance = async (monthKey: string) => {
           select: { amount: true },
         }),
         prisma.monthlyManualExpense.findMany({
-          where: { monthKey: previousMonthKey, NOT: { note: { startsWith: PRIOR_PERIOD_ADJUSTMENT_PREFIX } } },
-          select: { amount: true },
+          where: { monthKey: previousMonthKey, voidedAt: null },
+          select: { amount: true, note: true, cashFlowCorrection: true },
         }),
       ]);
+      const manualCash = summarizeManualCashExpenses(manualExpenses);
       balance = balance
         .add(summarizeRechargeCashFlow(recharges).net)
         .sub(decimalSum(withdrawals, 'amount'))
-        .sub(decimalSum(manualExpenses, 'amount'));
+        .sub(manualCash.currentCashOutflow)
+        .sub(manualCash.priorPeriodCashCorrection);
     }
     month += 1;
     if (month > 12) { year += 1; month = 1; }
@@ -1969,6 +1996,7 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
   const recordedBankCash = calculateRecordedBankCash(
     cashOpeningBalance, data.totals.rechargeCashNetInflow,
     data.totals.withdrawTotal, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
+    data.totals.priorPeriodCashCorrectionTotal,
   );
   const balanceModel = buildMonthlyBalanceSheetModel({
     estimatedBankCash: recordedBankCash.closing,
@@ -2006,6 +2034,7 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
       rechargeInflow: data.totals.rechargeCashNetInflow.toString(),
       withdrawalOutflow: data.totals.withdrawTotal.toString(),
       manualExpenseOutflow: data.totals.manualCashExpenseTotal.toString(),
+      priorPeriodCashCorrectionOutflow: data.totals.priorPeriodCashCorrectionTotal.toString(),
       dividendPaymentOutflow: dividendLedger.paidThisMonth.toString(),
       netRecordedCashMovement: recordedBankCash.movement.toString(),
       estimatedClosingBankBalance: recordedBankCash.closing.toString(),
@@ -2104,7 +2133,7 @@ export async function getMonthlyFinancialReportPreview(monthKey: string) {
   if (confirmed) {
     const confirmedExpenseAmounts = new Map(confirmed.preview.manualExpenses.map((row) => [row.id, row.amount]));
     const latestManualExpenses = await prisma.monthlyManualExpense.findMany({
-      where: { monthKey },
+      where: { monthKey, voidedAt: null },
       orderBy: { updatedAt: 'desc' },
       include: { operator: { select: { discordUserId: true, serverDisplayName: true } } },
     });

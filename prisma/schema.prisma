@@ -1162,11 +1162,14 @@ model MonthlyManualExpense {
   amount        Decimal  @db.Decimal(19, 4)
   note          String
   imageFileName String?
+  cashFlowCorrection Boolean @default(false)
+  voidedAt      DateTime?
   operatorId    String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   operator Member @relation("MonthlyManualExpenseEditor", fields: [operatorId], references: [discordUserId])
+  settlementCashExpense SettlementCashExpense?
 
   @@index([monthKey, updatedAt])
   @@index([operatorId])
@@ -1719,6 +1722,8 @@ model SettlementCashExpense {
   ownerDiscordId   String
   amount           Decimal                   @db.Decimal(19, 4)
   note             String
+  actualPaidOn     DateTime?                 @db.Date
+  monthlyManualExpenseId String?             @unique
   status           SettlementCashExpenseStatus @default(PENDING_OWNER_CONFIRMATION)
   createdBy        String
   createdAt        DateTime                  @default(now())
@@ -1732,9 +1737,11 @@ model SettlementCashExpense {
   voidReason       String?
 
   account SettlementAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  monthlyManualExpense MonthlyManualExpense? @relation(fields: [monthlyManualExpenseId], references: [id], onDelete: Restrict)
 
   @@index([accountId, status, createdAt])
   @@index([ownerDiscordId, status, createdAt])
+  @@index([actualPaidOn])
 }
 
 model ZPayRechargeOrder {

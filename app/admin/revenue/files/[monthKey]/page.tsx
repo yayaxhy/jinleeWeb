@@ -119,6 +119,9 @@ export default async function MonthlyRevenueFilePage({ params }: PageProps) {
           <p>充值净额（正数减负数）：<span className="font-mono">{formatMoney(preview.cashFlow.rechargeInflow)}</span></p>
           <p>提现现金流出：<span className="font-mono">{formatMoney(preview.cashFlow.withdrawalOutflow)}</span></p>
           <p>人工记录现金支出：<span className="font-mono">{formatMoney(preview.cashFlow.manualExpenseOutflow)}</span></p>
+          {new Prisma.Decimal(preview.cashFlow.priorPeriodCashCorrectionOutflow ?? '0').isZero() ? null : (
+            <p>现金支出调整（补录）：<span className="font-mono">{formatMoney(preview.cashFlow.priorPeriodCashCorrectionOutflow)}</span></p>
+          )}
           <p>已支付股东分红：<span className="font-mono">{formatMoney(preview.cashFlow.dividendPaymentOutflow ?? '0')}</span></p>
           <p>本期已记录现金净流入：<span className="font-mono">{formatMoney(preview.cashFlow.netRecordedCashMovement)}</span></p>
           <p>期末账面银行余额（待核对）：<span className="font-mono">{formatMoney(preview.cashFlow.estimatedClosingBankBalance)}</span></p>

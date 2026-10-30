@@ -13,6 +13,7 @@ import { ReceiptPasteUploader } from "@/components/admin/ReceiptPasteUploader";
 import { ReceiptPreview } from "@/components/admin/ReceiptPreview";
 import { LocalDayDivider } from "@/components/admin/LocalDayDivider";
 import { formatAmountDown2 } from "@/lib/numberFormat";
+import { formatDateTimeInputCentralEuropean } from "@/lib/centralEuropeanDateRange";
 import { newEntityOnlyTime } from "@/lib/operating-entity-cutover";
 import { prisma } from "@/lib/prisma";
 import {
@@ -239,6 +240,7 @@ export default async function CashReconciliationPage(props: PageProps) {
     typeof searchParams.notice === "string" ? searchParams.notice : "";
   const error =
     typeof searchParams.error === "string" ? searchParams.error : "";
+  const todayInRome = formatDateTimeInputCentralEuropean(new Date()).slice(0, 10);
 
   const [
     loadedAccounts,
@@ -3083,6 +3085,19 @@ export default async function CashReconciliationPage(props: PageProps) {
                     placeholder="支出备注，例如：线下采购"
                     className={fieldClass}
                   />
+                  <label className="space-y-1 text-sm text-white/70">
+                    <span>实际付款日期</span>
+                    <input
+                      required
+                      type="date"
+                      name="actualPaidOn"
+                      min="2026-09-25"
+                      max={todayInRome}
+                      defaultValue={todayInRome}
+                      className={fieldClass}
+                    />
+                    <span className="block text-xs text-white/50">按实际付款日期归属月份；补录时间另行记录。</span>
+                  </label>
                   <button className="rounded-xl bg-rose-400/80 px-4 py-2 text-sm text-white hover:bg-rose-400">
                     登记并扣减
                   </button>
@@ -3119,6 +3134,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                           <th className="px-4 py-3 font-medium">支出账号</th>
                           <th className="px-4 py-3 font-medium">金额</th>
                           <th className="px-4 py-3 font-medium">备注</th>
+                          <th className="px-4 py-3 font-medium">实际付款日期</th>
                           <th className="px-4 py-3 font-medium">
                             登记人 / 时间
                           </th>
@@ -3136,11 +3152,14 @@ export default async function CashReconciliationPage(props: PageProps) {
                           const isPending =
                             expense.status ===
                             SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION;
+                          const isConfirmed =
+                            expense.status === SettlementCashExpenseStatus.OWNER_CONFIRMED;
                           const canVoid =
                             isFinance &&
                             (isPending ||
                               expense.status ===
-                                SettlementCashExpenseStatus.OWNER_DISPUTED);
+                                SettlementCashExpenseStatus.OWNER_DISPUTED ||
+                              isConfirmed);
 
                           return (
                             <tr
@@ -3164,6 +3183,9 @@ export default async function CashReconciliationPage(props: PageProps) {
                               </td>
                               <td className="max-w-72 px-4 py-3 text-xs whitespace-pre-wrap text-white/70">
                                 {expense.note}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
+                                {expense.actualPaidOn?.toISOString().slice(0, 10) ?? "—"}
                               </td>
                               <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
                                 {displayNameForDiscordId(expense.createdBy)}

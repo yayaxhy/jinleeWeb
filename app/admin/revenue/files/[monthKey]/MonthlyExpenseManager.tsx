@@ -89,20 +89,18 @@ export default function MonthlyExpenseManager({ monthKey, records, confirmed }: 
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!editingId) return;
     setSaving(true);
     setMessage('正在保存…');
     const formData = new FormData();
-    formData.set('monthKey', monthKey);
     formData.set('amount', amount);
     formData.set('note', note);
     if (image) formData.set('image', image);
 
     try {
-      const endpoint = editingId
-        ? `/api/admin/revenue/files/manual-expenses/${encodeURIComponent(editingId)}`
-        : '/api/admin/revenue/files/manual-expenses';
+      const endpoint = `/api/admin/revenue/files/manual-expenses/${encodeURIComponent(editingId)}`;
       const response = await fetch(endpoint, {
-        method: editingId ? 'PATCH' : 'POST',
+        method: 'PATCH',
         body: formData,
       });
       const result = (await response.json()) as { error?: string; reportSynced?: boolean; bookedMonthKey?: string };
@@ -128,13 +126,14 @@ export default function MonthlyExpenseManager({ monthKey, records, confirmed }: 
     <section className="space-y-5 rounded-3xl border border-amber-200/20 bg-amber-100/5 p-5">
       <div>
         <h3 className="text-lg font-semibold text-white">人工支出明细</h3>
-        <p className="mt-1 text-sm text-white/60">可填写金额、备注和凭证图片。保存或修改时，系统会自动记录当前操作人和时间。</p>
+        <p className="mt-1 text-sm text-white/60">新支出请到负责人对账登记；这里可修改已记录支出的金额、备注和凭证图片。保存修改时，系统会记录当前操作人和时间。</p>
         {confirmed ? (
           <p className="mt-2 text-sm text-amber-100">本月已确认。下方明细显示最新编辑内容；新增或修改的金额差额计入当前月“前期调整”，上方已确认报表不变。</p>
         ) : null}
       </div>
 
-      <form onSubmit={submit} className="grid gap-4 rounded-2xl border border-white/10 bg-black/15 p-4 md:grid-cols-2">
+      {message ? <p className="text-sm text-white/70">{message}</p> : null}
+      {editingId ? <form onSubmit={submit} className="grid gap-4 rounded-2xl border border-white/10 bg-black/15 p-4 md:grid-cols-2">
         <label className="space-y-2 text-sm">
           <span className="text-white/70">金额</span>
           <input
@@ -174,16 +173,13 @@ export default function MonthlyExpenseManager({ monthKey, records, confirmed }: 
         </label>
         <div className="flex flex-wrap items-center gap-2 md:col-span-2">
           <button type="submit" disabled={saving} className="rounded-full bg-amber-100 px-5 py-2 text-sm text-black hover:bg-white disabled:cursor-wait disabled:opacity-60">
-            {saving ? '保存中…' : editingId ? '保存修改' : '保存支出'}
+            {saving ? '保存中…' : '保存修改'}
           </button>
-          {editingId ? (
-            <button type="button" onClick={resetForm} className="rounded-full border border-white/20 px-5 py-2 text-sm text-white hover:bg-white/10">
-              取消修改
-            </button>
-          ) : null}
-          {message ? <p className="text-sm text-white/70">{message}</p> : null}
+          <button type="button" onClick={resetForm} className="rounded-full border border-white/20 px-5 py-2 text-sm text-white hover:bg-white/10">
+            取消修改
+          </button>
         </div>
-      </form>
+      </form> : null}
 
       {records.length ? (
         <div className="overflow-x-auto">

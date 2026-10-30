@@ -36,6 +36,7 @@ export default async function AdminRevenueFilesPage({ searchParams }: PageProps)
     listStoredMonthlyReportFiles(),
     prisma.monthlyManualExpense.groupBy({
       by: ['monthKey'],
+      where: { voidedAt: null },
       _count: { id: true },
     }),
   ]);

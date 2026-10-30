@@ -5,6 +5,7 @@ import {
   buildMonthlyBalanceSheetModel,
   calculateRecordedBankCash,
   rewindWalletTransactionChain,
+  summarizeManualCashExpenses,
   summarizeRechargeCashFlow,
 } from './admin/monthly-financial-reports';
 
@@ -40,6 +41,29 @@ test('negative Recharge offsets positive Recharge in bank cash and later month o
 
   const october = calculateRecordedBankCash(september.closing, amount('120'), amount('1064'), amount('0'), amount('8000'));
   assert.equal(october.closing.toString(), '860.08');
+});
+
+test('late-paid expense correction changes current book cash without inventing a new payment date', () => {
+  const summary = summarizeManualCashExpenses([
+    { amount: amount('50'), note: '本月采购', cashFlowCorrection: false },
+    { amount: amount('100'), note: '前期调整（2026-10）：补记', cashFlowCorrection: true },
+    { amount: amount('25'), note: '前期调整（2026-10）：非现金改动', cashFlowCorrection: false },
+  ]);
+  assert.equal(summary.currentCashOutflow.toString(), '50');
+  assert.equal(summary.priorPeriodCashCorrection.toString(), '100');
+  assert.equal(summary.priorPeriodAdjustment.toString(), '125');
+  const cash = calculateRecordedBankCash(amount('1000'), amount('0'), amount('0'),
+    summary.currentCashOutflow, amount('0'), summary.priorPeriodCashCorrection);
+  assert.equal(cash.closing.toString(), '850');
+});
+
+test('voiding a linked prior-period payment reverses its cash correction', () => {
+  const summary = summarizeManualCashExpenses([
+    { amount: amount('100'), note: '前期调整（2026-10）：补记', cashFlowCorrection: true },
+    { amount: amount('-100'), note: '前期调整（2026-10）：撤销', cashFlowCorrection: true },
+  ]);
+  assert.equal(summary.priorPeriodCashCorrection.toString(), '0');
+  assert.equal(summary.priorPeriodAdjustment.toString(), '0');
 });
 
 test('a monthly loss reduces equity without becoming a negative dividend or asset', () => {

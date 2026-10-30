@@ -9,6 +9,18 @@ import {
   SettlementTransferStatus,
 } from "@prisma/client";
 import { newEntityOnlyTime } from "@/lib/operating-entity-cutover";
+import { parseActualPaidOn } from "@/lib/admin/settlement-cash-expense-date";
+import {
+  generateStoredMonthlyFinancialReports,
+  readConfirmedMonthlyReport,
+  withMonthlyReportLocks,
+} from "@/lib/admin/monthly-financial-reports";
+import {
+  PRIOR_PERIOD_ADJUSTMENT_PREFIX,
+  currentOpenFinancialMonthKey,
+  priorPeriodAdjustmentNote,
+  resolveManualExpenseBookingMonth,
+} from "@/lib/admin/monthly-expense-adjustment";
 import { getAdminDiscordIds } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import {
@@ -526,26 +538,67 @@ async function createCashExpense(formData: FormData, actorId: string) {
   const accountId = readText(formData, "accountId");
   const amount = parsePositiveDecimal(readText(formData, "amount"));
   const note = readText(formData, "note");
+  const actualPaidOn = parseActualPaidOn(readText(formData, "actualPaidOn"));
   const redirect = readText(formData, "redirectTo");
   if (!accountId || !amount || !note) {
     throw new Error("请选择支出账号，并填写金额和备注。");
   }
+  if (note.startsWith(PRIOR_PERIOD_ADJUSTMENT_PREFIX)) {
+    throw new Error('备注不能使用系统保留的“前期调整”前缀');
+  }
+  if (!actualPaidOn) throw new Error("请选择有效的实际付款日期。");
   const account = await prisma.settlementAccount.findFirst({
     where: { id: accountId, active: true },
   });
   if (!account) {
     throw new Error("请选择有效的收款账号。");
   }
-  await prisma.settlementCashExpense.create({
-    data: {
-      accountId: account.id,
-      ownerDiscordId: account.ownerDiscordId,
-      amount,
-      note: note.slice(0, 500),
-      status: SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION,
-      createdBy: actorId,
-    },
+  const savedNote = note.slice(0, 500);
+  const originalMonthKey = actualPaidOn.monthKey;
+  const bookedMonthKey = await resolveManualExpenseBookingMonth(originalMonthKey);
+  await withMonthlyReportLocks([originalMonthKey, bookedMonthKey], async () => {
+    if (await resolveManualExpenseBookingMonth(originalMonthKey) !== bookedMonthKey) {
+      throw new Error("月份确认状态已变化，请刷新后重试。");
+    }
+    await prisma.$transaction(async (tx) => {
+      const manualExpense = await tx.monthlyManualExpense.create({
+        data: {
+          monthKey: originalMonthKey,
+          amount,
+          note: savedNote,
+          operatorId: actorId,
+        },
+      });
+      if (bookedMonthKey !== originalMonthKey) {
+        await tx.monthlyManualExpense.create({
+          data: {
+            monthKey: bookedMonthKey,
+            amount,
+            note: priorPeriodAdjustmentNote(originalMonthKey, savedNote, manualExpense.id),
+            cashFlowCorrection: true,
+            operatorId: actorId,
+          },
+        });
+      }
+      await tx.settlementCashExpense.create({
+        data: {
+          accountId: account.id,
+          ownerDiscordId: account.ownerDiscordId,
+          amount,
+          note: savedNote,
+          actualPaidOn: actualPaidOn.date,
+          monthlyManualExpenseId: manualExpense.id,
+          status: SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION,
+          createdBy: actorId,
+        },
+      });
+    });
   });
+  try {
+    await generateStoredMonthlyFinancialReports({ monthKey: bookedMonthKey, force: true });
+  } catch (error) {
+    console.error("Failed to refresh monthly report after cash expense creation", error);
+  }
   return redirectTo(
     redirect,
     "notice",
@@ -618,25 +671,69 @@ async function voidCashExpense(formData: FormData, actorId: string) {
   const reason = readText(formData, "reason");
   const redirect = readText(formData, "redirectTo");
   if (!expenseId || !reason) throw new Error("请填写撤销原因。");
-  const updated = await prisma.settlementCashExpense.updateMany({
-    where: {
-      id: expenseId,
-      status: {
-        in: [
-          SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION,
-          SettlementCashExpenseStatus.OWNER_DISPUTED,
-        ],
-      },
-    },
-    data: {
-      status: SettlementCashExpenseStatus.VOIDED,
-      voidedBy: actorId,
-      voidedAt: new Date(),
-      voidReason: reason.slice(0, 500),
-    },
+  const expense = await prisma.settlementCashExpense.findUnique({
+    where: { id: expenseId },
+    include: { monthlyManualExpense: true },
   });
-  if (!updated.count) {
-    throw new Error("该现金支出已经确认、撤销或不存在，不能再次撤销。");
+  if (!expense) throw new Error("该现金支出已经确认、撤销或不存在，不能再次撤销。");
+  const original = expense.monthlyManualExpense;
+  const confirmed = original ? await readConfirmedMonthlyReport(original.monthKey) : null;
+  const bookedMonthKey = confirmed ? await currentOpenFinancialMonthKey() : original?.monthKey;
+  const voidRecord = async () => {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.settlementCashExpense.updateMany({
+        where: {
+          id: expenseId,
+          status: {
+            in: [
+              SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION,
+              SettlementCashExpenseStatus.OWNER_DISPUTED,
+              SettlementCashExpenseStatus.OWNER_CONFIRMED,
+            ],
+          },
+        },
+        data: {
+          status: SettlementCashExpenseStatus.VOIDED,
+          voidedBy: actorId,
+          voidedAt: new Date(),
+          voidReason: reason.slice(0, 500),
+        },
+      });
+      if (!updated.count) throw new Error("该现金支出已经确认、撤销或不存在，不能再次撤销。");
+      if (!original) return;
+      const manualUpdated = await tx.monthlyManualExpense.updateMany({
+        where: { id: original.id, voidedAt: null, updatedAt: original.updatedAt },
+        data: { voidedAt: new Date(), operatorId: actorId },
+      });
+      if (manualUpdated.count !== 1) throw new Error("记录已被其他人修改，请刷新后重试。");
+      if (confirmed && bookedMonthKey) {
+        await tx.monthlyManualExpense.create({
+          data: {
+            monthKey: bookedMonthKey,
+            amount: original.amount.neg(),
+            note: priorPeriodAdjustmentNote(original.monthKey, original.note, original.id),
+            cashFlowCorrection: true,
+            operatorId: actorId,
+          },
+        });
+      }
+    });
+  };
+  if (original && bookedMonthKey) {
+    await withMonthlyReportLocks([original.monthKey, bookedMonthKey], async () => {
+      if (Boolean(await readConfirmedMonthlyReport(original.monthKey)) !== Boolean(confirmed) ||
+          (confirmed && await currentOpenFinancialMonthKey() !== bookedMonthKey)) {
+        throw new Error("月份确认状态已变化，请刷新后重试。");
+      }
+      await voidRecord();
+    });
+    try {
+      await generateStoredMonthlyFinancialReports({ monthKey: bookedMonthKey, force: true });
+    } catch (error) {
+      console.error("Failed to refresh monthly report after cash expense void", error);
+    }
+  } else {
+    await voidRecord();
   }
   return redirectTo(redirect, "notice", "已撤销现金支出，负责人总额已恢复。");
 }
