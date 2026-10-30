@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
 import {
   isNewEntityReportMonth,
   NEW_ENTITY_OPERATIONS_STARTED_AT,
@@ -381,7 +382,8 @@ function addObjectRowsSheet(
     Object.keys(row ?? {}).forEach((key) => set.add(key));
     return set;
   }, new Set<string>());
-  const keys: string[] = Array.from(keySet);
+  // Keep internal reader joins out of the existing user-facing export columns.
+  const keys: string[] = Array.from(keySet).filter((key) => key !== 'walletLedgerEntry');
 
   sheet.columns = keys.map((key) => ({
     header: key,
@@ -597,9 +599,11 @@ async function loadMonthlyRevenueData(params: {
     }),
     prisma.individualTransaction.findMany({
       where: discountRebateWhere,
+      include: walletLedgerRelationSelection(),
       orderBy: { timeCreatedAt: 'desc' },
     }),
     prisma.individualTransaction.findMany({
+      include: walletLedgerRelationSelection(),
       where: {
         typeOfTransaction: '刮刮乐购卡',
         timeCreatedAt: { gte: start, lt: end },
@@ -800,7 +804,9 @@ async function loadMonthlyRevenueData(params: {
   const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee).sub(revertedOrderFee);
   const commissionOtherSources = commissionTotal.sub(rawFeeFromOrderAndGiftModel);
   const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee).sub(revertedOrderFee);
-  const discountDeductionTotal = decimalSum(discountRebateRows, 'amountChange');
+  const discountDeductionTotal = discountRebateRows.reduce(
+    (sum, row) => sum.add(resolveWalletDelta(row) ?? 0), new Prisma.Decimal(0),
+  );
 
   // A fusion output is a replacement prize, not a new lottery draw.
   const drawCount = countLotteryRevenueDraws(lotteryCreatedRows);
@@ -843,7 +849,7 @@ async function loadMonthlyRevenueData(params: {
 
   const scratchRevealedCount = scratchRows.length;
   const scratchGross = scratchPurchaseRows.reduce(
-    (sum, row) => sum.add(dec(row.balanceBefore).sub(dec(row.balanceAfter))),
+    (sum, row) => sum.sub(resolveWalletDelta(row) ?? 0),
     new Prisma.Decimal(0),
   );
   const scratchReward = decimalSum(scratchRows, 'prizeAmount');
@@ -2316,6 +2322,7 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
 
     const walletLedgerRows = await prisma.individualTransaction.findMany({
       where: { timeCreatedAt: { gte: context.data.start, lt: target.end } },
+      include: walletLedgerRelationSelection(),
       orderBy: [{ timeCreatedAt: 'asc' }, { transactionId: 'asc' }],
     });
     const includedDlmIds = new Set(context.data.rows.memberRows.map((row) => row.dlmId));
@@ -2327,7 +2334,7 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
     for (const row of includedWalletLedgerRows) {
       const existing = movementByType.get(row.typeOfTransaction) ?? { count: 0, amount: new Prisma.Decimal(0) };
       existing.count += 1;
-      existing.amount = existing.amount.add(dec(row.balanceAfter).sub(dec(row.balanceBefore)));
+      existing.amount = existing.amount.add(resolveWalletDelta(row) ?? 0);
       movementByType.set(row.typeOfTransaction, existing);
     }
     const walletLedgerTotal = [...movementByType.values()].reduce(
@@ -2338,7 +2345,7 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
     }
     const withdrawalLedger = walletLedgerRows.filter((row) => row.typeOfTransaction === '提现');
     const withdrawalLedgerTotal = withdrawalLedger.reduce(
-      (sum, row) => sum.add(dec(row.balanceBefore).sub(dec(row.balanceAfter))),
+      (sum, row) => sum.sub(resolveWalletDelta(row) ?? 0),
       new Prisma.Decimal(0),
     );
     if (!withdrawalLedgerTotal.equals(context.data.totals.withdrawTotal)) {

@@ -1,7 +1,7 @@
-import { resolveAccountOwnerTx } from './account-ownership';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx, lockDlmWalletForUpdateTx } from '@/lib/dlm-wallet';
+import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 
 const DEC = (value: Prisma.Decimal | number | string) =>
   value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value);
@@ -167,7 +167,7 @@ export const settleRechargeOrderPayment = async (
 
     applied = true;
 
-    const owner = await resolveAccountOwnerTx(tx, orderDlmId);
+    const owner = await lockDlmWalletForUpdateTx(tx, { dlmId: orderDlmId }, { allowMissingMember: true });
     const currentDlmId = owner.dlmId;
     const currentMemberKey = owner.memberKey;
 
@@ -204,8 +204,7 @@ export const settleRechargeOrderPayment = async (
       },
     });
 
-    await tx.individualTransaction.create({
-      data: {
+    await recordWalletTransaction(tx, {
         discordId: currentMemberKey,
         dlmId: currentDlmId,
         thirdPartydiscordId: sourceReference,
@@ -213,8 +212,8 @@ export const settleRechargeOrderPayment = async (
         amountChange: normalizedAmount,
         balanceAfter: new Prisma.Decimal(walletAfter.totalBalance),
         typeOfTransaction: transactionType,
-      },
-    });
+    }, { walletBefore, walletAfter, correlationId: `recharge:${order.outTradeNo}`,
+      idempotencyKey: `recharge:${orderProvider}:${order.outTradeNo}` });
   });
 
   if (applied) {

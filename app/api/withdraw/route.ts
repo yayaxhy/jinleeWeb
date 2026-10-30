@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
-import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx, lockDlmWalletForUpdateTx } from '@/lib/dlm-wallet';
+import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 import { parseStoredWithdrawAccount } from '@/lib/withdrawAccounts';
 import {
   validateWithdrawAccountDetail,
@@ -205,6 +206,10 @@ export async function POST(request: Request) {
         throw error;
       }
 
+      await lockDlmWalletForUpdateTx(tx, {
+        dlmId: currentUser.dlmId,
+        discordUserId: currentUser.discordUserId,
+      });
       const lastWithdraw = await tx.withdraw.findFirst({
         where: { dlmId: currentUser.dlmId },
         orderBy: { createdAt: 'desc' },
@@ -255,8 +260,7 @@ export async function POST(request: Request) {
 
       const balanceAfter = new Prisma.Decimal(updatedWallet.totalBalance ?? 0);
 
-      await tx.individualTransaction.create({
-        data: {
+      await recordWalletTransaction(tx, {
           discordId: currentUser.discordUserId,
           dlmId: currentUser.dlmId,
           thirdPartydiscordId: method,
@@ -264,8 +268,8 @@ export async function POST(request: Request) {
           amountChange: amountDecimal.mul(-1),
           balanceAfter,
           typeOfTransaction: '提现',
-        },
-      });
+      }, { walletBefore: walletSnapshot, walletAfter: updatedWallet,
+        correlationId: `withdraw:${withdrawRecord.id}`, idempotencyKey: `withdraw:${withdrawRecord.id}` });
 
       return {
         withdrawalId: withdrawRecord.id,

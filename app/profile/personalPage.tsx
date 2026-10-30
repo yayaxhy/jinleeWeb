@@ -20,6 +20,7 @@ import { isDiscordSnowflake } from '@/lib/discord-id';
 import { formatAmountDown, formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
+import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { formatTransactionType } from '@/lib/transaction-display';
 import { VIP_LEVELS } from '@/lib/vip-levels';
@@ -110,29 +111,6 @@ const formatCommissionRateDisplay = (value: unknown) => {
     return `${rounded}%`;
   }
   return stringifyUnknown(value);
-};
-
-const resolveAmountChange = (
-  amountChange: unknown,
-  balanceBefore: unknown,
-  balanceAfter: unknown,
-): number | null => {
-  const amount = parseNumeric(amountChange);
-  const before = parseNumeric(balanceBefore);
-  const after = parseNumeric(balanceAfter);
-
-  if (before !== null && after !== null) {
-    const derived = after - before;
-    if (amount === null) {
-      return derived;
-    }
-    if (Math.sign(derived) !== Math.sign(amount) || Math.abs(derived - amount) > 0.0001) {
-      return derived;
-    }
-    return amount;
-  }
-
-  return amount;
 };
 
 const getAmountChangeMeta = (value: number | null, digits = 2) => {
@@ -269,6 +247,7 @@ export default async function Profile(props: ProfilePageProps) {
     where: { dlmId, timeCreatedAt: newEntityOnlyTime() },
   });
   const transactionsPromise = prisma.individualTransaction.findMany({
+    include: walletLedgerRelationSelection(),
     where: { dlmId, timeCreatedAt: newEntityOnlyTime() },
     orderBy: { timeCreatedAt: 'desc' },
     skip,
@@ -627,7 +606,7 @@ export default async function Profile(props: ProfilePageProps) {
             </thead>
             <tbody>
               {transactions.map((tx: TransactionRecord) => {
-                const resolvedChange = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
+                const resolvedChange = resolveWalletDelta(tx)?.toNumber() ?? null;
                 const ledgerDigits = resolvedChange !== null && resolvedChange !== 0 && Math.abs(resolvedChange) < 0.01 ? 4 : 2;
                 const changeMeta = getAmountChangeMeta(resolvedChange, ledgerDigits);
                 return (

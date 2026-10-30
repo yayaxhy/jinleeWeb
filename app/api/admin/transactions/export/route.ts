@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { getServerSession } from '@/lib/session';
 import { canViewKefuTransactions } from '@/lib/admin';
@@ -36,23 +37,6 @@ const formatDate = (value?: Date | string | null) => {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE });
-};
-
-const resolveAmountChange = (amountChange: unknown, balanceBefore: unknown, balanceAfter: unknown): number | null => {
-  const amount = parseNumber(amountChange);
-  const before = parseNumber(balanceBefore);
-  const after = parseNumber(balanceAfter);
-
-  if (before !== null && after !== null) {
-    const derived = after - before;
-    if (amount === null) return derived;
-    if (Math.sign(derived) !== Math.sign(amount) || Math.abs(derived - amount) > 0.0001) {
-      return derived;
-    }
-    return amount;
-  }
-
-  return amount;
 };
 
 const paymentSource = (transactionType: string) => {
@@ -107,6 +91,7 @@ export async function GET(request: NextRequest) {
   const hasFilters = Object.keys(whereClause).length > 0;
 
   const transactions = await prisma.individualTransaction.findMany({
+    include: walletLedgerRelationSelection(),
     where: hasFilters ? whereClause : undefined,
     orderBy: { timeCreatedAt: 'desc' },
   });
@@ -137,7 +122,7 @@ export async function GET(request: NextRequest) {
       type: formatTransactionType(tx.typeOfTransaction),
       paymentSource: paymentSource(tx.typeOfTransaction),
       before: parseNumber(tx.balanceBefore),
-      change: resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter),
+      change: resolveWalletDelta(tx)?.toNumber() ?? null,
       after: parseNumber(tx.balanceAfter),
       note: tx.thirdPartydiscordId ?? '',
     });

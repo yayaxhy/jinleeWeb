@@ -4,6 +4,7 @@ import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { canViewRevenue } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
+import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
 import { getWithdrawalSettlementSummary } from '@/lib/admin/withdrawal-settlement';
 import { getServerSession } from '@/lib/session';
 import {
@@ -160,7 +161,8 @@ function addObjectRowsSheet(
     Object.keys(row ?? {}).forEach((key) => set.add(key));
     return set;
   }, new Set<string>());
-  const keys: string[] = Array.from(keySet);
+  // Keep internal reader joins out of the existing user-facing export columns.
+  const keys: string[] = Array.from(keySet).filter((key) => key !== 'walletLedgerEntry');
 
   sheet.columns = keys.map((key) => ({
     header: key,
@@ -385,6 +387,7 @@ export async function GET(request: NextRequest) {
     }),
     prisma.individualTransaction.findMany({
       where: discountRebateWhere,
+      include: walletLedgerRelationSelection(),
       orderBy: { timeCreatedAt: 'desc' },
     }),
     prisma.lotteryDraw.findMany({
@@ -509,7 +512,9 @@ export async function GET(request: NextRequest) {
   const feeFromOrderAndGiftModel = giftFeeNet.add(orderFee);
   const commissionOtherSources = commissionTotal.sub(rawFeeFromOrderAndGiftModel);
   const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee);
-  const discountDeductionTotal = decimalSum(discountRebateRows, 'amountChange');
+  const discountDeductionTotal = discountRebateRows.reduce(
+    (sum, row) => sum.add(resolveWalletDelta(row) ?? 0), new Prisma.Decimal(0),
+  );
 
   // Keep fusion outputs in the detail sheet, but do not count them as lottery draws.
   const drawCount = countLotteryRevenueDraws(lotteryCreatedRows);

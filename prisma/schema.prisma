@@ -1026,12 +1026,57 @@ model IndividualTransaction {
   balanceAfter        Decimal  @db.Decimal(19, 4)
   typeOfTransaction   String
 
-  dlmUser DlmUser? @relation(fields: [dlmId], references: [dlmId], onDelete: SetNull)
+  dlmUser           DlmUser?           @relation(fields: [dlmId], references: [dlmId], onDelete: SetNull)
+  walletLedgerEntry WalletLedgerEntry?
 
   @@index([discordId])
   @@index([dlmId])
   @@index([discordId, timeCreatedAt, typeOfTransaction])
   @@index([dlmId, timeCreatedAt, typeOfTransaction])
+}
+
+/// Immutable balance facts. Owner IDs are historical snapshots, deliberately
+/// not foreign keys: account merges may reassign the linked source receipt.
+/// VERIFIED means arithmetic consistency, not external payment reconciliation.
+model WalletLedgerEntry {
+  id                   String   @id
+  sourceTransactionId  String   @unique
+  dlmId                String?
+  discordId            String?
+  counterpartyId       String?
+  walletDelta          Decimal  @db.Decimal(19, 4)
+  businessAmount       Decimal  @db.Decimal(19, 4)
+  balanceBefore        Decimal  @db.Decimal(19, 4)
+  balanceAfter         Decimal  @db.Decimal(19, 4)
+  currency             String   @default("CNY")
+  direction            String
+  eventType            String
+  legacyType           String
+  incomeDelta          Decimal? @db.Decimal(19, 4)
+  rechargeDelta        Decimal? @db.Decimal(19, 4)
+  totalSpentDelta      Decimal? @db.Decimal(19, 4)
+  loyaltyPointsDelta   Decimal? @db.Decimal(19, 4)
+  correlationId        String?
+  reversalOfLedgerId   String?
+  reversalOfSourceTransactionId String?
+  idempotencyKey       String?  @unique
+  source               String
+  integrityStatus      String
+  timeCreatedAt        DateTime
+  recordedAt           DateTime @default(now())
+  schemaVersion        Int      @default(1)
+
+  sourceTransaction IndividualTransaction @relation(fields: [sourceTransactionId], references: [transactionId], onDelete: Restrict, onUpdate: Restrict)
+  reversalOf        WalletLedgerEntry?    @relation("WalletLedgerReversal", fields: [reversalOfLedgerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reversals         WalletLedgerEntry[]   @relation("WalletLedgerReversal")
+
+  @@index([dlmId, timeCreatedAt])
+  @@index([discordId, timeCreatedAt])
+  @@index([eventType, timeCreatedAt])
+  @@index([correlationId])
+  @@index([reversalOfLedgerId])
+  @@index([reversalOfSourceTransactionId])
+  @@index([integrityStatus, timeCreatedAt])
 }
 
 model WithdrawalAccount {

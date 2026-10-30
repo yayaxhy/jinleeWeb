@@ -1,6 +1,7 @@
 import { DlmAdminOperationStatus, DlmAdminOperationType, Prisma } from '@prisma/client';
 
 import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
+import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 import { prisma } from '@/lib/prisma';
 
 const DEC = (value: Prisma.Decimal | number | string) => new Prisma.Decimal(value);
@@ -84,14 +85,16 @@ export const correctManualWechatBossRecharge = async (params: {
       const [sourceRecharge, targetRecharge, sourceLedger, targetLedger] = await Promise.all([
         tx.recharge.create({ data: { amount: amount.negated(), dlmId: sourceOperation.dlmId, toWhom: sourceOperation.dlmId, fromWhom: operatorDiscordId }, select: { RechargeID: true } }),
         tx.recharge.create({ data: { amount, dlmId: targetDlmId, toWhom: targetDlmId, fromWhom: operatorDiscordId }, select: { RechargeID: true } }),
-        tx.individualTransaction.create({ data: {
+        recordWalletTransaction(tx, {
           discordId: sourceBoss.dlmUser.discordUserId, dlmId: sourceOperation.dlmId, thirdPartydiscordId: operatorDiscordId,
           balanceBefore: sourceBefore.totalBalance, amountChange: amount.negated(), balanceAfter: sourceAfter.totalBalance, typeOfTransaction: '充值更正转出',
-        }, select: { transactionId: true } }),
-        tx.individualTransaction.create({ data: {
+        }, { walletBefore: sourceBefore, walletAfter: sourceAfter,
+          correlationId: `recharge-correction:${sourceOperationId}`, idempotencyKey: `recharge-correction:${sourceOperationId}:out` }),
+        recordWalletTransaction(tx, {
           discordId: targetBoss.dlmUser.discordUserId, dlmId: targetDlmId, thirdPartydiscordId: operatorDiscordId,
           balanceBefore: targetBefore.totalBalance, amountChange: amount, balanceAfter: targetAfter.totalBalance, typeOfTransaction: '充值更正转入',
-        }, select: { transactionId: true } }),
+        }, { walletBefore: targetBefore, walletAfter: targetAfter,
+          correlationId: `recharge-correction:${sourceOperationId}`, idempotencyKey: `recharge-correction:${sourceOperationId}:in` }),
       ]);
       const resultPayload = {
         amount: amount.toFixed(2), originalRechargeId, sourceDlmId: sourceOperation.dlmId, targetDlmId,

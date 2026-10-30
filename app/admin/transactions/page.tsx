@@ -7,50 +7,15 @@ import { getServerSession } from '@/lib/session';
 import { canViewKefuTransactions, isAdminDiscordId } from '@/lib/admin';
 import { formatAmountDown } from '@/lib/numberFormat';
 import { formatTransactionType } from '@/lib/transaction-display';
+import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
 
 const ROME_TIMEZONE = 'Europe/Rome';
-
-const stringify = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'bigint') return value.toString();
-  if (typeof value === 'object' && value !== null && 'toString' in value) {
-    const fn = (value as { toString?: () => string }).toString;
-    if (typeof fn === 'function') return fn.call(value);
-  }
-  return String(value);
-};
-
-const parseNumber = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'number') return Number.isNaN(value) ? null : value;
-  if (typeof value === 'bigint') return Number(value);
-  const numeric = Number(stringify(value));
-  return Number.isNaN(numeric) ? null : numeric;
-};
 
 const formatDate = (value?: Date | string | null) => {
   if (!value) return '—';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleString('zh-CN', { timeZone: ROME_TIMEZONE });
-};
-
-const resolveAmountChange = (amountChange: unknown, balanceBefore: unknown, balanceAfter: unknown): number | null => {
-  const amount = parseNumber(amountChange);
-  const before = parseNumber(balanceBefore);
-  const after = parseNumber(balanceAfter);
-
-  if (before !== null && after !== null) {
-    const derived = after - before;
-    if (amount === null) return derived;
-    if (Math.sign(derived) !== Math.sign(amount) || Math.abs(derived - amount) > 0.0001) {
-      return derived;
-    }
-    return amount;
-  }
-
-  return amount;
 };
 
 const changeMeta = (value: number | null, digits = 2) => {
@@ -156,6 +121,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
   const [totalCount, transactions] = await Promise.all([
     prisma.individualTransaction.count({ where: hasFilters ? whereClause : undefined }),
     prisma.individualTransaction.findMany({
+      include: walletLedgerRelationSelection(),
       where: hasFilters ? whereClause : undefined,
       orderBy: { timeCreatedAt: 'desc' },
       skip,
@@ -382,7 +348,7 @@ export default async function AdminTransactionsPage(props: PageProps) {
                 </thead>
                 <tbody>
                   {transactions.map((tx) => {
-                    const change = resolveAmountChange(tx.amountChange, tx.balanceBefore, tx.balanceAfter);
+                    const change = resolveWalletDelta(tx)?.toNumber() ?? null;
                     const ledgerDigits = change !== null && change !== 0 && Math.abs(change) < 0.01 ? 4 : 2;
                     const meta = changeMeta(change, ledgerDigits);
                     return (

@@ -1,6 +1,7 @@
 import { FarmActionType, FarmSeedType, PeiwanStatus, Prisma } from '@prisma/client';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
+import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 import {
   BALANCE_TO_COINS_RATE,
   COINS_TO_POINTS_RATE,
@@ -603,15 +604,13 @@ export async function exchangeBalanceToCoins(discordUserId: string, amount: stri
       data: { coins: { increment: coinDelta } },
     });
 
-    await tx.individualTransaction.create({
-      data: {
+    await recordWalletTransaction(tx, {
         discordId: discordUserId,
         thirdPartydiscordId: FARM_COUNTERPART_ID,
         balanceBefore: totalBalance,
         amountChange: balanceAmount.negated(),
         balanceAfter,
         typeOfTransaction: '农场兑换金币',
-      },
     });
 
     await tx.farmActionLog.create({

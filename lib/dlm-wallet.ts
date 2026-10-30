@@ -1,4 +1,5 @@
 import { resolveAccountOwnerTx } from './account-ownership';
+import { DlmWalletIdentityChangedError } from './dlm-wallet-lock';
 import { Prisma } from '@prisma/client';
 
 const DEC = (value: Prisma.Decimal | number | string | null | undefined) =>
@@ -17,6 +18,33 @@ type WalletDeltaInput = DlmWalletIdentity & {
   rechargeDelta?: Prisma.Decimal | number | string;
   totalSpentDelta?: Prisma.Decimal | number | string;
   loyaltyPointsDelta?: Prisma.Decimal | number | string;
+};
+
+/** Hold both wallet mirrors before reading balances or making debit decisions.
+ * Keep the DLM -> Member order used by the bot. Detached accounts can have a
+ * custody Member key even though their public Discord identity is null.
+ */
+export const lockDlmWalletForUpdateTx = async (
+  tx: WalletTx,
+  identity: DlmWalletIdentity,
+  options: { allowMissingMember?: boolean } = {},
+) => {
+  const owner = await resolveAccountOwnerTx(tx, identity.dlmId);
+  const [locked] = await tx.$queryRaw<Array<{ dlmId: string; discordUserId: string | null }>>`
+    SELECT "dlmId", "discordUserId" FROM "DlmUser" WHERE "dlmId" = ${owner.dlmId} FOR UPDATE
+  `;
+  if (!locked || locked.discordUserId !== owner.discordId) throw new DlmWalletIdentityChangedError();
+  if (owner.memberKey) {
+    const [member] = await tx.$queryRaw<Array<{ discordUserId: string }>>`
+      SELECT "discordUserId" FROM "Member" WHERE "discordUserId" = ${owner.memberKey} FOR UPDATE
+    `;
+    if (!member && !options.allowMissingMember) throw new DlmWalletIdentityChangedError();
+  }
+  const current = await resolveAccountOwnerTx(tx, identity.dlmId);
+  if (current.dlmId !== owner.dlmId || current.discordId !== owner.discordId || current.memberKey !== owner.memberKey) {
+    throw new DlmWalletIdentityChangedError();
+  }
+  return owner;
 };
 
 export const getDlmWalletSnapshotTx = async (

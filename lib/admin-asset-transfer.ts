@@ -1,5 +1,6 @@
 import { MemberStatus, OrderStatus, PeiwanStatus, Prisma, type PrismaClient } from '@prisma/client';
 import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
+import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 import { getHighestVipLevelByTotalSpent } from '@/lib/vip-levels';
 
 const DEC = (value: Prisma.Decimal | number | string | null | undefined) =>
@@ -893,8 +894,7 @@ export const executeAssetTransfer = async (
   }
 
   if (sourceWalletBefore.totalBalance.gt(0)) {
-    await tx.individualTransaction.create({
-      data: {
+    await recordWalletTransaction(tx, {
         discordId: params.sourceDiscordId,
         dlmId: sourceDlmUser.dlmId,
         thirdPartydiscordId: params.targetDiscordId,
@@ -902,11 +902,9 @@ export const executeAssetTransfer = async (
         amountChange: sourceWalletBefore.totalBalance,
         balanceAfter: sourceWalletAfter.totalBalance,
         typeOfTransaction: '资产转出',
-      },
-    });
+    }, { walletBefore: sourceWalletBefore, walletAfter: sourceWalletAfter });
 
-    await tx.individualTransaction.create({
-      data: {
+    await recordWalletTransaction(tx, {
         discordId: params.targetDiscordId,
         dlmId: targetDlmUser.dlmId,
         thirdPartydiscordId: params.sourceDiscordId,
@@ -914,8 +912,7 @@ export const executeAssetTransfer = async (
         amountChange: sourceWalletBefore.totalBalance,
         balanceAfter: targetWalletAfter.totalBalance,
         typeOfTransaction: '资产转入',
-      },
-    });
+    }, { walletBefore: targetWalletBefore, walletAfter: targetWalletAfter });
   }
 
   const derivedTargetVipLevel = getHighestVipLevelByTotalSpent(targetWalletAfter.totalSpent.toString());

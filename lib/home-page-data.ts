@@ -10,9 +10,10 @@ import {
   type QuotationCodeValue,
 } from '@/constants/peiwan';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
-import { formatAmountDown2, parseNumeric } from '@/lib/numberFormat';
+import { formatAmountDown2 } from '@/lib/numberFormat';
 import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
+import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
 import { getHighestVipLevelByTotalSpent } from '@/lib/vip-levels';
 
 export type PeriodKey = '日榜' | '周榜' | '月榜';
@@ -265,14 +266,12 @@ async function loadActualSpend(start: Date, end: Date) {
       timeCreatedAt: { ...newEntityOnlyTime(start), lt: end },
       typeOfTransaction: { in: Array.from(new Set([...SPEND_POSITIVE_TYPES, ...REVERT_TYPES])) },
     },
-    select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true },
+    select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true, ...walletLedgerRelationSelection() },
   });
 
   const spendMap = new Map<string, number>();
   rows.forEach((row) => {
-    const before = parseNumeric(row.balanceBefore) ?? 0;
-    const after = parseNumeric(row.balanceAfter) ?? 0;
-    const delta = before - after;
+    const delta = resolveWalletDelta(row)?.negated().toNumber() ?? 0;
     const txType = String(row.typeOfTransaction ?? '');
 
     if (SPEND_POSITIVE_TYPES.has(txType)) {
@@ -295,14 +294,12 @@ async function loadActualIncome(start: Date, end: Date) {
       timeCreatedAt: { ...newEntityOnlyTime(start), lt: end },
       typeOfTransaction: { in: Array.from(new Set([...INCOME_POSITIVE_TYPES, ...REVERT_TYPES])) },
     },
-    select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true },
+    select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true, ...walletLedgerRelationSelection() },
   });
 
   const incomeMap = new Map<string, number>();
   rows.forEach((row) => {
-    const before = parseNumeric(row.balanceBefore) ?? 0;
-    const after = parseNumeric(row.balanceAfter) ?? 0;
-    const delta = after - before;
+    const delta = resolveWalletDelta(row)?.toNumber() ?? 0;
     const txType = String(row.typeOfTransaction ?? '');
 
     if (INCOME_POSITIVE_TYPES.has(txType)) {
@@ -340,15 +337,13 @@ async function loadManualWechatBossSpend(start: Date, end: Date): Promise<Manual
       timeCreatedAt: { ...newEntityOnlyTime(start), lt: end },
       typeOfTransaction: { in: Array.from(new Set([...SPEND_POSITIVE_TYPES, ...REVERT_TYPES])) },
     },
-    select: { dlmId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true },
+    select: { dlmId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true, ...walletLedgerRelationSelection() },
   });
 
   const spentByDlmId = new Map<string, number>();
   rows.forEach((row) => {
     if (!row.dlmId) return;
-    const before = parseNumeric(row.balanceBefore) ?? 0;
-    const after = parseNumeric(row.balanceAfter) ?? 0;
-    const delta = before - after;
+    const delta = resolveWalletDelta(row)?.negated().toNumber() ?? 0;
     const txType = String(row.typeOfTransaction ?? '');
     if (SPEND_POSITIVE_TYPES.has(txType)) {
       if (delta <= 0) return;

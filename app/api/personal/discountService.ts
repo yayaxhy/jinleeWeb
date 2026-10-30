@@ -1,7 +1,9 @@
 import { CouponStatus, CouponType, LotteryStatus, OrderStatus, PointShopDeliveryType, Prisma } from '@prisma/client';
 import type { Prisma as PrismaNamespace } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx, lockDlmWalletForUpdateTx } from '@/lib/dlm-wallet';
+import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
+import type { WalletLedgerMetadata } from '@/lib/wallet-ledger';
 import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 
 export type DiscountKind = 'coupon' | 'lottery';
@@ -57,9 +59,9 @@ const recordIndividualTransaction = async (
     typeOfTransaction: string;
     timeCreatedAt: Date;
   },
+  metadata?: WalletLedgerMetadata,
 ) => {
-  await tx.individualTransaction.create({
-    data: {
+  await recordWalletTransaction(tx, {
       discordId: data.discordId ?? null,
       dlmId: data.dlmId,
       thirdPartydiscordId: data.thirdPartydiscordId,
@@ -68,8 +70,7 @@ const recordIndividualTransaction = async (
       balanceAfter: data.balanceAfter,
       typeOfTransaction: data.typeOfTransaction,
       timeCreatedAt: data.timeCreatedAt,
-    },
-  });
+  }, metadata);
 };
 
 const COUPON_RATE = new Prisma.Decimal(0.1);
@@ -268,6 +269,7 @@ export async function applyDiscountForOrder(params: {
     if ((order.hostDlmId ?? null) !== dlmId) return { status: 'not_order_host' };
     if (order.status !== OrderStatus.ENDED) return { status: 'order_not_ended' };
     await lockOrderForDiscountTx(tx, order.id);
+    await lockDlmWalletForUpdateTx(tx, { dlmId, discordUserId: discordUserId ?? null });
     const revert = await tx.revert.findUnique({
       where: { originalTransactionId: `ORDER:${order.id}` },
       select: { id: true },
@@ -581,7 +583,8 @@ export async function applyDiscountForOrder(params: {
       balanceAfter: new Prisma.Decimal(walletAfter.totalBalance),
       typeOfTransaction: '优惠返利',
       timeCreatedAt: now,
-    });
+    }, { walletBefore, walletAfter, correlationId: `order:${order.id}`,
+      idempotencyKey: `order-discount:${order.id}` });
 
     return {
       status: 'applied',

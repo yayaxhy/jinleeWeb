@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation';
 import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
 import { getServerSession } from '@/lib/session';
 import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
@@ -368,11 +369,13 @@ export default async function AdminRevenuePage(props: PageProps) {
     typeOfTransaction: '优惠返利',
     timeCreatedAt: { gte: start, lt: end },
   };
-  const discountRebateAgg = await prisma.individualTransaction.aggregate({
-    _sum: { amountChange: true },
+  const discountRebateRows = await prisma.individualTransaction.findMany({
+    select: { balanceBefore: true, balanceAfter: true, ...walletLedgerRelationSelection() },
     where: discountRebateWhere,
   });
-  const discountDeductionTotal = dec(discountRebateAgg._sum.amountChange);
+  const discountDeductionTotal = discountRebateRows.reduce(
+    (sum, row) => sum.add(resolveWalletDelta(row) ?? 0), new Prisma.Decimal(0),
+  );
 
   const lotteryWhere: Prisma.LotteryDrawWhereInput = {
     createdAt: { gte: start, lt: end },

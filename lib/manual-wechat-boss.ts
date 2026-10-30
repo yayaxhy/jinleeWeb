@@ -5,6 +5,7 @@ import {
 } from '@prisma/client';
 import { generateDlmId } from '@/lib/dlm-id';
 import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
+import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 import { prisma } from '@/lib/prisma';
 
 const DEC = (value: Prisma.Decimal | number | string) => new Prisma.Decimal(value);
@@ -168,8 +169,7 @@ export const rechargeManualWechatBoss = async (params: {
         },
         select: { RechargeID: true },
       });
-      const ledger = await tx.individualTransaction.create({
-        data: {
+      const ledger = await recordWalletTransaction(tx, {
           discordId: boss.dlmUser.discordUserId,
           dlmId,
           thirdPartydiscordId: operatorDiscordId,
@@ -177,9 +177,8 @@ export const rechargeManualWechatBoss = async (params: {
           amountChange: amount,
           balanceAfter: after.totalBalance,
           typeOfTransaction: '人工充值',
-        },
-        select: { transactionId: true },
-      });
+      }, { walletBefore: before, walletAfter: after,
+        correlationId: `manual-recharge:${requestId}`, idempotencyKey: `manual-recharge:${requestId}` });
       const resultPayload = {
         dlmId,
         amount: amount.toFixed(2),
@@ -283,8 +282,7 @@ export const giftManualWechatBoss = async (params: {
         },
         select: { id: true },
       });
-      const ledger = await tx.individualTransaction.create({
-        data: {
+      const ledger = await recordWalletTransaction(tx, {
           discordId: boss.dlmUser.discordUserId,
           dlmId,
           thirdPartydiscordId: operatorDiscordId,
@@ -292,9 +290,8 @@ export const giftManualWechatBoss = async (params: {
           amountChange: amount,
           balanceAfter: after.totalBalance,
           typeOfTransaction: reason,
-        },
-        select: { transactionId: true },
-      });
+      }, { walletBefore: before, walletAfter: after,
+        correlationId: `manual-cashback:${requestId}`, idempotencyKey: `manual-cashback:${requestId}` });
       const resultPayload = {
         dlmId,
         amount: amount.toFixed(2),

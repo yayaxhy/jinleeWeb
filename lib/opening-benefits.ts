@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import type { Prisma as PrismaNamespace } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { resolveWalletDelta, walletLedgerRelationSelection, type WalletDeltaSource } from '@/lib/wallet-ledger';
 import {
   OPENING_BENEFITS_END,
   OPENING_BENEFITS_START,
@@ -64,10 +65,6 @@ export class OpeningBenefitError extends Error {
   }
 }
 
-const toDecimal = (
-  value: Prisma.Decimal | number | string | null | undefined,
-) => new Prisma.Decimal(value ?? 0);
-
 const isUniqueClaimError = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError &&
   error.code === 'P2002';
@@ -80,18 +77,11 @@ const getEffectiveWeekStart = (now: Date) => {
 };
 
 export const calculateActualSpend = (
-  entries: Array<{
-    typeOfTransaction: string;
-    balanceBefore: Prisma.Decimal | null;
-    balanceAfter: Prisma.Decimal | null;
-  }>,
+  entries: Array<WalletDeltaSource & { typeOfTransaction: string }>,
 ) => {
   const total = entries.reduce((sum, entry) => {
-    // `amountChange` is stored as a positive magnitude for both credits and
-    // debits. The wallet balance delta is the reliable source of direction.
-    const balanceDelta = toDecimal(entry.balanceAfter).sub(
-      toDecimal(entry.balanceBefore),
-    );
+    const balanceDelta = resolveWalletDelta(entry);
+    if (balanceDelta === null) return sum;
     // Transaction labels are shared by both parties. A worker's order income,
     // for example, is also labelled “点单”, so only a balance decrease counts
     // as the user's spend.
@@ -125,6 +115,7 @@ async function getWeeklyActualSpendTx(
       },
     },
     select: {
+      ...walletLedgerRelationSelection(),
       typeOfTransaction: true,
       balanceBefore: true,
       balanceAfter: true,

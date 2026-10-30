@@ -9,7 +9,8 @@ import {
   Prisma,
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx, type DlmWalletIdentity } from '@/lib/dlm-wallet';
+import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx, lockDlmWalletForUpdateTx, type DlmWalletIdentity } from '@/lib/dlm-wallet';
+import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 import { GIFT_NAME_BY_PRIZE_NAME } from '@/lib/voucherCatalog';
 
 const DEC = (value: Prisma.Decimal | number | string) =>
@@ -636,6 +637,7 @@ async function deliverOrderItemTx(
     }
 
     const amountChange = unitCredit.mul(quantity);
+    await lockDlmWalletForUpdateTx(tx, owner);
     const walletBefore = await getDlmWalletSnapshotTx(tx, owner);
     const walletAfter = await applyDlmWalletDeltaTx(tx, {
       dlmId: owner.dlmId,
@@ -644,8 +646,7 @@ async function deliverOrderItemTx(
       rechargeDelta: amountChange,
     });
 
-    await tx.individualTransaction.create({
-      data: {
+    await recordWalletTransaction(tx, {
         discordId: owner.discordUserId ?? null,
         dlmId: owner.dlmId,
         thirdPartydiscordId: POINT_SHOP_SYSTEM_ACCOUNT,
@@ -653,8 +654,7 @@ async function deliverOrderItemTx(
         amountChange,
         balanceAfter: walletAfter.totalBalance,
         typeOfTransaction: '积分商城余额兑换',
-      },
-    });
+    }, { walletBefore, walletAfter, correlationId: `point-shop:${orderId}` });
 
     const note = `自动到账 ${itemName} +${amountChange.toString()}`;
     await tx.pointShopGrant.create({
