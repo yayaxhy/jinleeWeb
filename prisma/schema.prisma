@@ -1693,6 +1693,21 @@ model SettlementForexRecovery {
   @@index([toAccountId, recoveredAt])
 }
 
+/// Keeps a permanent record when a settlement action is withdrawn. A stable id
+/// prevents the same confirmation or payment from being withdrawn twice.
+model SettlementReversal {
+  id              String   @id
+  kind            String
+  targetId        String
+  actorDiscordId  String
+  reason          String
+  originalActorId String?
+  originalAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([kind, targetId, createdAt])
+}
+
 /// A Withdrawal is a user's request. This separate row is only created when
 /// the responsible person has actually paid it, so account-holder totals do
 /// not treat queued requests as completed payouts.

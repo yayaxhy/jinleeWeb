@@ -634,6 +634,38 @@ async function confirmCashExpense(formData: FormData, actorId: string) {
   );
 }
 
+async function revokeCashExpenseConfirmation(formData: FormData, actorId: string) {
+  const expenseId = readText(formData, "expenseId");
+  const reason = readText(formData, "reason");
+  const redirect = readText(formData, "redirectTo");
+  if (!expenseId || !reason) throw new Error("撤回原因");
+  const expense = await prisma.settlementCashExpense.findUnique({ where: { id: expenseId } });
+  if (!expense) throw new Error("未找到该现金支出记录。");
+  assertOwnerOrFinance(expense.ownerDiscordId, actorId);
+  if (expense.status !== SettlementCashExpenseStatus.OWNER_CONFIRMED) {
+    throw new Error("该现金支出已经处理。");
+  }
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.settlementCashExpense.updateMany({
+      where: { id: expenseId, status: SettlementCashExpenseStatus.OWNER_CONFIRMED, ownerConfirmedAt: expense.ownerConfirmedAt },
+      data: { status: SettlementCashExpenseStatus.PENDING_OWNER_CONFIRMATION, ownerConfirmedBy: null, ownerConfirmedAt: null },
+    });
+    if (updated.count !== 1) throw new Error("该现金支出已经处理。");
+    await tx.settlementReversal.create({
+      data: {
+        id: `cash-confirmation:${expense.id}:${randomUUID()}`,
+        kind: "CASH_CONFIRMATION",
+        targetId: expense.id,
+        actorDiscordId: actorId,
+        reason: reason.slice(0, 500),
+        originalActorId: expense.ownerConfirmedBy,
+        originalAt: expense.ownerConfirmedAt,
+      },
+    });
+  });
+  return redirectTo(redirect, "notice", "支出确认已撤回");
+}
+
 async function disputeCashExpense(formData: FormData, actorId: string) {
   const expenseId = readText(formData, "expenseId");
   const reason = readText(formData, "reason");
@@ -815,6 +847,37 @@ async function confirmTransfer(
   );
 }
 
+async function revokeTransfer(formData: FormData, actorId: string) {
+  financeOnly(actorId);
+  const transferId = readText(formData, "transferId");
+  const reason = readText(formData, "reason");
+  const redirect = readText(formData, "redirectTo");
+  if (!transferId || !reason) throw new Error("撤回原因");
+  const transfer = await prisma.settlementAccountTransfer.findUnique({ where: { id: transferId } });
+  if (!transfer || transfer.status !== SettlementTransferStatus.RECEIVER_CONFIRMED) {
+    throw new Error("该转账已经处理。");
+  }
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.settlementAccountTransfer.updateMany({
+      where: { id: transferId, status: SettlementTransferStatus.RECEIVER_CONFIRMED },
+      data: { status: SettlementTransferStatus.CANCELED, canceledAt: new Date(), canceledBy: actorId },
+    });
+    if (updated.count !== 1) throw new Error("该转账已经处理。");
+    await tx.settlementReversal.create({
+      data: {
+        id: `transfer:${transfer.id}`,
+        kind: "TRANSFER",
+        targetId: transfer.id,
+        actorDiscordId: actorId,
+        reason: reason.slice(0, 500),
+        originalActorId: transfer.receiverConfirmedBy,
+        originalAt: transfer.receiverConfirmedAt,
+      },
+    });
+  });
+  return redirectTo(redirect, "notice", "转账已撤回");
+}
+
 async function recordForexRecovery(formData: FormData, actorId: string) {
   financeOnly(actorId);
   const fromAccountId = readText(formData, "fromAccountId");
@@ -856,6 +919,30 @@ async function recordForexRecovery(formData: FormData, actorId: string) {
   return redirectTo(redirect, "notice", "外汇归还已记入目标人民币账号。");
 }
 
+async function revokeForexRecovery(formData: FormData, actorId: string) {
+  financeOnly(actorId);
+  const recoveryId = readText(formData, "recoveryId");
+  const reason = readText(formData, "reason");
+  const redirect = readText(formData, "redirectTo");
+  if (!recoveryId || !reason) throw new Error("撤回原因");
+  const recovery = await prisma.settlementForexRecovery.findUnique({ where: { id: recoveryId } });
+  if (!recovery) throw new Error("操作失败，请稍后再试。");
+  const created = await prisma.settlementReversal.createMany({
+    data: [{
+      id: `forex:${recovery.id}`,
+      kind: "FOREX",
+      targetId: recovery.id,
+      actorDiscordId: actorId,
+      reason: reason.slice(0, 500),
+      originalActorId: recovery.recordedBy,
+      originalAt: recovery.recoveredAt,
+    }],
+    skipDuplicates: true,
+  });
+  if (created.count !== 1) throw new Error("操作失败，请稍后再试。");
+  return redirectTo(redirect, "notice", "外汇归还已撤回");
+}
+
 async function markPayoutPaid(formData: FormData, actorId: string) {
   const withdrawalId = readText(formData, "withdrawalId");
   const redirect = readText(formData, "redirectTo");
@@ -868,14 +955,48 @@ async function markPayoutPaid(formData: FormData, actorId: string) {
   if (!responsibleOwner)
     throw new Error("该提现方式不属于微信或支付宝负责人队列。");
   assertOwnerOrFinance(responsibleOwner, actorId);
-  await prisma.settlementWithdrawalPayout.create({
-    data: {
-      withdrawalId,
-      ownerDiscordId: responsibleOwner,
-      amount: withdrawal.amount,
-      status: SettlementPayoutStatus.PAID,
-      paidBy: actorId,
-    },
+  await prisma.$transaction(async (tx) => {
+    const prior = await tx.settlementWithdrawalPayout.findUnique({ where: { withdrawalId } });
+    if (!prior) {
+      await tx.settlementWithdrawalPayout.create({
+        data: {
+          withdrawalId,
+          ownerDiscordId: responsibleOwner,
+          amount: withdrawal.amount,
+          status: SettlementPayoutStatus.PAID,
+          paidBy: actorId,
+        },
+      });
+      return;
+    }
+    if (prior.status !== SettlementPayoutStatus.VOIDED) throw new Error("操作失败，请稍后再试。");
+    const reversalId = `payout:${prior.id}:${prior.paidAt.getTime()}`;
+    if (!await tx.settlementReversal.findUnique({ where: { id: reversalId } })) {
+      await tx.settlementReversal.create({
+        data: {
+          id: reversalId,
+          kind: "PAYOUT",
+          targetId: prior.id,
+          actorDiscordId: prior.voidedBy ?? actorId,
+          reason: prior.voidReason ?? "",
+          originalActorId: prior.paidBy,
+          originalAt: prior.paidAt,
+          createdAt: prior.voidedAt ?? new Date(),
+        },
+      });
+    }
+    const updated = await tx.settlementWithdrawalPayout.updateMany({
+      where: { id: prior.id, status: SettlementPayoutStatus.VOIDED },
+      data: {
+        status: SettlementPayoutStatus.PAID,
+        paidBy: actorId,
+        paidAt: new Date(),
+        voidedBy: null,
+        voidedAt: null,
+        voidReason: null,
+      },
+    });
+    if (updated.count !== 1) throw new Error("操作失败，请稍后再试。");
   });
   return redirectTo(
     redirect,
@@ -890,20 +1011,37 @@ async function voidPayout(formData: FormData, actorId: string) {
   const reason = readText(formData, "reason");
   const redirect = readText(formData, "redirectTo");
   if (!payoutId || !reason) throw new Error("请填写撤销原因。");
-  const updated = await prisma.settlementWithdrawalPayout.updateMany({
-    where: { id: payoutId, status: SettlementPayoutStatus.PAID },
-    data: {
-      status: SettlementPayoutStatus.VOIDED,
-      voidedBy: actorId,
-      voidedAt: new Date(),
-      voidReason: reason.slice(0, 500),
-    },
+  const payout = await prisma.settlementWithdrawalPayout.findUnique({ where: { id: payoutId } });
+  if (!payout || payout.status !== SettlementPayoutStatus.PAID) {
+    throw new Error("该提现发放记录已经撤销或不存在。");
+  }
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.settlementWithdrawalPayout.updateMany({
+      where: { id: payoutId, status: SettlementPayoutStatus.PAID, paidAt: payout.paidAt },
+      data: {
+        status: SettlementPayoutStatus.VOIDED,
+        voidedBy: actorId,
+        voidedAt: new Date(),
+        voidReason: reason.slice(0, 500),
+      },
+    });
+    if (updated.count !== 1) throw new Error("该提现发放记录已经撤销或不存在。");
+    await tx.settlementReversal.create({
+      data: {
+        id: `payout:${payout.id}:${payout.paidAt.getTime()}`,
+        kind: "PAYOUT",
+        targetId: payout.id,
+        actorDiscordId: actorId,
+        reason: reason.slice(0, 500),
+        originalActorId: payout.paidBy,
+        originalAt: payout.paidAt,
+      },
+    });
   });
-  if (!updated.count) throw new Error("该提现发放记录已经撤销或不存在。");
   return redirectTo(
     redirect,
     "notice",
-    "提现发放已撤销，仅影响内部负责人对账。",
+    "提现发放已撤回",
   );
 }
 
@@ -934,6 +1072,8 @@ export async function POST(request: NextRequest) {
         return await createCashExpense(formData, session.discordId);
       case "cash-expense-confirm":
         return await confirmCashExpense(formData, session.discordId);
+      case "cash-expense-revoke-confirm":
+        return await revokeCashExpenseConfirmation(formData, session.discordId);
       case "cash-expense-dispute":
         return await disputeCashExpense(formData, session.discordId);
       case "cash-expense-void":
@@ -942,10 +1082,14 @@ export async function POST(request: NextRequest) {
         return await createTransfer(formData, session.discordId);
       case "transfer-confirm":
         return await confirmTransfer(formData, session.discordId, false);
+      case "transfer-revoke":
+        return await revokeTransfer(formData, session.discordId);
       case "transfer-dispute":
         return await confirmTransfer(formData, session.discordId, true);
       case "forex-recovery":
         return await recordForexRecovery(formData, session.discordId);
+      case "forex-revoke":
+        return await revokeForexRecovery(formData, session.discordId);
       case "payout-paid":
         return await markPayoutPaid(formData, session.discordId);
       case "payout-void":

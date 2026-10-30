@@ -330,6 +330,19 @@ export default async function CashReconciliationPage(props: PageProps) {
     }),
   ]);
 
+  const reversals = await prisma.settlementReversal.findMany({
+    where: {
+      OR: [
+        { kind: "TRANSFER", targetId: { in: transfers.map((row) => row.id) } },
+        { kind: "CASH_CONFIRMATION", targetId: { in: cashExpenses.map((row) => row.id) } },
+        { kind: "PAYOUT", targetId: { in: payouts.map((row) => row.id) } },
+        { kind: "FOREX", targetId: { in: recoveries.map((row) => row.id) } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  const reversedForexIds = new Set(reversals.filter((row) => row.kind === "FOREX").map((row) => row.targetId));
+
   const automatedRechargeReferences = new Set(
     [
       ...zPayRechargeReferences.flatMap((payment) => [
@@ -377,6 +390,7 @@ export default async function CashReconciliationPage(props: PageProps) {
           expense.voidedBy,
         ]),
         ...auditEvents.map((event) => event.actorDiscordId),
+        ...reversals.flatMap((event) => [event.actorDiscordId, event.originalActorId]),
       ].filter((discordUserId): discordUserId is string =>
         Boolean(discordUserId),
       ),
@@ -594,6 +608,7 @@ export default async function CashReconciliationPage(props: PageProps) {
     ).transferIn.add(transfer.amount);
   }
   for (const recovery of recoveries) {
+    if (reversedForexIds.has(recovery.id)) continue;
     getOwnerTotal(recovery.fromAccount.ownerDiscordId).forexOut = getOwnerTotal(
       recovery.fromAccount.ownerDiscordId,
     ).forexOut.add(recovery.rmbAmount);
@@ -676,7 +691,7 @@ export default async function CashReconciliationPage(props: PageProps) {
         SettlementTransferStatus.PENDING_RECEIVER_CONFIRMATION,
   );
   const visibleTransfers = isAllFinanceView
-    ? transfers.slice(0, 50)
+    ? transfers
     : transfers
         .filter(
           (transfer) =>
@@ -694,10 +709,12 @@ export default async function CashReconciliationPage(props: PageProps) {
     );
   const pendingPayouts = withdrawalItems.filter(
     ({ withdrawal, ownerId }) =>
-      ownerId === currentOwnerId && !withdrawal.settlementPayout,
+      ownerId === currentOwnerId &&
+      (!withdrawal.settlementPayout || withdrawal.settlementPayout.status === SettlementPayoutStatus.VOIDED),
   );
   const payoutRows = isAllFinanceView
-    ? withdrawalItems.filter(({ withdrawal }) => !withdrawal.settlementPayout)
+    ? withdrawalItems.filter(({ withdrawal }) =>
+        !withdrawal.settlementPayout || withdrawal.settlementPayout.status === SettlementPayoutStatus.VOIDED)
     : pendingPayouts;
   const paidPayoutRows = withdrawalItems
     .filter(
@@ -725,6 +742,15 @@ export default async function CashReconciliationPage(props: PageProps) {
   const withdrawalById = new Map(
     withdrawals.map((withdrawal) => [withdrawal.id, withdrawal]),
   );
+  const reversalsByTarget = new Map<string, typeof reversals>();
+  for (const reversal of reversals) {
+    const key = `${reversal.kind}:${reversal.targetId}`;
+    const rows = reversalsByTarget.get(key) ?? [];
+    rows.push(reversal);
+    reversalsByTarget.set(key, rows);
+  }
+  const getReversals = (kind: string, targetId: string) =>
+    reversalsByTarget.get(`${kind}:${targetId}`) ?? [];
   const auditRows: AuditRow[] = [
     ...auditEvents.map((event) => ({
       id: `reconciliation-${event.id}`,
@@ -775,34 +801,73 @@ export default async function CashReconciliationPage(props: PageProps) {
         });
       }
       if (transfer.canceledAt && transfer.canceledBy) {
+        const reversal = getReversals("TRANSFER", transfer.id)[0];
         entries.push({
           id: `transfer-canceled-${transfer.id}`,
           occurredAt: transfer.canceledAt,
           category: "内部转账",
-          action: "已撤销",
+          action: reversal ? "撤回转账" : "已撤销",
           subject,
           amount: transfer.amount,
           actorDiscordId: transfer.canceledBy,
-          note: null,
+          note: reversal?.reason ?? null,
         });
       }
       return entries;
     }),
-    ...recoveries.map((recovery) => ({
-      id: `forex-${recovery.id}`,
-      occurredAt: recovery.recoveredAt,
-      category: "外汇归还",
-      action: "登记归还",
-      subject: `${recovery.fromAccount.name} → ${recovery.toAccount.name}`,
-      amount: recovery.rmbAmount,
-      actorDiscordId: recovery.recordedBy,
-      note: `${formatAmountDown2(recovery.foreignAmount)} ${recovery.foreignCurrency}${recovery.note ? ` · ${recovery.note}` : ""}`,
-    })),
+    ...recoveries.flatMap((recovery) => {
+      const subject = `${recovery.fromAccount.name} → ${recovery.toAccount.name}`;
+      return [
+        {
+          id: `forex-${recovery.id}`,
+          occurredAt: recovery.recoveredAt,
+          category: "外汇归还",
+          action: "登记归还",
+          subject,
+          amount: recovery.rmbAmount,
+          actorDiscordId: recovery.recordedBy,
+          note: `${formatAmountDown2(recovery.foreignAmount)} ${recovery.foreignCurrency}${recovery.note ? ` · ${recovery.note}` : ""}`,
+        },
+        ...getReversals("FOREX", recovery.id).map((reversal) => ({
+          id: `forex-reversed-${reversal.id}`,
+          occurredAt: reversal.createdAt,
+          category: "外汇归还",
+          action: "撤回归还",
+          subject,
+          amount: recovery.rmbAmount,
+          actorDiscordId: reversal.actorDiscordId,
+          note: reversal.reason,
+        })),
+      ] satisfies AuditRow[];
+    }),
     ...payouts.flatMap((payout) => {
       const withdrawal = withdrawalById.get(payout.withdrawalId);
       const subject = `${withdrawal?.method.split(":")[0] ?? "提现"} · 提现 ${payout.withdrawalId}`;
-      const entries: AuditRow[] = [
+      const payoutReversals = getReversals("PAYOUT", payout.id);
+      const entries: AuditRow[] = payoutReversals.flatMap((reversal) => ([
         {
+          id: `payout-paid-history-${reversal.id}`,
+          occurredAt: reversal.originalAt ?? payout.paidAt,
+          category: "提现发放",
+          action: "标记已发放",
+          subject,
+          amount: payout.amount,
+          actorDiscordId: reversal.originalActorId ?? payout.paidBy,
+          note: null,
+        },
+        {
+          id: `payout-voided-history-${reversal.id}`,
+          occurredAt: reversal.createdAt,
+          category: "提现发放",
+          action: "撤回已发放",
+          subject,
+          amount: payout.amount,
+          actorDiscordId: reversal.actorDiscordId,
+          note: reversal.reason,
+        },
+      ]));
+      if (payout.status === SettlementPayoutStatus.PAID || payoutReversals.length === 0) {
+        entries.push({
           id: `payout-paid-${payout.id}`,
           occurredAt: payout.paidAt,
           category: "提现发放",
@@ -811,9 +876,9 @@ export default async function CashReconciliationPage(props: PageProps) {
           amount: payout.amount,
           actorDiscordId: payout.paidBy,
           note: null,
-        },
-      ];
-      if (payout.voidedAt && payout.voidedBy) {
+        });
+      }
+      if (payoutReversals.length === 0 && payout.voidedAt && payout.voidedBy) {
         entries.push({
           id: `payout-voided-${payout.id}`,
           occurredAt: payout.voidedAt,
@@ -851,6 +916,30 @@ export default async function CashReconciliationPage(props: PageProps) {
           amount: expense.amount,
           actorDiscordId: expense.ownerConfirmedBy,
           note: expense.note,
+        });
+      }
+      for (const reversal of getReversals("CASH_CONFIRMATION", expense.id)) {
+        if (reversal.originalAt && reversal.originalActorId) {
+          entries.push({
+            id: `cash-expense-confirmed-history-${reversal.id}`,
+            occurredAt: reversal.originalAt,
+            category: "现金支出",
+            action: "负责人确认",
+            subject,
+            amount: expense.amount,
+            actorDiscordId: reversal.originalActorId,
+            note: expense.note,
+          });
+        }
+        entries.push({
+          id: `cash-expense-revoked-${reversal.id}`,
+          occurredAt: reversal.createdAt,
+          category: "现金支出",
+          action: "撤回支出",
+          subject,
+          amount: expense.amount,
+          actorDiscordId: reversal.actorDiscordId,
+          note: reversal.reason,
         });
       }
       if (expense.ownerDisputedAt && expense.ownerDisputedBy) {
@@ -2633,7 +2722,21 @@ export default async function CashReconciliationPage(props: PageProps) {
                               : transfer.status ===
                                   SettlementTransferStatus.RECEIVER_DISPUTED
                                 ? "收款异常"
-                                : "待收款人确认"}
+                                : transfer.status === SettlementTransferStatus.CANCELED
+                                  ? "已撤销"
+                                  : "待收款人确认"}
+                            {isFinance && transfer.status === SettlementTransferStatus.RECEIVER_CONFIRMED ? (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer text-rose-100">撤回转账</summary>
+                                <form action={ACTION_URL} method="post" className="mt-2 grid gap-2">
+                                  <input type="hidden" name="action" value="transfer-revoke" />
+                                  <input type="hidden" name="redirectTo" value={redirectTo} />
+                                  <input type="hidden" name="transferId" value={transfer.id} />
+                                  <input required name="reason" maxLength={500} placeholder="撤回原因" className={fieldClass} />
+                                  <button className="rounded-lg bg-rose-400/20 px-3 py-2 text-rose-100">确认撤回</button>
+                                </form>
+                              </details>
+                            ) : null}
                           </td>
                         </tr>
                       ))}
@@ -2841,6 +2944,18 @@ export default async function CashReconciliationPage(props: PageProps) {
                             </td>
                             <td className="px-4 py-3 text-xs text-white/60 whitespace-nowrap">
                               {formatDate(payout.paidAt)}
+                              {isFinance ? (
+                                <details className="mt-2 whitespace-normal">
+                                  <summary className="cursor-pointer text-rose-100">撤回已发放</summary>
+                                  <form action={ACTION_URL} method="post" className="mt-2 grid gap-2">
+                                    <input type="hidden" name="action" value="payout-void" />
+                                    <input type="hidden" name="redirectTo" value={redirectTo} />
+                                    <input type="hidden" name="payoutId" value={payout.id} />
+                                    <input required name="reason" maxLength={500} placeholder="撤回原因" className={fieldClass} />
+                                    <button className="rounded-lg bg-rose-400/20 px-3 py-2 text-rose-100">确认撤回</button>
+                                  </form>
+                                </details>
+                              ) : null}
                             </td>
                           </tr>
                         );
@@ -2984,7 +3099,7 @@ export default async function CashReconciliationPage(props: PageProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {recoveries.slice(0, 30).map((recovery) => (
+                      {recoveries.map((recovery) => (
                         <tr
                           key={recovery.id}
                           className="border-b border-white/5"
@@ -3017,6 +3132,20 @@ export default async function CashReconciliationPage(props: PageProps) {
                           </td>
                           <td className="px-3 py-3 text-white/60">
                             {recovery.note ?? "—"}
+                            {reversedForexIds.has(recovery.id) ? (
+                              <p className="mt-2 text-white/45">已撤销</p>
+                            ) : (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer text-rose-100">撤回归还</summary>
+                                <form action={ACTION_URL} method="post" className="mt-2 grid gap-2">
+                                  <input type="hidden" name="action" value="forex-revoke" />
+                                  <input type="hidden" name="redirectTo" value={redirectTo} />
+                                  <input type="hidden" name="recoveryId" value={recovery.id} />
+                                  <input required name="reason" maxLength={500} placeholder="撤回原因" className={fieldClass} />
+                                  <button className="rounded-lg bg-rose-400/20 px-3 py-2 text-rose-100">确认撤回</button>
+                                </form>
+                              </details>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -3296,6 +3425,18 @@ export default async function CashReconciliationPage(props: PageProps) {
                                         </form>
                                       </details>
                                     </>
+                                  ) : null}
+                                  {isConfirmed && canActOnExpense ? (
+                                    <details>
+                                      <summary className="cursor-pointer rounded-lg border border-amber-300/30 px-3 py-2 text-center text-xs text-amber-100">撤回支出</summary>
+                                      <form action={ACTION_URL} method="post" className="mt-2 grid gap-2">
+                                        <input type="hidden" name="action" value="cash-expense-revoke-confirm" />
+                                        <input type="hidden" name="redirectTo" value={redirectTo} />
+                                        <input type="hidden" name="expenseId" value={expense.id} />
+                                        <input required name="reason" maxLength={500} placeholder="撤回原因" className={fieldClass} />
+                                        <button className="rounded-lg bg-amber-300/20 px-3 py-2 text-xs text-amber-100">确认撤回</button>
+                                      </form>
+                                    </details>
                                   ) : null}
                                   {canVoid ? (
                                     <details>
