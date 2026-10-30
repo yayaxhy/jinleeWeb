@@ -30,6 +30,7 @@ import {
   type LotteryFusionCountBucket,
 } from '@/lib/admin/lottery-fusion-revenue';
 import { getVoucherReversalAdjustments } from '@/lib/admin/voucher-reversal';
+import { getWithdrawalSettlementSummary } from '@/lib/admin/withdrawal-settlement';
 
 export const metadata = {
   title: '查看收益',
@@ -177,18 +178,10 @@ export default async function AdminRevenuePage(props: PageProps) {
     where: rechargeWhere,
   });
 
-  const withdrawWhere: Prisma.WithdrawWhereInput = {
-    createdAt: { gte: start, lt: end },
-    ...(buildIdentityExclusion(
-      'dlmId',
-      'discordId',
-      excludeRechargeResolved.excludeDlmIds,
-      excludeRechargeResolved.excludeDiscordIds,
-    ) as Prisma.WithdrawWhereInput),
-  };
-  const withdrawAgg = await prisma.withdraw.aggregate({
-    _sum: { amount: true },
-    where: withdrawWhere,
+  const withdrawalSettlement = await getWithdrawalSettlementSummary({
+    start, end,
+    excludeDlmIds: excludeRechargeResolved.excludeDlmIds,
+    excludeDiscordIds: excludeRechargeResolved.excludeDiscordIds,
   });
 
   const paidRechargeOrderWhere: Prisma.ZPayRechargeOrderWhereInput = {
@@ -237,8 +230,8 @@ export default async function AdminRevenuePage(props: PageProps) {
   ]);
 
   const rechargeTotal = dec(rechargeAgg._sum.amount);
-  const withdrawTotal = dec(withdrawAgg._sum.amount);
-  const netRecharge = rechargeTotal.sub(withdrawTotal);
+  const withdrawTotal = withdrawalSettlement.requested;
+  const netRecharge = rechargeTotal.sub(withdrawalSettlement.netOutflow);
   const zpayTotal = dec(zpayAgg._sum.amount);
   const stripeTotal = dec(stripeAgg._sum.rechargeAmount);
   const wechatNativeTotal = dec(wechatNativeAgg._sum.rechargeAmount);
@@ -737,6 +730,8 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>微信Native：¥{formatNumber(wechatNativeTotal)}</p>
             <p>Stripe：¥{formatNumber(stripeTotal)}</p>
             <p>提现总额：¥{formatNumber(withdrawTotal)}</p>
+            <p>已发提现：¥{formatNumber(withdrawalSettlement.netOutflow)}</p>
+            <p>待发提现：¥{formatNumber(withdrawalSettlement.pendingAtEnd)}</p>
             <p className="text-white">净充值：¥{formatNumber(netRecharge)}</p>
           </div>
         </div>

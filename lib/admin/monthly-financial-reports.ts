@@ -45,6 +45,7 @@ import {
 } from '@/lib/admin/lottery-fusion-revenue';
 import { isLotteryFusionNonce } from '@/lib/lottery-fusion';
 import { getVoucherReversalAdjustments } from '@/lib/admin/voucher-reversal';
+import { getWithdrawalSettlementSummary } from '@/lib/admin/withdrawal-settlement';
 
 // The new operating entity started with no money in its bank account.
 const NEW_ENTITY_OPENING_BANK_BALANCE = new Prisma.Decimal(0);
@@ -186,6 +187,7 @@ export const buildMonthlyBalanceSheetModel = (params: {
   openingCapital: Prisma.Decimal;
   dividendDeclared: Prisma.Decimal;
   dividendPayable: Prisma.Decimal;
+  withdrawalPayable?: Prisma.Decimal;
   adjustments: Pick<MonthFinancialAdjustments, 'priorProfitRows' | 'assetRows' | 'liabilityRows' | 'equityRows'>;
 }) => {
   const { estimatedBankCash, userBalance, netProfit, openingCapital, dividendDeclared, dividendPayable, adjustments } = params;
@@ -197,7 +199,7 @@ export const buildMonthlyBalanceSheetModel = (params: {
   }));
   const assetRows: BalanceSheetModelRow[] = [
     {
-      item: '期末银行余额（账面推算）',
+      item: '月末银行余额（账面推算）',
       category: '现金（待核对）',
       note: '根据已记录现金收支推算，尚未与银行流水核对',
       amount: estimatedBankCash,
@@ -211,11 +213,12 @@ export const buildMonthlyBalanceSheetModel = (params: {
       note: '已按 admin 排除规则计算；仍需核对新主体承担范围',
       amount: userBalance,
     },
+    { item: '待发提现', category: '流动负债', note: '', amount: params.withdrawalPayable ?? dec(0) },
     { item: '应付分红', category: '流动负债', note: '已决定但尚未实际付款', amount: dividendPayable },
     ...mapAdjustments(adjustments.liabilityRows),
   ];
   const equityRows: BalanceSheetModelRow[] = [
-    { item: '期初经营资本', category: '资本结转', note: '含前期盈亏及已决定分红；允许为负', amount: openingCapital },
+    { item: '月初经营资本', category: '资本结转', note: '含前期盈亏及已决定分红；允许为负', amount: openingCapital },
     ...adjustments.priorProfitRows.map((row) => ({
       item: row.label,
       category: '前期盈亏',
@@ -543,7 +546,10 @@ async function loadMonthlyRevenueData(params: {
     couponConsumedBySource,
     pointShopCouponRows,
     pointShopBalanceRows,
+    withdrawalSettlement,
   ] = await Promise.all([
+    // Keep request totals for wallet reconciliation; payout totals below are
+    // the independent cash movements confirmed by the responsible owner.
     prisma.blockStackGame.findMany({
       where: { createdAt: { gte: start, lt: end } },
       orderBy: { createdAt: 'desc' },
@@ -724,6 +730,11 @@ async function loadMonthlyRevenueData(params: {
       },
       orderBy: { issuedAt: 'desc' },
     }),
+    getWithdrawalSettlementSummary({
+      start, end,
+      excludeDlmIds: excludeRechargeResolved.excludeDlmIds,
+      excludeDiscordIds: excludeRechargeResolved.excludeDiscordIds,
+    }),
   ]);
   const voucherReversals = await getVoucherReversalAdjustments({
     start,
@@ -746,7 +757,7 @@ async function loadMonthlyRevenueData(params: {
   const zpayTotal = decimalSum(zpayRows, 'amount');
   const stripeTotal = decimalSum(stripeRows, 'rechargeAmount');
   const wechatNativeTotal = decimalSum(wechatNativeRows, 'rechargeAmount');
-  const netRecharge = rechargeTotal.sub(withdrawTotal);
+  const netRecharge = rechargeTotal.sub(withdrawalSettlement.netOutflow);
 
   const effectiveMemberRows = memberRows.map((row) => ({
     ...row,
@@ -961,6 +972,10 @@ async function loadMonthlyRevenueData(params: {
       rechargeCashNetInflow,
       negativeRechargeAmount,
       withdrawTotal,
+      withdrawalPaid: withdrawalSettlement.paid,
+      withdrawalReversed: withdrawalSettlement.reversed,
+      withdrawalCashOutflow: withdrawalSettlement.netOutflow,
+      withdrawalPendingAtEnd: withdrawalSettlement.pendingAtEnd,
       zpayTotal,
       stripeTotal,
       wechatNativeTotal,
@@ -1385,7 +1400,7 @@ function buildFinancialStatementWorkbook(params: {
   const netProfit = incomeTotal.sub(expenseTotal);
   const recordedBankCash = calculateRecordedBankCash(
     cashOpeningBalance, data.totals.rechargeCashNetInflow,
-    data.totals.withdrawTotal, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
+    data.totals.withdrawalCashOutflow, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
     data.totals.priorPeriodCashCorrectionTotal,
   );
 
@@ -1471,6 +1486,7 @@ function buildFinancialStatementWorkbook(params: {
     openingCapital,
     dividendDeclared: dividendLedger.declaredThisMonth,
     dividendPayable: dividendLedger.payableAtMonthEnd,
+    withdrawalPayable: data.totals.withdrawalPendingAtEnd,
     adjustments,
   });
   const balanceSheet = workbook.addWorksheet('资产负债表', {
@@ -1560,26 +1576,28 @@ function buildFinancialStatementWorkbook(params: {
 
   addKeyValueSheet(workbook, '现金收支核对', [
     ...(walletReconciliation ? [
-      { section: '钱包余额核对', key: '期初用户余额', value: walletReconciliation.openingBalance },
-      { section: '钱包余额核对', key: '期末用户余额', value: walletReconciliation.closingBalance },
+      { section: '钱包余额核对', key: '月初用户余额', value: walletReconciliation.openingBalance },
+      { section: '钱包余额核对', key: '月末用户余额', value: walletReconciliation.closingBalance },
       { section: '钱包余额核对', key: '本期净变动', value: walletReconciliation.netMovement },
       { section: '钱包余额核对', key: '流水连续性', value: walletReconciliation.ledgerContinuous ? '通过' : '未通过' },
       ...walletReconciliation.movements.map((row) => ({
         section: '钱包流水类型', key: `${row.type.replaceAll('赠礼', '打赏')}（${row.count} 笔）`, value: row.amount,
       })),
     ] : []),
-    { section: '现金余额推算', key: '期初银行余额', value: cashOpeningBalance.toString() },
+    { section: '现金余额推算', key: '月初银行余额', value: cashOpeningBalance.toString() },
     { section: '充值流水', key: '正数 Recharge', value: data.totals.rechargeCashPositive.toString() },
     { section: '充值流水', key: '负数 Recharge（抵减）', value: data.totals.negativeRechargeAmount.toString() },
     { section: '现金余额推算', key: 'Recharge 净额', value: data.totals.rechargeCashNetInflow.toString() },
-    { section: '实际现金流出', key: '提现（按已打款口径）', value: data.totals.withdrawTotal.toString() },
+    { section: '实际现金流出', key: '提现（按已打款口径）', value: data.totals.withdrawalCashOutflow.toString() },
+    { section: '现金余额推算', key: '已发提现', value: data.totals.withdrawalCashOutflow.toString() },
+    { section: '流动负债', key: '待发提现', value: data.totals.withdrawalPendingAtEnd.toString() },
     { section: '实际现金流出', key: '人工记录支出（不含前期调整）', value: data.totals.manualCashExpenseTotal.toString() },
     { section: '现金余额推算', key: '现金支出调整（补录）', value: data.totals.priorPeriodCashCorrectionTotal.toString() },
     { section: '实际现金流出', key: '已支付股东分红', value: dividendLedger.paidThisMonth.toString() },
     { section: '利润分配', key: '当月决定分红', value: dividendLedger.declaredThisMonth.toString() },
-    { section: '利润分配', key: '期末应付分红', value: dividendLedger.payableAtMonthEnd.toString() },
+    { section: '利润分配', key: '月末应付分红', value: dividendLedger.payableAtMonthEnd.toString() },
     { section: '现金余额推算', key: '本期已记录现金净流入', value: recordedBankCash.movement.toString() },
-    { section: '现金余额推算', key: '期末账面银行余额（待核对）', value: recordedBankCash.closing.toString() },
+    { section: '现金余额推算', key: '月末账面银行余额（待核对）', value: recordedBankCash.closing.toString() },
     { section: '非当月现金流', key: '前期支出调整', value: data.totals.priorPeriodExpenseAdjustmentTotal.toString() },
     { section: '说明', key: '负数 Recharge', value: '已抵减正数 Recharge；仍需核对是否为现金退款或钱包纠错' },
     { section: '说明', key: '预存余额消费', value: '不产生新的银行现金流入' },
@@ -1641,6 +1659,8 @@ function buildAdminRevenueDataWorkbook(
     { section: '当月充值提现', key: '微信原生已支付', value: data.totals.wechatNativeTotal.toString() },
     { section: '当月充值提现', key: 'Stripe 已支付', value: data.totals.stripeTotal.toString() },
     { section: '当月充值提现', key: '提现总额', value: data.totals.withdrawTotal.toString() },
+    { section: '当月充值提现', key: '已发提现', value: data.totals.withdrawalCashOutflow.toString() },
+    { section: '当月充值提现', key: '待发提现', value: data.totals.withdrawalPendingAtEnd.toString() },
     { section: '当月充值提现', key: '净充值', value: data.totals.netRecharge.toString() },
     { section: '会员余额汇总', key: 'DlmUser.recharge 合计', value: data.totals.memberRechargeTotal.toString() },
     { section: '会员余额汇总', key: 'DlmUser.income 合计', value: data.totals.memberIncomeTotal.toString() },
@@ -1872,10 +1892,7 @@ const getRecordedBankOpeningBalance = async (monthKey: string) => {
           where: { createdAt: { gte: newEntityReportStart(range.start), lt: range.end } },
           select: { amount: true },
         }),
-        prisma.withdraw.findMany({
-          where: { createdAt: { gte: newEntityReportStart(range.start), lt: range.end } },
-          select: { amount: true },
-        }),
+        getWithdrawalSettlementSummary({ start: newEntityReportStart(range.start), end: range.end }),
         prisma.monthlyManualExpense.findMany({
           where: { monthKey: previousMonthKey, voidedAt: null },
           select: { amount: true, note: true, cashFlowCorrection: true },
@@ -1884,7 +1901,7 @@ const getRecordedBankOpeningBalance = async (monthKey: string) => {
       const manualCash = summarizeManualCashExpenses(manualExpenses);
       balance = balance
         .add(summarizeRechargeCashFlow(recharges).net)
-        .sub(decimalSum(withdrawals, 'amount'))
+        .sub(withdrawals.netOutflow)
         .sub(manualCash.currentCashOutflow)
         .sub(manualCash.priorPeriodCashCorrection);
     }
@@ -1995,7 +2012,7 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
   const netProfit = incomeTotal.sub(expenseTotal);
   const recordedBankCash = calculateRecordedBankCash(
     cashOpeningBalance, data.totals.rechargeCashNetInflow,
-    data.totals.withdrawTotal, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
+    data.totals.withdrawalCashOutflow, data.totals.manualCashExpenseTotal, dividendLedger.paidThisMonth,
     data.totals.priorPeriodCashCorrectionTotal,
   );
   const balanceModel = buildMonthlyBalanceSheetModel({
@@ -2005,6 +2022,7 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
     openingCapital,
     dividendDeclared: dividendLedger.declaredThisMonth,
     dividendPayable: dividendLedger.payableAtMonthEnd,
+    withdrawalPayable: data.totals.withdrawalPendingAtEnd,
     adjustments,
   });
   const toPreviewRows = (rows: BalanceSheetModelRow[]): FinancialReportPreviewRow[] => rows.map((row) => ({
@@ -2032,7 +2050,10 @@ const buildMonthlyFinancialReportPreview = ({ target, adjustments, data, cashOpe
     cashFlow: {
       openingBankBalance: cashOpeningBalance.toString(),
       rechargeInflow: data.totals.rechargeCashNetInflow.toString(),
-      withdrawalOutflow: data.totals.withdrawTotal.toString(),
+      withdrawalOutflow: data.totals.withdrawalCashOutflow.toString(),
+      withdrawalPaid: data.totals.withdrawalPaid.toString(),
+      withdrawalReversed: data.totals.withdrawalReversed.toString(),
+      withdrawalPendingAtEnd: data.totals.withdrawalPendingAtEnd.toString(),
       manualExpenseOutflow: data.totals.manualCashExpenseTotal.toString(),
       priorPeriodCashCorrectionOutflow: data.totals.priorPeriodCashCorrectionTotal.toString(),
       dividendPaymentOutflow: dividendLedger.paidThisMonth.toString(),
@@ -2249,7 +2270,7 @@ const getWalletBalancesAtMonthEnd = async (end: Date) => {
 
   for (const user of users) {
     if (user.createdAt >= end && !closing.get(user.dlmId)?.isZero()) {
-      throw new Error('月末后新增用户的期初余额不为零，不能确认月结。');
+      throw new Error('月末后新增用户的月初余额不为零，不能确认月结。');
     }
   }
 
@@ -2285,7 +2306,7 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
     // never be presented as an audited monthly snapshot.
     const openingWalletBalances = await getWalletBalancesAtMonthEnd(context.data.start);
     const walletBalances = context.walletBalances;
-    if (!walletBalances) throw new Error('本月钱包期末余额尚未形成，不能确认月结。');
+    if (!walletBalances) throw new Error('本月钱包月末余额尚未形成，不能确认月结。');
     const openingByDlmId = new Map(openingWalletBalances.map((row) => [row.dlmId, row.closingBalance]));
     const openingWalletBalanceTotal = context.data.rows.memberRows.reduce(
       (sum, row) => sum.add(openingByDlmId.get(row.dlmId) ?? new Prisma.Decimal(0)),
@@ -2312,7 +2333,7 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
       (sum, row) => sum.add(row.amount), new Prisma.Decimal(0),
     );
     if (!walletLedgerTotal.equals(context.data.totals.memberBalanceTotal.sub(openingWalletBalanceTotal))) {
-      throw new Error('本月钱包流水净额与期初、期末余额不一致，不能确认月结。');
+      throw new Error('本月钱包流水净额与月初、月末余额不一致，不能确认月结。');
     }
     const withdrawalLedger = walletLedgerRows.filter((row) => row.typeOfTransaction === '提现');
     const withdrawalLedgerTotal = withdrawalLedger.reduce(

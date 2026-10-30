@@ -4,6 +4,7 @@ import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { canViewRevenue } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
+import { getWithdrawalSettlementSummary } from '@/lib/admin/withdrawal-settlement';
 import { getServerSession } from '@/lib/session';
 import {
   formatDateTimeTextCentralEuropean,
@@ -335,6 +336,7 @@ export async function GET(request: NextRequest) {
     revertedGiftRows,
     revertedOrderRows,
     couponConsumedBySource,
+    withdrawalSettlement,
   ] = await Promise.all([
     prisma.blockStackGame.findMany({
       where: { createdAt: { gte: start, lt: end } },
@@ -450,6 +452,11 @@ export async function GET(request: NextRequest) {
       _count: { id: true },
       where: couponWhere,
     }),
+    getWithdrawalSettlementSummary({
+      start, end,
+      excludeDlmIds: excludeRechargeResolved.excludeDlmIds,
+      excludeDiscordIds: excludeRechargeResolved.excludeDiscordIds,
+    }),
   ]);
 
   const blockTotalRevenue = decimalSum(blockStackRows, 'totalRevenue');
@@ -463,7 +470,7 @@ export async function GET(request: NextRequest) {
   const zpayTotal = decimalSum(zpayRows, 'amount');
   const stripeTotal = decimalSum(stripeRows, 'rechargeAmount');
   const wechatNativeTotal = decimalSum(wechatNativeRows, 'rechargeAmount');
-  const netRecharge = rechargeTotal.sub(withdrawTotal);
+  const netRecharge = rechargeTotal.sub(withdrawalSettlement.netOutflow);
 
   const memberRechargeTotal = decimalSum(memberRows, 'recharge');
   const memberIncomeTotal = decimalSum(memberRows, 'income');
@@ -651,6 +658,8 @@ export async function GET(request: NextRequest) {
     { section: '当月充值提现', key: '微信原生已支付', value: wechatNativeTotal.toString() },
     { section: '当月充值提现', key: 'Stripe 已支付', value: stripeTotal.toString() },
     { section: '当月充值提现', key: '提现总额', value: withdrawTotal.toString() },
+    { section: '当月充值提现', key: '已发提现', value: withdrawalSettlement.netOutflow.toString() },
+    { section: '当月充值提现', key: '待发提现', value: withdrawalSettlement.pendingAtEnd.toString() },
     { section: '当月充值提现', key: '净充值', value: netRecharge.toString() },
 
     { section: '会员余额汇总', key: 'DlmUser.recharge 合计', value: memberRechargeTotal.toString() },

@@ -77,11 +77,30 @@ test('a monthly loss reduces equity without becoming a negative dividend or asse
     adjustments: { priorProfitRows: [], assetRows: [], liabilityRows: [], equityRows: [] },
   });
 
-  assert.deepEqual(balanceSheet.assetRows.map((row) => row.item), ['期末银行余额（账面推算）']);
-  assert.deepEqual(balanceSheet.liabilityRows.map((row) => row.item), ['用户余额', '应付分红']);
+  assert.deepEqual(balanceSheet.assetRows.map((row) => row.item), ['月末银行余额（账面推算）']);
+  assert.deepEqual(balanceSheet.liabilityRows.map((row) => row.item), ['用户余额', '待发提现', '应付分红']);
   assert.equal(balanceSheet.equityRows.find((row) => row.item === '当月盈亏')?.category, '本期亏损');
   assert.equal(balanceSheet.equityTotal.toString(), '-2931.63');
   assert.equal(balanceSheet.reconciliationDifference.toString(), '0');
+});
+
+test('pending withdrawal transfers wallet liability to payable without deducting wallet or cash twice', () => {
+  for (const state of [
+    { cash: '1000', pending: '200' }, // Requested: wallet already reduced from 1000 to 800.
+    { cash: '800', pending: '0' }, // Paid: cash and payable fall, wallet stays at 800.
+    { cash: '1000', pending: '200' }, // Payment revoked: restore cash and payable only.
+  ]) {
+    const model = buildMonthlyBalanceSheetModel({
+      estimatedBankCash: amount(state.cash), userBalance: amount('800'),
+      withdrawalPayable: amount(state.pending),
+      netProfit: amount('0'), openingCapital: amount('0'),
+      dividendDeclared: amount('0'), dividendPayable: amount('0'),
+      adjustments: { priorProfitRows: [], assetRows: [], liabilityRows: [], equityRows: [] },
+    });
+    assert.equal(model.liabilityRows.find(row => row.item === '用户余额')?.amount.toString(), '800');
+    assert.equal(model.liabilityRows.find(row => row.item === '待发提现')?.amount.toString(), state.pending);
+    assert.equal(model.reconciliationDifference.toString(), '0');
+  }
 });
 
 test('a monthly profit increases equity and prior profit stays separately identified', () => {
