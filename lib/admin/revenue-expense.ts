@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityReportStart } from '@/lib/operating-entity-cutover';
 
 export const REVENUE_EXPENSE_REASON_GIFT_REFERRAL = '邀请返现（打赏）';
 export const REVENUE_EXPENSE_REASON_ORDER_REFERRAL = '邀请返现（订单）';
@@ -226,7 +227,8 @@ export async function getGiftReferralExpenseSummary(params: {
   start: Date;
   end: Date;
   excludeDiscordIds?: string[];
-}): Promise<RevenueExpenseReasonRow> {
+}, db: Pick<Prisma.TransactionClient, '$queryRaw'> = prisma): Promise<RevenueExpenseReasonRow> {
+  const start = newEntityReportStart(params.start);
   const excludeDiscordIds = Array.from(new Set((params.excludeDiscordIds ?? []).filter(Boolean)));
   const bossExclusion = excludeDiscordIds.length
     ? Prisma.sql` AND ga."bossReferralInviterId" NOT IN (${Prisma.join(excludeDiscordIds)})`
@@ -236,7 +238,7 @@ export async function getGiftReferralExpenseSummary(params: {
     : Prisma.empty;
 
   const [grossRows, revertedRows] = await Promise.all([
-    prisma.$queryRaw<GiftReferralAggregateRow[]>(Prisma.sql`
+    db.$queryRaw<GiftReferralAggregateRow[]>(Prisma.sql`
       SELECT
         COALESCE(SUM(
           CASE
@@ -265,10 +267,10 @@ export async function getGiftReferralExpenseSummary(params: {
           END
         ), 0) AS "count"
       FROM "gift_audit" ga
-      WHERE ga."createdAt" >= ${params.start}
+      WHERE ga."createdAt" >= ${start}
         AND ga."createdAt" < ${params.end}
     `),
-    prisma.$queryRaw<GiftReferralAggregateRow[]>(Prisma.sql`
+    db.$queryRaw<GiftReferralAggregateRow[]>(Prisma.sql`
       SELECT
         COALESCE(SUM(
           CASE
@@ -300,8 +302,9 @@ export async function getGiftReferralExpenseSummary(params: {
       JOIN "revert" r
         ON r."originalTransactionId" = ga."individualTransactionId"
       WHERE r."status" = 'SUCCESS'
-        AND ga."createdAt" >= ${params.start}
-        AND ga."createdAt" < ${params.end}
+        AND ga."createdAt" > ${NEW_ENTITY_OPERATIONS_STARTED_AT}
+        AND r."createdAt" >= ${start}
+        AND r."createdAt" < ${params.end}
     `),
   ]);
 

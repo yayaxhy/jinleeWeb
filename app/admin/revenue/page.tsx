@@ -31,6 +31,7 @@ import {
 } from '@/lib/admin/lottery-fusion-revenue';
 import { getVoucherReversalAdjustments } from '@/lib/admin/voucher-reversal';
 import { getWithdrawalSettlementSummary } from '@/lib/admin/withdrawal-settlement';
+import { revenueCouponIssueWhere } from '@/lib/admin/revenue-coupon';
 
 export const metadata = {
   title: '查看收益',
@@ -440,7 +441,7 @@ export default async function AdminRevenuePage(props: PageProps) {
   const couponWhere: Prisma.CouponWhereInput = {
     status: CouponStatus.USED,
     source: { in: Object.values(CouponSource) },
-    issuedAt: newEntityOnlyTime(),
+    ...revenueCouponIssueWhere(),
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...buildRevenueCouponIdentityExclusion(

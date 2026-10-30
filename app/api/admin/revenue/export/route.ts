@@ -18,7 +18,7 @@ import {
   resolveRevenueExclusions,
 } from '@/lib/admin/revenue-exclusion';
 import {
-  buildGiftReferralExpenseSummaryFromRows,
+  getGiftReferralExpenseSummary,
   buildRevenueExpenseBreakdown,
   getRevenueInviteRewardRows,
   getRevenueOrderReferralRows,
@@ -34,6 +34,7 @@ import {
   type LotteryFusionCountBucket,
 } from '@/lib/admin/lottery-fusion-revenue';
 import { isLotteryFusionNonce } from '@/lib/lottery-fusion';
+import { revenueCouponIssueWhere } from '@/lib/admin/revenue-coupon';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -299,6 +300,7 @@ export async function GET(request: NextRequest) {
   };
   const couponWhere: Prisma.CouponWhereInput = {
     status: CouponStatus.USED,
+    ...revenueCouponIssueWhere(),
     source: {
       in: [
         CouponSource.MANUAL_GRANT,
@@ -337,6 +339,7 @@ export async function GET(request: NextRequest) {
     revertedOrderRows,
     couponConsumedBySource,
     withdrawalSettlement,
+    giftReferralExpenseRow,
   ] = await Promise.all([
     prisma.blockStackGame.findMany({
       where: { createdAt: { gte: start, lt: end } },
@@ -457,6 +460,10 @@ export async function GET(request: NextRequest) {
       excludeDlmIds: excludeRechargeResolved.excludeDlmIds,
       excludeDiscordIds: excludeRechargeResolved.excludeDiscordIds,
     }),
+    getGiftReferralExpenseSummary({
+      start, end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
   ]);
 
   const blockTotalRevenue = decimalSum(blockStackRows, 'totalRevenue');
@@ -490,11 +497,6 @@ export async function GET(request: NextRequest) {
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = decimalSum(giftAuditRows, 'feeAmount');
   const giftFeeNet = giftFee.sub(revertedGiftFee);
-  const giftReferralExpenseRow = buildGiftReferralExpenseSummaryFromRows({
-    giftAuditRows,
-    revertedGiftRows,
-    excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
-  });
   const giftReferralNet = giftReferralExpenseRow.amount;
   const orderReferralExpenseRow = summarizeOrderReferralExpenseRows(referralPayoutRows);
   const orderReferral = orderReferralExpenseRow.amount;

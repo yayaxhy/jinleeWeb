@@ -23,7 +23,7 @@ import {
   resolveRevenueExclusions,
 } from '@/lib/admin/revenue-exclusion';
 import {
-  buildGiftReferralExpenseSummaryFromRows,
+  getGiftReferralExpenseSummary,
   buildRevenueExpenseBreakdown,
   decimalSum,
   dec,
@@ -46,6 +46,7 @@ import {
 import { isLotteryFusionNonce } from '@/lib/lottery-fusion';
 import { getVoucherReversalAdjustments } from '@/lib/admin/voucher-reversal';
 import { getWithdrawalSettlementSummary } from '@/lib/admin/withdrawal-settlement';
+import { revenueCouponIssueWhere } from '@/lib/admin/revenue-coupon';
 
 // The new operating entity started with no money in its bank account.
 const NEW_ENTITY_OPENING_BANK_BALANCE = new Prisma.Decimal(0);
@@ -511,7 +512,7 @@ async function loadMonthlyRevenueData(params: {
   const couponWhere: Prisma.CouponWhereInput = {
     status: CouponStatus.USED,
     source: { in: Object.values(CouponSource) },
-    issuedAt: newEntityOnlyTime(),
+    ...revenueCouponIssueWhere(),
     consumedAt: { gte: start, lt: end },
     consumeAmount: { not: null },
     ...buildRevenueCouponIdentityExclusion(
@@ -547,6 +548,7 @@ async function loadMonthlyRevenueData(params: {
     pointShopCouponRows,
     pointShopBalanceRows,
     withdrawalSettlement,
+    giftReferralExpenseRow,
   ] = await Promise.all([
     // Keep request totals for wallet reconciliation; payout totals below are
     // the independent cash movements confirmed by the responsible owner.
@@ -735,6 +737,10 @@ async function loadMonthlyRevenueData(params: {
       excludeDlmIds: excludeRechargeResolved.excludeDlmIds,
       excludeDiscordIds: excludeRechargeResolved.excludeDiscordIds,
     }),
+    getGiftReferralExpenseSummary({
+      start, end,
+      excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
+    }),
   ]);
   const voucherReversals = await getVoucherReversalAdjustments({
     start,
@@ -782,11 +788,6 @@ async function loadMonthlyRevenueData(params: {
   const giftSubsidyNet = giftSubsidy.sub(revertedGiftSubsidy);
   const giftFee = decimalSum(giftAuditRows, 'feeAmount');
   const giftFeeNet = giftFee.sub(revertedGiftFee);
-  const giftReferralExpenseRow = buildGiftReferralExpenseSummaryFromRows({
-    giftAuditRows,
-    revertedGiftRows,
-    excludeDiscordIds: excludeMemberResolved.excludeDiscordIds,
-  });
   const giftReferralNet = giftReferralExpenseRow.amount;
   const orderReferralExpenseRow = summarizeOrderReferralExpenseRows(referralPayoutRows);
   const orderReferral = orderReferralExpenseRow.amount;
