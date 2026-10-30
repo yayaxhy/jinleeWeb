@@ -3,7 +3,8 @@ import { SiteText } from "@/components/SiteCopyProvider";
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { isDiscordSnowflake } from '@/lib/discord-id';
-import { formatAmountDown, parseNumeric } from '@/lib/numberFormat';
+import { formatAmountDown } from '@/lib/numberFormat';
+import { resolveWalletDelta } from '@/lib/wallet-ledger';
 import { formatTransactionType } from '@/lib/transaction-display';
 
 const ROME_TIMEZONE = 'Europe/Rome';
@@ -23,14 +24,6 @@ const formatDate = (value?: Date | string | null) => {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('zh-CN', { timeZone: ROME_TIMEZONE });
-};
-
-const resolveAmountChange = (amountChange: unknown, balanceBefore: unknown, balanceAfter: unknown) => {
-  const amount = parseNumeric(amountChange);
-  const before = parseNumeric(balanceBefore);
-  const after = parseNumeric(balanceAfter);
-  if (before !== null && after !== null) return after - before;
-  return amount;
 };
 
 const getAmountChangeMeta = (value: number | null, digits = 2) => {
@@ -170,11 +163,7 @@ export async function DlmReadonlyProfile({ dlmId }: { dlmId: string }) {
                 </thead>
                 <tbody>
                   {transactions.map((transaction) => {
-                    const change = resolveAmountChange(
-                      transaction.amountChange,
-                      transaction.balanceBefore,
-                      transaction.balanceAfter,
-                    );
+                    const change = resolveWalletDelta(transaction)?.toNumber() ?? null;
                     const digits = change !== null && change !== 0 && Math.abs(change) < 0.01 ? 4 : 2;
                     const changeMeta = getAmountChangeMeta(change, digits);
                     return (

@@ -20,7 +20,8 @@ import { isDiscordSnowflake } from '@/lib/discord-id';
 import { formatAmountDown, formatAmountDown2 } from '@/lib/numberFormat';
 import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
-import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
+import { resolveWalletDelta, transactionDeltaSelection } from '@/lib/wallet-ledger';
+import { activityTypes, AUTO_COMMISSION_INCOME_POLICY, incomeContribution } from '@/lib/transaction-activity';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { formatTransactionType } from '@/lib/transaction-display';
 import { VIP_LEVELS } from '@/lib/vip-levels';
@@ -29,12 +30,6 @@ const TRANSACTIONS_PER_PAGE = 10;
 const ROME_TIMEZONE = 'Europe/Rome';
 const AUTO_COMMISSION_THRESHOLD = 12000;
 const AUTO_COMMISSION_WINDOW_DAYS = 30;
-const AUTO_COMMISSION_POSITIVE_TYPES = ['点单', '打赏', '客服代打赏', '红包收入'] as const;
-const AUTO_COMMISSION_REVERT_TYPES = ['订单撤销', '打赏撤销'] as const;
-const AUTO_COMMISSION_INCOME_TYPES = [
-  ...AUTO_COMMISSION_POSITIVE_TYPES,
-  ...AUTO_COMMISSION_REVERT_TYPES,
-] as const;
 
 const stringifyUnknown = (value: unknown): string => {
   if (value === null || value === undefined) return '';
@@ -247,7 +242,6 @@ export default async function Profile(props: ProfilePageProps) {
     where: { dlmId, timeCreatedAt: newEntityOnlyTime() },
   });
   const transactionsPromise = prisma.individualTransaction.findMany({
-    include: walletLedgerRelationSelection(),
     where: { dlmId, timeCreatedAt: newEntityOnlyTime() },
     orderBy: { timeCreatedAt: 'desc' },
     skip,
@@ -422,9 +416,9 @@ export default async function Profile(props: ProfilePageProps) {
             ...newEntityOnlyTime(autoCommissionWindowStart),
             lte: autoCommissionWindowEnd,
           },
-          typeOfTransaction: { in: [...AUTO_COMMISSION_INCOME_TYPES] },
+          typeOfTransaction: { in: activityTypes(AUTO_COMMISSION_INCOME_POLICY) },
         },
-        select: { transactionId: true, typeOfTransaction: true, balanceBefore: true, balanceAfter: true },
+        select: { transactionId: true, typeOfTransaction: true, balanceBefore: true, balanceAfter: true, ...transactionDeltaSelection() },
       })
     : [];
   const totalPages = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PER_PAGE));
@@ -501,18 +495,8 @@ export default async function Profile(props: ProfilePageProps) {
   const autoCommissionCurrentAmount = isPeiwanMember
     ? autoCommissionIncomeRows.reduce((sum, row) => {
         if (migrationBenefits.excludedIncomeIds.has(row.transactionId)) return sum;
-        const rowType = String((row as { typeOfTransaction?: unknown }).typeOfTransaction ?? '');
-        const before = parseNumeric(row.balanceBefore) ?? 0;
-        const after = parseNumeric(row.balanceAfter) ?? 0;
-        const delta = after - before;
-        if (AUTO_COMMISSION_POSITIVE_TYPES.includes(rowType as (typeof AUTO_COMMISSION_POSITIVE_TYPES)[number])) {
-          return delta > 0 ? sum + delta : sum;
-        }
-        if (AUTO_COMMISSION_REVERT_TYPES.includes(rowType as (typeof AUTO_COMMISSION_REVERT_TYPES)[number])) {
-          return delta < 0 ? sum + delta : sum;
-        }
-        return sum;
-      }, 0)
+        return sum.add(incomeContribution(row, AUTO_COMMISSION_INCOME_POLICY));
+      }, new Prisma.Decimal(0)).toNumber()
     : 0;
   const autoCommissionProgressPercent = Math.max(
     0,

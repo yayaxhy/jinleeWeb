@@ -2,7 +2,8 @@
 import { redirect } from 'next/navigation';
 import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
+import { resolveWalletDelta, transactionDeltaSelection } from '@/lib/wallet-ledger';
+import { DISCOUNT_REBATE_TYPES, discountRebateContribution } from '@/lib/admin/revenue-wallet';
 import { getServerSession } from '@/lib/session';
 import { canViewRevenue } from '@/lib/admin';
 import { formatAmountDown2 } from '@/lib/numberFormat';
@@ -366,15 +367,15 @@ export default async function AdminRevenuePage(props: PageProps) {
   const commissionTotalNet = commissionTotalAll.sub(revertedGiftFee).sub(revertedOrderFee);
   const commissionTotalNetAll = commissionTotalAll.sub(revertedGiftFee).sub(revertedOrderFee);
   const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
-    typeOfTransaction: '优惠返利',
+    typeOfTransaction: { in: DISCOUNT_REBATE_TYPES },
     timeCreatedAt: { gte: start, lt: end },
   };
   const discountRebateRows = await prisma.individualTransaction.findMany({
-    select: { balanceBefore: true, balanceAfter: true, ...walletLedgerRelationSelection() },
+    select: { typeOfTransaction: true, balanceBefore: true, balanceAfter: true, ...transactionDeltaSelection() },
     where: discountRebateWhere,
   });
   const discountDeductionTotal = discountRebateRows.reduce(
-    (sum, row) => sum.add(resolveWalletDelta(row) ?? 0), new Prisma.Decimal(0),
+    (sum, row) => sum.add(discountRebateContribution(row)), new Prisma.Decimal(0),
   );
 
   const lotteryWhere: Prisma.LotteryDrawWhereInput = {
@@ -429,10 +430,10 @@ export default async function AdminRevenuePage(props: PageProps) {
         excludeMemberResolved.excludeDiscordIds,
       ) as Prisma.IndividualTransactionWhereInput),
     },
-    select: { balanceBefore: true, balanceAfter: true },
+    select: { balanceBefore: true, balanceAfter: true, ...transactionDeltaSelection() },
   });
   const scratchGross = scratchPurchaseRows.reduce(
-    (sum, row) => sum.add(dec(row.balanceBefore).sub(dec(row.balanceAfter))),
+    (sum, row) => sum.sub(resolveWalletDelta(row) ?? 0),
     new Prisma.Decimal(0),
   );
   const scratchReward = dec(scratchAgg.prize_sum);

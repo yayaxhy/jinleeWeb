@@ -1,5 +1,6 @@
 import { getSiteCopy } from "@/lib/site-copy-server";
 import fs from 'fs/promises';
+import { Prisma } from '@prisma/client';
 import path from 'path';
 
 import {
@@ -13,7 +14,14 @@ import { formatPeiwanGameProfile, sortPeiwanGameProfiles } from '@/lib/peiwan/ga
 import { formatAmountDown2 } from '@/lib/numberFormat';
 import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { prisma } from '@/lib/prisma';
-import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
+import { transactionDeltaSelection } from '@/lib/wallet-ledger';
+import {
+  activityTypes,
+  incomeContribution,
+  LEADERBOARD_INCOME_POLICY,
+  NET_LEADERBOARD_SPEND_POLICY,
+  spendContribution,
+} from '@/lib/transaction-activity';
 import { getHighestVipLevelByTotalSpent } from '@/lib/vip-levels';
 
 export type PeriodKey = '日榜' | '周榜' | '月榜';
@@ -99,10 +107,6 @@ const LEADERBOARD_TIME_ZONE = 'Europe/Rome';
 const HOME_RANK_LIMIT = 10;
 const EXCLUDED_USER_IDS = new Set(['1421651539247894549', '525770714574225408']);
 const ANON_SPEND_USER_IDS = new Set(['525770714574225408']);
-const SPEND_POSITIVE_TYPES = new Set(['点单', '打赏', '客服代打赏', '抽奖消费', '红包发出', '试音花费']);
-const INCOME_POSITIVE_TYPES = new Set(['点单', '打赏', '客服代打赏', '红包收入', '试音收入']);
-const REVERT_TYPES = new Set(['订单撤销', '打赏撤销']);
-
 const parseTimeZoneOffsetMs = (raw: string) => {
   if (raw === 'GMT' || raw === 'UTC') return 0;
 
@@ -255,65 +259,44 @@ type AvatarSource = {
 const getMemberAvatarUrl = (member?: { dlmUser?: AvatarSource | null } | null) =>
   member?.dlmUser?.discordAvatarUrl ?? member?.dlmUser?.wechatAvatarUrl ?? null;
 
-const addToAmountMap = (map: Map<string, number>, discordId: string | null, delta: number) => {
-  if (!discordId || EXCLUDED_USER_IDS.has(discordId) || delta === 0) return;
-  map.set(discordId, (map.get(discordId) ?? 0) + delta);
+const addToAmountMap = (map: Map<string, Prisma.Decimal>, discordId: string | null, delta: Prisma.Decimal) => {
+  if (!discordId || EXCLUDED_USER_IDS.has(discordId) || delta.isZero()) return;
+  map.set(discordId, (map.get(discordId) ?? new Prisma.Decimal(0)).add(delta));
 };
+
+const toNumberMap = (map: Map<string, Prisma.Decimal>) =>
+  new Map([...map].map(([id, amount]) => [id, amount.toNumber()]));
 
 async function loadActualSpend(start: Date, end: Date) {
   const rows = await prisma.individualTransaction.findMany({
     where: {
       timeCreatedAt: { ...newEntityOnlyTime(start), lt: end },
-      typeOfTransaction: { in: Array.from(new Set([...SPEND_POSITIVE_TYPES, ...REVERT_TYPES])) },
+      typeOfTransaction: { in: activityTypes(NET_LEADERBOARD_SPEND_POLICY) },
     },
-    select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true, ...walletLedgerRelationSelection() },
+    select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true, ...transactionDeltaSelection() },
   });
 
-  const spendMap = new Map<string, number>();
+  const spendMap = new Map<string, Prisma.Decimal>();
   rows.forEach((row) => {
-    const delta = resolveWalletDelta(row)?.negated().toNumber() ?? 0;
-    const txType = String(row.typeOfTransaction ?? '');
-
-    if (SPEND_POSITIVE_TYPES.has(txType)) {
-      if (delta <= 0) return;
-    } else if (REVERT_TYPES.has(txType)) {
-      if (delta >= 0) return;
-    } else {
-      return;
-    }
-
-    addToAmountMap(spendMap, row.discordId, delta);
+    addToAmountMap(spendMap, row.discordId, spendContribution(row, NET_LEADERBOARD_SPEND_POLICY));
   });
-
-  return spendMap;
+  return toNumberMap(spendMap);
 }
 
 async function loadActualIncome(start: Date, end: Date) {
   const rows = await prisma.individualTransaction.findMany({
     where: {
       timeCreatedAt: { ...newEntityOnlyTime(start), lt: end },
-      typeOfTransaction: { in: Array.from(new Set([...INCOME_POSITIVE_TYPES, ...REVERT_TYPES])) },
+      typeOfTransaction: { in: activityTypes(LEADERBOARD_INCOME_POLICY) },
     },
-    select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true, ...walletLedgerRelationSelection() },
+    select: { discordId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true, ...transactionDeltaSelection() },
   });
 
-  const incomeMap = new Map<string, number>();
+  const incomeMap = new Map<string, Prisma.Decimal>();
   rows.forEach((row) => {
-    const delta = resolveWalletDelta(row)?.toNumber() ?? 0;
-    const txType = String(row.typeOfTransaction ?? '');
-
-    if (INCOME_POSITIVE_TYPES.has(txType)) {
-      if (delta <= 0) return;
-    } else if (REVERT_TYPES.has(txType)) {
-      if (delta >= 0) return;
-    } else {
-      return;
-    }
-
-    addToAmountMap(incomeMap, row.discordId, delta);
+    addToAmountMap(incomeMap, row.discordId, incomeContribution(row, LEADERBOARD_INCOME_POLICY));
   });
-
-  return incomeMap;
+  return toNumberMap(incomeMap);
 }
 
 const topRankingAmounts = (amountMap: Map<string, number>) =>
@@ -335,24 +318,17 @@ async function loadManualWechatBossSpend(start: Date, end: Date): Promise<Manual
       discordId: null,
       dlmId: { not: null },
       timeCreatedAt: { ...newEntityOnlyTime(start), lt: end },
-      typeOfTransaction: { in: Array.from(new Set([...SPEND_POSITIVE_TYPES, ...REVERT_TYPES])) },
+      typeOfTransaction: { in: activityTypes(NET_LEADERBOARD_SPEND_POLICY) },
     },
-    select: { dlmId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true, ...walletLedgerRelationSelection() },
+    select: { dlmId: true, balanceBefore: true, balanceAfter: true, typeOfTransaction: true, ...transactionDeltaSelection() },
   });
 
-  const spentByDlmId = new Map<string, number>();
+  const spentByDlmId = new Map<string, Prisma.Decimal>();
   rows.forEach((row) => {
     if (!row.dlmId) return;
-    const delta = resolveWalletDelta(row)?.negated().toNumber() ?? 0;
-    const txType = String(row.typeOfTransaction ?? '');
-    if (SPEND_POSITIVE_TYPES.has(txType)) {
-      if (delta <= 0) return;
-    } else if (REVERT_TYPES.has(txType)) {
-      if (delta >= 0) return;
-    } else {
-      return;
-    }
-    spentByDlmId.set(row.dlmId, (spentByDlmId.get(row.dlmId) ?? 0) + delta);
+    const delta = spendContribution(row, NET_LEADERBOARD_SPEND_POLICY);
+    if (delta.isZero()) return;
+    spentByDlmId.set(row.dlmId, (spentByDlmId.get(row.dlmId) ?? new Prisma.Decimal(0)).add(delta));
   });
 
   const dlmIds = [...spentByDlmId.keys()];
@@ -370,7 +346,7 @@ async function loadManualWechatBossSpend(start: Date, end: Date): Promise<Manual
   return bosses.flatMap((boss) => {
     // A linked account is already represented by its Discord ledger.
     if (boss.dlmUser.discordUserId) return [];
-    const periodSpent = spentByDlmId.get(boss.dlmId) ?? 0;
+    const periodSpent = spentByDlmId.get(boss.dlmId)?.toNumber() ?? 0;
     if (periodSpent <= 0) return [];
     return [{
       dlmId: boss.dlmId,

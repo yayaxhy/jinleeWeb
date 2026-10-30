@@ -4,7 +4,8 @@ import { randomUUID } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
+import { resolveWalletDelta } from '@/lib/wallet-ledger';
+import { DISCOUNT_REBATE_TYPES, discountRebateContribution } from '@/lib/admin/revenue-wallet';
 import {
   isNewEntityReportMonth,
   NEW_ENTITY_OPERATIONS_STARTED_AT,
@@ -382,8 +383,8 @@ function addObjectRowsSheet(
     Object.keys(row ?? {}).forEach((key) => set.add(key));
     return set;
   }, new Set<string>());
-  // Keep internal reader joins out of the existing user-facing export columns.
-  const keys: string[] = Array.from(keySet).filter((key) => key !== 'walletLedgerEntry');
+  // Keep the new internal delta field out of the existing user-facing export columns.
+  const keys: string[] = Array.from(keySet).filter((key) => key !== 'deltaAmount');
 
   sheet.columns = keys.map((key) => ({
     header: key,
@@ -508,7 +509,7 @@ async function loadMonthlyRevenueData(params: {
   ) as Prisma.DlmUserWhereInput;
 
   const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
-    typeOfTransaction: '优惠返利',
+    typeOfTransaction: { in: DISCOUNT_REBATE_TYPES },
     timeCreatedAt: { gte: start, lt: end },
   };
   const couponWhere: Prisma.CouponWhereInput = {
@@ -599,11 +600,9 @@ async function loadMonthlyRevenueData(params: {
     }),
     prisma.individualTransaction.findMany({
       where: discountRebateWhere,
-      include: walletLedgerRelationSelection(),
       orderBy: { timeCreatedAt: 'desc' },
     }),
     prisma.individualTransaction.findMany({
-      include: walletLedgerRelationSelection(),
       where: {
         typeOfTransaction: '刮刮乐购卡',
         timeCreatedAt: { gte: start, lt: end },
@@ -805,7 +804,7 @@ async function loadMonthlyRevenueData(params: {
   const commissionOtherSources = commissionTotal.sub(rawFeeFromOrderAndGiftModel);
   const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee).sub(revertedOrderFee);
   const discountDeductionTotal = discountRebateRows.reduce(
-    (sum, row) => sum.add(resolveWalletDelta(row) ?? 0), new Prisma.Decimal(0),
+    (sum, row) => sum.add(discountRebateContribution(row)), new Prisma.Decimal(0),
   );
 
   // A fusion output is a replacement prize, not a new lottery draw.
@@ -2322,7 +2321,6 @@ export async function confirmMonthlyFinancialReport(monthKey: string, operatorId
 
     const walletLedgerRows = await prisma.individualTransaction.findMany({
       where: { timeCreatedAt: { gte: context.data.start, lt: target.end } },
-      include: walletLedgerRelationSelection(),
       orderBy: [{ timeCreatedAt: 'asc' }, { transactionId: 'asc' }],
     });
     const includedDlmIds = new Set(context.data.rows.memberRows.map((row) => row.dlmId));

@@ -22,7 +22,8 @@ async function main() {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 120_000, maxWait: 5000 });
     console.log(JSON.stringify({ mode: 'read-only', target: database.target, ...result }, null, 2));
     if (result.totals.invalidSourceMoney !== '0' ||
-      (result.coverage && result.coverage.baseFactMismatch !== '0')) process.exitCode = 2;
+      (result.deltaColumnPresent && !result.compatibleColumnType) ||
+      (result.coverage && result.coverage.deltaMismatch !== '0')) process.exitCode = 2;
   } finally {
     await prisma.$disconnect();
   }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
+import { resolveWalletDelta } from '@/lib/wallet-ledger';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { getServerSession } from '@/lib/session';
 import { canViewKefuTransactions } from '@/lib/admin';
@@ -91,7 +91,6 @@ export async function GET(request: NextRequest) {
   const hasFilters = Object.keys(whereClause).length > 0;
 
   const transactions = await prisma.individualTransaction.findMany({
-    include: walletLedgerRelationSelection(),
     where: hasFilters ? whereClause : undefined,
     orderBy: { timeCreatedAt: 'desc' },
   });

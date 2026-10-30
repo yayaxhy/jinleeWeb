@@ -7,7 +7,7 @@ import { getServerSession } from '@/lib/session';
 import { canViewKefuTransactions, isAdminDiscordId } from '@/lib/admin';
 import { formatAmountDown } from '@/lib/numberFormat';
 import { formatTransactionType } from '@/lib/transaction-display';
-import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
+import { resolveWalletDelta } from '@/lib/wallet-ledger';
 
 const ROME_TIMEZONE = 'Europe/Rome';
 
@@ -121,7 +121,6 @@ export default async function AdminTransactionsPage(props: PageProps) {
   const [totalCount, transactions] = await Promise.all([
     prisma.individualTransaction.count({ where: hasFilters ? whereClause : undefined }),
     prisma.individualTransaction.findMany({
-      include: walletLedgerRelationSelection(),
       where: hasFilters ? whereClause : undefined,
       orderBy: { timeCreatedAt: 'desc' },
       skip,

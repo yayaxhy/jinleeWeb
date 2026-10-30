@@ -4,7 +4,7 @@ import { CouponSource, CouponStatus, Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { canViewRevenue } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
-import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
+import { DISCOUNT_REBATE_TYPES, discountRebateContribution } from '@/lib/admin/revenue-wallet';
 import { getWithdrawalSettlementSummary } from '@/lib/admin/withdrawal-settlement';
 import { getServerSession } from '@/lib/session';
 import {
@@ -161,8 +161,8 @@ function addObjectRowsSheet(
     Object.keys(row ?? {}).forEach((key) => set.add(key));
     return set;
   }, new Set<string>());
-  // Keep internal reader joins out of the existing user-facing export columns.
-  const keys: string[] = Array.from(keySet).filter((key) => key !== 'walletLedgerEntry');
+  // Keep the new internal delta field out of the existing user-facing export columns.
+  const keys: string[] = Array.from(keySet).filter((key) => key !== 'deltaAmount');
 
   sheet.columns = keys.map((key) => ({
     header: key,
@@ -297,7 +297,7 @@ export async function GET(request: NextRequest) {
   };
 
   const discountRebateWhere: Prisma.IndividualTransactionWhereInput = {
-    typeOfTransaction: '优惠返利',
+    typeOfTransaction: { in: DISCOUNT_REBATE_TYPES },
     timeCreatedAt: { gte: start, lt: end },
   };
   const couponWhere: Prisma.CouponWhereInput = {
@@ -387,7 +387,6 @@ export async function GET(request: NextRequest) {
     }),
     prisma.individualTransaction.findMany({
       where: discountRebateWhere,
-      include: walletLedgerRelationSelection(),
       orderBy: { timeCreatedAt: 'desc' },
     }),
     prisma.lotteryDraw.findMany({
@@ -513,7 +512,7 @@ export async function GET(request: NextRequest) {
   const commissionOtherSources = commissionTotal.sub(rawFeeFromOrderAndGiftModel);
   const commissionTotalNetAll = commissionTotal.sub(revertedGiftFee);
   const discountDeductionTotal = discountRebateRows.reduce(
-    (sum, row) => sum.add(resolveWalletDelta(row) ?? 0), new Prisma.Decimal(0),
+    (sum, row) => sum.add(discountRebateContribution(row)), new Prisma.Decimal(0),
   );
 
   // Keep fusion outputs in the detail sheet, but do not count them as lottery draws.

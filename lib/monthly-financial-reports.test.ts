@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { Prisma } from '@prisma/client';
+import { DISCOUNT_REBATE_TYPES, discountRebateContribution } from './admin/revenue-wallet';
 import {
   buildMonthlyBalanceSheetModel,
   calculateRecordedBankCash,
@@ -10,6 +11,37 @@ import {
 } from './admin/monthly-financial-reports';
 
 const amount = (value: string) => new Prisma.Decimal(value);
+
+test('rebate reporting nets the original credit and paired reversal exactly', () => {
+  const rows = [
+    { typeOfTransaction: '优惠返利', balanceBefore: amount('100'), balanceAfter: amount('110.1234'), deltaAmount: amount('10.1234') },
+    { typeOfTransaction: '优惠返利撤销', balanceBefore: amount('50.1234'), balanceAfter: amount('40'), deltaAmount: amount('-10.1234') },
+  ];
+  assert.deepEqual(DISCOUNT_REBATE_TYPES, ['优惠返利', '优惠返利撤销']);
+  assert.equal(rows.reduce((sum, row) => sum.add(discountRebateContribution(row)), amount('0')).toString(), '0');
+  // A later-period reversal must remain negative instead of being clamped away.
+  assert.equal(discountRebateContribution(rows[1]).toString(), '-10.1234');
+});
+
+test('rebate reporting excludes wrong directions, worker income and unrelated wallet credits', () => {
+  for (const [typeOfTransaction, delta] of [
+    ['优惠返利', '-10'], ['优惠返利撤销', '10'], ['点单', '10'], ['打赏', '10'],
+    ['订单撤销', '-10'], ['充值', '10'],
+  ]) {
+    assert.equal(discountRebateContribution({
+      typeOfTransaction, balanceBefore: amount('100'), balanceAfter: amount('100').add(delta), deltaAmount: amount(delta),
+    }).toString(), '0');
+  }
+});
+
+test('rebate reporting falls back to historical balances and preserves four decimals', () => {
+  assert.equal(discountRebateContribution({
+    typeOfTransaction: '优惠返利', balanceBefore: amount('1.2345'), balanceAfter: amount('1.3346'), deltaAmount: null,
+  }).toString(), '0.1001');
+  assert.equal(discountRebateContribution({
+    typeOfTransaction: '优惠返利', balanceBefore: null, balanceAfter: null, deltaAmount: null,
+  }).toString(), '0');
+});
 
 test('month-end wallet rewind follows balances when concurrent ledger timestamps are inverted', () => {
   const opening = rewindWalletTransactionChain(amount('2824.51'), [

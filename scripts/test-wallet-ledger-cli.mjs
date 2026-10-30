@@ -67,13 +67,13 @@ try {
       ('A003','2026-10-30 12:00:02','discord','owner','counter',0.02,52,0,'订单撤销'),
       ('A004','2026-10-30 12:00:03',NULL,NULL,'counter',0,0.0001,0.0001,'充值'),
       ('A005','2026-10-30 12:00:04','discord','owner','counter',30,1,30,'点单');`);
-  const snapshot = () => sql(`SELECT md5(string_agg(row_to_json(t)::text, '' ORDER BY "transactionId")) FROM "IndividualTransaction" t;
+  const snapshot = () => sql(`SELECT md5(string_agg((to_jsonb(t) - 'deltaAmount')::text, '' ORDER BY "transactionId")) FROM "IndividualTransaction" t;
     SELECT row_to_json(u)::text FROM "DlmUser" u;`);
   const original = snapshot();
   const pre = cli('scripts/wallet-ledger-audit.ts').out[0];
-  assert.equal(pre.ledgerTablePresent, false);
+  assert.equal(pre.deltaColumnPresent, false);
   assert.equal(pre.totals.sourceCount, '5');
-  assert.equal(pre.totals.walletDelta, '-70.0199');
+  assert.equal(pre.totals.derivedDeltaAmount, '-70.0199');
   assert.equal(pre.totals.magnitudeMismatch, '2');
   assert.equal(backfill([]).out[0].mode, 'dry-run');
   assert.equal(backfill(['--apply'], 1).errors[0].error, 'ledger_apply_requires_database_confirmation');
@@ -106,56 +106,65 @@ try {
   assert.equal(invalid.totals.deltaOutOfRange, '1');
   assert.equal(invalid.totals.invalidSourceMoney, '2');
   assert.equal(invalid.anomalies.filter((row) => row.category === 'INVALID_SOURCE_MONEY').length, 2);
-  sql(readFileSync(`${cwd}/prisma/migrations/20261030120000_add_wallet_ledger/migration.sql`, 'utf8'));
-  assert.equal(sql('SELECT COUNT(*) FROM "WalletLedgerEntry"'), '0');
+  sql(readFileSync(`${cwd}/prisma/migrations/20261030130000_add_transaction_delta_amount/migration.sql`, 'utf8'));
+  assert.equal(sql('SELECT COUNT(*) FROM "IndividualTransaction" WHERE "deltaAmount" IS NOT NULL'), '0');
   const invalidApply = backfill(applyArgs, 1);
   assert.equal(invalidApply.errors[0].error, 'ledger_invalid_source_money');
   assert.equal(invalidApply.errors[0].committedBatches, 0);
-  assert.equal(sql('SELECT COUNT(*) FROM "WalletLedgerEntry"'), '0');
+  assert.equal(sql('SELECT COUNT(*) FROM "IndividualTransaction" WHERE "deltaAmount" IS NOT NULL'), '0');
   sql(`DELETE FROM "IndividualTransaction" WHERE "transactionId" IN ('A003x','A003y');`);
   assert.equal(snapshot(), original);
   console.log('ok non-finite money and derived overflow are reported; apply stops before any batch');
 
   sql(`CREATE FUNCTION test_deferred_failure() RETURNS TRIGGER LANGUAGE plpgsql AS $$ BEGIN
-    IF NEW."sourceTransactionId" = 'A003' THEN RAISE EXCEPTION 'test_commit_failure'; END IF; RETURN NEW; END $$;
-    CREATE CONSTRAINT TRIGGER test_deferred_failure AFTER INSERT ON "WalletLedgerEntry"
+    IF NEW."transactionId" = 'A003' THEN RAISE EXCEPTION 'test_commit_failure'; END IF; RETURN NEW; END $$;
+    CREATE CONSTRAINT TRIGGER test_deferred_failure AFTER UPDATE ON "IndividualTransaction"
       DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION test_deferred_failure();`);
   const failed = backfill([...applyArgs, '--max-batches', '5'], 1);
   assert.equal(failed.out.filter((x) => x.mode === 'batch-committed').length, 1);
   assert.equal(failed.errors[0].committedBatches, 1);
   assert.equal(failed.errors[0].afterId, 'A002');
-  assert.equal(sql('SELECT COUNT(*) FROM "WalletLedgerEntry"'), '2');
-  sql('DROP TRIGGER test_deferred_failure ON "WalletLedgerEntry"; DROP FUNCTION test_deferred_failure();');
+  assert.equal(sql('SELECT COUNT(*) FROM "IndividualTransaction" WHERE "deltaAmount" IS NOT NULL'), '2');
+  sql('DROP TRIGGER test_deferred_failure ON "IndividualTransaction"; DROP FUNCTION test_deferred_failure();');
   console.log('ok deferred COMMIT failure preserves only prior committed cursor and rolls back failed batch');
 
   const resumed = backfill([...applyArgs, '--after-id', 'A002', '--max-batches', '1']).out.at(-1);
   assert.equal(resumed.complete, false);
   assert.equal(resumed.afterId, 'A004');
-  assert.equal(resumed.inserted, 2);
+  assert.equal(resumed.filled, 2);
   const finished = backfill([...applyArgs, '--after-id', 'A004', '--max-batches', '1']).out.at(-1);
   assert.equal(finished.complete, true);
-  assert.equal(finished.inserted, 1);
+  assert.equal(finished.filled, 1);
   const repeated = backfill([...applyArgs, '--max-batches', '5']).out.at(-1);
   assert.equal(repeated.complete, true);
-  assert.equal(repeated.inserted, 0);
+  assert.equal(repeated.filled, 0);
   assert.equal(snapshot(), original);
-  assert.equal(sql('SELECT COUNT(*) FROM "WalletLedgerEntry"'), '5');
-  assert.equal(sql('SELECT COUNT(*) FROM "WalletLedgerEntry" WHERE "incomeDelta" IS NOT NULL OR "rechargeDelta" IS NOT NULL OR "totalSpentDelta" IS NOT NULL OR "loyaltyPointsDelta" IS NOT NULL'), '0');
+  assert.equal(sql('SELECT COUNT(*) FROM "IndividualTransaction" WHERE "deltaAmount" IS NOT NULL'), '5');
   const post = cli('scripts/wallet-ledger-audit.ts').out[0];
-  assert.equal(post.protections.requiredTriggersEnabled, true);
-  assert.equal(post.coverage.baseFactMismatch, '0');
+  assert.equal(post.protections.requiredProtectionEnabled, true);
+  assert.equal(post.coverage.deltaMismatch, '0');
   assert.equal(post.coverage.missingCount, '0');
-  assert.equal(post.coverage.requiresReview, '2');
-  assert.equal(post.coverage.unverifiable, '1');
-  assert.equal(post.coverage.ledgerWalletDelta, pre.totals.walletDelta);
-  console.log('ok bounded resume, exact-once repeated backfill, unknown components null, source and wallets unchanged');
+  assert.equal(post.totals.magnitudeMismatch, '2');
+  assert.equal(post.totals.missingIdentity, '1');
+  assert.equal(post.coverage.storedDeltaAmount, pre.totals.derivedDeltaAmount);
+  console.log('ok bounded resume and repeated fill are idempotent; only deltaAmount changes, original amounts and wallets remain identical');
 
-  sql(`UPDATE "IndividualTransaction" SET "amountChange"=51 WHERE "transactionId"='A001'`);
-  assert.equal(cli('scripts/wallet-ledger-audit.ts', [], 2).out[0].coverage.baseFactMismatch, '1');
-  assert.equal(backfill([...applyArgs, '--max-batches', '1'], 1).errors[0].error, 'ledger_existing_base_facts_mismatch');
-  sql(`UPDATE "IndividualTransaction" SET "amountChange"=50 WHERE "transactionId"='A001'`);
+  sql(`ALTER TABLE "IndividualTransaction" DISABLE TRIGGER "IndividualTransaction_set_deltaAmount";
+    ALTER TABLE "IndividualTransaction" DROP CONSTRAINT "IndividualTransaction_deltaAmount_consistent";
+    UPDATE "IndividualTransaction" SET "deltaAmount"=-49 WHERE "transactionId"='A001';
+    ALTER TABLE "IndividualTransaction" ADD CONSTRAINT "IndividualTransaction_deltaAmount_consistent"
+      CHECK ("deltaAmount" IS NULL OR ("deltaAmount"::text <> 'NaN' AND "deltaAmount"="balanceAfter"-"balanceBefore")) NOT VALID;
+    ALTER TABLE "IndividualTransaction" ENABLE TRIGGER "IndividualTransaction_set_deltaAmount";`);
+  const mismatchAudit = cli('scripts/wallet-ledger-audit.ts', [], 2).out[0];
+  assert.equal(mismatchAudit.coverage.deltaMismatch, '1');
+  assert.deepEqual(mismatchAudit.deltaMismatches, [{ sourceTransactionId: 'A001' }]);
+  assert.equal(backfill([...applyArgs, '--max-batches', '1'], 1).errors[0].error, 'ledger_existing_delta_mismatch');
+  assert.equal(sql(`SELECT "deltaAmount" FROM "IndividualTransaction" WHERE "transactionId"='A001'`), '-49.0000');
+  sql(`UPDATE "IndividualTransaction" SET "deltaAmount"=-50 WHERE "transactionId"='A001'`);
   assert.equal(snapshot(), original);
-  console.log('ok existing monetary mismatch is reported and never overwritten');
+  assert.equal(sql(`SELECT "amountChange" || '|' || "deltaAmount" FROM "IndividualTransaction" WHERE "transactionId"='A003'`), '52.0000|-0.0200');
+  console.log('ok incorrect nonnull delta is never overwritten; original anomalous amount 52 remains with actual delta -0.02');
+
 } finally {
   try { if (created) sql(`DROP SCHEMA "${schema}" CASCADE;`); }
   finally { rmSync(envDirectory, { recursive: true, force: true }); }

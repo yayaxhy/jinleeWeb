@@ -7,7 +7,7 @@ import {
   parseWalletLedgerToolOptions,
   validateWalletLedgerDatabaseTarget,
   verifyWalletLedgerBatch,
-  walletLedgerBackfillInsert,
+  walletLedgerBackfillUpdate,
   walletLedgerToolErrorCode,
   type WalletLedgerSqlClient,
 } from './wallet-ledger-backfill';
@@ -34,23 +34,21 @@ test('signed and absolute historical amounts produce the same explicit wallet de
   const facts = { transactionId: 'IT1', dlmId: 'user1', discordId: null, balanceBefore: new Prisma.Decimal('100.0001'), balanceAfter: new Prisma.Decimal('50.0000') };
   for (const rawAmount of ['50.0001', '-50.0001']) {
     const record = classifyLegacyLedgerFacts({ ...facts, amountChange: new Prisma.Decimal(rawAmount) });
-    assert.equal(record.walletDelta.toFixed(4), '-50.0001');
-    assert.equal(record.businessAmount.toFixed(4), '50.0001');
-    assert.equal(record.direction, 'DEBIT');
-    assert.equal(record.integrityStatus, 'VERIFIED');
+    assert.equal(record.deltaAmount.toFixed(4), '-50.0001');
+    assert.equal(record.originalAmountChange.toString(), rawAmount);
+    assert.equal(record.amountMagnitudeMismatch, false);
   }
 });
 
 test('historical discrepancy keeps both business magnitude and actual wallet movement', () => {
   const facts = { transactionId: 'IT-old-reversal', dlmId: 'user1', discordId: null, amountChange: new Prisma.Decimal('52'), balanceBefore: new Prisma.Decimal('0.02'), balanceAfter: new Prisma.Decimal('0') };
   const record = classifyLegacyLedgerFacts(facts);
-  assert.equal(record.walletDelta.toString(), '-0.02');
-  assert.equal(record.businessAmount.toString(), '52');
-  assert.equal(record.integrityStatus, 'REQUIRES_REVIEW');
-  assert.equal(classifyLegacyLedgerFacts({ ...facts, dlmId: null }).integrityStatus, 'UNVERIFIABLE');
+  assert.equal(record.deltaAmount.toString(), '-0.02');
+  assert.equal(record.originalAmountChange.toString(), '52');
+  assert.equal(record.amountMagnitudeMismatch, true);
   const zero = classifyLegacyLedgerFacts({ ...facts, amountChange: new Prisma.Decimal(0), balanceBefore: new Prisma.Decimal(0) });
-  assert.equal(zero.direction, 'NONE');
-  assert.equal(zero.integrityStatus, 'VERIFIED');
+  assert.equal(zero.deltaAmount.toString(), '0');
+  assert.equal(zero.amountMagnitudeMismatch, false);
 });
 
 test('non-finite source money and an overflowing derived delta are rejected without guessing corrections', () => {
@@ -65,20 +63,22 @@ test('non-finite source money and an overflowing derived delta are rejected with
   }), /invalid_source_money/);
 });
 
-test('backfill is parameterized, idempotent, and does not fabricate component deltas', () => {
+test('backfill is parameterized and fills only the new null delta column without changing original fields', () => {
   const id = "IT'); DELETE FROM anything; --";
-  const sql = walletLedgerBackfillInsert([id]);
+  const sql = walletLedgerBackfillUpdate([id]);
   assert.equal(sql.text.includes(id), false);
   assert.deepEqual(sql.values, [id]);
-  assert.match(sql.text, /ON CONFLICT \("sourceTransactionId"\) DO NOTHING/);
-  assert.doesNotMatch(sql.text, /"incomeDelta"|"rechargeDelta"|"totalSpentDelta"|"loyaltyPointsDelta"/);
-  assert.doesNotMatch(sql.text, /\bUPDATE\b|\bDELETE\b/);
-  assert.throws(() => walletLedgerBackfillInsert([]), /empty_batch/);
+  assert.match(sql.text, /UPDATE "IndividualTransaction"/);
+  assert.match(sql.text, /SET "deltaAmount" = t\."balanceAfter" - t\."balanceBefore"/);
+  assert.match(sql.text, /t\."deltaAmount" IS NULL/);
+  assert.doesNotMatch(sql.text, /"amountChange"|"income"|"recharge"|"totalSpent"|"dlmId"|"discordId"/);
+  assert.doesNotMatch(sql.text, /\bINSERT\b|\bDELETE\b|WalletLedgerEntry/);
+  assert.throws(() => walletLedgerBackfillUpdate([]), /empty_batch/);
 });
 
 test('existing mismatched ledger facts stop backfill rather than being overwritten', async () => {
   const tx = { $queryRaw: async () => [{ mismatchCount: '1', invalidSourceMoney: '0' }] } as unknown as WalletLedgerSqlClient;
-  await assert.rejects(verifyWalletLedgerBatch(tx, ['IT1']), /existing_base_facts_mismatch/);
+  await assert.rejects(verifyWalletLedgerBatch(tx, ['IT1']), /existing_delta_mismatch/);
   await verifyWalletLedgerBatch({ $queryRaw: async () => [{ mismatchCount: '0', invalidSourceMoney: '0' }] } as unknown as WalletLedgerSqlClient, ['IT1']);
   await assert.rejects(verifyWalletLedgerBatch({ $queryRaw: async () => [{ mismatchCount: '0', invalidSourceMoney: '1' }] } as unknown as WalletLedgerSqlClient, ['IT1']), /invalid_source_money/);
 });

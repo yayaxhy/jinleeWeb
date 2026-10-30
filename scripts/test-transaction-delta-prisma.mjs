@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-/** Actual application-wrapper integration against an explicitly named, disposable
- * localhost Docker database. A random schema isolates this suite from other tests.
- * Does not load .env or use DATABASE_URL. */
+/** Actual application-wrapper integration in a new disposable Docker database.
+ * Publishes one random localhost port, without app env, data or mounted files. */
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -13,23 +12,11 @@ import { register } from 'tsx/cjs/api';
 const unregister = register();
 const require = createRequire(import.meta.url);
 const { recordWalletTransaction } = require('../lib/wallet-ledger-write.ts');
-const { resolveWalletDelta, walletLedgerRelationSelection } = require('../lib/wallet-ledger.ts');
+const { resolveWalletDelta, transactionDeltaSelection } = require('../lib/wallet-ledger.ts');
 const { lockDlmWalletForUpdateTx, getDlmWalletSnapshotTx, applyDlmWalletDeltaTx } = require('../lib/dlm-wallet.ts');
-const container = process.env.WALLET_LEDGER_TEST_CONTAINER;
-const target = process.env.WALLET_LEDGER_TEST_DATABASE_URL;
-if (!container || !/^codex-wallet-ledger-test-[a-z0-9-]+$/.test(container) || !target) {
-  throw new Error('Explicit WALLET_LEDGER_TEST_CONTAINER and WALLET_LEDGER_TEST_DATABASE_URL are required.');
-}
-const url = new URL(target);
-if (!['postgresql:', 'postgres:'].includes(url.protocol) || url.hostname !== '127.0.0.1' ||
-    url.username !== 'ledger_test' || url.pathname !== '/ledger_test' || !url.port || url.port === '5432') {
-  throw new Error('Only a disposable ledger_test database on a nondefault localhost Docker port is accepted.');
-}
-const schema = `wallet_ledger_prisma_test_${process.pid}_${randomUUID().slice(0, 8)}`;
-url.searchParams.set('schema', schema);
-url.searchParams.set('connection_limit', '10');
-const savedWriteFlag = process.env.WALLET_LEDGER_WRITE_ENABLED;
-const savedReadFlag = process.env.WALLET_LEDGER_READ_ENABLED;
+const container = `codex-transaction-delta-prisma-${process.pid}-${randomUUID().slice(0, 8)}`;
+const schema = 'delta_prisma_test';
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function docker(args, input = '') {
   return new Promise((resolve, reject) => {
@@ -44,16 +31,27 @@ function docker(args, input = '') {
     child.stdin.end(input);
   });
 }
-const inspected = JSON.parse(await docker(['inspect', container]));
-const ports = inspected[0]?.NetworkSettings?.Ports?.['5432/tcp'] ?? [];
-if (!ports.some((port) => port.HostIp === '127.0.0.1' && port.HostPort === url.port)) {
-  throw new Error('Test URL does not match the disposable Docker container published port.');
-}
 const sql = (text) => docker(['exec', '-i', '-e', `PGOPTIONS=-c search_path=${schema}`, container,
   'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-U', 'ledger_test', '-d', 'ledger_test'], text);
-const db = new PrismaClient({ datasources: { db: { url: url.toString() } } });
+let db;
 let created = false;
 try {
+  await docker(['run', '-d', '--name', container, '--tmpfs', '/var/lib/postgresql/data', '-p', '127.0.0.1::5432',
+    '-e', 'POSTGRES_USER=ledger_test', '-e', 'POSTGRES_PASSWORD=isolated_delta_test', '-e', 'POSTGRES_DB=ledger_test', 'postgres:16-alpine']);
+  created = true;
+  let ready = false;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    try { await docker(['exec', container, 'pg_isready', '-U', 'ledger_test', '-d', 'ledger_test']); ready = true; break; }
+    catch { await pause(500); }
+  }
+  if (!ready) throw new Error('Disposable PostgreSQL did not become ready within 30 seconds.');
+  const published = await docker(['port', container, '5432/tcp']);
+  const port = published.match(/^127\.0\.0\.1:(\d+)$/)?.[1];
+  if (!port) throw new Error('Unexpected disposable database port binding.');
+  const url = new URL(`postgresql://ledger_test:isolated_delta_test@127.0.0.1:${port}/ledger_test`);
+  url.searchParams.set('schema', schema);
+  url.searchParams.set('connection_limit', '10');
+  db = new PrismaClient({ datasources: { db: { url: url.toString() } } });
   await sql(`CREATE SCHEMA "${schema}";
     CREATE TABLE "DlmUser" ("dlmId" TEXT PRIMARY KEY, "totalBalance" DECIMAL(19,4) NOT NULL, "income" DECIMAL(19,4) NOT NULL, "recharge" DECIMAL(19,4) NOT NULL,
       "discordUserId" TEXT, "totalSpent" DECIMAL(19,4) NOT NULL DEFAULT 0, "loyaltyPoints" DECIMAL(19,4) NOT NULL DEFAULT 0,
@@ -66,68 +64,64 @@ try {
       "thirdPartydiscordId" TEXT NOT NULL, "balanceBefore" DECIMAL(19,4) NOT NULL,
       "amountChange" DECIMAL(19,4) NOT NULL, "balanceAfter" DECIMAL(19,4) NOT NULL, "typeOfTransaction" TEXT NOT NULL
     );`);
-  created = true;
   const simpleReceipt = (id) => ({
     transactionId: id, dlmId: 'owner', discordId: null, thirdPartydiscordId: 'counterparty',
     balanceBefore: new Prisma.Decimal(100), balanceAfter: new Prisma.Decimal(50), amountChange: new Prisma.Decimal(50), typeOfTransaction: '点单',
   });
-  process.env.WALLET_LEDGER_WRITE_ENABLED = '0';
-  process.env.WALLET_LEDGER_READ_ENABLED = '0';
-  await db.$transaction((tx) => recordWalletTransaction(tx, simpleReceipt('pre-migration')));
-  assert.deepEqual(walletLedgerRelationSelection(), {});
-  const oldRead = await db.individualTransaction.findUniqueOrThrow({ where: { transactionId: 'pre-migration' },
-    select: { balanceBefore: true, balanceAfter: true, ...walletLedgerRelationSelection() } });
-  assert.equal(resolveWalletDelta(oldRead).toString(), '-50');
-  console.log('ok flags off: application writer and signed reader work before migration');
+  await sql(`INSERT INTO "IndividualTransaction" ("transactionId","dlmId","thirdPartydiscordId","balanceBefore","balanceAfter","amountChange","typeOfTransaction")
+    VALUES ('pre-migration','owner','fixture',100,50,50,'点单');`);
+  await assert.rejects(db.individualTransaction.findMany(), /deltaAmount/);
+  assert.deepEqual(transactionDeltaSelection(), { deltaAmount: true });
+  console.log('ok new generated Prisma client requires the additive column migration before deployment');
 
-  const migration = await readFile(new URL('../prisma/migrations/20261030120000_add_wallet_ledger/migration.sql', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../prisma/migrations/20261030130000_add_transaction_delta_amount/migration.sql', import.meta.url), 'utf8');
   await sql(migration);
-  await db.$transaction((tx) => recordWalletTransaction(tx, simpleReceipt('compatibility')));
-  assert.equal((await db.walletLedgerEntry.findUniqueOrThrow({ where: { sourceTransactionId: 'compatibility' } })).source, 'COMPATIBILITY');
-  console.log('ok write flag off after migration: database bridge captures application receipt');
-
-  process.env.WALLET_LEDGER_WRITE_ENABLED = '1';
-  process.env.WALLET_LEDGER_READ_ENABLED = '1';
+  await sql(`INSERT INTO "IndividualTransaction" ("transactionId","dlmId","thirdPartydiscordId","balanceBefore","balanceAfter","amountChange","typeOfTransaction")
+    VALUES ('compatibility','owner','fixture',100,50,50,'点单');`);
+  assert.equal((await db.individualTransaction.findUniqueOrThrow({ where: { transactionId: 'compatibility' } })).deltaAmount.toString(), '-50');
+  const oldRead = await db.individualTransaction.findUniqueOrThrow({ where: { transactionId: 'pre-migration' },
+    select: { balanceBefore: true, balanceAfter: true, ...transactionDeltaSelection() } });
+  assert.equal(oldRead.deltaAmount, null);
+  assert.equal(resolveWalletDelta(oldRead).toString(), '-50');
+  console.log('ok old raw INSERT is filled automatically, and unfilled history uses the balance-difference fallback');
   const postDebit = (id, options = {}) => db.$transaction(async (tx) => {
     const [before] = await tx.$queryRaw`SELECT "totalBalance", "income", "recharge" FROM "DlmUser" WHERE "dlmId" = 'owner' FOR UPDATE`;
     const [after] = await tx.$queryRaw`UPDATE "DlmUser" SET "totalBalance"="totalBalance"-50, "income"="income"-50 WHERE "dlmId"='owner' RETURNING "totalBalance", "income", "recharge"`;
     await recordWalletTransaction(tx, {
       ...simpleReceipt(id), balanceBefore: before.totalBalance, balanceAfter: after.totalBalance,
       amountChange: new Prisma.Decimal(options.badAmount ? 40 : 50),
-    }, { walletBefore: before, walletAfter: after, correlationId: 'order:fixture', idempotencyKey: options.key });
+    }, { walletBefore: before, walletAfter: after });
     if (options.throwAfterWrite) throw new Error('fixture_abort');
   });
-  await postDebit('live', { key: 'operation:one' });
-  const live = await db.individualTransaction.findUniqueOrThrow({ where: { transactionId: 'live' },
-    include: walletLedgerRelationSelection() });
+  await postDebit('live');
+  const live = await db.individualTransaction.findUniqueOrThrow({ where: { transactionId: 'live' } });
   assert.equal(live.amountChange.toString(), '50', 'legacy receipt keeps its preexisting magnitude convention');
-  assert.equal(live.walletLedgerEntry.walletDelta.toString(), '-50');
+  assert.equal(live.deltaAmount.toString(), '-50');
   assert.equal(resolveWalletDelta(live).toString(), '-50');
-  const fullLedger = await db.walletLedgerEntry.findUniqueOrThrow({ where: { sourceTransactionId: 'live' } });
-  assert.equal(fullLedger.source, 'LIVE');
-  assert.equal(fullLedger.incomeDelta.toString(), '-50');
-  assert.equal(fullLedger.rechargeDelta.toString(), '0');
-  assert.equal(fullLedger.totalSpentDelta, null, 'omitted component remains unknown');
-  console.log('ok live wrapper stores signed delta, factual components and legacy magnitude atomically');
+  console.log('ok actual wrapper validates the trigger-returned signed delta and preserves legacy magnitude');
 
   const balance = async () => (await db.$queryRaw`SELECT "totalBalance"::text AS amount FROM "DlmUser" WHERE "dlmId"='owner'`)[0].amount;
   assert.equal(await balance(), '950.0000');
   await assert.rejects(postDebit('failed-after-write', { throwAfterWrite: true }), /fixture_abort/);
   await assert.rejects(postDebit('failed-amount', { badAmount: true }), /wallet_ledger_amount_mismatch/);
-  await assert.rejects(postDebit('duplicate-operation', { key: 'operation:one' }), /Unique constraint failed/);
+  await assert.rejects(postDebit('live'), /Unique constraint failed/);
   assert.equal(await balance(), '950.0000');
-  assert.equal(await db.individualTransaction.count({ where: { transactionId: { in: ['failed-after-write', 'failed-amount', 'duplicate-operation'] } } }), 0);
-  assert.equal(await db.walletLedgerEntry.count({ where: { sourceTransactionId: { in: ['failed-after-write', 'failed-amount', 'duplicate-operation'] } } }), 0);
+  assert.equal(await db.individualTransaction.count({ where: { transactionId: { in: ['failed-after-write', 'failed-amount'] } } }), 0);
   await assert.rejects(recordWalletTransaction(db, simpleReceipt('outside-transaction')), /wallet_ledger_transaction_required/);
-  console.log('ok callback error, amount mismatch and duplicate operation key roll back wallet, receipt and ledger');
+  await sql('ALTER TABLE "IndividualTransaction" DISABLE TRIGGER "IndividualTransaction_set_deltaAmount";');
+  await assert.rejects(postDebit('missing-trigger'), /wallet_ledger_delta_mismatch/);
+  await sql('ALTER TABLE "IndividualTransaction" ENABLE TRIGGER "IndividualTransaction_set_deltaAmount";');
+  assert.equal(await balance(), '950.0000');
+  assert.equal(await db.individualTransaction.count({ where: { transactionId: 'missing-trigger' } }), 0);
+  console.log('ok callback failure, invalid amount, duplicate receipt ID and missing trigger roll back the wallet and receipt');
 
   await db.$transaction((tx) => recordWalletTransaction(tx, {
     ...simpleReceipt('signed-withdrawal'), amountChange: new Prisma.Decimal(-50), typeOfTransaction: '提现',
   }));
-  const signed = await db.individualTransaction.findUniqueOrThrow({ where: { transactionId: 'signed-withdrawal' }, include: walletLedgerRelationSelection() });
+  const signed = await db.individualTransaction.findUniqueOrThrow({ where: { transactionId: 'signed-withdrawal' } });
   assert.equal(signed.amountChange.toString(), '-50');
   assert.equal(resolveWalletDelta(signed).toString(), '-50');
-  assert.equal(resolveWalletDelta(await db.individualTransaction.findUniqueOrThrow({ where: { transactionId: 'pre-migration' }, include: walletLedgerRelationSelection() })).toString(), '-50', 'missing backfill falls back to original balances');
+  assert.equal(resolveWalletDelta(await db.individualTransaction.findUniqueOrThrow({ where: { transactionId: 'pre-migration' } })).toString(), '-50', 'missing backfill falls back to original balances');
 
   const concurrentIdentity = { dlmId: 'concurrent-owner', discordUserId: null };
   const credit = (index) => db.$transaction(async (tx) => {
@@ -140,20 +134,18 @@ try {
     await recordWalletTransaction(tx, {
       transactionId: `concurrent-credit-${index}`, dlmId: concurrentIdentity.dlmId, thirdPartydiscordId: 'fixture',
       balanceBefore: before.totalBalance, balanceAfter: after.totalBalance, amountChange: new Prisma.Decimal(10), typeOfTransaction: '网站充值',
-    }, { walletBefore: before, walletAfter: after, idempotencyKey: `concurrent-credit:${index}` });
+    }, { walletBefore: before, walletAfter: after });
   }, { maxWait: 10000, timeout: 20000 });
   const creditResults = await Promise.allSettled(Array.from({ length: 6 }, (_, index) => credit(index)));
   for (const result of creditResults) if (result.status === 'rejected') throw result.reason;
-  const credits = await db.walletLedgerEntry.findMany({ where: { dlmId: concurrentIdentity.dlmId }, orderBy: { balanceBefore: 'asc' } });
+  const credits = await db.individualTransaction.findMany({ where: { dlmId: concurrentIdentity.dlmId }, orderBy: { balanceBefore: 'asc' } });
   assert.equal(credits.length, 6);
   credits.forEach((row, index) => {
     assert.equal(row.balanceBefore.toString(), String(100 + index * 10));
     assert.equal(row.balanceAfter.toString(), String(110 + index * 10));
-    assert.equal(row.walletDelta.toString(), '10');
-    assert.equal(row.rechargeDelta.toString(), '10');
-    assert.equal(row.source, 'LIVE');
+    assert.equal(row.deltaAmount.toString(), '10');
   });
-  console.log('ok six concurrent credits serialize actual wallet snapshots and all commit accurate LIVE receipts');
+  console.log('ok six shared-client concurrent credits commit continuous snapshots and accurate signed deltas');
 
   const guardedDebit = (index) => db.$transaction(async (tx) => {
     await tx.$executeRaw`SET LOCAL lock_timeout = '5s'`;
@@ -172,22 +164,18 @@ try {
   for (const result of debitResults) if (result.status === 'rejected') throw result.reason;
   assert.deepEqual(debitResults.map((result) => result.value).sort(), [false, true]);
   assert.equal((await db.dlmUser.findUniqueOrThrow({ where: { dlmId: concurrentIdentity.dlmId }, select: { totalBalance: true } })).totalBalance.toString(), '60');
-  assert.equal(await db.walletLedgerEntry.count({ where: { dlmId: concurrentIdentity.dlmId, direction: 'DEBIT' } }), 1);
+  assert.equal(await db.individualTransaction.count({ where: { dlmId: concurrentIdentity.dlmId, deltaAmount: { lt: 0 } } }), 1);
   console.log('ok concurrent guarded debits observe the committed balance and cannot both spend the same funds');
 
   await sql(`BEGIN; UPDATE "IndividualTransaction" SET "dlmId"='merged-owner' WHERE "dlmId"='owner'; DELETE FROM "DlmUser" WHERE "dlmId"='owner'; COMMIT;`);
-  const merged = await db.individualTransaction.findMany({ where: { dlmId: 'merged-owner' }, include: walletLedgerRelationSelection() });
+  const merged = await db.individualTransaction.findMany({ where: { dlmId: 'merged-owner' } });
   assert.equal(merged.length, 4);
-  assert.equal((await db.walletLedgerEntry.findUniqueOrThrow({ where: { sourceTransactionId: 'live' } })).dlmId, 'owner');
+  assert.equal(merged.find((row) => row.transactionId === 'pre-migration').deltaAmount, null);
   assert.equal(merged.reduce((sum, row) => sum.add(resolveWalletDelta(row)), new Prisma.Decimal(0)).toString(), '-200');
   console.log('ok signed legacy withdrawals, missing backfill and merged ownership use consistent signed reads');
-  console.log('All wallet ledger application Prisma integration checks passed.');
+  console.log('All original transaction signed-delta Prisma integration checks passed.');
 } finally {
-  await db.$disconnect();
-  if (created) await sql(`DROP SCHEMA "${schema}" CASCADE;`);
-  if (savedWriteFlag === undefined) delete process.env.WALLET_LEDGER_WRITE_ENABLED;
-  else process.env.WALLET_LEDGER_WRITE_ENABLED = savedWriteFlag;
-  if (savedReadFlag === undefined) delete process.env.WALLET_LEDGER_READ_ENABLED;
-  else process.env.WALLET_LEDGER_READ_ENABLED = savedReadFlag;
+  if (db) await db.$disconnect();
+  if (created) await docker(['rm', '-f', container]);
   unregister();
 }

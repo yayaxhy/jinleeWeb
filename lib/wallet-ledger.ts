@@ -17,6 +17,7 @@ export type LedgerReceipt = {
   balanceBefore: LedgerMoney;
   balanceAfter: LedgerMoney;
   amountChange: LedgerMoney;
+  deltaAmount?: LedgerMoney | null;
   typeOfTransaction: string;
   timeCreatedAt: Date;
 };
@@ -25,14 +26,7 @@ export type WalletLedgerMetadata = {
   expectedWalletDelta?: LedgerMoney;
   walletBefore?: LedgerWalletSnapshot;
   walletAfter?: LedgerWalletSnapshot;
-  correlationId?: string;
-  reversalOfLedgerId?: string;
-  reversalOfSourceTransactionId?: string;
-  idempotencyKey?: string;
 };
-
-export const isWalletLedgerWriteEnabled = () => process.env.WALLET_LEDGER_WRITE_ENABLED === '1';
-export const isWalletLedgerReadEnabled = () => process.env.WALLET_LEDGER_READ_ENABLED === '1';
 
 const money = (value: LedgerMoney) => {
   const amount = new Prisma.Decimal(value);
@@ -42,24 +36,17 @@ const money = (value: LedgerMoney) => {
   return amount;
 };
 
-export function walletLedgerEventType(type: string, delta: Prisma.Decimal): string {
-  if (type === '点单') return delta.lt(0) ? 'ORDER_PAYMENT' : delta.gt(0) ? 'ORDER_INCOME' : 'ORDER_ZERO';
-  if (type === '订单撤销') return delta.gt(0) ? 'ORDER_REFUND' : delta.lt(0) ? 'ORDER_INCOME_REVERSAL' : 'ORDER_REVERSAL_ZERO';
-  if (type === '打赏' || type === '客服代打赏') return delta.lt(0) ? 'GIFT_PAYMENT' : delta.gt(0) ? 'GIFT_INCOME' : 'GIFT_ZERO';
-  if (type === '打赏撤销') return delta.gt(0) ? 'GIFT_REFUND' : delta.lt(0) ? 'GIFT_INCOME_REVERSAL' : 'GIFT_REVERSAL_ZERO';
-  if (['充值', '人工充值', '网站充值', '微信Native充值', '信用卡/银行卡充值'].includes(type)) return 'RECHARGE';
-  const events: Record<string, string> = {
-    提现: 'WITHDRAWAL', 优惠返利: 'COUPON_REBATE', 红包发出: 'RED_ENVELOPE_SEND',
-    红包收入: 'RED_ENVELOPE_RECEIVE', 红包退回: 'RED_ENVELOPE_REFUND',
-  };
-  return events[type] ?? 'LEGACY_OTHER';
-}
-
-export function createWalletLedgerEntryData(receipt: LedgerReceipt, metadata: WalletLedgerMetadata = {}) {
+/** Validate the persisted receipt, including the DB-generated signed delta.
+ * amountChange retains its historical convention for reversal compatibility.
+ */
+export function validateWalletTransaction(receipt: LedgerReceipt, metadata: WalletLedgerMetadata = {}) {
   const balanceBefore = money(receipt.balanceBefore);
   const balanceAfter = money(receipt.balanceAfter);
   const walletDelta = money(balanceAfter.sub(balanceBefore));
   const businessAmount = money(receipt.amountChange).abs();
+  if (receipt.deltaAmount === undefined || receipt.deltaAmount === null || !money(receipt.deltaAmount).eq(walletDelta)) {
+    throw new Error('wallet_ledger_delta_mismatch');
+  }
   if (metadata.expectedWalletDelta !== undefined) {
     if (!walletDelta.eq(money(metadata.expectedWalletDelta))) throw new Error('wallet_ledger_amount_mismatch');
   } else if (!walletDelta.abs().eq(businessAmount)) {
@@ -82,46 +69,23 @@ export function createWalletLedgerEntryData(receipt: LedgerReceipt, metadata: Wa
   if (incomeDelta !== null && rechargeDelta !== null && !incomeDelta.add(rechargeDelta).eq(walletDelta)) {
     throw new Error('wallet_ledger_components_mismatch');
   }
-  return {
-    id: `WLE:${receipt.transactionId}`,
-    sourceTransactionId: receipt.transactionId,
-    dlmId: receipt.dlmId ?? null,
-    discordId: receipt.discordId ?? null,
-    counterpartyId: receipt.thirdPartydiscordId,
-    walletDelta, businessAmount, balanceBefore, balanceAfter,
-    currency: 'CNY',
-    direction: walletDelta.gt(0) ? 'CREDIT' : walletDelta.lt(0) ? 'DEBIT' : 'NONE',
-    legacyType: receipt.typeOfTransaction,
-    eventType: walletLedgerEventType(receipt.typeOfTransaction, walletDelta),
-    incomeDelta, rechargeDelta,
-    totalSpentDelta: componentDelta('totalSpent'),
-    loyaltyPointsDelta: componentDelta('loyaltyPoints'),
-    correlationId: metadata.correlationId ?? null,
-    reversalOfLedgerId: metadata.reversalOfLedgerId ?? null,
-    reversalOfSourceTransactionId: metadata.reversalOfSourceTransactionId ?? null,
-    idempotencyKey: metadata.idempotencyKey ?? null,
-    source: 'LIVE',
-    // VERIFIED checks internal arithmetic only; it is not external reconciliation.
-    integrityStatus: !receipt.dlmId && !receipt.discordId ? 'UNVERIFIABLE'
-      : walletDelta.abs().eq(businessAmount) ? 'VERIFIED' : 'REQUIRES_REVIEW',
-    timeCreatedAt: receipt.timeCreatedAt,
-    schemaVersion: 1,
-  };
+  componentDelta('totalSpent');
+  componentDelta('loyaltyPoints');
+  return walletDelta;
 }
 
 export type WalletDeltaSource = {
   balanceBefore: LedgerMoney | null;
   balanceAfter: LedgerMoney | null;
-  walletLedgerEntry?: { walletDelta: LedgerMoney } | null;
+  deltaAmount?: LedgerMoney | null;
 };
 
 /** Missing legacy balances are unknown, never silently interpreted as zero. */
 export function resolveWalletDelta(row: WalletDeltaSource): Prisma.Decimal | null {
-  if (row.walletLedgerEntry) return new Prisma.Decimal(row.walletLedgerEntry.walletDelta);
+  if (row.deltaAmount !== undefined && row.deltaAmount !== null) return money(row.deltaAmount);
   if (row.balanceBefore === null || row.balanceAfter === null) return null;
-  return new Prisma.Decimal(row.balanceAfter).sub(new Prisma.Decimal(row.balanceBefore));
+  return money(money(row.balanceAfter).sub(money(row.balanceBefore)));
 }
 
-/** Query ownership through the mutable receipt so merges retain historical reads. */
-export const walletLedgerRelationSelection = () => isWalletLedgerReadEnabled()
-  ? { walletLedgerEntry: { select: { walletDelta: true } } } as const : {};
+/** Requires the additive column migration before deploying the new Prisma client. */
+export const transactionDeltaSelection = () => ({ deltaAmount: true } as const);

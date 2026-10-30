@@ -177,8 +177,7 @@ export const rechargeManualWechatBoss = async (params: {
           amountChange: amount,
           balanceAfter: after.totalBalance,
           typeOfTransaction: '人工充值',
-      }, { walletBefore: before, walletAfter: after,
-        correlationId: `manual-recharge:${requestId}`, idempotencyKey: `manual-recharge:${requestId}` });
+      }, { walletBefore: before, walletAfter: after });
       const resultPayload = {
         dlmId,
         amount: amount.toFixed(2),
@@ -290,8 +289,7 @@ export const giftManualWechatBoss = async (params: {
           amountChange: amount,
           balanceAfter: after.totalBalance,
           typeOfTransaction: reason,
-      }, { walletBefore: before, walletAfter: after,
-        correlationId: `manual-cashback:${requestId}`, idempotencyKey: `manual-cashback:${requestId}` });
+      }, { walletBefore: before, walletAfter: after });
       const resultPayload = {
         dlmId,
         amount: amount.toFixed(2),

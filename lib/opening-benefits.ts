@@ -8,7 +8,8 @@ import {
 } from '@prisma/client';
 import type { Prisma as PrismaNamespace } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { resolveWalletDelta, walletLedgerRelationSelection, type WalletDeltaSource } from '@/lib/wallet-ledger';
+import { transactionDeltaSelection, type WalletDeltaSource } from '@/lib/wallet-ledger';
+import { activityTypes, OPENING_SPEND_POLICY, spendContribution } from '@/lib/transaction-activity';
 import {
   OPENING_BENEFITS_END,
   OPENING_BENEFITS_START,
@@ -36,19 +37,6 @@ const ONE_TIME_CLAIM_PERIOD_KEY = 'once';
 export type OpeningBenefitName =
   (typeof OPENING_BENEFIT)[keyof typeof OPENING_BENEFIT];
 
-const ACTUAL_SPEND_TYPES = new Set([
-  '点单',
-  '打赏',
-  '客服代打赏',
-  '红包发出',
-  '试音花费',
-]);
-const ACTUAL_SPEND_REVERSAL_TYPES = new Set([
-  '订单撤销',
-  '打赏撤销',
-  '红包退回',
-  '优惠返利',
-]);
 type DbClient = PrismaClient | PrismaNamespace.TransactionClient;
 
 export class OpeningBenefitError extends Error {
@@ -79,22 +67,10 @@ const getEffectiveWeekStart = (now: Date) => {
 export const calculateActualSpend = (
   entries: Array<WalletDeltaSource & { typeOfTransaction: string }>,
 ) => {
-  const total = entries.reduce((sum, entry) => {
-    const balanceDelta = resolveWalletDelta(entry);
-    if (balanceDelta === null) return sum;
-    // Transaction labels are shared by both parties. A worker's order income,
-    // for example, is also labelled “点单”, so only a balance decrease counts
-    // as the user's spend.
-    if (ACTUAL_SPEND_TYPES.has(entry.typeOfTransaction) && balanceDelta.lt(0)) {
-      return sum.add(balanceDelta.abs());
-    }
-    // Refunds and rebates only offset spend when they credit the same user's
-    // balance; a debit with one of these labels must not reduce their spend.
-    if (ACTUAL_SPEND_REVERSAL_TYPES.has(entry.typeOfTransaction) && balanceDelta.gt(0)) {
-      return sum.sub(balanceDelta);
-    }
-    return sum;
-  }, new Prisma.Decimal(0));
+  const total = entries.reduce(
+    (sum, entry) => sum.add(spendContribution(entry, OPENING_SPEND_POLICY)),
+    new Prisma.Decimal(0),
+  );
   return total.lt(0) ? new Prisma.Decimal(0) : total;
 };
 
@@ -108,14 +84,11 @@ async function getWeeklyActualSpendTx(
       dlmId,
       timeCreatedAt: { gte: getEffectiveWeekStart(now), lte: now },
       typeOfTransaction: {
-        in: [
-          ...ACTUAL_SPEND_TYPES,
-          ...ACTUAL_SPEND_REVERSAL_TYPES,
-        ],
+        in: activityTypes(OPENING_SPEND_POLICY),
       },
     },
     select: {
-      ...walletLedgerRelationSelection(),
+      ...transactionDeltaSelection(),
       typeOfTransaction: true,
       balanceBefore: true,
       balanceAfter: true,

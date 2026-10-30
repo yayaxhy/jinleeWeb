@@ -212,8 +212,7 @@ export const settleRechargeOrderPayment = async (
         amountChange: normalizedAmount,
         balanceAfter: new Prisma.Decimal(walletAfter.totalBalance),
         typeOfTransaction: transactionType,
-    }, { walletBefore, walletAfter, correlationId: `recharge:${order.outTradeNo}`,
-      idempotencyKey: `recharge:${orderProvider}:${order.outTradeNo}` });
+    }, { walletBefore, walletAfter });
   });
 
   if (applied) {

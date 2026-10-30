@@ -268,8 +268,7 @@ export async function POST(request: Request) {
           amountChange: amountDecimal.mul(-1),
           balanceAfter,
           typeOfTransaction: '提现',
-      }, { walletBefore: walletSnapshot, walletAfter: updatedWallet,
-        correlationId: `withdraw:${withdrawRecord.id}`, idempotencyKey: `withdraw:${withdrawRecord.id}` });
+      }, { walletBefore: walletSnapshot, walletAfter: updatedWallet });
 
       return {
         withdrawalId: withdrawRecord.id,

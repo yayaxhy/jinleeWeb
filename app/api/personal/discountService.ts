@@ -249,6 +249,9 @@ export async function applyDiscountForOrder(params: {
   return prisma.$transaction(async (tx) => {
     let prizeRateCap: { rate: Prisma.Decimal; cap: Prisma.Decimal } | undefined;
 
+    // Read eligibility after acquiring the shared order lock: a reversal or
+    // owner change may have committed while this request was waiting.
+    await lockOrderForDiscountTx(tx, orderId);
     const order = await tx.order.findUnique({
       where: { id: orderId },
       select: {
@@ -268,13 +271,12 @@ export async function applyDiscountForOrder(params: {
     }
     if ((order.hostDlmId ?? null) !== dlmId) return { status: 'not_order_host' };
     if (order.status !== OrderStatus.ENDED) return { status: 'order_not_ended' };
-    await lockOrderForDiscountTx(tx, order.id);
-    await lockDlmWalletForUpdateTx(tx, { dlmId, discordUserId: discordUserId ?? null });
     const revert = await tx.revert.findUnique({
       where: { originalTransactionId: `ORDER:${order.id}` },
       select: { id: true },
     });
     if (revert) return { status: 'order_reverted' };
+    await lockDlmWalletForUpdateTx(tx, { dlmId, discordUserId: discordUserId ?? null });
     const workerTarget = order.workerId
       ? await tx.dlmUser.findUnique({
           where: { discordUserId: order.workerId },
@@ -583,8 +585,7 @@ export async function applyDiscountForOrder(params: {
       balanceAfter: new Prisma.Decimal(walletAfter.totalBalance),
       typeOfTransaction: '优惠返利',
       timeCreatedAt: now,
-    }, { walletBefore, walletAfter, correlationId: `order:${order.id}`,
-      idempotencyKey: `order-discount:${order.id}` });
+    }, { walletBefore, walletAfter });
 
     return {
       status: 'applied',

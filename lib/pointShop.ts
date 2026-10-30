@@ -654,7 +654,7 @@ async function deliverOrderItemTx(
         amountChange,
         balanceAfter: walletAfter.totalBalance,
         typeOfTransaction: '积分商城余额兑换',
-    }, { walletBefore, walletAfter, correlationId: `point-shop:${orderId}` });
+    }, { walletBefore, walletAfter });
 
     const note = `自动到账 ${itemName} +${amountChange.toString()}`;
     await tx.pointShopGrant.create({

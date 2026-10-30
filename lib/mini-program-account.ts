@@ -4,7 +4,7 @@ import type { CurrentDlmUser } from '@/lib/current-dlm-user';
 import { postInternalBot } from '@/lib/internal-bot';
 import { formatPeiwanGameProfile } from '@/lib/peiwan/gameProfiles';
 import { prisma } from '@/lib/prisma';
-import { resolveWalletDelta, walletLedgerRelationSelection } from '@/lib/wallet-ledger';
+import { resolveWalletDelta } from '@/lib/wallet-ledger';
 import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime } from '@/lib/operating-entity-cutover';
 import { formatTransactionType } from '@/lib/transaction-display';
 import { notifyMiniProgramUser } from '@/lib/mini-program-subscribe';
@@ -213,7 +213,6 @@ export async function performMiniOrderAction(
 
 export async function listMiniTransactions(currentUser: CurrentDlmUser) {
   const rows = await prisma.individualTransaction.findMany({
-    include: walletLedgerRelationSelection(),
     where: {
       AND: [
         currentUser.discordUserId
