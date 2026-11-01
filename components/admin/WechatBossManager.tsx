@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const GIFT_REASONS = ['充值返现', '公会成本', 'VIP福利', '老板赔偿', '其他'] as const;
@@ -47,6 +47,9 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
   const [giftReason, setGiftReason] = useState<(typeof GIFT_REASONS)[number]>('充值返现');
   const [peiwanReference, setPeiwanReference] = useState('');
   const [quotationCode, setQuotationCode] = useState('Q1');
+  const [rechargeAmount, setRechargeAmount] = useState('');
+  const rechargeSubmitting = useRef(false);
+  const rechargeRequestIds = useRef(new Map<string, string>());
 
   const selectedPeiwan = useMemo(() => {
     const reference = peiwanReference.trim();
@@ -81,15 +84,22 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
       const balanceAfter = typeof outcome?.result?.balanceAfter === 'string' ? outcome.result.balanceAfter : null;
       const currentBalance = typeof outcome?.result?.currentBalance === 'string' ? outcome.result.currentBalance : balanceAfter;
       const rechargeId = typeof outcome?.result?.rechargeId === 'string' ? outcome.result.rechargeId : null;
-      const successMessage = replayed
+      const isDebit = placement === 'recharge' && amount !== null && Number(amount) < 0;
+      const successMessage = isDebit
+        ? replayed
+          ? `该次扣款已完成，本次未重复扣款。当前余额：${currentBalance} 点点券。`
+          : `已扣减 ${amount.slice(1)} 点点券。当前余额：${balanceAfter} 点点券。`
+        : replayed
         ? `该次提交此前已完成，本次未重复增加余额${currentBalance ? `。当前余额：${currentBalance} 点点券` : '。'}`
         : placement === 'giftBalance'
           ? `余额赠送已发放：${amount ?? '—'}（${balanceGiftReason ?? '余额赠送'}）。${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}`
           : `${success}${balanceAfter ? ` 当前余额：${balanceAfter} 点点券。` : ''}${rechargeId ? ` 充值记录编号：${rechargeId}。` : ''}`;
       setMessage(notificationWarning ? `${successMessage} ${notificationWarning}` : successMessage);
       router.refresh();
+      return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '操作失败，请稍后重试。');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -111,18 +121,40 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
 
   const recharge = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (busy || rechargeSubmitting.current) return;
     const form = new FormData(event.currentTarget);
+    const amount = String(form.get('amount') ?? '').trim();
+    const receiptAccount = String(form.get('receiptAccount') ?? '').trim();
+    const note = String(form.get('note') ?? '').trim();
+    const normalizedAmount = /^-?\d+(?:\.\d{1,2})?$/.test(amount) && Math.abs(Number(amount)) <= 1_000_000
+      ? Number(amount).toFixed(2)
+      : amount;
+    const fingerprint = JSON.stringify([selectedDlmId, normalizedAmount, receiptAccount, note]);
+    const requestId = rechargeRequestIds.current.get(fingerprint) ?? newRequestId();
+    rechargeRequestIds.current.set(fingerprint, requestId);
+    rechargeSubmitting.current = true;
     void run(
-      () => postJson('/api/admin/wechat-bosses/recharge', {
-        requestId: newRequestId(),
-        dlmId: selectedDlmId,
-        amount: form.get('amount'),
-        receiptAccount: form.get('receiptAccount'),
-        note: form.get('note'),
-      }),
+      async () => {
+        const outcome = await postJson('/api/admin/wechat-bosses/recharge', {
+          requestId,
+          dlmId: selectedDlmId,
+          amount,
+          receiptAccount,
+          note,
+        });
+        if (outcome?.ok !== true || typeof outcome.result?.amount !== 'string' ||
+            typeof outcome.result?.balanceAfter !== 'string') {
+          throw new Error('操作失败，请稍后重试。');
+        }
+        return outcome;
+      },
       '微信人工充值已入账，并已写入账户流水和管理员审计。',
       'recharge',
-    );
+    ).then((completed) => {
+      // Keep uncertain submissions keyed by their original intent, including
+      // when staff switch away and return after a lost network response.
+      if (completed) rechargeRequestIds.current.delete(fingerprint);
+    }).finally(() => { rechargeSubmitting.current = false; });
   };
 
   const giftBalance = (event: FormEvent<HTMLFormElement>) => {
@@ -200,10 +232,10 @@ export function WechatBossManager({ bosses, gifts, peiwans, operations }: { boss
         {selectedDlmId ? <div className="grid gap-x-8 gap-y-8 pt-6 lg:grid-cols-2">
         <form onSubmit={recharge} className="space-y-3 lg:border-r lg:border-white/10 lg:pr-8">
           <div><h2 className="text-xl font-semibold">微信人工充值</h2><p className="mt-1 text-sm text-white/60">金额和微信收款账号为必填项；同一收款账号可以有多笔充值。系统会生成唯一充值记录编号，供核账和返现使用。</p></div>
-          <input name="amount" required inputMode="decimal" placeholder="金额，例如 100.00" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
+          <input name="amount" required inputMode="text" value={rechargeAmount} onChange={(event) => setRechargeAmount(event.target.value)} placeholder="金额，例如 100.00" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <input name="receiptAccount" required placeholder="微信收款账号，例如 iria支付宝" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
           <textarea name="note" placeholder="备注（可选）" className="min-h-20 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-[#9b7ee8]" />
-          <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">确认入账</button>
+          <button disabled={busy} className="w-full rounded-xl bg-[#7356c6] px-4 py-3 text-sm disabled:opacity-60">{Number(rechargeAmount) < 0 ? '确认扣款' : '确认入账'}</button>
           {message && messagePlacement === 'recharge' ? <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">{message}</p> : null}
         </form>
 

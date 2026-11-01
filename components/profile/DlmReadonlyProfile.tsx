@@ -10,6 +10,8 @@ import { formatTransactionType } from '@/lib/transaction-display';
 const ROME_TIMEZONE = 'Europe/Rome';
 const TRANSACTIONS_PER_PAGE = 10;
 const STAFF_OPERATED_TRANSACTION_TYPES = new Set([
+  '充值',
+  '充值回退',
   '人工充值',
   '微信人工充值',
   '充值返现',

@@ -2,11 +2,13 @@ import {
   DlmAdminOperationStatus,
   DlmAdminOperationType,
   Prisma,
+  type DlmAdminOperation,
 } from '@prisma/client';
 import { generateDlmId } from '@/lib/dlm-id';
 import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx } from '@/lib/dlm-wallet';
 import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 import { prisma } from '@/lib/prisma';
+import { ManualWechatReversalError, reverseManualWechatBossRecharge } from '@/lib/manual-wechat-recharge-reversal';
 
 const DEC = (value: Prisma.Decimal | number | string) => new Prisma.Decimal(value);
 
@@ -47,6 +49,25 @@ const withCurrentBalance = async <T extends { dlmId?: string }>(result: T, fallb
     ...result,
     currentBalance: user?.totalBalance.toFixed(2) ?? null,
   };
+};
+
+const assertMatchingPositiveRecharge = (previous: DlmAdminOperation, expected: {
+  operatorDiscordId: string;
+  dlmId: string;
+  amount: string;
+  receiptAccount: string;
+  note: string | null;
+}) => {
+  const details = previous.details as Record<string, unknown> | null;
+  const result = previous.result as Record<string, unknown> | null;
+  if (previous.type !== DlmAdminOperationType.MANUAL_WECHAT_RECHARGE || previous.sourceOperationId !== null ||
+      previous.dlmId !== expected.dlmId || previous.operatorDiscordId !== expected.operatorDiscordId ||
+      previous.receiptReference !== expected.receiptAccount || details?.action != null ||
+      details?.amount !== expected.amount || details?.receiptAccount !== expected.receiptAccount ||
+      (details?.note ?? null) !== expected.note || result?.dlmId !== expected.dlmId || result?.amount !== expected.amount ||
+      typeof result?.rechargeId !== 'string' || !result.rechargeId.trim()) {
+    throw new ManualWechatReversalError('REQUEST_CONFLICT');
+  }
 };
 
 export const createManualWechatBoss = async (params: {
@@ -115,7 +136,24 @@ export const rechargeManualWechatBoss = async (params: {
   amount: unknown;
   receiptAccount?: string | null;
   note?: string | null;
-}) => {
+}, options?: { debitTransactionType: string }) => {
+  const rawAmount = typeof params.amount === 'string' || typeof params.amount === 'number'
+    ? String(params.amount).trim()
+    : '';
+  if (options && rawAmount.startsWith('-')) {
+    const reversal = await reverseManualWechatBossRecharge({
+      requestId: params.requestId,
+      operatorDiscordId: params.operatorDiscordId,
+      dlmId: params.dlmId,
+      amount: rawAmount.slice(1),
+      receiptAccount: params.receiptAccount ?? '',
+      reason: params.note,
+    }, { transactionType: options.debitTransactionType });
+    return {
+      ...reversal,
+      result: { ...reversal.result, rechargeRequestId: reversal.result.requestId },
+    };
+  }
   const requestId = cleanText(params.requestId, 120);
   const operatorDiscordId = cleanText(params.operatorDiscordId, 32);
   const dlmId = cleanText(params.dlmId, 100);
@@ -125,9 +163,11 @@ export const rechargeManualWechatBoss = async (params: {
   if (!requestId || !operatorDiscordId || !dlmId || !amount || !receiptAccount) {
     throw new Error('请填写有效金额和微信收款账号。');
   }
+  const expected = { operatorDiscordId, dlmId, amount: amount.toFixed(2), receiptAccount, note };
 
   const previous = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });
   if (previous) {
+    assertMatchingPositiveRecharge(previous, expected);
     if (previous.status === DlmAdminOperationStatus.COMPLETED && previous.result) {
       return {
         result: await withCurrentBalance({
@@ -176,7 +216,7 @@ export const rechargeManualWechatBoss = async (params: {
           balanceBefore: before.totalBalance,
           amountChange: amount,
           balanceAfter: after.totalBalance,
-          typeOfTransaction: '人工充值',
+          typeOfTransaction: '充值',
       }, { walletBefore: before, walletAfter: after });
       const resultPayload = {
         dlmId,
@@ -210,6 +250,7 @@ export const rechargeManualWechatBoss = async (params: {
     // also covers a double-click that reaches the database concurrently.
     if (error?.code === 'P2002') {
       const racedRequest = await prisma.dlmAdminOperation.findUnique({ where: { requestId } });
+      if (racedRequest) assertMatchingPositiveRecharge(racedRequest, expected);
       if (racedRequest?.status === DlmAdminOperationStatus.COMPLETED && racedRequest.result) {
         return {
           result: await withCurrentBalance({

@@ -82,7 +82,7 @@ export default async function WechatBossesAdminPage() {
             const amount = typeof result?.amount === 'string' ? result.amount : null;
             const rechargeId = typeof result?.rechargeId === 'string' ? result.rechargeId : null;
             const boss = operation.dlmUser?.manualWechatBoss;
-            if (!amount || !rechargeId || !boss) return [];
+            if (!amount || !Number.isFinite(Number(amount)) || Number(amount) <= 0 || !rechargeId || !boss) return [];
             return [{
               operationId: operation.id,
               sourceDlmId: operation.dlmId,

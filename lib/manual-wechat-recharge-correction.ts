@@ -87,11 +87,11 @@ export const correctManualWechatBossRecharge = async (params: {
         tx.recharge.create({ data: { amount, dlmId: targetDlmId, toWhom: targetDlmId, fromWhom: operatorDiscordId }, select: { RechargeID: true } }),
         recordWalletTransaction(tx, {
           discordId: sourceBoss.dlmUser.discordUserId, dlmId: sourceOperation.dlmId, thirdPartydiscordId: operatorDiscordId,
-          balanceBefore: sourceBefore.totalBalance, amountChange: amount.negated(), balanceAfter: sourceAfter.totalBalance, typeOfTransaction: '充值更正转出',
+          balanceBefore: sourceBefore.totalBalance, amountChange: amount.negated(), balanceAfter: sourceAfter.totalBalance, typeOfTransaction: '充值回退',
         }, { walletBefore: sourceBefore, walletAfter: sourceAfter }),
         recordWalletTransaction(tx, {
           discordId: targetBoss.dlmUser.discordUserId, dlmId: targetDlmId, thirdPartydiscordId: operatorDiscordId,
-          balanceBefore: targetBefore.totalBalance, amountChange: amount, balanceAfter: targetAfter.totalBalance, typeOfTransaction: '充值更正转入',
+          balanceBefore: targetBefore.totalBalance, amountChange: amount, balanceAfter: targetAfter.totalBalance, typeOfTransaction: '充值',
         }, { walletBefore: targetBefore, walletAfter: targetAfter }),
       ]);
       const resultPayload = {
