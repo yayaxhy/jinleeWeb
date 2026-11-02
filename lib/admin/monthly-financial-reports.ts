@@ -766,7 +766,7 @@ async function loadMonthlyRevenueData(params: {
   const zpayTotal = decimalSum(zpayRows, 'amount');
   const stripeTotal = decimalSum(stripeRows, 'rechargeAmount');
   const wechatNativeTotal = decimalSum(wechatNativeRows, 'rechargeAmount');
-  const netRecharge = rechargeTotal.sub(withdrawalSettlement.netOutflow);
+  const netRecharge = rechargeTotal.sub(withdrawTotal);
 
   const effectiveMemberRows = memberRows.map((row) => ({
     ...row,

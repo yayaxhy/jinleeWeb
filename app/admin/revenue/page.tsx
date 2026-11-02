@@ -234,7 +234,7 @@ export default async function AdminRevenuePage(props: PageProps) {
 
   const rechargeTotal = dec(rechargeAgg._sum.amount);
   const withdrawTotal = withdrawalSettlement.requested;
-  const netRecharge = rechargeTotal.sub(withdrawalSettlement.netOutflow);
+  const netRecharge = rechargeTotal.sub(withdrawTotal);
   const zpayTotal = dec(zpayAgg._sum.amount);
   const stripeTotal = dec(stripeAgg._sum.rechargeAmount);
   const wechatNativeTotal = dec(wechatNativeAgg._sum.rechargeAmount);
