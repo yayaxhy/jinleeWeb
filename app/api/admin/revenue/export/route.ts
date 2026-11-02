@@ -664,13 +664,13 @@ export async function GET(request: NextRequest) {
     { section: '当月充值提现', key: '微信原生已支付', value: wechatNativeTotal.toString() },
     { section: '当月充值提现', key: 'Stripe 已支付', value: stripeTotal.toString() },
     { section: '当月充值提现', key: '提现总额', value: withdrawTotal.toString() },
-    { section: '当月充值提现', key: '已发提现', value: withdrawalSettlement.netOutflow.toString() },
-    { section: '当月充值提现', key: '待发提现', value: withdrawalSettlement.pendingAtEnd.toString() },
     { section: '当月充值提现', key: '净充值', value: netRecharge.toString() },
 
     { section: '会员余额汇总', key: 'DlmUser.recharge 合计', value: memberRechargeTotal.toString() },
     { section: '会员余额汇总', key: 'DlmUser.income 合计', value: memberIncomeTotal.toString() },
     { section: '会员余额汇总', key: 'DlmUser.totalBalance 合计', value: memberBalanceTotal.toString() },
+    { section: '会员余额汇总', key: '已发提现', value: withdrawalSettlement.netOutflow.toString() },
+    { section: '会员余额汇总', key: '待发提现', value: withdrawalSettlement.pendingAtEnd.toString() },
     { section: '会员余额汇总', key: '当月 Commission 合计', value: commissionTotalNetAll.toString() },
 
     { section: '抽奖收益', key: '抽奖次数', value: drawCount },
