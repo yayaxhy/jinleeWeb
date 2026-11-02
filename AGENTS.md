@@ -56,6 +56,13 @@
 - Without explicit user permission, treat database access as read-only
 - Do not run migrations, seed scripts, mutation scripts, or bot startup paths that create or alter database objects without explicit user permission
 
+## 测试文件管理规则
+
+- 测试文件只保留在本地，不提交或上传 GitHub；适用于新增和历史测试文件、测试辅助代码、测试夹具及测试截图、报告等产物。
+- 新增测试文件时先配置 `.gitignore`。提交及推送前必须检查暂存文件清单，确保不包含测试文件或测试产物。
+- 已被 Git 跟踪的测试文件使用 `git rm --cached` 取消跟踪，并保留本地副本；禁止使用 `git add -f` 绕过忽略规则上传测试文件。
+- 开发、测试、部署或推送授权不等于测试文件上传授权。
+
 ## 用户文案审批规则
 
 - 所有面向用户的文案展示，包括网页、Discord 消息、私信、按钮、标题、提示和错误信息，在新增、修改、删除或改变展示条件前，必须先向用户提供具体文案及展示场景，并取得用户明确同意。
