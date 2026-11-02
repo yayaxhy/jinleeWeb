@@ -1669,7 +1669,7 @@ function buildAdminRevenueDataWorkbook(
     { section: '会员余额汇总', key: 'DlmUser.recharge 合计', value: data.totals.memberRechargeTotal.toString() },
     { section: '会员余额汇总', key: 'DlmUser.income 合计', value: data.totals.memberIncomeTotal.toString() },
     { section: '会员余额汇总', key: 'DlmUser.totalBalance 合计', value: data.totals.memberBalanceTotal.toString() },
-    { section: '会员余额汇总', key: '待发提现', value: data.totals.withdrawalPendingAtEnd.toString() },
+    { section: '会员余额汇总', key: '待发提现(已从总余额中扣除)', value: data.totals.withdrawalPendingAtEnd.toString() },
     { section: '会员余额汇总', key: '当月 Commission 合计', value: data.totals.commissionTotalNetAll.toString() },
     { section: '抽奖收益', key: '抽奖次数', value: data.totals.drawCount },
     { section: '抽奖收益', key: '毛收入（次数×29）', value: data.totals.grossIncome.toString() },
