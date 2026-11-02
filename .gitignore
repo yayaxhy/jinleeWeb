@@ -115,6 +115,8 @@ docs/dlmclub-brand-rollout.md
 /lib/manual-quota.test-support.ts
 /lib/manual-voucher-revenue.test.ts
 /lib/manual-wechat-operation-replay.test.ts
+/lib/manual-wechat-recharge-reversal.test.ts
+/lib/manual-wechat-recharge.test.ts
 /lib/notification-center-service.test.ts
 /lib/notification-delivery-list.test.ts
 /lib/notification-delivery.test.ts
