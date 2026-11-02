@@ -669,7 +669,6 @@ export async function GET(request: NextRequest) {
     { section: '会员余额汇总', key: 'DlmUser.recharge 合计', value: memberRechargeTotal.toString() },
     { section: '会员余额汇总', key: 'DlmUser.income 合计', value: memberIncomeTotal.toString() },
     { section: '会员余额汇总', key: 'DlmUser.totalBalance 合计', value: memberBalanceTotal.toString() },
-    { section: '会员余额汇总', key: '已发提现', value: withdrawalSettlement.netOutflow.toString() },
     { section: '会员余额汇总', key: '待发提现', value: withdrawalSettlement.pendingAtEnd.toString() },
     { section: '会员余额汇总', key: '当月 Commission 合计', value: commissionTotalNetAll.toString() },
 

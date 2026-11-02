@@ -746,7 +746,6 @@ export default async function AdminRevenuePage(props: PageProps) {
             <p>DlmUser.income 合计：¥{formatNumber(dlmAgg._sum.income)}</p>
             <p>用户当前有效余额（优先 Member）：¥{formatNumber(effectiveUserBalance)}</p>
             <p className="text-white/45">DlmUser 镜像余额：¥{formatNumber(dlmAgg._sum.totalBalance)}</p>
-            <p>已发提现：¥{formatNumber(withdrawalSettlement.netOutflow)}</p>
             <p>待发提现：¥{formatNumber(withdrawalSettlement.pendingAtEnd)}</p>
             <p>当月 Commission 合计：¥{formatNumber(commissionTotalNetAll)}</p>
           </div>
