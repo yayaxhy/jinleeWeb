@@ -2683,12 +2683,15 @@ model PointShopItem {
   sku                 String                @unique
   name                String
   description         String?
+  imageUrl            String?
   pointsCost          Decimal               @db.Decimal(19, 4)
   stock               Int?
   isActive            Boolean               @default(true)
   deliveryType        PointShopDeliveryType @default(COUPON)
   couponType          CouponType?
   couponExpireDays    Int?
+  /// Null for legacy coupons; versioned custom effect for future redemptions.
+  voucherRule         Json?
   balanceCreditAmount Decimal?              @db.Decimal(19, 4)
   sortOrder           Int                   @default(0)
   createdAt           DateTime              @default(now())
@@ -2727,6 +2730,9 @@ model PointShopCartItem {
   quantity         Int      @default(1)
   unitPoints       Decimal  @db.Decimal(19, 4)
   itemNameSnapshot String
+  /// Snapshot alongside the cart price so edits cannot mix old price/new effect.
+  voucherRuleSnapshot Json?
+  couponExpireDaysSnapshot Int?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -2769,6 +2775,8 @@ model PointShopOrderItem {
   itemId         String?
   itemSku        String
   itemName       String
+  voucherRuleSnapshot Json?
+  couponExpireDaysSnapshot Int?
   unitPoints     Decimal                 @db.Decimal(19, 4)
   quantity       Int
   subtotalPoints Decimal                 @db.Decimal(19, 4)
@@ -2799,6 +2807,8 @@ model PointShopGrant {
   deliveryStatus     PointShopDeliveryStatus @default(PENDING)
   deliveryNote       String?
   couponType         CouponType?
+  /// Immutable effect; couponType remains null for custom vouchers.
+  voucherRuleSnapshot Json?
   couponStatus       CouponStatus?           @map("status")
   issuedAt           DateTime                @default(now())
   expiresAt          DateTime?

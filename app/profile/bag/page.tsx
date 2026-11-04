@@ -17,6 +17,8 @@ import {
   SpendVoucherButton,
 } from '@/components/profile/VoucherUseButtons';
 import { resolveSpecialVoucher } from '@/lib/voucher';
+import { resolveCustomPointShopVoucher } from '@/lib/custom-voucher-use';
+import type { CustomVoucherRule } from '@/lib/custom-voucher';
 import { resolveLocalVoucherArt } from '@/lib/local-voucher-art';
 import { SITE_PRIZE_IMAGE_KEYS } from '@/lib/editable-image-catalog';
 import {
@@ -109,6 +111,8 @@ export default async function BagPage() {
     consumeAt?: Date | string | null;
     lotteryId?: string;
     couponId?: string;
+    customRule?: CustomVoucherRule | null;
+    isCustom?: boolean;
   };
 
   const couponItems: BagItem[] = coupons.map((coupon) => {
@@ -150,6 +154,7 @@ export default async function BagPage() {
   });
 
   const pointShopItems: BagItem[] = pointShopGrants.map((grant) => {
+    const custom = resolveCustomPointShopVoucher(grant);
     const type = grant.couponType as CouponType | null;
     const meta = type ? COUPON_VOUCHER_META[type] : null;
     const drawExpired =
@@ -167,8 +172,10 @@ export default async function BagPage() {
       id: grant.id,
       source: 'pointshop',
       status,
-      prizeName: meta?.prizeName ?? grant.itemName ?? '积分商城券',
-      prizeType: meta?.prizeType ?? inferPrizeTypeByPrizeName(grant.itemName),
+      prizeName: custom?.prizeName ?? meta?.prizeName ?? grant.itemName ?? '积分商城券',
+      prizeType: custom?.prizeType ?? meta?.prizeType ?? inferPrizeTypeByPrizeName(grant.itemName),
+      customRule: custom?.rule,
+      isCustom: !!custom,
       expiresAt: grant.expiresAt,
       consumeAt: grant.consumedAt,
       couponId: grant.id,
@@ -225,11 +232,11 @@ export default async function BagPage() {
                       {list.map((item) => {
                         const prizeName = item.prizeName.trim();
                         const prizeType = item.prizeType ?? LotteryPrizeType.COUPON;
-                        const originalArt = resolveLocalVoucherArt(prizeName);
+                        const originalArt = item.isCustom ? null : resolveLocalVoucherArt(prizeName);
                         const localArt = originalArt ? siteCopy.image(SITE_PRIZE_IMAGE_KEYS[prizeName] ?? '', originalArt) : null;
                         const isUsed = item.status === 'USED';
-                        const isVanityCard = VANITY_CARD_PRIZE_NAMES.has(prizeName);
-                        const isBlockStackVoucher = BLOCK_STACK_PRIZE_NAMES.has(prizeName);
+                        const isVanityCard = !item.isCustom && VANITY_CARD_PRIZE_NAMES.has(prizeName);
+                        const isBlockStackVoucher = !item.isCustom && BLOCK_STACK_PRIZE_NAMES.has(prizeName);
                         const status = item.status === 'UNUSED' ? '未使用' : item.status === 'USED' ? '已使用' : '已过期';
                         const metaTime =
                           item.status === 'UNUSED'
@@ -248,6 +255,15 @@ export default async function BagPage() {
                                 </span>
                                 {item.status === 'UNUSED' ? (
                                   (() => {
+                                    if (item.isCustom) {
+                                      if (item.customRule?.kind === 'ORDER_DISCOUNT') {
+                                        return <DiscountUsageButton kind="coupon" triggerLabel="使用" couponId={item.couponId} />;
+                                      }
+                                      if (item.customRule?.kind === 'GIFT') {
+                                        return <GiftUsageButton couponId={item.couponId} prizeName={prizeName} customName />;
+                                      }
+                                      return null;
+                                    }
                                     const special = resolveSpecialVoucher(prizeName);
                                     if (special?.kind === 'simple') {
                                       return (
@@ -349,7 +365,7 @@ export default async function BagPage() {
                                   />
                                 </div>
                               ) : null}
-                              <p className="text-lg font-semibold text-[#171717]"><SiteText namespace="site.lib.vouchercatalog" value={prizeName} /></p>
+                              <p className="text-lg font-semibold text-[#171717]">{item.isCustom ? prizeName : <SiteText namespace="site.lib.vouchercatalog" value={prizeName} />}</p>
                               <p className="text-sm text-gray-500">{isUsed ? <SiteText copyKey="site.app.profile.bag.page.03b2f370ae5c" /> : <SiteText copyKey="site.app.profile.bag.page.3144a998f054" />}：{metaTime}</p>
                               {isBlockStackVoucher ? (
                                 <p className="text-xs text-[#7a5b14]"><SiteText copyKey="site.app.profile.bag.page.5001c27f2bab" /></p>

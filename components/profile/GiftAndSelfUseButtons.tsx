@@ -14,10 +14,12 @@ export function GiftUsageButton({
   lotteryId,
   couponId,
   prizeName,
+  customName = false,
 }: {
   lotteryId?: string;
   couponId?: string;
   prizeName: string;
+  customName?: boolean;
 }) {
   const siteCopy = useSiteCopy();
   const router = useRouter();
@@ -76,7 +78,7 @@ export function GiftUsageButton({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.4em] text-gray-500"><SiteText copyKey="site.components.profile.giftandselfusebuttons.bb51b50b9ec0" /></p>
-                <h3 className="text-lg font-semibold text-[#171717]"><SiteText namespace="site.lib.vouchercatalog" value={prizeName} /></h3>
+                <h3 className="text-lg font-semibold text-[#171717]">{customName ? prizeName : <SiteText namespace="site.lib.vouchercatalog" value={prizeName} />}</h3>
               </div>
               <button
                 type="button"

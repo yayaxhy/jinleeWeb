@@ -1,7 +1,7 @@
 import { renderSiteCopy } from "@/lib/site-copy-server";
 import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
-import { CouponStatus, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType } from '@prisma/client';
+import { CouponStatus, LotteryStatus, PointShopDeliveryStatus, PointShopDeliveryType, Prisma } from '@prisma/client';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
   buildLotteryFusionApiError,
@@ -76,6 +76,7 @@ const hasOnlyAvailableNewEntityFusionSources = async (params: {
             issuedAt: newEntityOnlyTime(),
             deliveryType: PointShopDeliveryType.COUPON,
             deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+            voucherRuleSnapshot: { equals: Prisma.DbNull },
             couponStatus: CouponStatus.ACTIVE,
             consumedAt: null,
             OR: [{ expiresAt: null }, { expiresAt: { gt: params.now } }],

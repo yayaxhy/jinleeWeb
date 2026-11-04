@@ -10,6 +10,7 @@ import {
 import { prisma } from '@/lib/prisma';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import { newEntityOnlyTime } from '@/lib/operating-entity-cutover';
+import { resolveCustomPointShopVoucher } from '@/lib/custom-voucher-use';
 import {
   COUPON_VOUCHER_META,
   GIFT_NAME_BY_PRIZE_NAME,
@@ -131,6 +132,7 @@ export async function POST(request: Request) {
   let prizeName = typeof body.prizeName === 'string' ? body.prizeName.trim() : '';
   let prizeType: LotteryPrizeType = LotteryPrizeType.COUPON;
   let source: 'coupon' | 'lottery' | 'pointshop' = 'lottery';
+  let customGiftName: string | null = null;
 
   if (couponId) {
     const coupon = await prisma.coupon.findFirst({
@@ -162,10 +164,19 @@ export async function POST(request: Request) {
           issuedAt: newEntityOnlyTime(),
           OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
         },
-        select: { id: true, couponType: true, itemName: true },
+        select: { id: true, couponType: true, itemName: true, voucherRuleSnapshot: true },
       });
 
-      if (!pointShopGrant?.couponType) {
+      const custom = pointShopGrant ? resolveCustomPointShopVoucher(pointShopGrant) : null;
+      if (custom) {
+        if (custom.rule?.kind !== 'GIFT' || mode !== 'gift') {
+          return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.76d4b775c0a5") }, { status: 400 });
+        }
+        prizeName = custom.prizeName;
+        prizeType = LotteryPrizeType.GIFT;
+        customGiftName = custom.rule.giftName;
+        source = 'pointshop';
+      } else if (!pointShopGrant?.couponType) {
         if (!pointShopGrant?.itemName) {
           return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.1742c6e3eea5") }, { status: 409 });
         }
@@ -216,13 +227,13 @@ export async function POST(request: Request) {
     if (!receiverId) {
       return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.0e3f9841e498") }, { status: 404 });
     }
-    const giftNameForBot = GIFT_NAME_BY_PRIZE_NAME[prizeName] ?? prizeName.replace(/代金券$/, '') ?? '礼物';
+    const giftNameForBot = customGiftName ?? GIFT_NAME_BY_PRIZE_NAME[prizeName] ?? prizeName.replace(/代金券$/, '') ?? '礼物';
     const requestId = `GIFT:${receiverId}`;
     if (!currentUser.discordUserId) {
       return NextResponse.json({ error: await renderSiteCopy("site.app.api.lottery.use.route.137a22b366cc") }, { status: 400 });
     }
     try {
-      if (prizeName === '一日冠75折券') {
+      if (!customGiftName && prizeName === '一日冠75折券') {
         const balance = await prisma.dlmUser.findUnique({
           where: { dlmId: currentUser.dlmId },
           select: { totalBalance: true },

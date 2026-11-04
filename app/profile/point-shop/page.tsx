@@ -30,10 +30,12 @@ export default async function PointShopPage() {
       sku: item.sku,
       name: item.name,
       description: item.description,
+      imageUrl: item.imageUrl,
       pointsCost: decToString(item.pointsCost),
       stock: item.stock,
       deliveryType: item.deliveryType,
       balanceCreditAmount: decToString(item.balanceCreditAmount),
+      isCustom: item.isCustom,
     })),
     cart: dashboard.cart
       ? {

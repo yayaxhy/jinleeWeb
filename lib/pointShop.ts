@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma';
 import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx, lockDlmWalletForUpdateTx, type DlmWalletIdentity } from '@/lib/dlm-wallet';
 import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 import { GIFT_NAME_BY_PRIZE_NAME } from '@/lib/voucherCatalog';
+import { customVoucherRuleKey, parseCustomVoucherRule, type CustomVoucherRule } from '@/lib/custom-voucher';
 
 const DEC = (value: Prisma.Decimal | number | string) =>
   value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value);
@@ -37,10 +38,12 @@ export type PointShopItemView = {
   sku: string;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   pointsCost: Prisma.Decimal;
   stock: number | null;
   deliveryType: PointShopDeliveryType;
   balanceCreditAmount: Prisma.Decimal | null;
+  isCustom: boolean;
 };
 
 export type PointShopCartLineView = {
@@ -87,6 +90,7 @@ export type ClearCartResult =
   | { status: 'empty_cart' };
 
 export type CheckoutCartResult =
+  | { status: 'catalog_changed'; requestKey: string }
   | {
       status: 'ok';
       requestKey: string;
@@ -132,6 +136,14 @@ const normalizeSku = (input: string) => input.trim().toUpperCase();
 const isBlockStackVoucherSku = (sku: string) => BLOCK_STACK_VOUCHER_SKUS.has(normalizeSku(sku));
 const isAutoDeliveredGiftVoucherPrize = (prizeName: string) => !!GIFT_NAME_BY_PRIZE_NAME[prizeName.trim()];
 
+async function customGiftAvailableTx(tx: Prisma.TransactionClient, rule: CustomVoucherRule | null) {
+  if (rule?.kind !== 'GIFT') return true;
+  const gift = await tx.gift.findUnique({
+    where: { GiftName: rule.giftName }, select: { active: true, staffOnlyGift: true, price: true },
+  });
+  return !!gift?.active && !gift.staffOnlyGift && !!gift.price?.gt(0);
+}
+
 const normalizeRequestKey = (input?: string | null) => {
   const value = (input ?? '').trim();
   if (!value) return null;
@@ -139,7 +151,12 @@ const normalizeRequestKey = (input?: string | null) => {
 };
 
 const isRetryableTxError = (err: unknown) =>
-  err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2034';
+  err instanceof Prisma.PrismaClientKnownRequestError && (
+    err.code === 'P2034' ||
+    // PostgreSQL serialization/deadlock failures from SELECT ... FOR UPDATE
+    // surface as raw-query errors, not Prisma's model-write conflict code.
+    (err.code === 'P2010' && (err.meta?.code === '40001' || err.meta?.code === '40P01'))
+  );
 
 async function withSerializableRetry<T>(fn: () => Promise<T>): Promise<T> {
   let attempt = 0;
@@ -218,7 +235,7 @@ async function loadOpenCartViewTx(
     return {
       itemId: line.itemId,
       sku: line.item?.sku ?? line.itemId,
-      name: line.item?.name ?? line.itemNameSnapshot,
+      name: line.voucherRuleSnapshot !== null ? line.itemNameSnapshot : line.item?.name ?? line.itemNameSnapshot,
       quantity: line.quantity,
       unitPoints: DEC(line.unitPoints),
       subtotalPoints,
@@ -259,10 +276,12 @@ export async function getPointShopDashboard(identity: PointShopUserIdentity): Pr
           sku: true,
           name: true,
           description: true,
+          imageUrl: true,
           pointsCost: true,
           stock: true,
           deliveryType: true,
           balanceCreditAmount: true,
+          voucherRule: true,
         },
       }),
       loadOpenCartViewTx(tx, identity),
@@ -270,7 +289,7 @@ export async function getPointShopDashboard(identity: PointShopUserIdentity): Pr
 
     return {
       points,
-      items,
+      items: items.map(({ voucherRule, ...item }) => ({ ...item, isCustom: voucherRule !== null })),
       cart,
     };
   });
@@ -299,9 +318,14 @@ export async function addPointShopCartItem(params: {
         name: true,
         pointsCost: true,
         stock: true,
+        voucherRule: true,
+        couponExpireDays: true,
       },
     });
     if (!item) return { status: 'item_not_found' as const };
+    const customRule = parseCustomVoucherRule(item.voucherRule);
+    if (item.voucherRule !== null && !customRule) return { status: 'item_not_found' as const };
+    if (!await customGiftAvailableTx(tx, customRule)) return { status: 'item_not_found' as const };
 
     const cart = await getOrCreateOpenCartTx(tx, params.identity);
 
@@ -337,11 +361,15 @@ export async function addPointShopCartItem(params: {
         quantity,
         unitPoints: item.pointsCost,
         itemNameSnapshot: item.name,
+        voucherRuleSnapshot: customRule ?? Prisma.DbNull,
+        couponExpireDaysSnapshot: customRule ? item.couponExpireDays : null,
       },
       update: {
         quantity: { increment: quantity },
         unitPoints: item.pointsCost,
         itemNameSnapshot: item.name,
+        voucherRuleSnapshot: customRule ?? Prisma.DbNull,
+        couponExpireDaysSnapshot: customRule ? item.couponExpireDays : null,
       },
     });
 
@@ -438,7 +466,7 @@ export async function clearPointShopCart(identity: PointShopUserIdentity): Promi
   });
 }
 
-async function deliverOrderItemTx(
+export async function deliverPointShopOrderItemTx(
   tx: Prisma.TransactionClient,
   params: {
     orderId: string;
@@ -453,6 +481,7 @@ async function deliverOrderItemTx(
     couponType: CouponType | null;
     couponExpireDays: number | null;
     balanceCreditAmount: Prisma.Decimal | null;
+    voucherRuleSnapshot: Prisma.JsonValue | null;
   },
 ) {
   const {
@@ -468,7 +497,11 @@ async function deliverOrderItemTx(
     couponType,
     couponExpireDays,
     balanceCreditAmount,
+    voucherRuleSnapshot,
   } = params;
+
+  const customRule = parseCustomVoucherRule(voucherRuleSnapshot);
+  if (voucherRuleSnapshot !== null && !customRule) throw new Error('invalid_custom_voucher_rule');
 
   if (isBlockStackVoucherSku(itemSku)) {
     const days = couponExpireDays && couponExpireDays > 0 ? couponExpireDays : DEFAULT_COUPON_EXPIRE_DAYS;
@@ -506,7 +539,7 @@ async function deliverOrderItemTx(
     return;
   }
 
-  if (deliveryType === PointShopDeliveryType.COUPON && couponType) {
+  if (deliveryType === PointShopDeliveryType.COUPON && (couponType || customRule)) {
     const days = couponExpireDays && couponExpireDays > 0 ? couponExpireDays : DEFAULT_COUPON_EXPIRE_DAYS;
     const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
@@ -524,7 +557,8 @@ async function deliverOrderItemTx(
         subtotalPoints: unitPoints,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
         deliveryNote: '自动发放（积分商城券）',
-        couponType,
+        couponType: customRule ? null : couponType,
+        voucherRuleSnapshot: customRule ?? Prisma.DbNull,
         couponStatus: CouponStatus.ACTIVE,
         issuedAt: new Date(),
         expiresAt,
@@ -775,6 +809,8 @@ export async function checkoutPointShopCart(params: {
               couponType: true,
               couponExpireDays: true,
               balanceCreditAmount: true,
+              voucherRule: true,
+              pointsCost: true,
             },
           },
         },
@@ -783,6 +819,32 @@ export async function checkoutPointShopCart(params: {
 
       if (!lines.length) {
         return { status: 'empty_cart' as const, requestKey };
+      }
+
+      const customLines = lines.filter((line) => line.voucherRuleSnapshot !== null || line.item?.voucherRule !== null);
+      if (customLines.length && requestKey.startsWith(`web:${cart.id}:v`) && requestKey !== `web:${cart.id}:v${cart.version}`) {
+        return { status: 'catalog_changed' as const, requestKey };
+      }
+
+      let catalogChanged = false;
+      for (const line of customLines) {
+        if (!line.item?.isActive) continue;
+        const currentRule = parseCustomVoucherRule(line.item.voucherRule);
+        const snapshot = parseCustomVoucherRule(line.voucherRuleSnapshot);
+        if (!currentRule || !snapshot) throw new Error('invalid_custom_voucher_rule');
+        if (customVoucherRuleKey(currentRule) !== customVoucherRuleKey(snapshot) ||
+            !DEC(line.unitPoints).eq(line.item.pointsCost) ||
+            line.itemNameSnapshot !== line.item.name || line.couponExpireDaysSnapshot !== line.item.couponExpireDays) {
+          await tx.pointShopCartItem.update({ where: { id: line.id }, data: {
+            unitPoints: line.item.pointsCost, itemNameSnapshot: line.item.name,
+            voucherRuleSnapshot: currentRule, couponExpireDaysSnapshot: line.item.couponExpireDays,
+          } });
+          catalogChanged = true;
+        }
+      }
+      if (catalogChanged) {
+        await tx.pointShopCart.update({ where: { id: cart.id }, data: { version: { increment: 1 } } });
+        return { status: 'catalog_changed' as const, requestKey };
       }
 
       let totalPoints = DEC(0);
@@ -804,6 +866,14 @@ export async function checkoutPointShopCart(params: {
             sku: item.sku,
             reason: 'inactive' as const,
           };
+        }
+        // A custom grant must never fall through to the legacy name-based path.
+        if ((line.voucherRuleSnapshot !== null && !parseCustomVoucherRule(line.voucherRuleSnapshot)) ||
+            (item.voucherRule !== null && line.voucherRuleSnapshot === null)) {
+          throw new Error('invalid_custom_voucher_rule');
+        }
+        if (!await customGiftAvailableTx(tx, parseCustomVoucherRule(line.voucherRuleSnapshot))) {
+          return { status: 'item_unavailable' as const, requestKey, sku: item.sku, reason: 'inactive' as const };
         }
 
         totalPoints = totalPoints.add(DEC(line.unitPoints).mul(line.quantity));
@@ -922,7 +992,9 @@ export async function checkoutPointShopCart(params: {
               orderId: order.id,
               itemId: line.itemId,
               itemSku: line.item?.sku ?? line.itemId,
-              itemName: line.item?.name ?? line.itemNameSnapshot,
+              itemName: line.voucherRuleSnapshot !== null ? line.itemNameSnapshot : line.item?.name ?? line.itemNameSnapshot,
+              voucherRuleSnapshot: line.voucherRuleSnapshot ?? Prisma.DbNull,
+              couponExpireDaysSnapshot: line.couponExpireDaysSnapshot,
               unitPoints: line.unitPoints,
               quantity: line.quantity,
               subtotalPoints: DEC(line.unitPoints).mul(line.quantity),
@@ -943,7 +1015,7 @@ export async function checkoutPointShopCart(params: {
       );
 
       for (const item of createdItems) {
-        await deliverOrderItemTx(tx, {
+        await deliverPointShopOrderItemTx(tx, {
           orderId: order.id,
           orderItemId: item.id,
           itemSku: item.itemSku,
@@ -952,10 +1024,11 @@ export async function checkoutPointShopCart(params: {
           quantity: item.quantity,
           unitPoints: DEC(item.unitPoints),
           subtotalPoints: DEC(item.subtotalPoints),
-          deliveryType: item.item?.deliveryType ?? PointShopDeliveryType.MANUAL,
+          deliveryType: item.voucherRuleSnapshot !== null ? PointShopDeliveryType.COUPON : item.item?.deliveryType ?? PointShopDeliveryType.MANUAL,
           couponType: item.item?.couponType ?? null,
-          couponExpireDays: item.item?.couponExpireDays ?? null,
+          couponExpireDays: item.voucherRuleSnapshot !== null ? item.couponExpireDaysSnapshot : item.item?.couponExpireDays ?? null,
           balanceCreditAmount: item.item?.balanceCreditAmount ?? null,
+          voucherRuleSnapshot: item.voucherRuleSnapshot,
         });
       }
 

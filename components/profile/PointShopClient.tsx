@@ -4,16 +4,19 @@ import { SiteText, useSiteCopy } from "@/components/SiteCopyProvider";
 
 import { useMemo, useState } from 'react';
 import { formatAmountDown2 } from '@/lib/numberFormat';
+import { PointShopProductImage } from './PointShopProductImage';
 
 type ItemView = {
   id: string;
   sku: string;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   pointsCost: string;
   stock: number | null;
   deliveryType: 'COUPON' | 'MANUAL' | 'BALANCE';
   balanceCreditAmount: string;
+  isCustom?: boolean;
 };
 
 type CartLineView = {
@@ -187,6 +190,12 @@ export function PointShopClient({ initialData }: PointShopClientProps) {
         return;
       }
 
+      if (result?.status === 'catalog_changed') {
+        await refreshAll();
+        setNotice({ text: '该券已被下架，请刷新后重试', level: 'error' });
+        return;
+      }
+
       if (result?.status === 'insufficient_points') {
         setNotice({ text: siteCopy("site.components.profile.pointshopclient.2e1a9c303a14", {value1: String(fmt(result.have)), value2: String(fmt(result.need))}), level: 'error' });
         return;
@@ -240,23 +249,24 @@ export function PointShopClient({ initialData }: PointShopClientProps) {
           <p className="text-sm text-gray-500"><SiteText copyKey="site.components.profile.pointshopclient.666a6bbbea9f" /></p>
         ) : (
           <div className="pb-1">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,300px))] justify-start gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-4">
               {data.items.map((item) => {
                 const qty = qtyBySku[item.sku] ?? 1;
                 const soldOut = item.stock !== null && item.stock <= 0;
                 const maxQty = item.stock === null ? 99 : Math.max(1, item.stock);
                 return (
-                  <div key={item.id} className="h-[220px] rounded-2xl border border-black/10 bg-white p-4 shadow-sm flex flex-col justify-between">
+                  <div key={item.id} className="min-w-0 rounded-2xl border border-black/10 bg-white p-4 shadow-sm flex flex-col gap-4">
+                    <PointShopProductImage imageUrl={item.imageUrl} />
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-lg font-semibold"><SiteText namespace="site.components.profile.pointshopclient" value={item.name} /></p>
+                      <div className="min-w-0">
+                        <p className="break-words text-lg font-semibold">{item.isCustom ? item.name : <SiteText namespace="site.components.profile.pointshopclient" value={item.name} />}</p>
                         {item.description ? (
-                          <p className="mt-1 h-12 overflow-hidden text-sm leading-6 text-gray-600"><SiteText namespace="site.components.profile.pointshopclient" value={item.description} /></p>
+                          <p className="mt-1 h-12 overflow-hidden text-sm leading-6 text-gray-600">{item.isCustom ? item.description : <SiteText namespace="site.components.profile.pointshopclient" value={item.description} />}</p>
                         ) : (
                           <p className="h-12" />
                         )}
                       </div>
-                    <div className="text-right">
+                    <div className="shrink-0 text-right">
                       <p className="text-xs text-gray-500"><SiteText copyKey="site.components.profile.pointshopclient.421a8448a386" /></p>
                       <p className="text-xl font-mono text-[#c18400]">{fmt(item.pointsCost)}</p>
                     </div>
@@ -268,7 +278,7 @@ export function PointShopClient({ initialData }: PointShopClientProps) {
                       </p>
                     </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="mt-auto flex flex-wrap items-center gap-2">
                     <div className="inline-flex items-center rounded-full border border-black/10 bg-white">
                       <button
                         type="button"

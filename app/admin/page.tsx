@@ -6,7 +6,7 @@ import { DeletePeiwanCard } from '@/components/admin/DeletePeiwanCard';
 import { SyncDlmPeiwanCardsCard } from '@/components/admin/SyncDlmPeiwanCardsCard';
 import { SyncAllPeiwanTagsCard } from '@/components/admin/SyncAllPeiwanTagsCard';
 import { getServerSession } from '@/lib/session';
-import { canManageGuildOperations, canViewAdminHome, canViewStripePricing, canViewTraffic, isAdminDiscordId } from '@/lib/admin';
+import { canManageGuildOperations, canManagePointShop, canViewAdminHome, canViewStripePricing, canViewTraffic, isAdminDiscordId } from '@/lib/admin';
 import { getSettlementOperableOwnerIds } from '@/lib/settlement-reconciliation';
 
 export default async function AdminHomePage() {
@@ -188,6 +188,10 @@ export default async function AdminHomePage() {
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold">欢迎进入管理后台</h2>
       </div>
+
+      {canManagePointShop(session.discordId) && <Link href="/admin/point-shop" className="inline-flex rounded-full border border-white/20 px-5 py-3 text-sm text-white hover:bg-white/10">
+        积分商城管理
+      </Link>}
 
       <div className="grid gap-4 md:grid-cols-2">
         {canManageGuildOperations(session.discordId) ? <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">

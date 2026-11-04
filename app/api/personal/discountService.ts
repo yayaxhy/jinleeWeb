@@ -5,6 +5,7 @@ import { applyDlmWalletDeltaTx, getDlmWalletSnapshotTx, lockDlmWalletForUpdateTx
 import { recordWalletTransaction } from '@/lib/wallet-ledger-write';
 import type { WalletLedgerMetadata } from '@/lib/wallet-ledger';
 import { NEW_ENTITY_OPERATIONS_STARTED_AT, newEntityOnlyTime } from '@/lib/operating-entity-cutover';
+import { tryApplyCustomOrderDiscount } from '@/lib/custom-voucher-order';
 
 export type DiscountKind = 'coupon' | 'lottery';
 
@@ -245,6 +246,15 @@ export async function applyDiscountForOrder(params: {
 }): Promise<ApplyDiscountResult> {
   const { orderId, dlmId, discordUserId, kind, lotteryId: targetLotteryId, couponId: targetCouponId } = params;
   const now = params.now ?? new Date();
+
+  const customResult = await tryApplyCustomOrderDiscount({
+    db: prisma,
+    fetch,
+    internalHost: process.env.INTERNAL_API_HOST,
+    internalPort: process.env.INTERNAL_API_PORT,
+    internalToken: process.env.INTERNAL_API_TOKEN,
+  }, { orderId, dlmId, kind, couponId: targetCouponId });
+  if (customResult) return customResult;
 
   return prisma.$transaction(async (tx) => {
     let prizeRateCap: { rate: Prisma.Decimal; cap: Prisma.Decimal } | undefined;

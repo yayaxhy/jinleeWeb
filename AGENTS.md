@@ -53,6 +53,7 @@
 - `docs/deploy-next-behind-nginx.md` documents the PM2 + Nginx setup
 
 ## User Rule
+- Discord 用户 `525770714574225408` 的名字是鸭鸭。
 - Without explicit user permission, treat database access as read-only
 - Do not run migrations, seed scripts, mutation scripts, or bot startup paths that create or alter database objects without explicit user permission
 

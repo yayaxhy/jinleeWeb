@@ -4,6 +4,7 @@ import {
   LotteryStatus,
   PointShopDeliveryStatus,
   PointShopDeliveryType,
+  Prisma,
 } from '@prisma/client';
 import { getCurrentDlmUser } from '@/lib/current-dlm-user';
 import {
@@ -152,6 +153,7 @@ export const getLotteryFusionPageData = async () => {
         issuedAt: newEntityOnlyTime(),
         deliveryType: PointShopDeliveryType.COUPON,
         deliveryStatus: PointShopDeliveryStatus.DELIVERED,
+        voucherRuleSnapshot: { equals: Prisma.DbNull },
         couponStatus: CouponStatus.ACTIVE,
         consumedAt: null,
         OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],

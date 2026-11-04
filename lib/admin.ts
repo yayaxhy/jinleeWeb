@@ -24,6 +24,9 @@ export const isAdminDiscordId = (discordId?: string | null) => {
 export const canManageGuildOperations = (discordId?: string | null) =>
   discordId === '525770714574225408' && isAdminDiscordId(discordId);
 
+export const canManagePointShop = (discordId?: string | null) =>
+  discordId === '525770714574225408';
+
 export const isKefuDiscordId = (discordId?: string | null) => {
   if (!discordId) return false;
   return KEFU_DISCORD_IDS.includes(discordId);
