@@ -8,6 +8,7 @@ import type { CopyImageBinding, CopyImageOnlyUnit, CopyImageSlot } from './edita
 /** Presentation metadata only. All writes continue to use the existing copy keys. */
 export type CopyUnitPart = {
   key?: string;
+  editValueKey?: string;
   text?: string;
   role?: 'title' | 'text' | 'label' | 'button' | 'footer' | 'attribute';
   separator?: string;
@@ -39,12 +40,12 @@ export function resolveCopyUnits(catalog: readonly EditableCopyEntry[], definiti
     if (ids.has(definition.id)) continue;
     const keys = [...new Set(definition.keys)].filter(key => entries.has(key));
     if (!keys.length) continue;
-    const parts = definition.parts
+    const parts: CopyUnitPart[] = definition.parts
       ? definition.parts.filter(part => part.key ? keys.includes(part.key) && entries.get(part.key)?.kind !== 'image' : typeof part.text === 'string')
       : keys.filter(key => entries.get(key)?.kind !== 'image').map((key, index) => ({ key, separator: index ? '\n' : '', role: 'text' as const }));
     // A rolling deployment may return an older catalog. Missing metadata must
     // never hide a valid field or create a second, disconnected override key.
-    for (const key of keys) if (entries.get(key)?.kind !== 'image' && !parts.some(part => part.key === key)) parts.push({ key, separator: '\n', role: 'text' });
+    for (const key of keys) if (entries.get(key)?.kind !== 'image' && !parts.some(part => part.key === key || part.editValueKey === key)) parts.push({ key, separator: '\n', role: 'text' });
     const titleKey = keys.includes(definition.titleKey) ? definition.titleKey : keys[0];
     const images = (definition.images ?? []).filter(slot => keys.includes(slot.key) && entries.get(slot.key)?.kind === 'image');
     result.push({ ...definition, titleKey, keys, parts, images, entries: keys.map(key => entries.get(key)!), title: entries.get(titleKey)!.label });
@@ -61,9 +62,16 @@ export function resolveCopyUnits(catalog: readonly EditableCopyEntry[], definiti
 }
 
 export function getCopyUnits(scope: 'bot' | 'site', catalog: readonly EditableCopyEntry[]): CopyUnit[] {
-  return resolveCopyUnits(catalog, bindCopyImages(scope === 'bot' ? BOT_COPY_UNITS : SITE_COPY_UNITS,
+  const definitions = bindCopyImages(scope === 'bot' ? BOT_COPY_UNITS : SITE_COPY_UNITS,
     scope === 'bot' ? BOT_IMAGE_BINDINGS : SITE_IMAGE_BINDINGS,
-    scope === 'bot' ? BOT_IMAGE_ONLY_UNITS : SITE_IMAGE_ONLY_UNITS));
+    scope === 'bot' ? BOT_IMAGE_ONLY_UNITS : SITE_IMAGE_ONLY_UNITS);
+  const noteFormat = 'bot.services.redEnvelopeService.14a0a5dba';
+  const defaultNote = 'bot.services.redEnvelopeService.e9fe14e30';
+  return resolveCopyUnits(catalog, definitions.map(definition =>
+    scope === 'bot' && definition.id.startsWith('bot:services.redEnvelopeService:buildRedEnvelopeMessagePayload:reaction-')
+      ? { ...definition, keys: [...definition.keys, defaultNote], parts: definition.parts?.map(part =>
+          part.key === noteFormat ? { ...part, editValueKey: defaultNote } : part) }
+      : definition));
 }
 
 /** Keep mutually exclusive pictures in separate previews, sharing the original text keys. */

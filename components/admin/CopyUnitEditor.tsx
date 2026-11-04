@@ -61,20 +61,26 @@ export function CopyUnitCanvas({ unit, overrides, mode, disabled = false, errors
       const entry = part.key ? entries.get(part.key) : undefined;
       if (entry?.kind === 'image') return null;
       const template = entry ? mode === 'default' ? entry.defaultText : overrides[entry.key] ?? entry.defaultText : part.text ?? '';
+      const valueEntry = part.editValueKey ? entries.get(part.editValueKey) : undefined;
+      const noteValue = valueEntry ? (mode === 'default' ? valueEntry.defaultText : overrides[valueEntry.key] ?? valueEntry.defaultText) : undefined;
       if (part.role === 'attribute') return entry && mode !== 'preview' ? <details key={`${part.key}:${index}`} className="mt-3 border-t border-white/10 pt-2 text-xs text-white/45">
         <summary className="cursor-pointer">{entry.label}</summary>
         {mode === 'edit' ? <InlineCopyInput entry={entry} part={part} value={template} inline={false} disabled={disabled} invalid={Boolean(errors[entry.key])}
           onFocus={() => onFocus?.(entry.key)} onEdit={value => onEdit?.(entry, value)} /> : <p>{template}</p>}
       </details> : null;
       let text = template;
-      if (entry && mode === 'preview') {
-        try { text = renderCopyTemplate(entry, template, { ...copyPreviewVariables(entry), ...part.examples, ...SITE_COPY_FIXED_VALUES[entry.key] }); }
+      if (entry && (mode === 'preview' || mode === 'default' && valueEntry)) {
+        try { text = renderCopyTemplate(entry, template, { ...copyPreviewVariables(entry), ...part.examples, ...SITE_COPY_FIXED_VALUES[entry.key], ...(noteValue !== undefined ? { noteText: noteValue } : {}) }); }
         catch { text = failedPreview; }
       }
       const inline = part.role === 'button' || part.role === 'label' || part.separator === '' && index > 0 || unit.parts[index + 1]?.separator === '';
+      const noteParts = valueEntry && mode === 'edit' ? template.split('{noteText}') : [];
       return <span key={`${part.key ?? 'fixed'}:${index}`}>
         {part.separator && <span aria-hidden="true">{part.separator}</span>}
-        {entry && mode === 'edit'
+        {valueEntry && mode === 'edit' && noteParts.length > 1
+          ? <><span>{noteParts[0]}</span><InlineCopyInput entry={valueEntry} part={part} value={noteValue ?? ''} inline disabled={disabled} invalid={Boolean(errors[valueEntry.key])}
+              onFocus={() => onFocus?.(valueEntry.key)} onEdit={value => onEdit?.(valueEntry, value)} /><span>{noteParts.slice(1).join(noteValue ?? '')}</span></>
+          : entry && mode === 'edit'
           ? <InlineCopyInput entry={entry} part={part} value={template} inline={inline} disabled={disabled} invalid={Boolean(errors[entry.key])}
             onFocus={() => onFocus?.(entry.key)} onEdit={value => onEdit?.(entry, value)} />
           : <span className={partClass(part.role)}>{text || (entry ? '（空）' : '')}</span>}
