@@ -13,13 +13,17 @@ export class InternalBotError extends Error {
   }
 }
 
-export async function postInternalBot<T>(path: string, payload: Record<string, unknown>): Promise<T> {
+export async function postInternalBot<T>(
+  path: string,
+  payload: Record<string, unknown>,
+  options: { timeoutMs?: number } = {},
+): Promise<T> {
   if (!INTERNAL_API_PORT || !INTERNAL_API_TOKEN) {
     throw new InternalBotError('internal_bot_not_configured');
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 8000);
 
   try {
     const response = await fetch(`http://${INTERNAL_API_HOST}:${INTERNAL_API_PORT}${path}`, {

@@ -1,8 +1,22 @@
 
 import { SiteText } from "@/components/SiteCopyProvider";
+import { postInternalBot } from "@/lib/internal-bot";
 const NEW_GUILD_URL = 'https://discord.gg/dlmclub';
 
-export function SiteAnnouncement() {
+export async function SiteAnnouncement({ discordId }: { discordId?: string | null }) {
+  if (discordId) {
+    try {
+      const membership = await postInternalBot<{ ok: boolean; isMember: boolean }>(
+        '/internal/discord/membership',
+        { discordId },
+        { timeoutMs: 2000 },
+      );
+      if (membership.ok === true && membership.isMember === true) return null;
+    } catch {
+      // Preserve the announcement when current membership cannot be confirmed.
+    }
+  }
+
   const message = '点了么娱乐公会链接：discord.gg/dlmclub · 点击加入公会';
 
   return (

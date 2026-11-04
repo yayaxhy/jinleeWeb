@@ -94,7 +94,7 @@ export default async function RootLayout({
         <SiteCopyProvider initialSnapshot={copySnapshot}>
         <Providers initialSession={session}>
           <PageViewTracker />
-          <SiteAnnouncement />
+          <SiteAnnouncement discordId={session?.discordId} />
           {children}
         </Providers>
         </SiteCopyProvider>
