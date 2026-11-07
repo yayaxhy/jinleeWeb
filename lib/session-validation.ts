@@ -1,11 +1,15 @@
 import crypto from 'node:crypto';
 import type { SessionSnapshot } from '../types/session';
 
-export type SessionPayload = SessionSnapshot & { issuedAt: number; expiresAt: number; version: 1 };
+type SessionPayloadBase = SessionSnapshot & { issuedAt: number };
+export type SessionPayload = SessionPayloadBase & (
+  | { version: 1; expiresAt: number }
+  | { version: 2; renewedAt: number }
+);
 export type SessionBinding = { dlmId: string; provider: string; providerUserId: string; createdAt: Date };
 export type SessionIdentity = { dlmId: string; discordUserId: string | null; sessionVersion: number; accountBindings: SessionBinding[] };
 
-// Keep the existing v1 JSON/base64url/HMAC format; existing valid cookies remain readable.
+// Keep the JSON/base64url/HMAC envelope; valid legacy v1 cookies remain readable.
 export function encodeSessionToken(payload: SessionPayload, secret: string) {
   const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signature = crypto.createHmac('sha256', secret).update(encoded).digest('base64url');
@@ -22,7 +26,16 @@ export function decodeSessionToken(token: string, secret: string, now = Date.now
   if (expectedBytes.length !== signatureBytes.length || !crypto.timingSafeEqual(expectedBytes, signatureBytes)) return null;
   try {
     const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString()) as SessionPayload;
-    if (!payload || payload.version !== 1 || !Number.isFinite(payload.issuedAt) || !Number.isFinite(payload.expiresAt) || payload.expiresAt < now) return null;
+    if (!payload || !Number.isFinite(payload.issuedAt)) return null;
+    if (payload.version === 1) {
+      // Expired legacy logins cannot be revived by upgrading to a permanent one.
+      if (!Number.isFinite(payload.expiresAt) || payload.expiresAt <= now) return null;
+    } else if (payload.version === 2) {
+      // renewedAt only schedules cookie persistence; it is not a login deadline.
+      if (!Number.isFinite(payload.renewedAt) || payload.renewedAt < payload.issuedAt) return null;
+    } else {
+      return null;
+    }
     return payload;
   } catch { return null; }
 }

@@ -4,15 +4,21 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import type { SessionSnapshot } from '@/types/session';
 import { decodeSessionToken, encodeSessionToken, hasCurrentBrowserSessionIdentity, type SessionPayload } from './session-validation';
+import {
+  isSessionLoggedOut,
+  SESSION_COOKIE_NAME,
+  SESSION_COOKIE_OPTIONS,
+  SESSION_LOGOUT_COOKIE_NAME,
+  SESSION_COOKIE_TTL_MS,
+  shouldRenewSession,
+} from './session-policy';
 
 export type AppSession = SessionSnapshot;
 
-const SESSION_COOKIE_NAME = 'dlm_session';
 const LOGIN_REDIRECT_COOKIE = 'discord_login_next';
 const LOGIN_STATE_COOKIE = 'discord_login_state';
 const WECHAT_WEB_LOGIN_REDIRECT_COOKIE = 'wechat_web_login_next';
 const WECHAT_WEB_LOGIN_STATE_COOKIE = 'wechat_web_login_state';
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 const getSecret = () => {
   const secret = process.env.SESSION_SECRET ?? process.env.NEXTAUTH_SECRET;
@@ -27,11 +33,10 @@ const sessionIdentitySelect = {
   accountBindings: { select: { dlmId: true, provider: true, providerUserId: true, createdAt: true } },
 } as const;
 
-export const getServerSession = async (): Promise<AppSession | null> => {
-  const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+export const getSessionForToken = async (token?: string, logoutAt?: string): Promise<AppSession | null> => {
   if (!token) return null;
   const payload = decodeSessionToken(token, getSecret());
-  if (!payload) return null;
+  if (!payload || isSessionLoggedOut(payload, logoutAt)) return null;
   const dlmUser = payload.dlmId
     ? await prisma.dlmUser.findUnique({ where: { dlmId: payload.dlmId }, select: sessionIdentitySelect })
     : payload.discordId && (payload.authProvider ?? 'discord') === 'discord'
@@ -52,34 +57,65 @@ export const getServerSession = async (): Promise<AppSession | null> => {
   };
 };
 
+export const getServerSession = async (): Promise<AppSession | null> => {
+  const cookieStore = await cookies();
+  return getSessionForToken(
+    cookieStore.get(SESSION_COOKIE_NAME)?.value,
+    cookieStore.get(SESSION_LOGOUT_COOKIE_NAME)?.value,
+  );
+};
+
+export const renewBrowserSession = async (token?: string, logoutAt?: string) => {
+  if (!token) return null;
+  const now = Date.now();
+  const secret = getSecret();
+  const payload = decodeSessionToken(token, secret, now);
+  if (!payload || isSessionLoggedOut(payload, logoutAt) || !shouldRenewSession(payload, now)) return null;
+  const session = await getSessionForToken(token, logoutAt);
+  if (!session) return null;
+
+  const renewed: SessionPayload = {
+    ...session,
+    // Keep the original authentication time for binding and logout checks.
+    issuedAt: payload.issuedAt,
+    renewedAt: now,
+    version: 2,
+  };
+  return { token: encodeSessionToken(renewed, secret), cookieExpiresAt: now + SESSION_COOKIE_TTL_MS };
+};
+
 export const attachSessionToResponse = (response: NextResponse, session: AppSession) => {
+  const now = Date.now();
   const payload: SessionPayload = {
     ...session,
     sessionVersion: session.sessionVersion ?? 1,
-    issuedAt: Date.now(),
-    expiresAt: Date.now() + SESSION_TTL_MS,
-    version: 1,
+    issuedAt: now,
+    renewedAt: now,
+    version: 2,
   };
   response.cookies.set({
+    ...SESSION_COOKIE_OPTIONS,
     name: SESSION_COOKIE_NAME,
     value: encodeSessionToken(payload, getSecret()),
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: true,
-    path: '/',
-    expires: new Date(payload.expiresAt),
+    expires: new Date(now + SESSION_COOKIE_TTL_MS),
   });
 };
 
 export const destroySession = (response: NextResponse) => {
   response.cookies.set({
+    ...SESSION_COOKIE_OPTIONS,
     name: SESSION_COOKIE_NAME,
     value: '',
-    path: '/',
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
     expires: new Date(0),
+  });
+  // A late response from a request started before logout must not log back in.
+  // Renewal never clears this marker; a real login has a newer issuedAt.
+  const now = Date.now();
+  response.cookies.set({
+    ...SESSION_COOKIE_OPTIONS,
+    name: SESSION_LOGOUT_COOKIE_NAME,
+    value: String(now),
+    expires: new Date(now + SESSION_COOKIE_TTL_MS),
   });
 };
 
