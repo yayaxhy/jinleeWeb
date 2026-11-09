@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Markdown documents stay local; never force-add them.
+*.[mM][dD]
+
 # dependencies
 /node_modules
 /.pnp
@@ -45,7 +48,6 @@ coverage/
 
 # Local browser verification captures, logs, and QA reports.
 /output/
-/design-qa.md
 /public/lottery-fusion/reference/test-butterfly.png
 
 # next.js
@@ -85,16 +87,8 @@ next-env.d.ts
 app/peiwanList/img/
 public/img/
 storage/
-README.md
-docs/farm-art-direction.md
 .env.staging.example
 /back-up/
-docs/dlm-artwork-rollout.md
-docs/dlm-artwork-rollout.md
-docs/dlm-artwork-rollout.md
-docs/dlm-artwork-rollout.md
-docs/dlm-artwork-rollout.md
-docs/dlm-artwork-rollout.md
 .codex-work/individual-transactions-export/csv-to-xlsx.py
 .codex-work/individual-transactions-export/export-legacy-individual-transactions.mjs
 .codex-work/individual-transactions-export/individual-transactions-preview.png
@@ -104,5 +98,3 @@ docs/dlm-artwork-rollout.md
 outputs/legacy-individual-transactions-2026-09-25T19-26-50-956Z/individual-transactions-through-cutover.csv
 outputs/legacy-individual-transactions-2026-09-25T19-26-50-956Z/individual-transactions-through-cutover.xlsx
 public/DLMLOGO-512.png
-docs/dlmclub-brand-rollout.md
-docs/dlmclub-brand-rollout.md
