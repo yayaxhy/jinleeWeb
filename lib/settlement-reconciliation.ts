@@ -8,6 +8,7 @@ export const SETTLEMENT_CNY = 'CNY';
 export const SETTLEMENT_MAIN_FINANCE_ID = '525770714574225408';
 export const SETTLEMENT_WECHAT_OWNER_ID = '308164614846414851';
 export const SETTLEMENT_ALIPAY_OWNER_ID = '1008032640445710447';
+export const SETTLEMENT_PAYPAL_OWNER_ID = '1008032640445710447';
 /**
  * Alternate Discord identities for a particular settlement owner.
  * Keep this allow-list deliberately narrow: it grants owner-level actions only,
@@ -63,6 +64,7 @@ export const resolveWithdrawalSettlementOwner = (storedMethod: string) => {
   const method = (parsed?.method ?? storedMethod).trim().toLowerCase();
   if (method === '微信' || method === 'wechat') return SETTLEMENT_WECHAT_OWNER_ID;
   if (method === '支付宝' || method === 'alipay') return SETTLEMENT_ALIPAY_OWNER_ID;
+  if (method === 'paypal') return SETTLEMENT_PAYPAL_OWNER_ID;
   return null;
 };
 
